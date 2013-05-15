@@ -320,6 +320,17 @@ message CommitBlockSynchronizationRequestProto {
 message CommitBlockSynchronizationResponseProto {
 }
 
+message ActiveNamenode {
+  required long id = 1;    
+  required string hostname = 2;    
+  required string ipAddress = 3;    
+  required int port = 4;    
+}
+
+message ActiveNamenodeList {
+  repeated ActiveNamenode namenode = 1;
+}
+
 /**
  * Protocol used from datanode to the namenode
  * See the request and response for details of rpc call.
@@ -370,4 +381,14 @@ service DatanodeProtocolService {
    */
   rpc commitBlockSynchronization(CommitBlockSynchronizationRequestProto)
       returns(CommitBlockSynchronizationResponseProto);
+
+/**
+ * Sends the list of active namenodes from the leader to a datanode.
+ */ 
+  rpc sendActiveNamenodes() returns(ActiveNamenodeList);
+
+/**
+ * Ask the leader which namenode the datanode should report to.
+ */ 
+  rpc getNextNamenodeToSendBlockReport() returns(String);
 }
