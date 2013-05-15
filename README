@@ -8,3 +8,7 @@ mvn install
 
 cd ..
 mvn package -Pdist -DskipTests -Dtar
+
+
+How to deploy
+===
