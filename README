@@ -10,5 +10,11 @@ cd ..
 mvn package -Pdist -DskipTests -Dtar
 
 
-How to deploy
+How to add RPC messages
 ===
+Add first a protocol buffer msg and rpc to the .proto file.
+Then add a wrapper class.
+
+Finally, run:
+mvn generate-sources
+to generate the java classes from the protocol buffer files.

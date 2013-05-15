@@ -50,7 +50,6 @@ import org.apache.hadoop.ha.protocolPB.HAServiceProtocolServerSideTranslatorPB;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.HDFSPolicyProvider;
-import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.CorruptFileBlocks;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
@@ -124,6 +123,8 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -1083,4 +1084,16 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public DataEncryptionKey getDataEncryptionKey() throws IOException {
     return namesystem.getBlockManager().generateDataEncryptionKey();
   }
+
+    @Override
+    public ActiveNamenodeList sendActiveNamenodes() throws IOException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public String getNextNamenodeToSendBlockReport() throws IOException {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+
 }

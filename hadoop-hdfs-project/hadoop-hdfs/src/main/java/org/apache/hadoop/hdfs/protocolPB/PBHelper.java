@@ -140,6 +140,11 @@ import org.apache.hadoop.util.DataChecksum;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NamenodeReporterProto;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
 /**
  * Utilities for converting protobuf classes to and from implementation classes
@@ -1333,6 +1338,47 @@ public class PBHelper {
     return HdfsProtos.ChecksumTypeProto.valueOf(type.id);
   }
 
+  public static ActiveNamenodeProto convert(ActiveNamenode r) {
+    return ActiveNamenodeProto.newBuilder()
+            .setId(r.getId())
+            .setHostname(r.getHostname())
+            .setIpAddress(r.getIpAddress())
+            .setPort(r.getPort())
+            .build();
+  }  
+  
+  public static ActiveNamenode convert(ActiveNamenodeProto r) {
+    return new ActiveNamenode(r.getId(), r.getHostname(), r.getIpAddress(), r.getPort());
+  }  
+  
+  public static ActiveNamenodeList convert(ActiveNamenodeListProto r) {
+      return new ActiveNamenodeList(convertList(r.getNamenodeList()));
+  }
+  
+  public static List<ActiveNamenode> convertList(List<ActiveNamenodeProto> r) {
+      List<ActiveNamenode> list = new ArrayList<ActiveNamenode>();
+      for (ActiveNamenodeProto a : r) {
+          list.add(convert(a));
+      }
+      return list;
+  }
+  
+  public static ActiveNamenodeListProto convert(ActiveNamenodeList r) {
+      ActiveNamenodeListProto.Builder b = 
+            ActiveNamenodeListProto.newBuilder();
+      for (ActiveNamenode a : r.getListActiveNamenodes()) {
+          b.addNamenode(convert(a));
+      }
+            return b.build();
+  }  
+  
+  public static NamenodeReporterProto convert(String nn) {
+            return NamenodeReporterProto.newBuilder()
+                    .setHostname(nn)
+                    .build();
+  }  
+  
+  
   public static InputStream vintPrefixed(final InputStream input)
       throws IOException {
     final int firstByte = input.read();

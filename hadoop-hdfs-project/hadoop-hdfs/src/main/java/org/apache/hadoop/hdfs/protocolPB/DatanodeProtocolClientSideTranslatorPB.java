@@ -1,21 +1,19 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
-
 package org.apache.hadoop.hdfs.protocolPB;
 
 import java.io.Closeable;
@@ -71,6 +69,9 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeResponseProto;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
 /**
  * This class is the client side translator to translate the requests made on
@@ -80,217 +81,247 @@ import com.google.protobuf.ServiceException;
 @InterfaceAudience.Private
 @InterfaceStability.Stable
 public class DatanodeProtocolClientSideTranslatorPB implements
-    ProtocolMetaInterface, DatanodeProtocol, Closeable {
-  
-  /** RpcController is not used and hence is set to null */
-  private final DatanodeProtocolPB rpcProxy;
-  private static final VersionRequestProto VOID_VERSION_REQUEST = 
-      VersionRequestProto.newBuilder().build();
-  private final static RpcController NULL_CONTROLLER = null;
-  
-  public DatanodeProtocolClientSideTranslatorPB(InetSocketAddress nameNodeAddr,
-      Configuration conf) throws IOException {
-    RPC.setProtocolEngine(conf, DatanodeProtocolPB.class,
-        ProtobufRpcEngine.class);
-    UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
-    rpcProxy = createNamenodeWithRetry(createNamenode(nameNodeAddr, conf, ugi));
-  }
+        ProtocolMetaInterface, DatanodeProtocol, Closeable {
 
-  private static DatanodeProtocolPB createNamenode(
-      InetSocketAddress nameNodeAddr, Configuration conf,
-      UserGroupInformation ugi) throws IOException {
-    return RPC.getProxy(DatanodeProtocolPB.class,
-        RPC.getProtocolVersion(DatanodeProtocolPB.class), nameNodeAddr, ugi,
-        conf, NetUtils.getSocketFactory(conf, DatanodeProtocolPB.class));
-  }
+    /**
+     * RpcController is not used and hence is set to null
+     */
+    private final DatanodeProtocolPB rpcProxy;
+    private static final VersionRequestProto VOID_VERSION_REQUEST =
+            VersionRequestProto.newBuilder().build();
+    private static final ActiveNamenodeResponseProto VOID_ACTIVE_NAMENODE_RESPONSE =
+            ActiveNamenodeResponseProto.newBuilder().build();
+    private static final ActiveNamenodeListResponseProto VOID_ACTIVE_NAMENODE_LIST_RESPONSE =
+            ActiveNamenodeListResponseProto.newBuilder().build();
+    private final static RpcController NULL_CONTROLLER = null;
 
-  /** Create a {@link NameNode} proxy */
-  static DatanodeProtocolPB createNamenodeWithRetry(
-      DatanodeProtocolPB rpcNamenode) {
-    RetryPolicy createPolicy = RetryPolicies
-        .retryUpToMaximumCountWithFixedSleep(5,
-            HdfsConstants.LEASE_SOFTLIMIT_PERIOD, TimeUnit.MILLISECONDS);
-
-    Map<Class<? extends Exception>, RetryPolicy> remoteExceptionToPolicyMap = 
-        new HashMap<Class<? extends Exception>, RetryPolicy>();
-    remoteExceptionToPolicyMap.put(AlreadyBeingCreatedException.class,
-        createPolicy);
-
-    Map<Class<? extends Exception>, RetryPolicy> exceptionToPolicyMap =
-        new HashMap<Class<? extends Exception>, RetryPolicy>();
-    exceptionToPolicyMap.put(RemoteException.class, RetryPolicies
-        .retryByRemoteException(RetryPolicies.TRY_ONCE_THEN_FAIL,
-            remoteExceptionToPolicyMap));
-    RetryPolicy methodPolicy = RetryPolicies.retryByException(
-        RetryPolicies.TRY_ONCE_THEN_FAIL, exceptionToPolicyMap);
-    Map<String, RetryPolicy> methodNameToPolicyMap = new HashMap<String, RetryPolicy>();
-
-    methodNameToPolicyMap.put("create", methodPolicy);
-
-    return (DatanodeProtocolPB) RetryProxy.create(DatanodeProtocolPB.class,
-        rpcNamenode, methodNameToPolicyMap);
-  }
-
-  @Override
-  public void close() throws IOException {
-    RPC.stopProxy(rpcProxy);
-  }
-
-  @Override
-  public DatanodeRegistration registerDatanode(DatanodeRegistration registration
-      ) throws IOException {
-    RegisterDatanodeRequestProto.Builder builder = RegisterDatanodeRequestProto
-        .newBuilder().setRegistration(PBHelper.convert(registration));
-    RegisterDatanodeResponseProto resp;
-    try {
-      resp = rpcProxy.registerDatanode(NULL_CONTROLLER, builder.build());
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
+    public DatanodeProtocolClientSideTranslatorPB(InetSocketAddress nameNodeAddr,
+            Configuration conf) throws IOException {
+        RPC.setProtocolEngine(conf, DatanodeProtocolPB.class,
+                ProtobufRpcEngine.class);
+        UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
+        rpcProxy = createNamenodeWithRetry(createNamenode(nameNodeAddr, conf, ugi));
     }
-    return PBHelper.convert(resp.getRegistration());
-  }
 
-  @Override
-  public HeartbeatResponse sendHeartbeat(DatanodeRegistration registration,
-      StorageReport[] reports, int xmitsInProgress, int xceiverCount,
-      int failedVolumes) throws IOException {
-    HeartbeatRequestProto.Builder builder = HeartbeatRequestProto.newBuilder()
-        .setRegistration(PBHelper.convert(registration))
-        .setXmitsInProgress(xmitsInProgress).setXceiverCount(xceiverCount)
-        .setFailedVolumes(failedVolumes);
-    for (StorageReport r : reports) {
-      builder.addReports(PBHelper.convert(r));
+    private static DatanodeProtocolPB createNamenode(
+            InetSocketAddress nameNodeAddr, Configuration conf,
+            UserGroupInformation ugi) throws IOException {
+        return RPC.getProxy(DatanodeProtocolPB.class,
+                RPC.getProtocolVersion(DatanodeProtocolPB.class), nameNodeAddr, ugi,
+                conf, NetUtils.getSocketFactory(conf, DatanodeProtocolPB.class));
     }
-    
-    HeartbeatResponseProto resp;
-    try {
-      resp = rpcProxy.sendHeartbeat(NULL_CONTROLLER, builder.build());
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-    DatanodeCommand[] cmds = new DatanodeCommand[resp.getCmdsList().size()];
-    int index = 0;
-    for (DatanodeCommandProto p : resp.getCmdsList()) {
-      cmds[index] = PBHelper.convert(p);
-      index++;
-    }
-    return new HeartbeatResponse(cmds, PBHelper.convert(resp.getHaStatus()));
-  }
 
-  @Override
-  public DatanodeCommand blockReport(DatanodeRegistration registration,
-      String poolId, StorageBlockReport[] reports) throws IOException {
-    BlockReportRequestProto.Builder builder = BlockReportRequestProto
-        .newBuilder().setRegistration(PBHelper.convert(registration))
-        .setBlockPoolId(poolId);
-    
-    for (StorageBlockReport r : reports) {
-      StorageBlockReportProto.Builder reportBuilder = StorageBlockReportProto
-          .newBuilder().setStorage(PBHelper.convert(r.getStorage()));
-      long[] blocks = r.getBlocks();
-      for (int i = 0; i < blocks.length; i++) {
-        reportBuilder.addBlocks(blocks[i]);
-      }
-      builder.addReports(reportBuilder.build());
-    }
-    BlockReportResponseProto resp;
-    try {
-      resp = rpcProxy.blockReport(NULL_CONTROLLER, builder.build());
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-    return resp.hasCmd() ? PBHelper.convert(resp.getCmd()) : null;
-  }
+    /**
+     * Create a {@link NameNode} proxy
+     */
+    static DatanodeProtocolPB createNamenodeWithRetry(
+            DatanodeProtocolPB rpcNamenode) {
+        RetryPolicy createPolicy = RetryPolicies
+                .retryUpToMaximumCountWithFixedSleep(5,
+                HdfsConstants.LEASE_SOFTLIMIT_PERIOD, TimeUnit.MILLISECONDS);
 
-  @Override
-  public void blockReceivedAndDeleted(DatanodeRegistration registration,
-      String poolId, StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks)
-      throws IOException {
-    BlockReceivedAndDeletedRequestProto.Builder builder = 
-        BlockReceivedAndDeletedRequestProto.newBuilder()
-        .setRegistration(PBHelper.convert(registration))
-        .setBlockPoolId(poolId);
-    for (StorageReceivedDeletedBlocks storageBlock : receivedAndDeletedBlocks) {
-      StorageReceivedDeletedBlocksProto.Builder repBuilder = 
-          StorageReceivedDeletedBlocksProto.newBuilder();
-      repBuilder.setStorageID(storageBlock.getStorageID());
-      for (ReceivedDeletedBlockInfo rdBlock : storageBlock.getBlocks()) {
-        repBuilder.addBlocks(PBHelper.convert(rdBlock));
-      }
-      builder.addBlocks(repBuilder.build());
-    }
-    try {
-      rpcProxy.blockReceivedAndDeleted(NULL_CONTROLLER, builder.build());
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-  }
+        Map<Class<? extends Exception>, RetryPolicy> remoteExceptionToPolicyMap =
+                new HashMap<Class<? extends Exception>, RetryPolicy>();
+        remoteExceptionToPolicyMap.put(AlreadyBeingCreatedException.class,
+                createPolicy);
 
-  @Override
-  public void errorReport(DatanodeRegistration registration, int errorCode,
-      String msg) throws IOException {
-    ErrorReportRequestProto req = ErrorReportRequestProto.newBuilder()
-        .setRegistartion(PBHelper.convert(registration))
-        .setErrorCode(errorCode).setMsg(msg).build();
-    try {
-      rpcProxy.errorReport(NULL_CONTROLLER, req);
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-  }
+        Map<Class<? extends Exception>, RetryPolicy> exceptionToPolicyMap =
+                new HashMap<Class<? extends Exception>, RetryPolicy>();
+        exceptionToPolicyMap.put(RemoteException.class, RetryPolicies
+                .retryByRemoteException(RetryPolicies.TRY_ONCE_THEN_FAIL,
+                remoteExceptionToPolicyMap));
+        RetryPolicy methodPolicy = RetryPolicies.retryByException(
+                RetryPolicies.TRY_ONCE_THEN_FAIL, exceptionToPolicyMap);
+        Map<String, RetryPolicy> methodNameToPolicyMap = new HashMap<String, RetryPolicy>();
 
-  @Override
-  public NamespaceInfo versionRequest() throws IOException {
-    try {
-      return PBHelper.convert(rpcProxy.versionRequest(NULL_CONTROLLER,
-          VOID_VERSION_REQUEST).getInfo());
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
+        methodNameToPolicyMap.put("create", methodPolicy);
 
-  @Override
-  public void reportBadBlocks(LocatedBlock[] blocks) throws IOException {
-    ReportBadBlocksRequestProto.Builder builder = ReportBadBlocksRequestProto
-        .newBuilder();
-    for (int i = 0; i < blocks.length; i++) {
-      builder.addBlocks(i, PBHelper.convert(blocks[i]));
+        return (DatanodeProtocolPB) RetryProxy.create(DatanodeProtocolPB.class,
+                rpcNamenode, methodNameToPolicyMap);
     }
-    ReportBadBlocksRequestProto req = builder.build();
-    try {
-      rpcProxy.reportBadBlocks(NULL_CONTROLLER, req);
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-  }
 
-  @Override
-  public void commitBlockSynchronization(ExtendedBlock block,
-      long newgenerationstamp, long newlength, boolean closeFile,
-      boolean deleteblock, DatanodeID[] newtargets, String[] newtargetstorages
-      ) throws IOException {
-    CommitBlockSynchronizationRequestProto.Builder builder = 
-        CommitBlockSynchronizationRequestProto.newBuilder()
-        .setBlock(PBHelper.convert(block)).setNewGenStamp(newgenerationstamp)
-        .setNewLength(newlength).setCloseFile(closeFile)
-        .setDeleteBlock(deleteblock);
-    for (int i = 0; i < newtargets.length; i++) {
-      builder.addNewTaragets(PBHelper.convert(newtargets[i]));
-      builder.addNewTargetStorages(newtargetstorages[i]);
+    @Override
+    public void close() throws IOException {
+        RPC.stopProxy(rpcProxy);
     }
-    CommitBlockSynchronizationRequestProto req = builder.build();
-    try {
-      rpcProxy.commitBlockSynchronization(NULL_CONTROLLER, req);
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-  }
 
-  @Override // ProtocolMetaInterface
-  public boolean isMethodSupported(String methodName)
-      throws IOException {
-    return RpcClientUtil.isMethodSupported(rpcProxy, DatanodeProtocolPB.class,
-        RPC.RpcKind.RPC_PROTOCOL_BUFFER,
-        RPC.getProtocolVersion(DatanodeProtocolPB.class), methodName);
-  }
+    @Override
+    public DatanodeRegistration registerDatanode(DatanodeRegistration registration) throws IOException {
+        RegisterDatanodeRequestProto.Builder builder = RegisterDatanodeRequestProto
+                .newBuilder().setRegistration(PBHelper.convert(registration));
+        RegisterDatanodeResponseProto resp;
+        try {
+            resp = rpcProxy.registerDatanode(NULL_CONTROLLER, builder.build());
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+        return PBHelper.convert(resp.getRegistration());
+    }
+
+    @Override
+    public HeartbeatResponse sendHeartbeat(DatanodeRegistration registration,
+            StorageReport[] reports, int xmitsInProgress, int xceiverCount,
+            int failedVolumes) throws IOException {
+        HeartbeatRequestProto.Builder builder = HeartbeatRequestProto.newBuilder()
+                .setRegistration(PBHelper.convert(registration))
+                .setXmitsInProgress(xmitsInProgress).setXceiverCount(xceiverCount)
+                .setFailedVolumes(failedVolumes);
+        for (StorageReport r : reports) {
+            builder.addReports(PBHelper.convert(r));
+        }
+
+        HeartbeatResponseProto resp;
+        try {
+            resp = rpcProxy.sendHeartbeat(NULL_CONTROLLER, builder.build());
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+        DatanodeCommand[] cmds = new DatanodeCommand[resp.getCmdsList().size()];
+        int index = 0;
+        for (DatanodeCommandProto p : resp.getCmdsList()) {
+            cmds[index] = PBHelper.convert(p);
+            index++;
+        }
+        return new HeartbeatResponse(cmds, PBHelper.convert(resp.getHaStatus()));
+    }
+
+    @Override
+    public DatanodeCommand blockReport(DatanodeRegistration registration,
+            String poolId, StorageBlockReport[] reports) throws IOException {
+        BlockReportRequestProto.Builder builder = BlockReportRequestProto
+                .newBuilder().setRegistration(PBHelper.convert(registration))
+                .setBlockPoolId(poolId);
+
+        for (StorageBlockReport r : reports) {
+            StorageBlockReportProto.Builder reportBuilder = StorageBlockReportProto
+                    .newBuilder().setStorage(PBHelper.convert(r.getStorage()));
+            long[] blocks = r.getBlocks();
+            for (int i = 0; i < blocks.length; i++) {
+                reportBuilder.addBlocks(blocks[i]);
+            }
+            builder.addReports(reportBuilder.build());
+        }
+        BlockReportResponseProto resp;
+        try {
+            resp = rpcProxy.blockReport(NULL_CONTROLLER, builder.build());
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+        return resp.hasCmd() ? PBHelper.convert(resp.getCmd()) : null;
+    }
+
+    @Override
+    public void blockReceivedAndDeleted(DatanodeRegistration registration,
+            String poolId, StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks)
+            throws IOException {
+        BlockReceivedAndDeletedRequestProto.Builder builder =
+                BlockReceivedAndDeletedRequestProto.newBuilder()
+                .setRegistration(PBHelper.convert(registration))
+                .setBlockPoolId(poolId);
+        for (StorageReceivedDeletedBlocks storageBlock : receivedAndDeletedBlocks) {
+            StorageReceivedDeletedBlocksProto.Builder repBuilder =
+                    StorageReceivedDeletedBlocksProto.newBuilder();
+            repBuilder.setStorageID(storageBlock.getStorageID());
+            for (ReceivedDeletedBlockInfo rdBlock : storageBlock.getBlocks()) {
+                repBuilder.addBlocks(PBHelper.convert(rdBlock));
+            }
+            builder.addBlocks(repBuilder.build());
+        }
+        try {
+            rpcProxy.blockReceivedAndDeleted(NULL_CONTROLLER, builder.build());
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+    }
+
+    @Override
+    public void errorReport(DatanodeRegistration registration, int errorCode,
+            String msg) throws IOException {
+        ErrorReportRequestProto req = ErrorReportRequestProto.newBuilder()
+                .setRegistartion(PBHelper.convert(registration))
+                .setErrorCode(errorCode).setMsg(msg).build();
+        try {
+            rpcProxy.errorReport(NULL_CONTROLLER, req);
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+    }
+
+    @Override
+    public NamespaceInfo versionRequest() throws IOException {
+        try {
+            return PBHelper.convert(rpcProxy.versionRequest(NULL_CONTROLLER,
+                    VOID_VERSION_REQUEST).getInfo());
+        } catch (ServiceException e) {
+            throw ProtobufHelper.getRemoteException(e);
+        }
+    }
+
+    @Override
+    public void reportBadBlocks(LocatedBlock[] blocks) throws IOException {
+        ReportBadBlocksRequestProto.Builder builder = ReportBadBlocksRequestProto
+                .newBuilder();
+        for (int i = 0; i < blocks.length; i++) {
+            builder.addBlocks(i, PBHelper.convert(blocks[i]));
+        }
+        ReportBadBlocksRequestProto req = builder.build();
+        try {
+            rpcProxy.reportBadBlocks(NULL_CONTROLLER, req);
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+    }
+
+    @Override
+    public void commitBlockSynchronization(ExtendedBlock block,
+            long newgenerationstamp, long newlength, boolean closeFile,
+            boolean deleteblock, DatanodeID[] newtargets, String[] newtargetstorages) throws IOException {
+        CommitBlockSynchronizationRequestProto.Builder builder =
+                CommitBlockSynchronizationRequestProto.newBuilder()
+                .setBlock(PBHelper.convert(block)).setNewGenStamp(newgenerationstamp)
+                .setNewLength(newlength).setCloseFile(closeFile)
+                .setDeleteBlock(deleteblock);
+        for (int i = 0; i < newtargets.length; i++) {
+            builder.addNewTaragets(PBHelper.convert(newtargets[i]));
+            builder.addNewTargetStorages(newtargetstorages[i]);
+        }
+        CommitBlockSynchronizationRequestProto req = builder.build();
+        try {
+            rpcProxy.commitBlockSynchronization(NULL_CONTROLLER, req);
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+    }
+
+    @Override // ProtocolMetaInterface
+    public boolean isMethodSupported(String methodName)
+            throws IOException {
+        return RpcClientUtil.isMethodSupported(rpcProxy, DatanodeProtocolPB.class,
+                RPC.RpcKind.RPC_PROTOCOL_BUFFER,
+                RPC.getProtocolVersion(DatanodeProtocolPB.class), methodName);
+    }
+
+    @Override
+    public ActiveNamenodeList sendActiveNamenodes() throws IOException {
+        ActiveNamenodeList anl = null;
+        try {
+            anl = PBHelper.convert(
+                    rpcProxy.sendActiveNamenodes(NULL_CONTROLLER,
+                    VOID_ACTIVE_NAMENODE_LIST_RESPONSE));
+        } catch (ServiceException se) {
+            throw ProtobufHelper.getRemoteException(se);
+        }
+        return anl;
+    }
+
+    @Override
+    public String getNextNamenodeToSendBlockReport() throws IOException {
+        try {
+            return rpcProxy.getNextNamenodeToSendBlockReport(
+                    NULL_CONTROLLER,
+                    VOID_ACTIVE_NAMENODE_RESPONSE).getHostname();
+        } catch (ServiceException e) {
+            throw ProtobufHelper.getRemoteException(e);
+        }
+    }
 }
