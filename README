@@ -1,0 +1,10 @@
+How to build
+===
+
+sudo aptitude install libprotocolbuf-java libprotobuf-java cmake
+
+cd hadoop-maven-plugins
+mvn install
+
+cd ..
+mvn package -Pdist -DskipTests -Dtar
