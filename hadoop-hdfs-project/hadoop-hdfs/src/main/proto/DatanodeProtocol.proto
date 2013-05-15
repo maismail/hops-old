@@ -321,14 +321,30 @@ message CommitBlockSynchronizationResponseProto {
 }
 
 message ActiveNamenode {
-  required long id = 1;    
+  required uint64 id = 1;    
   required string hostname = 2;    
   required string ipAddress = 3;    
-  required int port = 4;    
+  required int32 port = 4;    
+}
+
+/**
+ * void response
+ */
+message ActiveNamenodeProto {
 }
 
 message ActiveNamenodeList {
   repeated ActiveNamenode namenode = 1;
+}
+
+/**
+ * void response
+ */
+message ActiveNamenodeListProto {
+}
+
+message NamenodeReporter {
+  required string hostname = 1;    
 }
 
 /**
@@ -385,10 +401,10 @@ service DatanodeProtocolService {
 /**
  * Sends the list of active namenodes from the leader to a datanode.
  */ 
-  rpc sendActiveNamenodes() returns(ActiveNamenodeList);
+  rpc sendActiveNamenodes(ActiveNamenodeListProto) returns(ActiveNamenodeList);
 
 /**
  * Ask the leader which namenode the datanode should report to.
  */ 
-  rpc getNextNamenodeToSendBlockReport() returns(String);
+  rpc getNextNamenodeToSendBlockReport(ActiveNamenodeProto) returns(NamenodeReporter);
 }
