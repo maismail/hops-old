@@ -320,6 +320,11 @@ message CommitBlockSynchronizationRequestProto {
 message CommitBlockSynchronizationResponseProto {
 }
 
+// HOP_CODE_START
+
+/**
+* messages for getting list of all name nodes from the leader
+*/
 message ActiveNamenodeProto {
   required uint64 id = 1;    
   required string hostname = 2;    
@@ -328,24 +333,33 @@ message ActiveNamenodeProto {
 }
 
 /**
- * void response
+ * void request
  */
-message ActiveNamenodeResponseProto {
-}
-
-message ActiveNamenodeListProto {
-  repeated ActiveNamenodeProto namenode = 1;
+message ActiveNamenodeListRequestProto {
 }
 
 /**
  * void response
  */
 message ActiveNamenodeListResponseProto {
+  repeated ActiveNamenodeProto namenodes = 1;
 }
 
-message NamenodeReporterProto {
+
+/**
+* getting a name node address from the leader to send block report
+*/
+
+/**
+ * void request
+ */
+message NameNodeAddressRequestForBlockReportingProto {
+}
+
+message NameNodeAddressResponseForBlockReportingProto {
   required string hostname = 1;    
 }
+//HOP_CODE_END
 
 /**
  * Protocol used from datanode to the namenode
@@ -398,13 +412,16 @@ service DatanodeProtocolService {
   rpc commitBlockSynchronization(CommitBlockSynchronizationRequestProto)
       returns(CommitBlockSynchronizationResponseProto);
 
+//HOP_CODE_START
 /**
- * Sends the list of active namenodes from the leader to a datanode.
+ * data node sends a request to name node to send list of all active
+ * name nodes.
  */ 
-  rpc sendActiveNamenodes(ActiveNamenodeListResponseProto) returns(ActiveNamenodeListProto);
+  rpc sendActiveNamenodes (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
 
 /**
  * Ask the leader which namenode the datanode should report to.
  */ 
-  rpc getNextNamenodeToSendBlockReport(ActiveNamenodeResponseProto) returns(NamenodeReporterProto);
+  rpc getNextNamenodeToSendBlockReport(NameNodeAddressRequestForBlockReportingProto) returns(NameNodeAddressResponseForBlockReportingProto);
+//HOP_CODE_END
 }

@@ -69,8 +69,12 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeResponseProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
+import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
 /**
@@ -89,10 +93,6 @@ public class DatanodeProtocolClientSideTranslatorPB implements
     private final DatanodeProtocolPB rpcProxy;
     private static final VersionRequestProto VOID_VERSION_REQUEST =
             VersionRequestProto.newBuilder().build();
-    private static final ActiveNamenodeResponseProto VOID_ACTIVE_NAMENODE_RESPONSE =
-            ActiveNamenodeResponseProto.newBuilder().build();
-    private static final ActiveNamenodeListResponseProto VOID_ACTIVE_NAMENODE_LIST_RESPONSE =
-            ActiveNamenodeListResponseProto.newBuilder().build();
     private final static RpcController NULL_CONTROLLER = null;
 
     public DatanodeProtocolClientSideTranslatorPB(InetSocketAddress nameNodeAddr,
@@ -301,27 +301,31 @@ public class DatanodeProtocolClientSideTranslatorPB implements
                 RPC.getProtocolVersion(DatanodeProtocolPB.class), methodName);
     }
 
-    @Override
-    public ActiveNamenodeList sendActiveNamenodes() throws IOException {
-        ActiveNamenodeList anl = null;
-        try {
-            anl = PBHelper.convert(
-                    rpcProxy.sendActiveNamenodes(NULL_CONTROLLER,
-                    VOID_ACTIVE_NAMENODE_LIST_RESPONSE));
-        } catch (ServiceException se) {
-            throw ProtobufHelper.getRemoteException(se);
-        }
-        return anl;
-    }
+  // HOP_CODE_START
+  @Override
+  public ActiveNamenodeList sendActiveNamenodes() throws IOException {
 
-    @Override
-    public String getNextNamenodeToSendBlockReport() throws IOException {
-        try {
-            return rpcProxy.getNextNamenodeToSendBlockReport(
-                    NULL_CONTROLLER,
-                    VOID_ACTIVE_NAMENODE_RESPONSE).getHostname();
-        } catch (ServiceException e) {
-            throw ProtobufHelper.getRemoteException(e);
-        }
+    try {
+      ActiveNamenodeListRequestProto.Builder request = ActiveNamenodeListRequestProto.newBuilder();
+      ActiveNamenodeListResponseProto response = rpcProxy.sendActiveNamenodes(NULL_CONTROLLER, request.build());
+      ActiveNamenodeList anl = PBHelper.convert(response);
+      return anl;
+    } catch (ServiceException se) {
+      throw ProtobufHelper.getRemoteException(se);
     }
+  }
+
+  @Override
+  public String getNextNamenodeToSendBlockReport() throws IOException {
+
+    NameNodeAddressRequestForBlockReportingProto.Builder request = NameNodeAddressRequestForBlockReportingProto.newBuilder();
+    try {
+      NameNodeAddressResponseForBlockReportingProto response = rpcProxy.getNextNamenodeToSendBlockReport(NULL_CONTROLLER, request.build());
+      return response.getHostname();
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+  // HOP_CODE_END
+    
 }

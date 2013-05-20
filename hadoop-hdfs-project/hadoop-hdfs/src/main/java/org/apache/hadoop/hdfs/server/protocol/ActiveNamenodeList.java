@@ -15,6 +15,7 @@
  */
 package org.apache.hadoop.hdfs.server.protocol;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -29,6 +30,7 @@ public class ActiveNamenodeList {
             throw new NullPointerException("List of active namenodes was null");
         }
         this.listActiveNamenodes = listActiveNamenodes;
+        Collections.sort(listActiveNamenodes);
     }
 
     public List<ActiveNamenode> getListActiveNamenodes() {

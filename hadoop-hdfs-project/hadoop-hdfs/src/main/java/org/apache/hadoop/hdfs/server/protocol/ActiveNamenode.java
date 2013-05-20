@@ -19,7 +19,7 @@ package org.apache.hadoop.hdfs.server.protocol;
  *
  * @author jdowling
  */
-public class ActiveNamenode {
+public class ActiveNamenode implements Comparable<ActiveNamenode> {
 
     private final long id;
     private final String hostname;
@@ -48,4 +48,22 @@ public class ActiveNamenode {
     public int getPort() {
         return port;
     }
+
+  @Override
+  public int compareTo(ActiveNamenode o) {
+
+    if (id < o.getId()) {
+      return -1;
+    } else if (id == o.getId()) {
+      return 0;
+    } else if (id > o.getId()) {
+      return 1;
+    } else {
+      throw new IllegalStateException("I write horrible code");
+    }
+  }
+   
+   
+    
+    
 }

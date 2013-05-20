@@ -123,6 +123,9 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
@@ -1085,15 +1088,24 @@ class NameNodeRpcServer implements NamenodeProtocols {
     return namesystem.getBlockManager().generateDataEncryptionKey();
   }
 
+  
+  // HOP_CODE_START
     @Override
     public ActiveNamenodeList sendActiveNamenodes() throws IOException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+       //FIXME. This is dummy code;
+      List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
+      for(int i = 0; i < 5; i++)
+      {
+        ActiveNamenode an = new ActiveNamenode(i,"Host"+i, "192.168.1."+i, (new Random()).nextInt());
+        anl.add(an);
+      }
+      return new ActiveNamenodeList(anl);
     }
 
     @Override
     public String getNextNamenodeToSendBlockReport() throws IOException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+      //FIXME. This is dummy response. 
+      return "Namenode1:192.168.1.1:8080";
     }
-
-
+    //HOP_CODE_END
 }
