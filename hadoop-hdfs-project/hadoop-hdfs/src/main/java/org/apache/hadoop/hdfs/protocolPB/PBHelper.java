@@ -140,9 +140,9 @@ import org.apache.hadoop.util.DataChecksum;
 import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NamenodeReporterProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
@@ -1338,47 +1338,6 @@ public class PBHelper {
     return HdfsProtos.ChecksumTypeProto.valueOf(type.id);
   }
 
-  public static ActiveNamenodeProto convert(ActiveNamenode r) {
-    return ActiveNamenodeProto.newBuilder()
-            .setId(r.getId())
-            .setHostname(r.getHostname())
-            .setIpAddress(r.getIpAddress())
-            .setPort(r.getPort())
-            .build();
-  }  
-  
-  public static ActiveNamenode convert(ActiveNamenodeProto r) {
-    return new ActiveNamenode(r.getId(), r.getHostname(), r.getIpAddress(), r.getPort());
-  }  
-  
-  public static ActiveNamenodeList convert(ActiveNamenodeListProto r) {
-      return new ActiveNamenodeList(convertList(r.getNamenodeList()));
-  }
-  
-  public static List<ActiveNamenode> convertList(List<ActiveNamenodeProto> r) {
-      List<ActiveNamenode> list = new ArrayList<ActiveNamenode>();
-      for (ActiveNamenodeProto a : r) {
-          list.add(convert(a));
-      }
-      return list;
-  }
-  
-  public static ActiveNamenodeListProto convert(ActiveNamenodeList r) {
-      ActiveNamenodeListProto.Builder b = 
-            ActiveNamenodeListProto.newBuilder();
-      for (ActiveNamenode a : r.getListActiveNamenodes()) {
-          b.addNamenode(convert(a));
-      }
-            return b.build();
-  }  
-  
-  public static NamenodeReporterProto convert(String nn) {
-            return NamenodeReporterProto.newBuilder()
-                    .setHostname(nn)
-                    .build();
-  }  
-  
-  
   public static InputStream vintPrefixed(final InputStream input)
       throws IOException {
     final int firstByte = input.read();
@@ -1390,4 +1349,52 @@ public class PBHelper {
     assert size >= 0;
     return new ExactSizeInputStream(input, size);
   }
+  
+  // HOP_CODE_START
+  public static ActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
+    List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
+    List<ActiveNamenodeProto> anlp = p.getNamenodesList();
+    for (int i = 0; i < anlp.size(); i++) {
+      ActiveNamenode an = PBHelper.convert(anlp.get(i));
+      anl.add(an);
+    }
+    return new ActiveNamenodeList(anl);
+  }
+  
+  public static ActiveNamenode convert(ActiveNamenodeProto p)
+  {
+    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
+    return an;
+  }
+  
+  public static ActiveNamenodeProto convert(ActiveNamenode p)
+  {
+    ActiveNamenodeProto.Builder anp = ActiveNamenodeProto.newBuilder();
+    anp.setId(p.getId());
+    anp.setHostname(p.getHostname());
+    anp.setIpAddress(p.getIpAddress());
+    anp.setPort(p.getPort());
+    
+    return anp.build();
+  }
+  
+  public static ActiveNamenodeListResponseProto convert(ActiveNamenodeList anlWrapper)
+  {
+    List<ActiveNamenode> anl = anlWrapper.getListActiveNamenodes();
+    ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();
+    for(int i = 0; i < anl.size(); i++)
+    {
+       ActiveNamenodeProto anp = PBHelper.convert(anl.get(i));
+       anlrpb.addNamenodes(anp);
+    }
+    return anlrpb.build();
+  }
+  
+  public static NameNodeAddressResponseForBlockReportingProto convert(String host)
+  {
+    NameNodeAddressResponseForBlockReportingProto.Builder response = NameNodeAddressResponseForBlockReportingProto.newBuilder();
+    response.setHostname(host);
+    return response.build();
+  }
+  // HOP_CODE_END
 }
