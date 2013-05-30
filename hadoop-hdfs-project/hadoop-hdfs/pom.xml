@@ -176,6 +176,11 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <artifactId>xmlenc</artifactId>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>se.sics.ndb</groupId>
+      <artifactId>clusterj</artifactId>
+      <version>7.1.15a</version>
+    </dependency>
   </dependencies>
 
   <build>
