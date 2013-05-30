@@ -1,25 +1,25 @@
-//package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
-//
-//import java.util.HashMap;
-//import java.util.Map;
-//import org.apache.hadoop.conf.Configuration;
-//import org.apache.hadoop.hdfs.DFSConfigKeys;
-//import org.apache.hadoop.hdfs.security.token.block.BlockKey;
-//import org.apache.hadoop.hdfs.server.blockmanagement.*;
-//import org.apache.hadoop.hdfs.server.namenode.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.derby.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.MysqlServerConnector;
-//
-///**
-// *
-// * @author Hooman <hooman@sics.se>
-// */
-//public class StorageFactory {
-//
-//  private static StorageConnector defaultStorage;
+package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
+
+import java.util.HashMap;
+import java.util.Map;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.security.token.block.BlockKey;
+import org.apache.hadoop.hdfs.server.blockmanagement.*;
+import org.apache.hadoop.hdfs.server.namenode.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.derby.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.MysqlServerConnector;
+
+/**
+ *
+ * @author Hooman <hooman@sics.se>
+ */
+public class StorageFactory {
+
+  private static StorageConnector defaultStorage;
 //  private static BlockInfoDataAccess blockInfoDataAccess;
 //  private static CorruptReplicaDataAccess corruptReplicaDataAccess;
 //  private static ExcessReplicaDataAccess excessReplicaDataAccess;
@@ -34,10 +34,10 @@
 //  private static LeaderDataAccess leaderDataAccess;
 //  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
 //  private static GenerationStampDataAccess generationStampDataAccess;
-//  private static StorageInfoDataAccess storageInfoDataAccess;
-//  private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
-//
-//  private static void initDataAccessMap() {
+  private static StorageInfoDataAccess storageInfoDataAccess;
+  private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
+
+  private static void initDataAccessMap() {
 //    dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
 //    dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
 //    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
@@ -52,19 +52,20 @@
 //    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
 //    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
 //    dataAccessMap.put(generationStampDataAccess.getClass().getSuperclass(), generationStampDataAccess);
-//    dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
-//  }
-//
-//  public static StorageConnector getConnector() {
-//    return defaultStorage;
-//  }
-//
-//  public static void setConfiguration(Configuration conf) {
-//    String storageType = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY);
-//    if (storageType.equals(DerbyConnector.DERBY_EMBEDDED)
-//            || storageType.equals(DerbyConnector.DERBY_NETWORK_SERVER)) {
-//      defaultStorage = DerbyConnector.INSTANCE;
-//      defaultStorage.setConfiguration(conf);
+    dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
+  }
+
+  public static StorageConnector getConnector() {
+    return defaultStorage;
+  }
+
+  public static void setConfiguration(Configuration conf) {
+    String storageType = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY, 
+            DFSConfigKeys.DFS_STORAGE_TYPE_DEFAULT);
+    if (storageType.equals(DerbyConnector.DERBY_EMBEDDED)
+            || storageType.equals(DerbyConnector.DERBY_NETWORK_SERVER)) {
+      defaultStorage = DerbyConnector.INSTANCE;
+      defaultStorage.setConfiguration(conf);
 //      blockInfoDataAccess = new BlockInfoDerby();
 //      corruptReplicaDataAccess = new CorruptReplicaDerby();
 //      excessReplicaDataAccess = new ExcessReplicaDerby();
@@ -79,10 +80,11 @@
 //      leaderDataAccess = new LeaderDerby();
 //      // TODO[Hooman]: Add derby data access for block token key.
 //      // TODO[Hooman]: Add derby data access for block generation stamp.
-//    } else if (storageType.equals("clusterj")) {
-//      defaultStorage = ClusterjConnector.INSTANCE;
-//      MysqlServerConnector.INSTANCE.setConfiguration(conf);
-//      defaultStorage.setConfiguration(conf);
+//      // TODO[Hooman]: Add derby data access for storage info
+    } else if (storageType.equals("clusterj")) {
+      defaultStorage = ClusterjConnector.INSTANCE;
+      MysqlServerConnector.INSTANCE.setConfiguration(conf);
+      defaultStorage.setConfiguration(conf);
 //      blockInfoDataAccess = new BlockInfoClusterj();
 //      corruptReplicaDataAccess = new CorruptReplicaClusterj();
 //      excessReplicaDataAccess = new ExcessReplicaClusterj();
@@ -97,14 +99,14 @@
 //      leaderDataAccess = new LeaderClusterj();
 //      generationStampDataAccess = new GenerationStampClusterj();
 //      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
-//      storageInfoDataAccess = new StorageInfoClusterj();
-//    }
-//
-//    initDataAccessMap();
-//  }
-//
-//  public static Map<Class, EntityContext> createEntityContexts() {
-//    Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
+      storageInfoDataAccess = new StorageInfoClusterj();
+    }
+
+    initDataAccessMap();
+  }
+
+  public static Map<Class, EntityContext> createEntityContexts() {
+    Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
 //    BlockInfoContext bicj = new BlockInfoContext(blockInfoDataAccess);
 //    entityContexts.put(BlockInfo.class, bicj);
 //    entityContexts.put(BlockInfoUnderConstruction.class, bicj);
@@ -126,10 +128,10 @@
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
 //    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
 //    entityContexts.put(GenerationStamp.class, new GenerationStampContext(generationStampDataAccess));
-//    return entityContexts;
-//  }
-//
-//  public static EntityDataAccess getDataAccess(Class type) {
-//    return dataAccessMap.get(type);
-//  }
-//}
+    return entityContexts;
+  }
+
+  public static EntityDataAccess getDataAccess(Class type) {
+    return dataAccessMap.get(type);
+  }
+}

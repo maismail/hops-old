@@ -1,44 +1,45 @@
-//package org.apache.hadoop.hdfs.server.namenode.persistance.storage.derby;
-//
-//import java.sql.Connection;
-//import java.sql.DriverManager;
-//import java.sql.ResultSet;
-//import java.sql.SQLException;
-//import java.sql.Statement;
-//import org.apache.commons.logging.Log;
-//import org.apache.commons.logging.LogFactory;
-//import org.apache.hadoop.conf.Configuration;
-//import org.apache.hadoop.hdfs.DFSConfigKeys;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
-//
-///**
-// *
-// * @author Hooman <hooman@sics.se>
-// */
-//public enum DerbyConnector implements StorageConnector<Connection> {
-//
-//  INSTANCE;
-//  private Log log;
-//  /*
-//   * the default framework is embedded
-//   */
-//  public static final String DERBY_NETWORK_SERVER = "derby-net";
-//  public static final String DERBY_EMBEDDED = "derby-em";
-//  public static final String DEFAULT_DERBY_EMBEDDED_PROTOCOL = "jdbc:derby:memory:derbyDB";
-//  public static final String DEFAULT_DERBY_NETWORK_SERVER_PROTOCOL = "jdbc:derby://localhost:1527/memory:derbyDB";
-//  private String framework = null;
-//  private String driver = null;
-//  private String protocol = null;
-//  private ThreadLocal<Connection> connectionPool = new ThreadLocal<Connection>();
-//  private ThreadLocal<Boolean> activeTransactions = new ThreadLocal<Boolean>();
-//  private boolean dbStarted = false;
-//
-//  private DerbyConnector() {
-//    log = LogFactory.getLog(DerbyConnector.class);
-//  }
-//
+package org.apache.hadoop.hdfs.server.namenode.persistance.storage.derby;
+
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+
+/**
+ *
+ * @author Hooman <hooman@sics.se>
+ */
+public enum DerbyConnector implements StorageConnector<Connection> {
+
+  INSTANCE;
+  private Log log;
+  /*
+   * the default framework is embedded
+   */
+  public static final String DERBY_NETWORK_SERVER = "derby-net";
+  public static final String DERBY_EMBEDDED = "derby-em";
+  public static final String DEFAULT_DERBY_EMBEDDED_PROTOCOL = "jdbc:derby:memory:derbyDB";
+  public static final String DEFAULT_DERBY_NETWORK_SERVER_PROTOCOL = "jdbc:derby://localhost:1527/memory:derbyDB";
+  private String framework = null;
+  private String driver = null;
+  private String protocol = null;
+  private ThreadLocal<Connection> connectionPool = new ThreadLocal<Connection>();
+  private ThreadLocal<Boolean> activeTransactions = new ThreadLocal<Boolean>();
+  private boolean dbStarted = false;
+
+  private DerbyConnector() {
+    log = LogFactory.getLog(DerbyConnector.class);
+  }
+  
+
 //  @Override
 //  public synchronized void setConfiguration(Configuration conf) {
 //    framework = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY);
@@ -508,4 +509,68 @@
 //    public void setPartitionKey(Class className, Object key) {
 //        throw new UnsupportedOperationException("Not supported yet.");
 //    }
-//}
+
+  
+  // START_HOP_CODE
+  // Delete this entire hop code block
+  @Override
+  public void setConfiguration(Configuration conf) {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public <T> T obtainSession() throws StorageException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void beginTransaction() throws StorageException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void commit() throws StorageException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void rollback() throws StorageException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public boolean formatStorage() throws StorageException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public boolean isTransactionActive() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void stopStorage() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void readLock() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void writeLock() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void readCommitted() {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void setPartitionKey(Class className, Object key) {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+  //END_HOP_CODE
+}

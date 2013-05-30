@@ -30,6 +30,9 @@ import com.google.common.base.Joiner;
  */
 @InterfaceAudience.Private
 public class StorageInfo {
+  //START_HOP_CODE
+  public static final int DEFAULT_ROW_ID = 0; // StorageInfo is stored as one row in the database.
+  //END_HOP_CODE
   public int   layoutVersion;   // layout version of the storage data
   public int   namespaceID;     // id of the file system
   public String clusterID;      // id of the cluster
