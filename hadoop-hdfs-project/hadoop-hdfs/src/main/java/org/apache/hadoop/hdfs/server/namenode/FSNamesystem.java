@@ -374,6 +374,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private HAContext haContext;
 
   private final boolean haEnabled;
+  
+  
+  //START_HOP_CODE
+  /**
+   * HOP specific variables go here
+   */
+   private NamenodeRole nameNodeRole; // role of the name node set by the NameNode instance
+   private long nameNodeId;   // id of the name node. set by the NameNode instance
+   private static boolean systemLevelLockEnabled = false;
+   private static boolean rowLevelLockEnabled = true;
+  //END_HOP_CODE
     
   /**
    * Clear all loaded data
@@ -502,6 +513,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                  DFS_PERMISSIONS_SUPERUSERGROUP_DEFAULT);
       this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
                                                  DFS_PERMISSIONS_ENABLED_DEFAULT);
+      //START_HOP_CODE
+      hopSpecificInitialization(conf);
+      //END_HOP_CODE
+      
       LOG.info("fsOwner             = " + fsOwner);
       LOG.info("supergroup          = " + supergroup);
       LOG.info("isPermissionEnabled = " + isPermissionEnabled);
@@ -5569,5 +5584,43 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
 
   }
+  
+  //START_HOP_CODE
+  public static boolean isSystemLevelLockEnabled() {
+    return systemLevelLockEnabled;
+  }
+
+  public void hopSpecificInitialization(Configuration conf) {
+    systemLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT);
+    rowLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT);
+    LOG.fatal(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
+    LOG.fatal(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
+  }
+
+  public static boolean rowLevelLock() {
+    return rowLevelLockEnabled;
+  }
+  
+  @Override
+  public boolean isLeader() {
+    return nameNodeRole == null ? false : nameNodeRole.equals(NamenodeRole.LEADER);
+  }
+
+  @Override
+  public long getNamenodeId() {
+    return nameNodeId;
+  }
+  
+  public void setNameNodeId(long nameNodeId)
+  {
+    this.nameNodeId = nameNodeId;
+  }
+  
+  public void setNameNodeRole(NamenodeRole role)
+  {
+    this.nameNodeRole = role;
+  }
+  //END_HOP_CODE
+  
 
 }

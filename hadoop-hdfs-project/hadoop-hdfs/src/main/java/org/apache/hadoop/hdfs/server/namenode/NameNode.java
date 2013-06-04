@@ -255,6 +255,12 @@ public class NameNode {
   
   private NameNodeRpcServer rpcServer;
   
+  
+  //START_HOP_CODE
+  private long id = LeaderElection.LEADER_INITIALIZATION_ID;
+  protected LeaderElection leaderAlgo;
+  //END_HOP_CODE
+
   /** Format a new filesystem.  Destroys any filesystem that may already
    * exist at this location.  **/
   public static void format(Configuration conf) throws IOException {
@@ -437,6 +443,12 @@ public class NameNode {
     loadNamesystem(conf);
 
     rpcServer = createRpcServer(conf);
+    
+    //START_HOP_CODE
+    // Initialize the leader election algorithm (only once rpc server is created)
+    leaderAlgo = new LeaderElection(conf, this);
+    leaderAlgo.initialize();
+    //END_HOP_CODE
     
     try {
       validateConfigurationSettings(conf);
@@ -1460,4 +1472,43 @@ public class NameNode {
       break;
     }
   }
+  
+  
+  //START_HOP_CODE
+  /**
+   * Returns the id of this namenode
+   */
+  public long getId() {
+    return id;
+  }
+
+  /**
+   * Sets a new id incase of crash
+   */
+  void setId(long id) {
+    this.id = id;
+    namesystem.setNameNodeId(id);
+  }
+
+  /**
+   * Return the {@link LeaderElection} object.
+   *
+   * @return {@link LeaderElection} object.
+   */
+  public LeaderElection getLeaderElectionInstance() {
+    return leaderAlgo;
+  }
+
+  /**
+   * Set the role for Namenode
+   */
+  synchronized void setRole(NamenodeRole role) {
+    this.role = role;
+    namesystem.setNameNodeRole(role);
+  }
+
+  public boolean isLeader() {
+    return role.equals(NamenodeRole.LEADER);
+  }
+  //END_HOP_CODE
 }

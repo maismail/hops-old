@@ -19,7 +19,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
 
     @Override
     protected Object run(boolean writeLock, boolean readLock, Namesystem namesystem) throws IOException {
-        boolean systemLevelLock = FSNamesystem.systemLevelLock();
+        boolean systemLevelLock = FSNamesystem.isSystemLevelLockEnabled();
         boolean rowLevelLock = FSNamesystem.rowLevelLock();
         if (systemLevelLock) {
             if (writeLock) {

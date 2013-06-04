@@ -17,7 +17,7 @@ public abstract class LightWeightRequestHandler extends RequestHandler {
 
   @Override
   protected Object run(boolean writeLock, boolean readLock, Namesystem namesystem) throws IOException {
-    boolean systemLevelLock = FSNamesystem.systemLevelLock();
+    boolean systemLevelLock = FSNamesystem.isSystemLevelLockEnabled();
     if (systemLevelLock) {
       if (writeLock) {
         namesystem.writeLock();
