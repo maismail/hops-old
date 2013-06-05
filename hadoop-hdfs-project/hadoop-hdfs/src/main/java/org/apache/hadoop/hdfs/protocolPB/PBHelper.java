@@ -105,7 +105,7 @@ import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifie
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
+//import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;  //HOP. throwing checkpointing out of the window
 import org.apache.hadoop.hdfs.server.protocol.BalancerBandwidthCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand;
@@ -325,19 +325,19 @@ public class PBHelper {
         convert(keys.getCurrentKey()), convertBlockKeys(keys.getAllKeysList()));
   }
 
-  public static CheckpointSignatureProto convert(CheckpointSignature s) {
-    return CheckpointSignatureProto.newBuilder()
-        .setBlockPoolId(s.getBlockpoolID())
-        .setCurSegmentTxId(s.getCurSegmentTxId())
-        .setMostRecentCheckpointTxId(s.getMostRecentCheckpointTxId())
-        .setStorageInfo(PBHelper.convert((StorageInfo) s)).build();
-  }
+//HOP  public static CheckpointSignatureProto convert(CheckpointSignature s) {
+//    return CheckpointSignatureProto.newBuilder()
+//        .setBlockPoolId(s.getBlockpoolID())
+//        .setCurSegmentTxId(s.getCurSegmentTxId())
+//        .setMostRecentCheckpointTxId(s.getMostRecentCheckpointTxId())
+//        .setStorageInfo(PBHelper.convert((StorageInfo) s)).build();
+//  }
 
-  public static CheckpointSignature convert(CheckpointSignatureProto s) {
-    return new CheckpointSignature(PBHelper.convert(s.getStorageInfo()),
-        s.getBlockPoolId(), s.getMostRecentCheckpointTxId(),
-        s.getCurSegmentTxId());
-  }
+//HOP  public static CheckpointSignature convert(CheckpointSignatureProto s) {
+//    return new CheckpointSignature(PBHelper.convert(s.getStorageInfo()),
+//        s.getBlockPoolId(), s.getMostRecentCheckpointTxId(),
+//        s.getCurSegmentTxId());
+//  }
 
   public static RemoteEditLogProto convert(RemoteEditLog log) {
     return RemoteEditLogProto.newBuilder()
@@ -371,17 +371,20 @@ public class PBHelper {
     return new RemoteEditLogManifest(logs);
   }
 
-  public static CheckpointCommandProto convert(CheckpointCommand cmd) {
-    return CheckpointCommandProto.newBuilder()
-        .setSignature(convert(cmd.getSignature()))
-        .setNeedToReturnImage(cmd.needToReturnImage()).build();
-  }
+//HOP  public static CheckpointCommandProto convert(CheckpointCommand cmd) {
+//    return CheckpointCommandProto.newBuilder()
+//        .setSignature(convert(cmd.getSignature()))
+//        .setNeedToReturnImage(cmd.needToReturnImage()).build();
+//  }
 
   public static NamenodeCommandProto convert(NamenodeCommand cmd) {
     if (cmd instanceof CheckpointCommand) {
-      return NamenodeCommandProto.newBuilder().setAction(cmd.getAction())
-          .setType(NamenodeCommandProto.Type.CheckPointCommand)
-          .setCheckpointCmd(convert((CheckpointCommand) cmd)).build();
+//HOP      return NamenodeCommandProto.newBuilder().setAction(cmd.getAction())
+//          .setType(NamenodeCommandProto.Type.CheckPointCommand)
+//          .setCheckpointCmd(convert((CheckpointCommand) cmd)).build();
+      //START_HOP_CODE
+      throw new UnsupportedOperationException("Checkpointing is no longer supported");
+      //END_HOP_CODE
     }
     return NamenodeCommandProto.newBuilder()
         .setType(NamenodeCommandProto.Type.NamenodeCommand)
@@ -408,9 +411,12 @@ public class PBHelper {
     if (cmd == null) return null;
     switch (cmd.getType()) {
     case CheckPointCommand:
-      CheckpointCommandProto chkPt = cmd.getCheckpointCmd();
-      return new CheckpointCommand(PBHelper.convert(chkPt.getSignature()),
-          chkPt.getNeedToReturnImage());
+//HOP      CheckpointCommandProto chkPt = cmd.getCheckpointCmd();
+//      return new CheckpointCommand(PBHelper.convert(chkPt.getSignature()),
+//          chkPt.getNeedToReturnImage());
+        //START_HOP_CODE
+        throw new UnsupportedOperationException("Checkpointing is no longer supported");
+        //END_HOP_CODE
     default:
       return new NamenodeCommand(cmd.getAction());
     }
@@ -1350,7 +1356,7 @@ public class PBHelper {
     return new ExactSizeInputStream(input, size);
   }
   
-  // HOP_CODE_START
+//HOP_CODE_START
   public static ActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
     List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
     List<ActiveNamenodeProto> anlp = p.getNamenodesList();
@@ -1396,5 +1402,5 @@ public class PBHelper {
     response.setHostname(host);
     return response.build();
   }
-  // HOP_CODE_END
+//HOP_CODE_END
 }

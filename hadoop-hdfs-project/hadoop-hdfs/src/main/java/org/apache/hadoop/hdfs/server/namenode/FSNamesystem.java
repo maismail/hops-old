@@ -466,10 +466,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException {
 
     checkConfiguration(conf);
-    FSImage fsImage = new FSImage(conf,
-        FSNamesystem.getNamespaceDirs(conf),
-        FSNamesystem.getNamespaceEditsDirs(conf));
-    FSNamesystem namesystem = new FSNamesystem(conf, fsImage);
+//HOP    FSImage fsImage = new FSImage(conf,
+//        FSNamesystem.getNamespaceDirs(conf),
+//        FSNamesystem.getNamespaceEditsDirs(conf));
+    FSNamesystem namesystem = new FSNamesystem(conf/*, fsImage*/);//HOP
     StartupOption startOpt = NameNode.getStartupOption(conf);
     if (startOpt == StartupOption.RECOVER) {
       namesystem.setSafeMode(SafeModeAction.SAFEMODE_ENTER);
@@ -477,8 +477,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     long loadStart = now();
     String nameserviceId = DFSUtil.getNamenodeNameServiceId(conf);
-    namesystem.loadFSImage(startOpt, fsImage,
-      HAUtil.isHAEnabled(conf, nameserviceId));
+//HOP    namesystem.loadFSImage(startOpt, fsImage,
+//      HAUtil.isHAEnabled(conf, nameserviceId));
     long timeTakenToLoadFSImage = now() - loadStart;
     LOG.info("Finished loading FSImage in " + timeTakenToLoadFSImage + " msecs");
     NameNodeMetrics nnMetrics = NameNode.getNameNodeMetrics();
@@ -498,7 +498,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param conf configuration
    * @throws IOException on bad configuration
    */
-  FSNamesystem(Configuration conf, FSImage fsImage) throws IOException {
+  FSNamesystem(Configuration conf/*, FSImage fsImage*/) throws IOException {
     try {
       resourceRecheckInterval = conf.getLong(
           DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_KEY,
@@ -579,7 +579,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           DFS_NAMENODE_DELEGATION_TOKEN_ALWAYS_USE_DEFAULT);
 
       this.dtSecretManager = createDelegationTokenSecretManager(conf);
-      this.dir = new FSDirectory(fsImage, this, conf);
+      this.dir = new FSDirectory(this, conf);
       this.safeMode = new SafeModeInfo(conf);
       this.auditLoggers = initAuditLoggers(conf);
       this.isDefaultAuditLogger = auditLoggers.size() == 1 &&
@@ -625,38 +625,38 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return auditLoggers;
   }
 
-  void loadFSImage(StartupOption startOpt, FSImage fsImage, boolean haEnabled)
-      throws IOException {
-    // format before starting up if requested
-    if (startOpt == StartupOption.FORMAT) {
-      
-      fsImage.format(this, fsImage.getStorage().determineClusterId());// reuse current id
-
-      startOpt = StartupOption.REGULAR;
-    }
-    boolean success = false;
-    writeLock();
-    try {
-      // We shouldn't be calling saveNamespace if we've come up in standby state.
-      MetaRecoveryContext recovery = startOpt.createRecoveryContext();
-      if (fsImage.recoverTransitionRead(startOpt, this, recovery) && !haEnabled) {
-        fsImage.saveNamespace(this);
-      }
-      // This will start a new log segment and write to the seen_txid file, so
-      // we shouldn't do it when coming up in standby state
-      if (!haEnabled) {
-        fsImage.openEditLogForWrite();
-      }
-      
-      success = true;
-    } finally {
-      if (!success) {
-        fsImage.close();
-      }
-      writeUnlock();
-    }
-    dir.imageLoadComplete();
-  }
+//HOP  void loadFSImage(StartupOption startOpt, FSImage fsImage, boolean haEnabled)
+//      throws IOException {
+//    // format before starting up if requested
+//    if (startOpt == StartupOption.FORMAT) {
+//      
+//      fsImage.format(this, fsImage.getStorage().determineClusterId());// reuse current id
+//
+//      startOpt = StartupOption.REGULAR;
+//    }
+//    boolean success = false;
+//    writeLock();
+//    try {
+//      // We shouldn't be calling saveNamespace if we've come up in standby state.
+//      MetaRecoveryContext recovery = startOpt.createRecoveryContext();
+//      if (fsImage.recoverTransitionRead(startOpt, this, recovery) && !haEnabled) {
+//        fsImage.saveNamespace(this);
+//      }
+//      // This will start a new log segment and write to the seen_txid file, so
+//      // we shouldn't do it when coming up in standby state
+//      if (!haEnabled) {
+//        fsImage.openEditLogForWrite();
+//      }
+//      
+//      success = true;
+//    } finally {
+//      if (!success) {
+//        fsImage.close();
+//      }
+//      writeUnlock();
+//    }
+//    dir.imageLoadComplete();
+//  }
 
   private void startSecretManager() {
     if (dtSecretManager != null) {
@@ -730,42 +730,42 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     LOG.info("Starting services required for active state");
     writeLock();
     try {
-      FSEditLog editLog = dir.fsImage.getEditLog();
-      
-      if (!editLog.isOpenForWrite()) {
-        // During startup, we're already open for write during initialization.
-        editLog.initJournalsForWrite();
-        // May need to recover
-        editLog.recoverUnclosedStreams();
-        
-        LOG.info("Catching up to latest edits from old active before " +
-            "taking over writer role in edits logs");
-        editLogTailer.catchupDuringFailover();
-        
-        blockManager.setPostponeBlocksFromFuture(false);
-        blockManager.getDatanodeManager().markAllDatanodesStale();
-        blockManager.clearQueues();
-        blockManager.processAllPendingDNMessages();
-        
-        if (!isInSafeMode() ||
-            (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
-          LOG.info("Reprocessing replication and invalidation queues");
-          blockManager.processMisReplicatedBlocks();
-        }
-        
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("NameNode metadata after re-processing " +
-              "replication and invalidation queues during failover:\n" +
-              metaSaveAsString());
-        }
-        
-        long nextTxId = dir.fsImage.getLastAppliedTxId() + 1;
-        LOG.info("Will take over writing edit logs at txnid " + 
-            nextTxId);
-        editLog.setNextTxId(nextTxId);
-
-        dir.fsImage.editLog.openForWrite();
-      }
+//HOP      FSEditLog editLog = dir.fsImage.getEditLog();
+//      
+//      if (!editLog.isOpenForWrite()) {
+//        // During startup, we're already open for write during initialization.
+//        editLog.initJournalsForWrite();
+//        // May need to recover
+//        editLog.recoverUnclosedStreams();
+//        
+//        LOG.info("Catching up to latest edits from old active before " +
+//            "taking over writer role in edits logs");
+//        editLogTailer.catchupDuringFailover();
+//        
+//        blockManager.setPostponeBlocksFromFuture(false);
+//        blockManager.getDatanodeManager().markAllDatanodesStale();
+//        blockManager.clearQueues();
+//        blockManager.processAllPendingDNMessages();
+//        
+//        if (!isInSafeMode() ||
+//            (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
+//          LOG.info("Reprocessing replication and invalidation queues");
+//          blockManager.processMisReplicatedBlocks();
+//        }
+//        
+//        if (LOG.isDebugEnabled()) {
+//          LOG.debug("NameNode metadata after re-processing " +
+//              "replication and invalidation queues during failover:\n" +
+//              metaSaveAsString());
+//        }
+//        
+//        long nextTxId = dir.fsImage.getLastAppliedTxId() + 1;
+//        LOG.info("Will take over writing edit logs at txnid " + 
+//            nextTxId);
+//        editLog.setNextTxId(nextTxId);
+//
+//        dir.fsImage.editLog.openForWrite();
+//      }
       if (haEnabled) {
         // Renew all of the leases before becoming active.
         // This is because, while we were in standby mode,
@@ -805,14 +805,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         ((NameNodeResourceMonitor) nnrmthread.getRunnable()).stopMonitor();
         nnrmthread.interrupt();
       }
-      if (dir != null && dir.fsImage != null) {
-        if (dir.fsImage.editLog != null) {
-          dir.fsImage.editLog.close();
-        }
-        // Update the fsimage with the last txid that we wrote
-        // so that the tailer starts from the right spot.
-        dir.fsImage.updateLastAppliedTxIdFromWritten();
-      }
+//HOP      if (dir != null && dir.fsImage != null) {
+//        if (dir.fsImage.editLog != null) {
+//          dir.fsImage.editLog.close();
+//        }
+//        // Update the fsimage with the last txid that we wrote
+//        // so that the tailer starts from the right spot.
+//        dir.fsImage.updateLastAppliedTxIdFromWritten();
+//      }
     } finally {
       writeUnlock();
     }
@@ -825,10 +825,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void startStandbyServices(final Configuration conf) throws IOException {
     LOG.info("Starting services required for standby state");
-    if (!dir.fsImage.editLog.isOpenForRead()) {
-      // During startup, we're already open for read.
-      dir.fsImage.editLog.initSharedJournalsForRead();
-    }
+//HOP    if (!dir.fsImage.editLog.isOpenForRead()) {
+//      // During startup, we're already open for read.
+//      dir.fsImage.editLog.initSharedJournalsForRead();
+//    }
     
     blockManager.setPostponeBlocksFromFuture(true);
 
@@ -862,9 +862,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     if (editLogTailer != null) {
       editLogTailer.stop();
     }
-    if (dir != null && dir.fsImage != null && dir.fsImage.editLog != null) {
-      dir.fsImage.editLog.close();
-    }
+//HOP    if (dir != null && dir.fsImage != null && dir.fsImage.editLog != null) {
+//      dir.fsImage.editLog.close();
+//    }
   }
   
   
@@ -3519,7 +3519,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
  }
   
-  public FSImage getFSImage() {
+  public FSImage getFSImage_hop() {
     return dir.fsImage;
   }
 
