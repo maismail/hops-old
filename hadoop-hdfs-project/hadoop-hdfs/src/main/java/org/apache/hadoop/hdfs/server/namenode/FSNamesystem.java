@@ -167,10 +167,10 @@ import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.common.Util;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager.Lease;
 import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
-import org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer;
+//import org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer; //HOP does not support it anymore
 import org.apache.hadoop.hdfs.server.namenode.ha.HAContext;
 import org.apache.hadoop.hdfs.server.namenode.ha.HAState;
-import org.apache.hadoop.hdfs.server.namenode.ha.StandbyCheckpointer;
+//import org.apache.hadoop.hdfs.server.namenode.ha.StandbyCheckpointer; //HOP does not support it anymore
 import org.apache.hadoop.hdfs.server.namenode.metrics.FSNamesystemMBean;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods;
@@ -207,6 +207,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -318,7 +319,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private final DatanodeStatistics datanodeStatistics;
 
   // Block pool ID used by this namenode
-  private String blockPoolId;
+  private final String blockPoolId;   //HOP mmade it final and now its value is read from the config file. all namenode should have same block pool id. 
+
 
   final LeaseManager leaseManager = new LeaseManager(this); 
 
@@ -360,12 +362,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Used when this NN is in standby state to read from the shared edit log.
    */
-  private EditLogTailer editLogTailer = null;
+//  private EditLogTailer editLogTailer = null;   //HOP does not support edit logger
 
   /**
    * Used when this NN is in standby state to perform checkpoints.
    */
-  private StandbyCheckpointer standbyCheckpointer;
+//  private StandbyCheckpointer standbyCheckpointer;  //HOP does not support standby checkpointer node
 
   /**
    * Reference to the NN's HAContext object. This is only set once
@@ -514,6 +516,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
                                                  DFS_PERMISSIONS_ENABLED_DEFAULT);
       //START_HOP_CODE
+      blockPoolId = conf.get(DFSConfigKeys.DFS_BLOCK_POOL_ID, DFSConfigKeys.DFS_BLOCK_POOL_ID_DEFAULT);
+      blockManager.setBlockPoolId(blockPoolId);
       hopSpecificInitialization(conf);
       //END_HOP_CODE
       
@@ -832,12 +836,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     blockManager.setPostponeBlocksFromFuture(true);
 
-    editLogTailer = new EditLogTailer(this, conf);
-    editLogTailer.start();
-    if (standbyShouldCheckpoint) {
-      standbyCheckpointer = new StandbyCheckpointer(conf, this);
-      standbyCheckpointer.start();
-    }
+//HOP    editLogTailer = new EditLogTailer(this, conf);
+//    editLogTailer.start();
+//    if (standbyShouldCheckpoint) {
+//      standbyCheckpointer = new StandbyCheckpointer(conf, this);
+//      standbyCheckpointer.start();
+//    }
   }
 
 
@@ -847,21 +851,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * currently being taken.
    */
   void prepareToStopStandbyServices() throws ServiceFailedException {
-    if (standbyCheckpointer != null) {
-      standbyCheckpointer.cancelAndPreventCheckpoints(
-          "About to leave standby state");
-    }
+//HOP    if (standbyCheckpointer != null) {
+//      standbyCheckpointer.cancelAndPreventCheckpoints(
+//          "About to leave standby state");
+//    }
   }
 
   /** Stop services required in standby state */
   void stopStandbyServices() throws IOException {
-    LOG.info("Stopping services started for standby state");
-    if (standbyCheckpointer != null) {
-      standbyCheckpointer.stop();
-    }
-    if (editLogTailer != null) {
-      editLogTailer.stop();
-    }
+//HOP    LOG.info("Stopping services started for standby state");
+//    if (standbyCheckpointer != null) {
+//      standbyCheckpointer.stop();
+//    }
+//    if (editLogTailer != null) {
+//      editLogTailer.stop();
+//    }
 //HOP    if (dir != null && dir.fsImage != null && dir.fsImage.editLog != null) {
 //      dir.fsImage.editLog.close();
 //    }
@@ -1029,7 +1033,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return hasReadLock() || hasWriteLock();
   }
 
-  NamespaceInfo getNamespaceInfo() {
+  NamespaceInfo getNamespaceInfo() throws IOException {
     readLock();
     try {
       return unprotectedGetNamespaceInfo();
@@ -1041,10 +1045,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Version of @see #getNamespaceInfo() that is not protected by a lock.
    */
-  NamespaceInfo unprotectedGetNamespaceInfo() {
-    return new NamespaceInfo(dir.fsImage.getStorage().getNamespaceID(),
+  NamespaceInfo unprotectedGetNamespaceInfo() throws IOException {
+    //HOP_START_CODE
+    StorageInfo storageInfo = StorageInfo.getStorageInfoFromDB();
+    //HOP_END_CODE
+    return new NamespaceInfo(storageInfo.getNamespaceID(),
         getClusterId(), getBlockPoolId(),
-        dir.fsImage.getStorage().getCTime());
+        storageInfo.getCTime());
   }
 
   /**
@@ -1181,7 +1188,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     logAuditEvent(true, "setPermission", src, null, resultingStat);
   }
 
@@ -1226,7 +1233,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     logAuditEvent(true, "setOwner", src, null, resultingStat);
   }
 
@@ -1411,7 +1418,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     logAuditEvent(true, "concat", Arrays.toString(srcs), target, resultingStat);
   }
 
@@ -1594,7 +1601,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     logAuditEvent(true, "createSymlink", link, target, resultingStat);
   }
 
@@ -1677,7 +1684,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
     }
 
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     if (isFile) {
       logAuditEvent(true, "setReplication", src);
     }
@@ -1759,7 +1766,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       // There might be transactions logged while trying to recover the lease.
       // They need to be sync'ed even when an exception was thrown.
       if (!skipSync) {
-        getEditLog().logSync();
+//HOP        getEditLog().logSync();
       }
     } 
     final HdfsFileStatus stat = getAuditFileInfo(src, false);
@@ -1874,7 +1881,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         leaseManager.addLease(newNode.getClientName(), src);
 
         // record file record in log, record new generation stamp
-        getEditLog().logOpenFile(src, newNode);
+//HOP        getEditLog().logOpenFile(src, newNode);
         if (NameNode.stateChangeLog.isDebugEnabled()) {
           NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: "
                                      +"add "+src+" to namespace for "+holder);
@@ -1919,9 +1926,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     leaseManager.addLease(cons.getClientName(), src);
     
     LocatedBlock ret = blockManager.convertLastBlockToUnderConstruction(cons);
-    if (writeToEditLog) {
-      getEditLog().logOpenFile(src, cons);
-    }
+//HOP    if (writeToEditLog) {
+//      getEditLog().logOpenFile(src, cons);
+//    }
     return ret;
   }
 
@@ -1968,9 +1975,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
       // There might be transactions logged while trying to recover the lease.
       // They need to be sync'ed even when an exception was thrown.
-      if (!skipSync) {
-        getEditLog().logSync();
-      }
+//HOP      if (!skipSync) {
+//        getEditLog().logSync();
+//      }
     }
     return false;
   }
@@ -2091,9 +2098,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       writeUnlock();
       // There might be transactions logged while trying to recover the lease.
       // They need to be sync'ed even when an exception was thrown.
-      if (!skipSync) {
-        getEditLog().logSync();
-      }
+//HOP      if (!skipSync) {
+//        getEditLog().logSync();
+//      }
     }
     if (lb != null) {
       if (NameNode.stateChangeLog.isDebugEnabled()) {
@@ -2111,10 +2118,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return new ExtendedBlock(blockPoolId, blk);
   }
   
-  void setBlockPoolId(String bpid) {
-    blockPoolId = bpid;
-    blockManager.setBlockPoolId(blockPoolId);
-  }
+//HOP  void setBlockPoolId(String bpid) {
+//    blockPoolId = bpid;s
+//    blockManager.setBlockPoolId(blockPoolId);
+//  }
 
   /**
    * The client would like to obtain an additional block for the indicated
@@ -2202,9 +2209,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    if (persistBlocks) {
-      getEditLog().logSync();
-    }
+//HOP    if (persistBlocks) {
+//      getEditLog().logSync();
+//    }
 
     // Return located block
     return makeLocatedBlock(newBlock, targets, offset);
@@ -2391,9 +2398,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    if (persistBlocks) {
-      getEditLog().logSync();
-    }
+//HOP    if (persistBlocks) {
+//      getEditLog().logSync();
+//    }
 
     return true;
   }
@@ -2449,7 +2456,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     return success;
   }
 
@@ -2527,7 +2534,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   Block createNewBlock() throws IOException {
     assert hasWriteLock();
-    Block b = new Block(getFSImage().getUniqueBlockId(), 0, 0); 
+    Block b = new Block(HOPBlockIDGen.getUniqueBlockId(this), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
     nextGenerationStamp();
     b.setGenerationStamp(getGenerationStamp());
@@ -2618,7 +2625,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     if (status) {
       logAuditEvent(true, "rename", src, dst, resultingStat);
     }
@@ -2671,7 +2678,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     if (resultingStat != null) {
       StringBuilder cmd = new StringBuilder("rename options=");
       for (Rename option : options) {
@@ -2768,7 +2775,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync(); 
+//HOP    getEditLog().logSync(); 
     removeBlocks(collectedBlocks); // Incremental deletion of blocks
     collectedBlocks.clear();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
@@ -2919,7 +2926,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     if (status) {
       logAuditEvent(true, "mkdirs", src, null, resultingStat);
     }
@@ -2999,7 +3006,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
   }
   
   /** Persist all metadata about this file.
@@ -3026,7 +3033,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
   }
 
   /**
@@ -3302,7 +3309,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     } finally {
       writeUnlock();
     }
-    getEditLog().logSync();
+//HOP    getEditLog().logSync();
     if (closeFile) {
       LOG.info("commitBlockSynchronization(newblock=" + lastblock
           + ", file=" + src
@@ -3423,8 +3430,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see #registerDatanode(DatanodeRegistration)
    * @return registration ID
    */
-  String getRegistrationID() {
-    return Storage.getRegistrationID(dir.fsImage.getStorage());
+  String getRegistrationID() throws IOException {
+    return Storage.getRegistrationID(StorageInfo.getStorageInfoFromDB());
   }
 
   /**
@@ -3458,7 +3465,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private NNHAStatusHeartbeat createHaStatusHeartbeat() {
     HAState state = haContext.getState();
     return new NNHAStatusHeartbeat(state.getServiceState(),
-        getFSImage().getLastAppliedOrWrittenTxId());
+        HOPTxID.getLastAppliedOrWrittenTxId()); //HOP code change. privious code getFSImage().getLastAppliedOrWrittenTxId()
   }
 
   /**
@@ -3519,13 +3526,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
  }
   
-  public FSImage getFSImage_hop() {
-    return dir.fsImage;
-  }
+//HOP  public FSImage getFSImage{
+//    return dir.fsImage;
+//  }
 
-  public FSEditLog getEditLog() {
-    return getFSImage().getEditLog();
-  }    
+//HOP  public FSEditLog getEditLog() {
+//    return getFSImage().getEditLog();
+//  }    
 
   private void checkBlock(ExtendedBlock block) throws IOException {
     if (block != null && !this.blockPoolId.equals(block.getBlockPoolId())) {

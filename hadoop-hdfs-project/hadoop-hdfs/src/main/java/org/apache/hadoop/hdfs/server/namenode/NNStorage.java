@@ -570,7 +570,7 @@ public class NNStorage extends Storage implements Closeable,
    *
    * @return new namespaceID
    */
-  private static int newNamespaceID() {
+  public static int newNamespaceID() {   //HOP. change the scope to public from private because we need it in the StorageInfo class now
     int newID = 0;
     while(newID == 0)
       newID = DFSUtil.getRandom().nextInt(0x7FFFFFFF);  // use 31 bits only

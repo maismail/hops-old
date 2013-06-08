@@ -134,14 +134,17 @@ public class NamenodeProtocolServerSideTranslatorPB implements
   @Override
   public RollEditLogResponseProto rollEditLog(RpcController unused,
       RollEditLogRequestProto request) throws ServiceException {
-    CheckpointSignature signature;
-    try {
-      signature = impl.rollEditLog();
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-    return RollEditLogResponseProto.newBuilder()
-        .setSignature(PBHelper.convert(signature)).build();
+//    CheckpointSignature signature;
+//    try {
+//      signature = impl.rollEditLog();
+//    } catch (IOException e) {
+//      throw new ServiceException(e);
+//    }
+//    return RollEditLogResponseProto.newBuilder()
+//        .setSignature(PBHelper.convert(signature)).build();
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: Edit log is no longer supported");
+    //END_HOP_CODE
   }
 
   @Override
@@ -185,13 +188,16 @@ public class NamenodeProtocolServerSideTranslatorPB implements
   @Override
   public EndCheckpointResponseProto endCheckpoint(RpcController unused,
       EndCheckpointRequestProto request) throws ServiceException {
-    try {
-      impl.endCheckpoint(PBHelper.convert(request.getRegistration()),
-          PBHelper.convert(request.getSignature()));
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-    return VOID_END_CHECKPOINT_RESPONSE;
+//    try {
+//      impl.endCheckpoint(PBHelper.convert(request.getRegistration()),
+//          PBHelper.convert(request.getSignature()));
+//    } catch (IOException e) {
+//      throw new ServiceException(e);
+//    }
+//    return VOID_END_CHECKPOINT_RESPONSE;
+    //START_HOP_CODE
+      throw new UnsupportedOperationException("HOP: Checkpointing is no longer supported"); 
+    //END_HOP_CODE
   }
 
   @Override

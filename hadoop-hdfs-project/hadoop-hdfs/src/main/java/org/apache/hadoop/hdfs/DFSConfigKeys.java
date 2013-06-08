@@ -48,12 +48,18 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
   
   /*for client failover api*/
-  public static final String    DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
-  public static final String    DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
-  public static final String    DFS_LEADER_CHECK_INTERVAL_KEY = "dfs.leader.check.interval";
-  public static final int       DFS_LEADER_CHECK_INTERVAL_DEFAULT = 3*1000; // 1 second 
-  public static final String    DFS_LEADER_MISSED_HB_THRESHOLD = "dfs.leader.missed.hb";
-  public static final int       DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
+  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
+  public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
+  public static final String  DFS_LEADER_CHECK_INTERVAL_KEY = "dfs.leader.check.interval";
+  public static final int     DFS_LEADER_CHECK_INTERVAL_DEFAULT = 3*1000; // 1 second 
+  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD = "dfs.leader.missed.hb";
+  public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
+  
+  public static final String  DFS_BLOCK_POOL_ID = "dfs.block.pool.id";
+  public static final String  DFS_BLOCK_POOL_ID_DEFAULT = "HOP_BLOCK_POOL_123";
+  
+  public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
+  public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911;
 
   //END_HOP_CODE
 

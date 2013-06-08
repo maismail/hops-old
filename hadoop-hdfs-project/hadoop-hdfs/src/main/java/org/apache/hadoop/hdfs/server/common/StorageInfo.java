@@ -22,6 +22,16 @@ import org.apache.hadoop.hdfs.protocol.LayoutVersion;
 import org.apache.hadoop.hdfs.protocol.LayoutVersion.Feature;
 
 import com.google.common.base.Joiner;
+import java.io.IOException;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.server.namenode.NNStorage;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
  * Common class for storage information.
@@ -99,4 +109,34 @@ public class StorageInfo {
     return Joiner.on(":").join(
         layoutVersion, namespaceID, cTime, clusterID);
   }
+  
+  //START_HOP_CODE
+  public static StorageInfo getStorageInfoFromDB() throws IOException {
+    LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
+      }
+    };
+    return (StorageInfo) getStorageInfoHandler.handle();
+  }
+
+  public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
+                                                                                       // FIXME [S] it can cause problems in the future when we try to run multiple NN
+                                                                                       // Solution. call format on only one namenode or every one puts the same values.  
+    LightWeightRequestHandler formatHandler = new LightWeightRequestHandler(OperationType.ADD_STORAGE_INFO) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Configuration conf = new Configuration();
+        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
+                conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
+                clusterId, 0L));
+        return null;
+      }
+    };
+    formatHandler.handle();
+  }
+  //END_HOP_CODE
 }
