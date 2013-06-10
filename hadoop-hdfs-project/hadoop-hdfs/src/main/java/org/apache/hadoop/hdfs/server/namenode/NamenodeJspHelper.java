@@ -51,7 +51,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import org.apache.hadoop.hdfs.server.common.JspHelper;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
-import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;
+//import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;    //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.io.Text;
@@ -195,36 +195,36 @@ class NamenodeJspHelper {
 
     void generateConfReport(JspWriter out, NameNode nn,
         HttpServletRequest request) throws IOException {
-      FSNamesystem fsn = nn.getNamesystem();
-      FSImage fsImage = fsn.getFSImage();
-      List<Storage.StorageDirectory> removedStorageDirs 
-        = fsImage.getStorage().getRemovedStorageDirs();
-
-      // FS Image storage configuration
-      out.print("<h3> " + nn.getRole() + " Storage: </h3>");
-      out.print("<div class=\"dfstable\"> <table class=\"storage\" title=\"NameNode Storage\">\n"
-              + "<thead><tr><td><b>Storage Directory</b></td><td><b>Type</b></td><td><b>State</b></td></tr></thead>");
-
-      StorageDirectory st = null;
-      for (Iterator<StorageDirectory> it
-             = fsImage.getStorage().dirIterator(); it.hasNext();) {
-        st = it.next();
-        String dir = "" + st.getRoot();
-        String type = "" + st.getStorageDirType();
-        out.print("<tr><td>" + dir + "</td><td>" + type
-            + "</td><td>Active</td></tr>");
-      }
-
-      long storageDirsSize = removedStorageDirs.size();
-      for (int i = 0; i < storageDirsSize; i++) {
-        st = removedStorageDirs.get(i);
-        String dir = "" + st.getRoot();
-        String type = "" + st.getStorageDirType();
-        out.print("<tr><td>" + dir + "</td><td>" + type
-            + "</td><td><span class=\"failed\">Failed</span></td></tr>");
-      }
-
-      out.print("</table></div>\n");
+//HOP      FSNamesystem fsn = nn.getNamesystem();           //HOP: this fn prints fsimage related dirs
+//      FSImage fsImage = fsn.getFSImage();
+//      List<Storage.StorageDirectory> removedStorageDirs 
+//        = fsImage.getStorage().getRemovedStorageDirs();
+//
+//      // FS Image storage configuration
+//      out.print("<h3> " + nn.getRole() + " Storage: </h3>");
+//      out.print("<div class=\"dfstable\"> <table class=\"storage\" title=\"NameNode Storage\">\n"
+//              + "<thead><tr><td><b>Storage Directory</b></td><td><b>Type</b></td><td><b>State</b></td></tr></thead>");
+//
+//      StorageDirectory st = null;
+//      for (Iterator<StorageDirectory> it
+//             = fsImage.getStorage().dirIterator(); it.hasNext();) {
+//        st = it.next();
+//        String dir = "" + st.getRoot();
+//        String type = "" + st.getStorageDirType();
+//        out.print("<tr><td>" + dir + "</td><td>" + type
+//            + "</td><td>Active</td></tr>");
+//      }
+//
+//      long storageDirsSize = removedStorageDirs.size();
+//      for (int i = 0; i < storageDirsSize; i++) {
+//        st = removedStorageDirs.get(i);
+//        String dir = "" + st.getRoot();
+//        String type = "" + st.getStorageDirType();
+//        out.print("<tr><td>" + dir + "</td><td>" + type
+//            + "</td><td><span class=\"failed\">Failed</span></td></tr>");
+//      }
+//
+//      out.print("</table></div>\n");
     }
     
     /**
@@ -233,44 +233,44 @@ class NamenodeJspHelper {
      */
     void generateJournalReport(JspWriter out, NameNode nn,
         HttpServletRequest request) throws IOException {
-      FSEditLog log = nn.getFSImage().getEditLog();
-      Preconditions.checkArgument(log != null, "no edit log set in %s", nn);
-      
-      out.println("<h3> " + nn.getRole() + " Journal Status: </h3>");
-
-      out.println("<b>Current transaction ID:</b> " +
-          nn.getFSImage().getLastAppliedOrWrittenTxId() + "<br/>");
-      
-      
-      boolean openForWrite = log.isOpenForWrite();
-      
-      out.println("<div class=\"dfstable\">");
-      out.println("<table class=\"storage\" title=\"NameNode Journals\">\n"
-              + "<thead><tr><td><b>Journal Manager</b></td><td><b>State</b></td></tr></thead>");
-      for (JournalAndStream jas : log.getJournals()) {
-        out.print("<tr>");
-        out.print("<td>" + jas.getManager());
-        if (jas.isRequired()) {
-          out.print(" [required]");
-        }
-        out.print("</td><td>");
-        
-        if (jas.isDisabled()) {
-          out.print("<span class=\"failed\">Failed</span>");
-        } else if (openForWrite) {
-          EditLogOutputStream elos = jas.getCurrentStream();
-          if (elos != null) {
-            out.println(elos.generateHtmlReport());
-          } else {
-            out.println("not currently writing");
-          }
-        } else {
-          out.println("open for read");
-        }
-        out.println("</td></tr>");
-      }
-      
-      out.println("</table></div>");
+//HOP      FSEditLog log = nn.getFSImage().getEditLog();                        //HOP: no journaling supported
+//      Preconditions.checkArgument(log != null, "no edit log set in %s", nn);
+//      
+//      out.println("<h3> " + nn.getRole() + " Journal Status: </h3>");
+//
+//      out.println("<b>Current transaction ID:</b> " +
+//          nn.getFSImage().getLastAppliedOrWrittenTxId() + "<br/>");
+//      
+//      
+//      boolean openForWrite = log.isOpenForWrite();
+//      
+//      out.println("<div class=\"dfstable\">");
+//      out.println("<table class=\"storage\" title=\"NameNode Journals\">\n"
+//              + "<thead><tr><td><b>Journal Manager</b></td><td><b>State</b></td></tr></thead>");
+//      for (JournalAndStream jas : log.getJournals()) {
+//        out.print("<tr>");
+//        out.print("<td>" + jas.getManager());
+//        if (jas.isRequired()) {
+//          out.print(" [required]");
+//        }
+//        out.print("</td><td>");
+//        
+//        if (jas.isDisabled()) {
+//          out.print("<span class=\"failed\">Failed</span>");
+//        } else if (openForWrite) {
+//          EditLogOutputStream elos = jas.getCurrentStream();
+//          if (elos != null) {
+//            out.println(elos.generateHtmlReport());
+//          } else {
+//            out.println("not currently writing");
+//          }
+//        } else {
+//          out.println("open for read");
+//        }
+//        out.println("</td></tr>");
+//      }
+//      
+//      out.println("</table></div>");
     }
 
     void generateHealthReport(JspWriter out, NameNode nn,

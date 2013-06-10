@@ -50,7 +50,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.TransferFsImage;
+//import org.apache.hadoop.hdfs.server.namenode.TransferFsImage;  //HOP: not supported
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.net.NetUtils;
@@ -514,17 +514,20 @@ public class DFSAdmin extends FsShell {
    * @throws IOException
    */
   public int fetchImage(final String[] argv, final int idx) throws IOException {
-    final String infoServer = DFSUtil.getInfoServer(
-        HAUtil.getAddressOfActive(getDFS()), getConf(), false);
-    SecurityUtil.doAsCurrentUser(new PrivilegedExceptionAction<Void>() {
-      @Override
-      public Void run() throws Exception {
-        TransferFsImage.downloadMostRecentImageToDirectory(infoServer,
-            new File(argv[idx]));
-        return null;
-      }
-    });
-    return 0;
+//HOP    final String infoServer = DFSUtil.getInfoServer(
+//        HAUtil.getAddressOfActive(getDFS()), getConf(), false);
+//    SecurityUtil.doAsCurrentUser(new PrivilegedExceptionAction<Void>() {
+//      @Override
+//      public Void run() throws Exception {
+//        TransferFsImage.downloadMostRecentImageToDirectory(infoServer,
+//            new File(argv[idx]));
+//        return null;
+//      }
+//    });
+//    return 0;
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: fetching FSImage is not supported");
+    //END_HOP_CODE
   }
 
   private void printHelp(String cmd) {

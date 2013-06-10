@@ -126,6 +126,7 @@ import com.google.protobuf.BlockingService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
 
@@ -740,9 +741,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   @Override // ClientProtocol
   public long rollEdits() throws AccessControlException, IOException {
-    namesystem.checkOperation(OperationCategory.JOURNAL);
-    CheckpointSignature sig = namesystem.rollEditLog();
-    return sig.getCurSegmentTxId();
+//HOP    namesystem.checkOperation(OperationCategory.JOURNAL);
+//    CheckpointSignature sig = namesystem.rollEditLog();
+//    return sig.getCurSegmentTxId();
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: Rolling edit logs is not supported");
+    //END_HOP_CODE
   }
 
   @Override // ClientProtocol
@@ -752,16 +756,22 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override // NamenodeProtocol
   public long getTransactionID() throws IOException {
-    namesystem.checkOperation(OperationCategory.UNCHECKED);
-    namesystem.checkSuperuserPrivilege();
-    return namesystem.getFSImage().getLastAppliedOrWrittenTxId();
+//HOP    namesystem.checkOperation(OperationCategory.UNCHECKED);
+//    namesystem.checkSuperuserPrivilege();
+//    return namesystem.getFSImage().getLastAppliedOrWrittenTxId();
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: NamenodeProtocol:getTransactionID api is not supported");
+    //END_HOP_CODE
   }
   
   @Override // NamenodeProtocol
   public long getMostRecentCheckpointTxId() throws IOException {
-    namesystem.checkOperation(OperationCategory.UNCHECKED);
-    namesystem.checkSuperuserPrivilege();
-    return namesystem.getFSImage().getMostRecentCheckpointTxId();
+//HOP    namesystem.checkOperation(OperationCategory.UNCHECKED);
+//    namesystem.checkSuperuserPrivilege();
+//    return namesystem.getFSImage().getMostRecentCheckpointTxId();
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: NamenodeProtocol:getMostRecentCheckpointTxId api is not supported");
+    //END_HOP_CODE
   }
   
   @Override // NamenodeProtocol
@@ -773,9 +783,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
   @Override // NamenodeProtocol
   public RemoteEditLogManifest getEditLogManifest(long sinceTxId)
   throws IOException {
-    namesystem.checkOperation(OperationCategory.READ);
-    namesystem.checkSuperuserPrivilege();
-    return namesystem.getEditLog().getEditLogManifest(sinceTxId);
+//HOP    namesystem.checkOperation(OperationCategory.READ);
+//    namesystem.checkSuperuserPrivilege();
+//    return namesystem.getEditLog().getEditLogManifest(sinceTxId);
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: NamenodeProtocol:getEditLogManifest api is not supported");
+    //END_HOP_CODE
   }
     
   @Override // ClientProtocol
@@ -909,7 +922,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
     }
 
     namesystem.getBlockManager().processReport(nodeReg, poolId, blist);
-    if (nn.getFSImage().isUpgradeFinalized() && !nn.isStandbyState())
+    if (  //nn.getFSImage().isUpgradeFinalized() &&     //HOP
+            !nn.isStandbyState())
       return new FinalizeCommand(poolId);
     return null;
   }
@@ -1044,7 +1058,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
   
   private void verifySoftwareVersion(DatanodeRegistration dnReg)
-      throws IncorrectVersionException {
+      throws IncorrectVersionException, IOException {
     String dnVersion = dnReg.getSoftwareVersion();
     if (VersionUtil.compareVersions(dnVersion, minimumDataNodeVersion) < 0) {
       IncorrectVersionException ive = new IncorrectVersionException(
@@ -1057,7 +1071,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
       String messagePrefix = "Reported DataNode version '" + dnVersion +
           "' of DN " + dnReg + " does not match NameNode version '" +
           nnVersion + "'";
-      long nnCTime = nn.getFSImage().getStorage().getCTime();
+      long nnCTime = StorageInfo.getStorageInfoFromDB().getCTime(); //nn.getFSImage().getStorage().getCTime();
       long dnCTime = dnReg.getStorageInfo().getCTime();
       if (nnCTime != dnCTime) {
         IncorrectVersionException ive = new IncorrectVersionException(

@@ -676,7 +676,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
   private void startSecretManagerIfNecessary() {
     boolean shouldRun = shouldUseDelegationTokens() &&
-      !isInSafeMode() && getEditLog().isOpenForWrite();
+      !isInSafeMode() 
+            //&& getEditLog().isOpenForWrite()      //HOP: Edit log not supported
+            ;
     boolean running = dtSecretManager.isRunning();
     if (shouldRun && !running) {
       startSecretManager();
@@ -5515,26 +5517,29 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
   @Override  // NameNodeMXBean
   public String getNameDirStatuses() {
-    Map<String, Map<File, StorageDirType>> statusMap =
-      new HashMap<String, Map<File, StorageDirType>>();
-    
-    Map<File, StorageDirType> activeDirs = new HashMap<File, StorageDirType>();
-    for (Iterator<StorageDirectory> it
-        = getFSImage().getStorage().dirIterator(); it.hasNext();) {
-      StorageDirectory st = it.next();
-      activeDirs.put(st.getRoot(), st.getStorageDirType());
-    }
-    statusMap.put("active", activeDirs);
-    
-    List<Storage.StorageDirectory> removedStorageDirs
-        = getFSImage().getStorage().getRemovedStorageDirs();
-    Map<File, StorageDirType> failedDirs = new HashMap<File, StorageDirType>();
-    for (StorageDirectory st : removedStorageDirs) {
-      failedDirs.put(st.getRoot(), st.getStorageDirType());
-    }
-    statusMap.put("failed", failedDirs);
-    
-    return JSON.toString(statusMap);
+//    Map<String, Map<File, StorageDirType>> statusMap =
+//      new HashMap<String, Map<File, StorageDirType>>();
+//    
+//    Map<File, StorageDirType> activeDirs = new HashMap<File, StorageDirType>();
+//    for (Iterator<StorageDirectory> it
+//        = getFSImage().getStorage().dirIterator(); it.hasNext();) {
+//      StorageDirectory st = it.next();
+//      activeDirs.put(st.getRoot(), st.getStorageDirType());
+//    }
+//    statusMap.put("active", activeDirs);
+//    
+//    List<Storage.StorageDirectory> removedStorageDirs
+//        = getFSImage().getStorage().getRemovedStorageDirs();
+//    Map<File, StorageDirType> failedDirs = new HashMap<File, StorageDirType>();
+//    for (StorageDirectory st : removedStorageDirs) {
+//      failedDirs.put(st.getRoot(), st.getStorageDirType());
+//    }
+//    statusMap.put("failed", failedDirs);
+//    
+//    return JSON.toString(statusMap);
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: there are no name dirs any more");
+    //END_HOP_CODE
   }
 
   /** @return the block manager. */
@@ -5557,10 +5562,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public boolean isGenStampInFuture(long genStamp) {
     return (genStamp > getGenerationStamp());
   }
-  @VisibleForTesting
-  public EditLogTailer getEditLogTailer() {
-    return editLogTailer;
-  }
+//HOP  @VisibleForTesting
+//  public EditLogTailer getEditLogTailer() {
+//    return editLogTailer;
+//  }
   
   @VisibleForTesting
   void setFsLockForTests(ReentrantReadWriteLock lock) {
