@@ -193,9 +193,9 @@ public class NameNodeHttpServer {
         ContentSummaryServlet.class, false);
   }
 
-  public static FSImage getFsImageFromContext(ServletContext context) {
-    return (FSImage)context.getAttribute(FSIMAGE_ATTRIBUTE_KEY);
-  }
+//HOP  public static FSImage getFsImageFromContext(ServletContext context) {
+//    return (FSImage)context.getAttribute(FSIMAGE_ATTRIBUTE_KEY);
+//  }
 
   public static NameNode getNameNodeFromContext(ServletContext context) {
     return (NameNode)context.getAttribute(NAMENODE_ATTRIBUTE_KEY);

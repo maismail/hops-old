@@ -303,11 +303,11 @@ public class DatanodeProtocolClientSideTranslatorPB implements
 
   // HOP_CODE_START
   @Override
-  public ActiveNamenodeList sendActiveNamenodes() throws IOException {
+  public ActiveNamenodeList getActiveNamenodes() throws IOException {
 
     try {
       ActiveNamenodeListRequestProto.Builder request = ActiveNamenodeListRequestProto.newBuilder();
-      ActiveNamenodeListResponseProto response = rpcProxy.sendActiveNamenodes(NULL_CONTROLLER, request.build());
+      ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodes(NULL_CONTROLLER, request.build());
       ActiveNamenodeList anl = PBHelper.convert(response);
       return anl;
     } catch (ServiceException se) {

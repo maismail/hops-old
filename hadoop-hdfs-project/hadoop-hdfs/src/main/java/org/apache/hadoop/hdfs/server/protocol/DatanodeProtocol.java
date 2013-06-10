@@ -162,18 +162,18 @@ public interface DatanodeProtocol {
       boolean closeFile, boolean deleteblock, DatanodeID[] newtargets,
       String[] newtargetstorages) throws IOException;
   
-  
-/**
- * The datanodes periodically asks the leader namenode for the list of actively running namenodes
- */
-public ActiveNamenodeList sendActiveNamenodes() throws IOException;
+  //START_HOP_CODE
+  /**
+   * The datanodes periodically asks the leader namenode for the list of
+   * actively running namenodes
+   */
+  public ActiveNamenodeList getActiveNamenodes() throws IOException;
 
   /**
-   * The BPOfferService that corresponds to the leader Namenode asks it which 'namenode' to send the block reports to
-   * This is a feature added to do load balancing of block reports among namenodes
+   * The BPOfferService that corresponds to the leader Namenode asks it which
+   * 'namenode' to send the block reports to This is a feature added to do load
+   * balancing of block reports among namenodes
    */
-
-public String getNextNamenodeToSendBlockReport() throws IOException;
-  
-  
+  public String getNextNamenodeToSendBlockReport() throws IOException;
+  //END_HOP_CODE
 }

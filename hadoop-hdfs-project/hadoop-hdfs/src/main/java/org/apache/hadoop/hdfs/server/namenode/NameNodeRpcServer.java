@@ -1105,7 +1105,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   // HOP_CODE_START
     @Override
-    public ActiveNamenodeList sendActiveNamenodes() throws IOException {
+    public ActiveNamenodeList getActiveNamenodes() throws IOException {
        //FIXME. This is dummy code;
       List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
       for(int i = 0; i < 5; i++)
