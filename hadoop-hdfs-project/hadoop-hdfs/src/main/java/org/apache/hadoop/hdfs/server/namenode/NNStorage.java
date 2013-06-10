@@ -955,51 +955,51 @@ public class NNStorage extends Storage implements Closeable,
    * <b>Note:</b> this can mutate the storage info fields (ctime, version, etc).
    * @throws IOException if no valid storage dirs are found or no valid layout version
    */
-  FSImageStorageInspector readAndInspectDirs()
-      throws IOException {
-    Integer layoutVersion = null;
-    boolean multipleLV = false;
-    StringBuilder layoutVersions = new StringBuilder();
-
-    // First determine what range of layout versions we're going to inspect
-    for (Iterator<StorageDirectory> it = dirIterator();
-         it.hasNext();) {
-      StorageDirectory sd = it.next();
-      if (!sd.getVersionFile().exists()) {
-        FSImage.LOG.warn("Storage directory " + sd + " contains no VERSION file. Skipping...");
-        continue;
-      }
-      readProperties(sd); // sets layoutVersion
-      int lv = getLayoutVersion();
-      if (layoutVersion == null) {
-        layoutVersion = Integer.valueOf(lv);
-      } else if (!layoutVersion.equals(lv)) {
-        multipleLV = true;
-      }
-      layoutVersions.append("(").append(sd.getRoot()).append(", ").append(lv).append(") ");
-    }
-    
-    if (layoutVersion == null) {
-      throw new IOException("No storage directories contained VERSION information");
-    }
-    if (multipleLV) {            
-      throw new IOException(
-          "Storage directories contain multiple layout versions: "
-              + layoutVersions);
-    }
-    // If the storage directories are with the new layout version
-    // (ie edits_<txnid>) then use the new inspector, which will ignore
-    // the old format dirs.
-    FSImageStorageInspector inspector;
-    if (LayoutVersion.supports(Feature.TXID_BASED_LAYOUT, getLayoutVersion())) {
-      inspector = new FSImageTransactionalStorageInspector();
-    } else {
-      inspector = new FSImagePreTransactionalStorageInspector();
-    }
-    
-    inspectStorageDirs(inspector);
-    return inspector;
-  }
+//HOP  FSImageStorageInspector readAndInspectDirs()           //HOP: no longer needed
+//      throws IOException {
+//    Integer layoutVersion = null;
+//    boolean multipleLV = false;
+//    StringBuilder layoutVersions = new StringBuilder();
+//
+//    // First determine what range of layout versions we're going to inspect
+//    for (Iterator<StorageDirectory> it = dirIterator();
+//         it.hasNext();) {
+//      StorageDirectory sd = it.next();
+//      if (!sd.getVersionFile().exists()) {
+//        FSImage.LOG.warn("Storage directory " + sd + " contains no VERSION file. Skipping...");
+//        continue;
+//      }
+//      readProperties(sd); // sets layoutVersion
+//      int lv = getLayoutVersion();
+//      if (layoutVersion == null) {
+//        layoutVersion = Integer.valueOf(lv);
+//      } else if (!layoutVersion.equals(lv)) {
+//        multipleLV = true;
+//      }
+//      layoutVersions.append("(").append(sd.getRoot()).append(", ").append(lv).append(") ");
+//    }
+//    
+//    if (layoutVersion == null) {
+//      throw new IOException("No storage directories contained VERSION information");
+//    }
+//    if (multipleLV) {            
+//      throw new IOException(
+//          "Storage directories contain multiple layout versions: "
+//              + layoutVersions);
+//    }
+//    // If the storage directories are with the new layout version
+//    // (ie edits_<txnid>) then use the new inspector, which will ignore
+//    // the old format dirs.
+//    FSImageStorageInspector inspector;
+//    if (LayoutVersion.supports(Feature.TXID_BASED_LAYOUT, getLayoutVersion())) {
+//      inspector = new FSImageTransactionalStorageInspector();
+//    } else {
+//      inspector = new FSImagePreTransactionalStorageInspector();
+//    }
+//    
+//    inspectStorageDirs(inspector);
+//    return inspector;
+//  }
 
   public NamespaceInfo getNamespaceInfo() {
     return new NamespaceInfo(
