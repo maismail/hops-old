@@ -65,7 +65,7 @@
 //  static final String DEPRECATED_MESSAGE_DIGEST_PROPERTY = "imageMD5Digest";
 //  static final String LOCAL_URI_SCHEME = "file";
 //
-//  //
+//  //a
 //  // The filenames used for storing the images
 //  //
 //  enum NameNodeFile {

@@ -19,7 +19,8 @@ public class StorageInfoClusterj extends StorageInfoDataAccess {
             dto.getLayoutVersion(),
             dto.getNamespaceId(),
             dto.getClusterId(),
-            dto.getCreationTime());
+            dto.getCreationTime(),
+            dto.getBlockPoolId());
   }
   
   @PersistenceCapable(table = TABLE_NAME)
@@ -50,6 +51,11 @@ public class StorageInfoClusterj extends StorageInfoDataAccess {
     long getCreationTime();
     
     void setCreationTime(long creationTime);
+    
+    @Column(name = BLOCK_POOL_ID)
+    String getBlockPoolId();
+    
+    void setBlockPoolId(String bpid);
   }
   
   private ClusterjConnector connector = ClusterjConnector.INSTANCE;
@@ -78,6 +84,7 @@ public class StorageInfoClusterj extends StorageInfoDataAccess {
       dto.setLayoutVersion(storageInfo.layoutVersion);
       dto.setNamespaceId(storageInfo.getNamespaceID());
       dto.setCreationTime(storageInfo.getCTime());
+      dto.setBlockPoolId(storageInfo.getBlockPoolId());
       session.savePersistent(dto);
     } catch (Exception ex) {
       throw new StorageException(ex);

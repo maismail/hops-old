@@ -414,10 +414,10 @@ service DatanodeProtocolService {
 
 //HOP_CODE_START
 /**
- * data node sends a request to name node to send list of all active
+ * data node sends a request to name node to get list of all active
  * name nodes.
  */ 
-  rpc sendActiveNamenodes (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
+  rpc getActiveNamenodes (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
 
 /**
  * Ask the leader which namenode the datanode should report to.

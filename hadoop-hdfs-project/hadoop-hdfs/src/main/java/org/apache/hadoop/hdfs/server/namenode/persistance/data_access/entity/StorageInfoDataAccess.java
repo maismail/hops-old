@@ -15,6 +15,7 @@ public abstract class StorageInfoDataAccess extends EntityDataAccess{
   public static final String NAMESPACE_ID = "namespace_id";
   public static final String CLUSTER_ID = "cluster_id";
   public static final String CREATION_TIME = "creation_time";
+  public static final String BLOCK_POOL_ID = "block_pool_id";
 
   public abstract StorageInfo findByPk(int infoType) throws StorageException;
 

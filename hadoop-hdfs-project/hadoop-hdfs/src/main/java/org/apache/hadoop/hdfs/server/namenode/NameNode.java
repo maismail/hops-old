@@ -758,7 +758,7 @@ public class NameNode {
     String clusterId = StartupOption.FORMAT.getClusterId();
     if(clusterId == null || clusterId.equals("")) {
       //Generate a new cluster id
-      clusterId = NNStorage.newClusterID();
+      clusterId = StorageInfo.newClusterID();
     }
     System.out.println("Formatting using clusterid: " + clusterId);
     
@@ -1150,7 +1150,7 @@ public class NameNode {
       }
       case GENCLUSTERID: {
         System.err.println("Generating new cluster id:");
-        System.out.println(NNStorage.newClusterID());
+        System.out.println(StorageInfo.newClusterID());
         terminate(0);
         return null;
       }
@@ -1158,14 +1158,18 @@ public class NameNode {
 //HOP        boolean aborted = finalize(conf, true); 
 //        terminate(aborted ? 1 : 0);
 //        return null; // avoid javac warning
+        //START_HOP_CODE
         throw new UnsupportedOperationException("HOP: FINALIZE is not supported anymore");
+        //END_HOP_CODE
       }
       case BOOTSTRAPSTANDBY: {
 //HOP        String toolArgs[] = Arrays.copyOfRange(argv, 1, argv.length);
 //        int rc = BootstrapStandby.run(toolArgs, conf);
 //        terminate(rc);
 //        return null; // avoid warning
+        //START_HOP_CODE
         throw new UnsupportedOperationException("HOP: BOOTSTRAPSTANDBY is not supported anymore");
+        //END_HOP_CODE
       }
       case INITIALIZESHAREDEDITS: {
 //HOP        boolean aborted = initializeSharedEdits(conf,
@@ -1173,14 +1177,18 @@ public class NameNode {
 //            startOpt.getInteractiveFormat());
 //        terminate(aborted ? 1 : 0);
 //        return null; // avoid warning
+        //START_HOP_CODE
         throw new UnsupportedOperationException("HOP: INITIALIZESHAREDEDITS is not supported anymore");
+        //END_HOP_CODE
       }
       case BACKUP:
       case CHECKPOINT: {
 //HOP        NamenodeRole role = startOpt.toNodeRole();
 //        DefaultMetricsSystem.initialize(role.toString().replace(" ", ""));
 //        return new BackupNode(conf, role);
+        //START_HOP_CODE
           throw new UnsupportedOperationException("HOP: BACKUP/CHECKPOINT is not supported anymore");
+        //END_HOP_CODE  
 
       }
       case RECOVER: {

@@ -48,7 +48,7 @@ import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.datanode.BlockPoolSliceStorage;
 import org.apache.hadoop.hdfs.server.datanode.DataStorage;
-import org.apache.hadoop.hdfs.server.namenode.NNStorage;
+//import org.apache.hadoop.hdfs.server.namenode.NNStorage;  //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 
 import com.google.common.base.Preconditions;
@@ -409,20 +409,20 @@ public class UpgradeUtilities {
    *
    * @return the created version file
    */
-  public static File[] createNameNodeVersionFile(Configuration conf,
-      File[] parent, StorageInfo version, String bpid) throws IOException {
-    Storage storage = new NNStorage(conf, 
-                              Collections.<URI>emptyList(), 
-                              Collections.<URI>emptyList());
-    storage.setStorageInfo(version);
-    File[] versionFiles = new File[parent.length];
-    for (int i = 0; i < parent.length; i++) {
-      versionFiles[i] = new File(parent[i], "VERSION");
-      StorageDirectory sd = new StorageDirectory(parent[i].getParentFile());
-      storage.writeProperties(versionFiles[i], sd);
-    }
-    return versionFiles;
-  }
+//HOP  public static File[] createNameNodeVersionFile(Configuration conf,
+//      File[] parent, StorageInfo version, String bpid) throws IOException {
+//    Storage storage = new NNStorage(conf, 
+//                              Collections.<URI>emptyList(), 
+//                              Collections.<URI>emptyList());
+//    storage.setStorageInfo(version);
+//    File[] versionFiles = new File[parent.length];
+//    for (int i = 0; i < parent.length; i++) {
+//      versionFiles[i] = new File(parent[i], "VERSION");
+//      StorageDirectory sd = new StorageDirectory(parent[i].getParentFile());
+//      storage.writeProperties(versionFiles[i], sd);
+//    }
+//    return versionFiles;
+//  }
   
   /**
    * Create a <code>version</code> file for datanode inside the specified parent

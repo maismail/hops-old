@@ -199,7 +199,7 @@ public class PBHelper {
 
   public static StorageInfo convert(StorageInfoProto info) {
     return new StorageInfo(info.getLayoutVersion(), info.getNamespceID(),
-        info.getClusterID(), info.getCTime());
+        info.getClusterID(), info.getCTime(),info.getBlockpoolID());
   }
 
   public static NamenodeRegistrationProto convert(NamenodeRegistration reg) {

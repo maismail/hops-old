@@ -75,7 +75,7 @@ public class TestDFSStartupVersions {
     StorageData(int layoutVersion, int namespaceId, String clusterId,
         long cTime, String bpid) {
       storageInfo = new StorageInfo(layoutVersion, namespaceId, clusterId,
-          cTime);
+          cTime,bpid);
       blockPoolId = bpid;
     }
   }

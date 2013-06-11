@@ -227,7 +227,7 @@ public class NameNodeAdapter {
     return smi.initializedReplQueues;
   }
   
-  public static File getInProgressEditsFile(StorageDirectory sd, long startTxId) {
-    return NNStorage.getInProgressEditsFile(sd, startTxId);
-  }
+//HOP  public static File getInProgressEditsFile(StorageDirectory sd, long startTxId) {
+//    return NNStorage.getInProgressEditsFile(sd, startTxId);
+//  }
 }

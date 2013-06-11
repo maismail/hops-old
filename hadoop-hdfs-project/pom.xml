@@ -33,7 +33,11 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modules>
     <module>hadoop-hdfs</module>
     <module>hadoop-hdfs-httpfs</module>
+    <!--
+    //START_HOP_CODE        // we dont need that
     <module>hadoop-hdfs/src/contrib/bkjournal</module>
+    //END_HOP_CODE
+    -->
   </modules>
 
   <build>

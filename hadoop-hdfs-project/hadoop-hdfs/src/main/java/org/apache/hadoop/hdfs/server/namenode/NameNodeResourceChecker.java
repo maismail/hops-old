@@ -121,7 +121,7 @@ public class NameNodeResourceChecker {
         new Predicate<URI>() {
           @Override
           public boolean apply(URI input) {
-            if (input.getScheme().equals(NNStorage.LOCAL_URI_SCHEME)) {
+            if (input.getScheme().equals("file")) {        //HOP: previous code was NNStorage.LOCAL_URI_SCHEME. replace it with actual value as NNStorage is deleted
               return true;
             }
             return false;

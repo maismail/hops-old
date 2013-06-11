@@ -516,7 +516,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       this.isPermissionEnabled = conf.getBoolean(DFS_PERMISSIONS_ENABLED_KEY,
                                                  DFS_PERMISSIONS_ENABLED_DEFAULT);
       //START_HOP_CODE
-      blockPoolId = conf.get(DFSConfigKeys.DFS_BLOCK_POOL_ID, DFSConfigKeys.DFS_BLOCK_POOL_ID_DEFAULT);
+      blockPoolId = StorageInfo.getStorageInfoFromDB().getBlockPoolId();
       blockManager.setBlockPoolId(blockPoolId);
       hopSpecificInitialization(conf);
       //END_HOP_CODE
@@ -2121,7 +2121,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
 //HOP  void setBlockPoolId(String bpid) {
-//    blockPoolId = bpid;s
+//    blockPoolId = bpid;
 //    blockManager.setBlockPoolId(blockPoolId);
 //  }
 

@@ -42,6 +42,7 @@ import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.ExitUtil.ExitException;
 import org.junit.After;
@@ -57,14 +58,14 @@ public class TestClusterId {
     // see if cluster id not empty.
     Collection<URI> dirsToFormat = FSNamesystem.getNamespaceDirs(config);
     List<URI> editsToFormat = FSNamesystem.getNamespaceEditsDirs(config);
-    FSImage fsImage = new FSImage(config, dirsToFormat, editsToFormat);
+//HOP    FSImage fsImage = new FSImage(config, dirsToFormat, editsToFormat);
     
-    Iterator<StorageDirectory> sdit = 
-      fsImage.getStorage().dirIterator(NNStorage.NameNodeDirType.IMAGE);
-    StorageDirectory sd = sdit.next();
-    Properties props = Storage.readPropertiesFile(sd.getVersionFile());
-    String cid = props.getProperty("clusterID");
-    LOG.info("successfully formated : sd="+sd.getCurrentDir() + ";cid="+cid);
+//HOP    Iterator<StorageDirectory> sdit = 
+//      fsImage.getStorage().dirIterator(NNStorage.NameNodeDirType.IMAGE);
+//    StorageDirectory sd = sdit.next();
+//    Properties props = Storage.readPropertiesFile(sd.getVersionFile());
+    String cid = StorageInfo.getStorageInfoFromDB().getClusterID();     //HOP
+    LOG.info("successfully formated : cid="+cid);
     return cid;
   }
 

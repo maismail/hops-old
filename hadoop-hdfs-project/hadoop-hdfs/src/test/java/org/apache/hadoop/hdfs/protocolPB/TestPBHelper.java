@@ -105,7 +105,7 @@ public class TestPBHelper {
   }
 
   private static StorageInfo getStorageInfo() {
-    return new StorageInfo(1, 2, "cid", 3);
+    return new StorageInfo(1, 2, "cid", 3, "bpid"); //HOP: added "bpid"
   }
 
   @Test
