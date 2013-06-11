@@ -62,7 +62,7 @@ public class TestFsLimits {
   
   private static class TestFSDirectory extends FSDirectory {
     public TestFSDirectory() throws IOException {
-      super(new FSImage(conf), getMockNamesystem(), conf);
+      super(getMockNamesystem(), conf);
       setReady(fsIsReady);
     }
     

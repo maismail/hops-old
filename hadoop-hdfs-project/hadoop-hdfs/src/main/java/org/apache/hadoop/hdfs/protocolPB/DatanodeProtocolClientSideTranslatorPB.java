@@ -301,7 +301,7 @@ public class DatanodeProtocolClientSideTranslatorPB implements
                 RPC.getProtocolVersion(DatanodeProtocolPB.class), methodName);
     }
 
-  // HOP_CODE_START
+  //START_HOP_CODE
   @Override
   public ActiveNamenodeList getActiveNamenodes() throws IOException {
 
@@ -326,6 +326,6 @@ public class DatanodeProtocolClientSideTranslatorPB implements
       throw ProtobufHelper.getRemoteException(e);
     }
   }
-  // HOP_CODE_END
+  //END_HOP_CODE
     
 }
