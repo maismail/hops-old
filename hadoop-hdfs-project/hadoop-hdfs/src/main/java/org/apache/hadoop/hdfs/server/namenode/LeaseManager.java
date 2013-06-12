@@ -90,7 +90,8 @@ public class LeaseManager {
 
   private long softLimit = HdfsConstants.LEASE_SOFTLIMIT_PERIOD;
   private long hardLimit = HdfsConstants.LEASE_HARDLIMIT_PERIOD;
-
+  
+  //HOP: Removed all the datastructures (leases, sortedLeases, sortedLeasesByPath) and the synchronization keywards
 
   private Daemon lmthread;
   private volatile boolean shouldRunMonitor;
@@ -102,7 +103,7 @@ public class LeaseManager {
   }
   
   SortedSet<Lease> getSortedLeases() throws PersistanceException {
-    return (SortedSet<Lease>) EntityManager.findList(Lease.Finder.All);
+    return new TreeSet<Lease>(EntityManager.findList(Lease.Finder.All));
   }
 
   /** @return the lease containing src */
@@ -183,7 +184,7 @@ public class LeaseManager {
     }
   }
 
-  //HOP: TODO: Add our implementaion
+  //HOP: FIXME: Add our implementaion
   void removeAllLeases() {
     //sortedLeases.clear();
     //sortedLeasesByPath.clear();
@@ -269,7 +270,7 @@ public class LeaseManager {
   /**
    * Renew all of the currently open leases.
    */
-  //HOP: TODO: Add our implementaion
+  //HOP: FIXME: Add our implementaion
   void renewAllLeases() {
     //for (Lease l : leases.values()) {
     //  renewLease(l);
@@ -450,30 +451,31 @@ public class LeaseManager {
     };
   }
 
-  /**
-   * Get the list of inodes corresponding to valid leases.
-   * @return list of inodes
-   * @throws UnresolvedLinkException
-   */
-  //HOP: changed the implementation to work with entity manager
-  Map<String, INodeFileUnderConstruction> getINodesUnderConstruction() throws PersistanceException {
-    Map<String, INodeFileUnderConstruction> inodes =
-        new TreeMap<String, INodeFileUnderConstruction>();
-    Collection<LeasePath> leasesByPath = EntityManager.findList(LeasePath.Finder.All);
-    SortedSet<String> sortedLeasesByPath = new TreeSet<String>();
-    for(LeasePath p : leasesByPath)
-        sortedLeasesByPath.add(p.getPath());
-    for (String p : sortedLeasesByPath) {
-      // verify that path exists in namespace
-      try {
-        INode node = fsnamesystem.dir.getINode(p);
-        inodes.put(p, INodeFileUnderConstruction.valueOf(node, p));
-      } catch (IOException ioe) {
-        LOG.error(ioe);
-      }
-    }
-    return inodes;
-  }
+//HOP: this method won't be needed
+//  /**
+//   * Get the list of inodes corresponding to valid leases.
+//   * @return list of inodes
+//   * @throws UnresolvedLinkException
+//   */
+//  //HOP: changed the implementation to work with entity manager
+//  Map<String, INodeFileUnderConstruction> getINodesUnderConstruction() throws PersistanceException {
+//    Map<String, INodeFileUnderConstruction> inodes =
+//        new TreeMap<String, INodeFileUnderConstruction>();
+//    Collection<LeasePath> leasesByPath = EntityManager.findList(LeasePath.Finder.All);
+//    SortedSet<String> sortedLeasesByPath = new TreeSet<String>();
+//    for(LeasePath p : leasesByPath)
+//        sortedLeasesByPath.add(p.getPath());
+//    for (String p : sortedLeasesByPath) {
+//      // verify that path exists in namespace
+//      try {
+//        INode node = fsnamesystem.dir.getINode(p);
+//        inodes.put(p, INodeFileUnderConstruction.valueOf(node, p));
+//      } catch (IOException ioe) {
+//        LOG.error(ioe);
+//      }
+//    }
+//    return inodes;
+//  }
   
   /** Check the leases beginning from the oldest.
    *  @return true is sync is needed.
