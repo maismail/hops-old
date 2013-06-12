@@ -194,7 +194,9 @@ public class PBHelper {
   public static StorageInfoProto convert(StorageInfo info) {
     return StorageInfoProto.newBuilder().setClusterID(info.getClusterID())
         .setCTime(info.getCTime()).setLayoutVersion(info.getLayoutVersion())
-        .setNamespceID(info.getNamespaceID()).build();
+        .setNamespceID(info.getNamespaceID())           
+        .setBlockpoolID(info.getBlockPoolId())                //HOP added this line
+        .setDEFAULTROWID(info.getDefaultRowId()).build();     //HOP added this line
   }
 
   public static StorageInfo convert(StorageInfoProto info) {

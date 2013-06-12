@@ -25,10 +25,13 @@ import com.google.common.base.Joiner;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 //import org.apache.hadoop.hdfs.server.namenode.NNStorage;
 import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -46,9 +49,9 @@ import org.apache.hadoop.util.Time;
 @InterfaceAudience.Private
 public class StorageInfo {
   //START_HOP_CODE
+  public static final Log LOG = LogFactory.getLog(StorageInfo.class);
   public static final int DEFAULT_ROW_ID = 0; // StorageInfo is stored as one row in the database.
   protected String blockpoolID = ""; // id of the block pool. moved it from NNStorage.java to here. This is where it should have been
-  static final String LOCAL_URI_SCHEME = "file";
   //END_HOP_CODE
   public int   layoutVersion;   // layout version of the storage data
   public int   namespaceID;     // id of the file system
@@ -139,10 +142,12 @@ public class StorageInfo {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
+        String bpid = newBlockPoolID();
         StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
                 conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
-                clusterId, 0L, newBlockPoolID()));
+                clusterId, 0L, bpid));
+        LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID+" CID:"+clusterId+" pbid:"+bpid);
         return null;
       }
     };
@@ -185,6 +190,11 @@ public class StorageInfo {
    */ 
   public static String newClusterID() {
     return "CID-" + UUID.randomUUID().toString();
+  }
+  
+  public int getDefaultRowId()
+  {
+    return this.DEFAULT_ROW_ID;
   }
   //END_HOP_CODE
 }

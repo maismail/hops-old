@@ -83,7 +83,7 @@ public class StorageFactory {
 //      // TODO[Hooman]: Add derby data access for storage info
     } else if (storageType.equals("clusterj")) {
       defaultStorage = ClusterjConnector.INSTANCE;
-      MysqlServerConnector.INSTANCE.setConfiguration(conf);
+//      MysqlServerConnector.INSTANCE.setConfiguration(conf);
       defaultStorage.setConfiguration(conf);
 //      blockInfoDataAccess = new BlockInfoClusterj();
 //      corruptReplicaDataAccess = new CorruptReplicaClusterj();

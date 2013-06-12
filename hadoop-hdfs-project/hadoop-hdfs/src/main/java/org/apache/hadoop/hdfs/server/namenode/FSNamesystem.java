@@ -208,6 +208,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -328,7 +329,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
   Daemon nnrmthread = null; // NamenodeResourceMonitor thread
 
-  private volatile boolean hasResourcesAvailable = false;
+  private volatile boolean hasResourcesAvailable = true;      //HOP. yes we have huge namespace
   private volatile boolean fsRunning = true;
   
   /** The start time of the namesystem. */
@@ -337,8 +338,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /** The interval of namenode checking for the disk space availability */
   private final long resourceRecheckInterval;
 
-  // The actual resource checker instance.
-  NameNodeResourceChecker nnResourceChecker;
+//HOP  // The actual resource checker instance.
+//  NameNodeResourceChecker nnResourceChecker;
 
   private final FsServerDefaults serverDefaults;
   private final boolean supportAppends;
@@ -701,8 +702,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     writeLock();
     this.haContext = haContext;
     try {
-      nnResourceChecker = new NameNodeResourceChecker(conf);
-      checkAvailableResources();
+//HOP      nnResourceChecker = new NameNodeResourceChecker(conf);
+//      checkAvailableResources();
       assert safeMode != null &&
         !safeMode.isPopulatingReplQueues();
       setBlockTotal();
@@ -3480,15 +3481,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return hasResourcesAvailable;
   }
 
-  /**
-   * Perform resource checks and cache the results.
-   * @throws IOException
-   */
-  void checkAvailableResources() {
-    Preconditions.checkState(nnResourceChecker != null,
-        "nnResourceChecker not initialized");
-    hasResourcesAvailable = nnResourceChecker.hasAvailableDiskSpace();
-  }
+//HOP  /**
+//   * Perform resource checks and cache the results.
+//   * @throws IOException
+//   */
+//  void checkAvailableResources() {
+//    Preconditions.checkState(nnResourceChecker != null,
+//        "nnResourceChecker not initialized");
+//    hasResourcesAvailable = nnResourceChecker.hasAvailableDiskSpace();
+//  }
 
   /**
    * Periodically calls hasAvailableResources of NameNodeResourceChecker, and if
@@ -3502,7 +3503,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     public void run () {
       try {
         while (fsRunning && shouldNNRmRun) {
-          checkAvailableResources();
+//HOP          checkAvailableResources();
           if(!nameNodeHasResourcesAvailable()) {
             String lowResourcesMsg = "NameNode low on available disk space. ";
             if (!isInSafeMode()) {
@@ -4940,24 +4941,24 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     leaseManager.changeLease(src, dst);
   }
 
-  /**
-   * Serializes leases. 
-   */
-  void saveFilesUnderConstruction(DataOutputStream out) throws IOException {
-    // This is run by an inferior thread of saveNamespace, which holds a read
-    // lock on our behalf. If we took the read lock here, we could block
-    // for fairness if a writer is waiting on the lock.
-    synchronized (leaseManager) {
-      Map<String, INodeFileUnderConstruction> nodes =
-          leaseManager.getINodesUnderConstruction();
-      out.writeInt(nodes.size()); // write the size    
-      for (Map.Entry<String, INodeFileUnderConstruction> entry
-           : nodes.entrySet()) {
-        FSImageSerialization.writeINodeUnderConstruction(
-            out, entry.getValue(), entry.getKey());
-      }
-    }
-  }
+//HOP  /**
+//   * Serializes leases. 
+//   */
+//  void saveFilesUnderConstruction(DataOutputStream out) throws IOException {
+//    // This is run by an inferior thread of saveNamespace, which holds a read
+//    // lock on our behalf. If we took the read lock here, we could block
+//    // for fairness if a writer is waiting on the lock.
+//    synchronized (leaseManager) {
+//      Map<String, INodeFileUnderConstruction> nodes =
+//          leaseManager.getINodesUnderConstruction();
+//      out.writeInt(nodes.size()); // write the size    
+//      for (Map.Entry<String, INodeFileUnderConstruction> entry
+//           : nodes.entrySet()) {
+//        FSImageSerialization.writeINodeUnderConstruction(
+//            out, entry.getValue(), entry.getKey());
+//      }
+//    }
+//  }
 
   /**
    * Register a Backup name-node, verifying that it belongs
@@ -5582,10 +5583,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return safeMode;
   }
   
-  @VisibleForTesting
-  public void setNNResourceChecker(NameNodeResourceChecker nnResourceChecker) {
-    this.nnResourceChecker = nnResourceChecker;
-  }
+//HOP  @VisibleForTesting
+//  public void setNNResourceChecker(NameNodeResourceChecker nnResourceChecker) {
+//    this.nnResourceChecker = nnResourceChecker;
+//  }
 
   @Override
   public boolean isAvoidingStaleDataNodesForWrite() {
@@ -5640,6 +5641,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public void hopSpecificInitialization(Configuration conf) {
     systemLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT);
     rowLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT);
+    StorageFactory.setConfiguration(conf);
     LOG.fatal(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
     LOG.fatal(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
   }

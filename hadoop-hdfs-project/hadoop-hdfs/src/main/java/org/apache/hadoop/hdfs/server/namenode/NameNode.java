@@ -1279,7 +1279,7 @@ public class NameNode {
     if (!haEnabled) {
       return; // no-op, if HA is not enabled
     }
-    getNamesystem().checkAvailableResources();
+//HOP    getNamesystem().checkAvailableResources();
     if (!getNamesystem().nameNodeHasResourcesAvailable()) {
       throw new HealthCheckFailedException(
           "The NameNode has no resources available");
