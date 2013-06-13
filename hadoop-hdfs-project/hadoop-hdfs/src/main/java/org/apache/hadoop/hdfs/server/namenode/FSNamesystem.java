@@ -482,6 +482,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     String nameserviceId = DFSUtil.getNamenodeNameServiceId(conf);
 //HOP    namesystem.loadFSImage(startOpt, fsImage,
 //      HAUtil.isHAEnabled(conf, nameserviceId));
+    //START_HOP_CODE
+    namesystem.dir.imageLoadComplete();     //HOP: this function was called inside the  namesystem.loadFSImage(...) which is commented out 
+    //END_HOP_CODE
     long timeTakenToLoadFSImage = now() - loadStart;
     LOG.info("Finished loading FSImage in " + timeTakenToLoadFSImage + " msecs");
     NameNodeMetrics nnMetrics = NameNode.getNameNodeMetrics();
