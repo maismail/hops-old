@@ -393,44 +393,44 @@ public class TestNameNodeMetrics {
   /**
    * Test NN checkpoint and transaction-related metrics.
    */
-  @Test
-  public void testTransactionAndCheckpointMetrics() throws Exception {
-    long lastCkptTime = MetricsAsserts.getLongGauge("LastCheckpointTime",
-        getMetrics(NS_METRICS));
-    
-    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
-    assertGauge("LastWrittenTransactionId", 1L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastCheckpoint", 1L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
-    
-    fs.mkdirs(new Path(TEST_ROOT_DIR_PATH, "/tmp"));
-    updateMetrics();
-    
-    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
-    assertGauge("LastWrittenTransactionId", 2L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastCheckpoint", 2L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastLogRoll", 2L, getMetrics(NS_METRICS));
-    
-    cluster.getNameNodeRpc().rollEditLog();
-    updateMetrics();
-    
-    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
-    assertGauge("LastWrittenTransactionId", 4L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastCheckpoint", 4L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
-    
-    cluster.getNameNodeRpc().setSafeMode(SafeModeAction.SAFEMODE_ENTER, false);
-    cluster.getNameNodeRpc().saveNamespace();
-    cluster.getNameNodeRpc().setSafeMode(SafeModeAction.SAFEMODE_LEAVE, false);
-    updateMetrics();
-    
-    long newLastCkptTime = MetricsAsserts.getLongGauge("LastCheckpointTime",
-        getMetrics(NS_METRICS));
-    assertTrue(lastCkptTime < newLastCkptTime);
-    assertGauge("LastWrittenTransactionId", 6L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastCheckpoint", 1L, getMetrics(NS_METRICS));
-    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
-  }
+//HOP  @Test    these metrices are no longer valid
+//  public void testTransactionAndCheckpointMetrics() throws Exception {
+//    long lastCkptTime = MetricsAsserts.getLongGauge("LastCheckpointTime",
+//        getMetrics(NS_METRICS));
+//    
+//    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
+//    assertGauge("LastWrittenTransactionId", 1L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastCheckpoint", 1L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
+//    
+//    fs.mkdirs(new Path(TEST_ROOT_DIR_PATH, "/tmp"));
+//    updateMetrics();
+//    
+//    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
+//    assertGauge("LastWrittenTransactionId", 2L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastCheckpoint", 2L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastLogRoll", 2L, getMetrics(NS_METRICS));
+//    
+//    cluster.getNameNodeRpc().rollEditLog();
+//    updateMetrics();
+//    
+//    assertGauge("LastCheckpointTime", lastCkptTime, getMetrics(NS_METRICS));
+//    assertGauge("LastWrittenTransactionId", 4L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastCheckpoint", 4L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
+//    
+//    cluster.getNameNodeRpc().setSafeMode(SafeModeAction.SAFEMODE_ENTER, false);
+//    cluster.getNameNodeRpc().saveNamespace();
+//    cluster.getNameNodeRpc().setSafeMode(SafeModeAction.SAFEMODE_LEAVE, false);
+//    updateMetrics();
+//    
+//    long newLastCkptTime = MetricsAsserts.getLongGauge("LastCheckpointTime",
+//        getMetrics(NS_METRICS));
+//    assertTrue(lastCkptTime < newLastCkptTime);
+//    assertGauge("LastWrittenTransactionId", 6L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastCheckpoint", 1L, getMetrics(NS_METRICS));
+//    assertGauge("TransactionsSinceLastLogRoll", 1L, getMetrics(NS_METRICS));
+//  }
   
   /**
    * Tests that the sync and block report metrics get updated on cluster
@@ -440,7 +440,7 @@ public class TestNameNodeMetrics {
   public void testSyncAndBlockReportMetric() throws Exception {
     MetricsRecordBuilder rb = getMetrics(NN_METRICS);
     // We have one sync when the cluster starts up, just opening the journal
-    assertCounter("SyncsNumOps", 1L, rb);
+//HOP    assertCounter("SyncsNumOps", 1L, rb);          //HOP: no sync 
     // Each datanode reports in when the cluster comes up
     assertCounter("BlockReportNumOps", (long)DATANODE_COUNT, rb);
     
@@ -448,7 +448,7 @@ public class TestNameNodeMetrics {
     Thread.sleep((PERCENTILES_INTERVAL+1)*1000);
     
     // Check that the percentiles were updated
-    assertQuantileGauges("Syncs1s", rb);
+//HOP    assertQuantileGauges("Syncs1s", rb);          //HOP: no sync
     assertQuantileGauges("BlockReport1s", rb);
   }
 }

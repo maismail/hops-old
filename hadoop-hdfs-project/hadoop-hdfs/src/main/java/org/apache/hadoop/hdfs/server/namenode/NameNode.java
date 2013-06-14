@@ -84,6 +84,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -773,6 +774,7 @@ public class NameNode {
 //    fsImage.format(fsn, clusterId);
     
     //START_HOP_CODE
+    StorageFactory.setConfiguration(conf);
     StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
     //END_HOP_CODE
     
