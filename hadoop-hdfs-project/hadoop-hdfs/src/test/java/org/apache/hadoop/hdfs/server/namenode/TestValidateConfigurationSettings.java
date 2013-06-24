@@ -44,8 +44,8 @@ public class TestValidateConfigurationSettings {
    * an exception
    * is thrown when trying to re-use the same port
    */
-  @Test
-  public void testThatMatchingRPCandHttpPortsThrowException() 
+@Test
+  public void testThatMatchingRPCandHttpPortsThrowException()   //HOP: fails in the master branch
       throws IOException {
 
     Configuration conf = new HdfsConfiguration();
@@ -67,8 +67,8 @@ public class TestValidateConfigurationSettings {
    * Tests setting the rpc port to a different as the web port that an 
    * exception is NOT thrown 
    */
-  @Test
-  public void testThatDifferentRPCandHttpPortsAreOK() 
+@Test
+  public void testThatDifferentRPCandHttpPortsAreOK()       //HOP: fails in the master branch
       throws IOException {
 
     Configuration conf = new HdfsConfiguration();
@@ -83,7 +83,7 @@ public class TestValidateConfigurationSettings {
    * HDFS-3013: NameNode format command doesn't pick up
    * dfs.namenode.name.dir.NameServiceId configuration.
    */
-  @Test
+//HOP  @Test                    the file testGenericKeysForNameNodeFormat does not exist anymore
   public void testGenericKeysForNameNodeFormat()
       throws IOException {
     Configuration conf = new HdfsConfiguration();

@@ -405,15 +405,15 @@ public class LeaseManager {
         try {
           fsnamesystem.writeLockInterruptibly();
           try {
-            if (!fsnamesystem.isInSafeMode()) {
-              needSync = checkLeases();
-            }
+//HOP            if (!fsnamesystem.isInSafeMode()) {      //HOP: edit log is no longer supported
+//              needSync = checkLeases();
+//            }
           } finally {
             fsnamesystem.writeUnlock();
             // lease reassignments should to be sync'ed.
-            if (needSync) {
-              fsnamesystem.getEditLog().logSync();
-            }
+//HOP            if (needSync) {                          //HOP: edit log is no longer supported
+//              fsnamesystem.getEditLog().logSync();
+//            }
           }
   
           Thread.sleep(HdfsServerConstants.NAMENODE_LEASE_RECHECK_INTERVAL);

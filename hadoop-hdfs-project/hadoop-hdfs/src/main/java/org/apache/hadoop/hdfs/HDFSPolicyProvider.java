@@ -23,7 +23,7 @@ import org.apache.hadoop.ha.HAServiceProtocol;
 import org.apache.hadoop.ha.ZKFCProtocol;
 import org.apache.hadoop.hdfs.protocol.ClientDatanodeProtocol;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
-import org.apache.hadoop.hdfs.qjournal.protocol.QJournalProtocol;
+//import org.apache.hadoop.hdfs.qjournal.protocol.QJournalProtocol; //HOP. Hop does not support any kind of QJournaling
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.InterDatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
@@ -50,8 +50,8 @@ public class HDFSPolicyProvider extends PolicyProvider {
         InterDatanodeProtocol.class),
     new Service(CommonConfigurationKeys.SECURITY_NAMENODE_PROTOCOL_ACL,
         NamenodeProtocol.class),
-    new Service(CommonConfigurationKeys.SECURITY_QJOURNAL_SERVICE_PROTOCOL_ACL,
-        QJournalProtocol.class),
+//HOP    new Service(CommonConfigurationKeys.SECURITY_QJOURNAL_SERVICE_PROTOCOL_ACL, //HOP QJournaling is not supported
+//        QJournalProtocol.class),
     new Service(CommonConfigurationKeys.SECURITY_HA_SERVICE_PROTOCOL_ACL,
         HAServiceProtocol.class),
     new Service(CommonConfigurationKeys.SECURITY_ZKFC_PROTOCOL_ACL,

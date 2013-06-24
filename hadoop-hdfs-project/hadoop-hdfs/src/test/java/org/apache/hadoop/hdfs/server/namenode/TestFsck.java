@@ -117,7 +117,7 @@ public class TestFsck {
       assertEquals(expectedErrCode, errCode);
     }
     ((Log4JLogger)FSPermissionChecker.LOG).getLogger().setLevel(Level.INFO);
-    FSImage.LOG.error("OUTPUT = " + bStream.toString());
+    System.out.println("OUTPUT = " + bStream.toString());
     return bStream.toString();
   }
 

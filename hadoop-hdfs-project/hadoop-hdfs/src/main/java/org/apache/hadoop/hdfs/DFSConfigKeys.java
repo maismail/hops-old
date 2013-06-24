@@ -29,6 +29,40 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 
 @InterfaceAudience.Private
 public class DFSConfigKeys extends CommonConfigurationKeys {
+  
+  //START_HOP_CODE
+  public static final String DFS_STORAGE_TYPE_KEY = "dfs.storage.type";
+  public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
+  public static final String DFS_STORAGE_DERBY_PROTOCOL_KEY = "dfs.storage.derby.protocol";
+  public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
+  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud11.sics.se";
+  public static final String DFS_DB_DATABASE_KEY = "dfs.dbconnector.database";
+  public static final String DFS_DB_DATABASE_DEFAULT = "hop_salman";
+  public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
+  public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
+  public static final String DFS_STORAGE_MYSQL_PROTOCOL_KEY = "dfs.storage.mysql.protocol";
+  public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
+  public static final String DFS_STORAGE_MYSQL_PASSWORD_KEY = "dfs.storage.mysql.password";
+  public static final String DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
+  public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
+  public static final String DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
+  public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
+  
+  /*for client failover api*/
+  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
+  public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
+  public static final String  DFS_LEADER_CHECK_INTERVAL_KEY = "dfs.leader.check.interval";
+  public static final int     DFS_LEADER_CHECK_INTERVAL_DEFAULT = 3*1000; // 1 second 
+  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD = "dfs.leader.missed.hb";
+  public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
+  
+  public static final String  DFS_BLOCK_POOL_ID = "dfs.block.pool.id";
+  public static final String  DFS_BLOCK_POOL_ID_DEFAULT = "HOP_BLOCK_POOL_123";
+  
+  public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
+  public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911;
+
+  //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";
   public static final long    DFS_BLOCK_SIZE_DEFAULT = 64*1024*1024;

@@ -38,7 +38,7 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.hadoop.hdfs.server.namenode.TestGenericJournalConf.DummyJournalManager;
+//import org.apache.hadoop.hdfs.server.namenode.TestGenericJournalConf.DummyJournalManager;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
 import org.apache.hadoop.util.StringUtils;
 import org.junit.AfterClass;
@@ -158,6 +158,11 @@ public class TestAllowFormat {
    */
   @Test
   public void testFormatShouldBeIgnoredForNonFileBasedDirs() throws Exception {
+    //START_HOP_CODE
+    if(true)
+      throw new UnsupportedOperationException("HOP: fix me or delete me ");
+    //END_HOP_CODE
+      
     Configuration conf = new HdfsConfiguration();
     String logicalName = "mycluster";
 
@@ -170,9 +175,9 @@ public class TestAllowFormat {
     HATestUtil.setFailoverConfigurations(conf, logicalName, nnAddr1, nnAddr2);
 
     conf.setBoolean(DFS_NAMENODE_SUPPORT_ALLOW_FORMAT_KEY, true);
-    conf.set(DFSUtil.addKeySuffixes(
-        DFSConfigKeys.DFS_NAMENODE_EDITS_PLUGIN_PREFIX, "dummy"),
-        DummyJournalManager.class.getName());
+//HOP    conf.set(DFSUtil.addKeySuffixes(
+//        DFSConfigKeys.DFS_NAMENODE_EDITS_PLUGIN_PREFIX, "dummy"),
+//        DummyJournalManager.class.getName());
     conf.set(DFSConfigKeys.DFS_NAMENODE_SHARED_EDITS_DIR_KEY, "dummy://"
         + localhost + ":2181/ledgers");
     conf.set(DFSConfigKeys.DFS_HA_NAMENODE_ID_KEY, "nn1");

@@ -38,7 +38,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
-import org.apache.hadoop.hdfs.server.namenode.FSImage;
+//import org.apache.hadoop.hdfs.server.namenode.FSImage;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.io.IOUtils;
@@ -51,10 +51,10 @@ import org.junit.Test;
  * blocks that are part of an unclosed file.
  */
 public class TestPersistBlocks {
-  static {
-    ((Log4JLogger)FSImage.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger)FSNamesystem.LOG).getLogger().setLevel(Level.ALL);
-  }
+//  static {
+//    ((Log4JLogger)FSImage.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger)FSNamesystem.LOG).getLogger().setLevel(Level.ALL);
+//  }
   
   private static final int BLOCK_SIZE = 4096;
   private static final int NUM_BLOCKS = 5;

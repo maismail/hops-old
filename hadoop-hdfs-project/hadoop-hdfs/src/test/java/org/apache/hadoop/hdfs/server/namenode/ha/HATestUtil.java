@@ -38,12 +38,13 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
-import org.apache.hadoop.hdfs.server.namenode.FSImageTestUtil;
+//import org.apache.hadoop.hdfs.server.namenode.FSImageTestUtil;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.base.Supplier;
+import org.apache.hadoop.hdfs.server.namenode.HOPTXnChkPtsIDs;
 
 /**
  * Static utility functions useful for testing HA.
@@ -65,27 +66,26 @@ public abstract class HATestUtil {
    * @throws CouldNotCatchUpException if the standby doesn't catch up to the
    *         active in NN_LAG_TIMEOUT milliseconds
    */
-  public static void waitForStandbyToCatchUp(NameNode active,
-      NameNode standby) throws InterruptedException, IOException, CouldNotCatchUpException {
-    
-    long activeTxId = active.getNamesystem().getFSImage().getEditLog()
-      .getLastWrittenTxId();
-    
-    active.getRpcServer().rollEditLog();
-    
-    long start = Time.now();
-    while (Time.now() - start < TestEditLogTailer.NN_LAG_TIMEOUT) {
-      long nn2HighestTxId = standby.getNamesystem().getFSImage()
-        .getLastAppliedTxId();
-      if (nn2HighestTxId >= activeTxId) {
-        return;
-      }
-      Thread.sleep(TestEditLogTailer.SLEEP_TIME);
-    }
-    throw new CouldNotCatchUpException("Standby did not catch up to txid " +
-        activeTxId + " (currently at " +
-        standby.getNamesystem().getFSImage().getLastAppliedTxId() + ")");
-  }
+//HOP  public static void waitForStandbyToCatchUp(NameNode active,
+//      NameNode standby) throws InterruptedException, IOException, CouldNotCatchUpException {
+//    
+//    long activeTxId = HOPTXnChkPtsIDs.getLastWrittenTxId();
+//    
+//    active.getRpcServer().rollEditLog();
+//    
+//    long start = Time.now();
+//    while (Time.now() - start < TestEditLogTailer.NN_LAG_TIMEOUT) {
+//      long nn2HighestTxId = standby.getNamesystem().getFSImage()
+//        .getLastAppliedTxId();
+//      if (nn2HighestTxId >= activeTxId) {
+//        return;
+//      }
+//      Thread.sleep(TestEditLogTailer.SLEEP_TIME);
+//    }
+//    throw new CouldNotCatchUpException("Standby did not catch up to txid " +
+//        activeTxId + " (currently at " +
+//        standby.getNamesystem().getFSImage().getLastAppliedTxId() + ")");
+//  }
 
   /**
    * Wait for the datanodes in the cluster to process any block
@@ -205,20 +205,20 @@ public abstract class HATestUtil {
         getLogicalHostname(cluster));
   }
   
-  public static void waitForCheckpoint(MiniDFSCluster cluster, int nnIdx,
-      List<Integer> txids) throws InterruptedException {
-    long start = Time.now();
-    while (true) {
-      try {
-        FSImageTestUtil.assertNNHasCheckpoints(cluster, nnIdx, txids);
-        return;
-      } catch (AssertionError err) {
-        if (Time.now() - start > 10000) {
-          throw err;
-        } else {
-          Thread.sleep(300);
-        }
-      }
-    }
-  }
+//HOP  public static void waitForCheckpoint(MiniDFSCluster cluster, int nnIdx,
+//      List<Integer> txids) throws InterruptedException {
+//    long start = Time.now();
+//    while (true) {
+//      try {
+//        FSImageTestUtil.assertNNHasCheckpoints(cluster, nnIdx, txids);
+//        return;
+//      } catch (AssertionError err) {
+//        if (Time.now() - start > 10000) {
+//          throw err;
+//        } else {
+//          Thread.sleep(300);
+//        }
+//      }
+//    }
+//  }
 }

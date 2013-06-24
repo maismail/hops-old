@@ -104,6 +104,8 @@ import org.apache.hadoop.util.ToolRunner;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
  * This class creates a single-process DFS cluster for junit testing.
@@ -637,6 +639,22 @@ public class MiniDFSCluster {
       conf.setInt(DFS_HA_LOGROLL_PERIOD_KEY, -1);
     }
     
+    //START_HOP_CODE
+        // Setting the configuration for Storage
+    StorageFactory.setConfiguration(conf);
+    if (format) {
+      try {
+        // this should be done before creating namenodes
+        assert (StorageFactory.getConnector().formatStorage());
+      } catch (StorageException ex) {
+        throw new IOException(ex);
+      }
+      if (data_dir.exists() && !FileUtil.fullyDelete(data_dir)) {
+        throw new IOException("Cannot remove data directory: " + data_dir);
+      }
+    }
+    //END_HOP_CODE
+    
     federation = nnTopology.isFederated();
     try {
       createNameNodesAndSetConf(
@@ -648,12 +666,13 @@ public class MiniDFSCluster {
           createPermissionsDiagnosisString(data_dir));
       throw ioe;
     }
-    if (format) {
-      if (data_dir.exists() && !FileUtil.fullyDelete(data_dir)) {
-        throw new IOException("Cannot remove data directory: " + data_dir +
-            createPermissionsDiagnosisString(data_dir));
-      }
-    }
+//HOP    if (format) {
+//      if (data_dir.exists() && !FileUtil.fullyDelete(data_dir)) {
+//        throw new IOException("Cannot remove data directory: " + data_dir +
+//            createPermissionsDiagnosisString(data_dir));
+//      }
+//    }
+    
     
     if (operation == StartupOption.RECOVER) {
       return;

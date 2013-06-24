@@ -90,10 +90,10 @@ public class NameNodeAdapter {
     namenode.getNamesystem().leaveSafeMode();
   }
   
-  public static void abortEditLogs(NameNode nn) {
-    FSEditLog el = nn.getFSImage().getEditLog();
-    el.abortCurrentLogSegment();
-  }
+//HOP  public static void abortEditLogs(NameNode nn) {
+//    FSEditLog el = nn.getFSImage().getEditLog();
+//    el.abortCurrentLogSegment();
+//  }
   
   /**
    * Get the internal RPC server instance.
@@ -173,18 +173,18 @@ public class NameNodeAdapter {
     return spy;
   }
 
-  public static FSImage spyOnFsImage(NameNode nn1) {
-    FSImage spy = Mockito.spy(nn1.getNamesystem().dir.fsImage);
-    nn1.getNamesystem().dir.fsImage = spy;
-    return spy;
-  }
+//HOP  public static FSImage spyOnFsImage(NameNode nn1) {
+//    FSImage spy = Mockito.spy(nn1.getNamesystem().dir.fsImage);
+//    nn1.getNamesystem().dir.fsImage = spy;
+//    return spy;
+//  }
   
-  public static JournalSet spyOnJournalSet(NameNode nn) {
-    FSEditLog editLog = nn.getFSImage().getEditLog();
-    JournalSet js = Mockito.spy(editLog.getJournalSet());
-    editLog.setJournalSetForTesting(js);
-    return js;
-  }
+//HOP  public static JournalSet spyOnJournalSet(NameNode nn) {
+//    FSEditLog editLog = nn.getFSImage().getEditLog();
+//    JournalSet js = Mockito.spy(editLog.getJournalSet());
+//    editLog.setJournalSetForTesting(js);
+//    return js;
+//  }
   
   public static String getMkdirOpPath(FSEditLogOp op) {
     if (op.opCode == FSEditLogOpCodes.OP_MKDIR) {
@@ -227,7 +227,7 @@ public class NameNodeAdapter {
     return smi.initializedReplQueues;
   }
   
-  public static File getInProgressEditsFile(StorageDirectory sd, long startTxId) {
-    return NNStorage.getInProgressEditsFile(sd, startTxId);
-  }
+//HOP  public static File getInProgressEditsFile(StorageDirectory sd, long startTxId) {
+//    return NNStorage.getInProgressEditsFile(sd, startTxId);
+//  }
 }

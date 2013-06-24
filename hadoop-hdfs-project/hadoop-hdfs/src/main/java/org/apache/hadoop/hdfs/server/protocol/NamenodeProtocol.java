@@ -102,7 +102,7 @@ public interface NamenodeProtocol {
    * call fails if the file system is in SafeMode.
    * @throws IOException
    * @return a unique token to identify this transaction.
-   */
+   */   
   public CheckpointSignature rollEditLog() throws IOException;
 
   /**

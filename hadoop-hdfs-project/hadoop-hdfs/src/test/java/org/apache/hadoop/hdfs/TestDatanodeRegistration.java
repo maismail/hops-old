@@ -174,8 +174,9 @@ public class TestDatanodeRegistration {
       // register a datanode
       DatanodeID dnId = new DatanodeID(DN_IP_ADDR, DN_HOSTNAME,
           "fake-storage-id", DN_XFER_PORT, DN_INFO_PORT, DN_IPC_PORT);
-      long nnCTime = cluster.getNamesystem().getFSImage().getStorage()
-          .getCTime();
+//      long nnCTime = cluster.getNamesystem().getFSImage().getStorage()
+//          .getCTime();
+      long nnCTime = StorageInfo.getStorageInfoFromDB().getCTime();
       StorageInfo mockStorageInfo = mock(StorageInfo.class);
       doReturn(nnCTime).when(mockStorageInfo).getCTime();
       doReturn(HdfsConstants.LAYOUT_VERSION).when(mockStorageInfo)
@@ -217,7 +218,7 @@ public class TestDatanodeRegistration {
       
       NamenodeProtocols rpcServer = cluster.getNameNodeRpc();
       
-      long nnCTime = cluster.getNamesystem().getFSImage().getStorage().getCTime();
+      long nnCTime = StorageInfo.getStorageInfoFromDB().getCTime();
       StorageInfo mockStorageInfo = mock(StorageInfo.class);
       doReturn(nnCTime).when(mockStorageInfo).getCTime();
       
@@ -264,7 +265,7 @@ public class TestDatanodeRegistration {
       
       NamenodeProtocols rpcServer = cluster.getNameNodeRpc();
       
-      long nnCTime = cluster.getNamesystem().getFSImage().getStorage().getCTime();
+      long nnCTime = StorageInfo.getStorageInfoFromDB().getCTime();
       StorageInfo mockStorageInfo = mock(StorageInfo.class);
       doReturn(nnCTime).when(mockStorageInfo).getCTime();
       

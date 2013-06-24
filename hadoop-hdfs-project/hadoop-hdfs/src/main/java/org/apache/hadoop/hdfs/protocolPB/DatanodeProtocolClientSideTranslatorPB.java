@@ -301,13 +301,13 @@ public class DatanodeProtocolClientSideTranslatorPB implements
                 RPC.getProtocolVersion(DatanodeProtocolPB.class), methodName);
     }
 
-  // HOP_CODE_START
+  //START_HOP_CODE
   @Override
-  public ActiveNamenodeList sendActiveNamenodes() throws IOException {
+  public ActiveNamenodeList getActiveNamenodes() throws IOException {
 
     try {
       ActiveNamenodeListRequestProto.Builder request = ActiveNamenodeListRequestProto.newBuilder();
-      ActiveNamenodeListResponseProto response = rpcProxy.sendActiveNamenodes(NULL_CONTROLLER, request.build());
+      ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodes(NULL_CONTROLLER, request.build());
       ActiveNamenodeList anl = PBHelper.convert(response);
       return anl;
     } catch (ServiceException se) {
@@ -326,6 +326,6 @@ public class DatanodeProtocolClientSideTranslatorPB implements
       throw ProtobufHelper.getRemoteException(e);
     }
   }
-  // HOP_CODE_END
+  //END_HOP_CODE
     
 }

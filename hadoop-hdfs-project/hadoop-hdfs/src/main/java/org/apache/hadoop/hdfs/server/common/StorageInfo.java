@@ -22,6 +22,24 @@ import org.apache.hadoop.hdfs.protocol.LayoutVersion;
 import org.apache.hadoop.hdfs.protocol.LayoutVersion.Feature;
 
 import com.google.common.base.Joiner;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.util.UUID;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+//import org.apache.hadoop.hdfs.server.namenode.NNStorage;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import org.apache.hadoop.net.DNS;
+import org.apache.hadoop.util.Time;
 
 /**
  * Common class for storage information.
@@ -30,20 +48,28 @@ import com.google.common.base.Joiner;
  */
 @InterfaceAudience.Private
 public class StorageInfo {
+  //START_HOP_CODE
+  public static final Log LOG = LogFactory.getLog(StorageInfo.class);
+  public static final int DEFAULT_ROW_ID = 0; // StorageInfo is stored as one row in the database.
+  protected String blockpoolID = ""; // id of the block pool. moved it from NNStorage.java to here. This is where it should have been
+  //END_HOP_CODE
   public int   layoutVersion;   // layout version of the storage data
   public int   namespaceID;     // id of the file system
   public String clusterID;      // id of the cluster
   public long  cTime;           // creation time of the file system state
  
   public StorageInfo () {
-    this(0, 0, "", 0L);
+    this(0, 0, "", 0L, "");
   }
 
-  public StorageInfo(int layoutV, int nsID, String cid, long cT) {
+  public StorageInfo(int layoutV, int nsID, String cid, long cT, String bpid) {
     layoutVersion = layoutV;
     clusterID = cid;
     namespaceID = nsID;
     cTime = cT;
+    //START_HOP_CODE
+    blockpoolID=bpid;
+    //END_HOP_CODE
   }
   
   public StorageInfo(StorageInfo from) {
@@ -96,4 +122,79 @@ public class StorageInfo {
     return Joiner.on(":").join(
         layoutVersion, namespaceID, cTime, clusterID);
   }
+  
+  //START_HOP_CODE
+  public static StorageInfo getStorageInfoFromDB() throws IOException {
+    LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
+      }
+    };
+    return (StorageInfo) getStorageInfoHandler.handle();
+  }
+
+  public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
+                                                                                       // FIXME [S] it can cause problems in the future when we try to run multiple NN
+                                                                                       // Solution. call format on only one namenode or every one puts the same values.  
+    LightWeightRequestHandler formatHandler = new LightWeightRequestHandler(OperationType.ADD_STORAGE_INFO) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Configuration conf = new Configuration();
+        String bpid = newBlockPoolID();
+        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
+                conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
+                clusterId, 0L, bpid));
+        LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID+" CID:"+clusterId+" pbid:"+bpid);
+        return null;
+      }
+    };
+    formatHandler.handle();
+  }
+  
+  public String getBlockPoolId()
+  {
+    return blockpoolID;
+  }
+  
+  static String newBlockPoolID() throws UnknownHostException {
+    String ip = "unknownIP";
+    try {
+      ip = DNS.getDefaultIP("default");
+    } catch (UnknownHostException e) {
+      System.out.println("Could not find ip address of \"default\" inteface.");
+      throw e;
+    }
+
+    int rand = DFSUtil.getSecureRandom().nextInt(Integer.MAX_VALUE);
+    String bpid = "BP-" + rand + "-" + ip + "-" + Time.now();
+    return bpid;
+  }
+  
+  /**
+   * Generate new clusterID.
+   * 
+   * clusterID is a persistent attribute of the cluster.
+   * It is generated when the cluster is created and remains the same
+   * during the life cycle of the cluster.  When a new name node is formated, if 
+   * this is a new cluster, a new clusterID is geneated and stored.  Subsequent 
+   * name node must be given the same ClusterID during its format to be in the 
+   * same cluster.
+   * When a datanode register it receive the clusterID and stick with it.
+   * If at any point, name node or data node tries to join another cluster, it 
+   * will be rejected.
+   * 
+   * @return new clusterID
+   */ 
+  public static String newClusterID() {
+    return "CID-" + UUID.randomUUID().toString();
+  }
+  
+  public int getDefaultRowId()
+  {
+    return this.DEFAULT_ROW_ID;
+  }
+  //END_HOP_CODE
 }

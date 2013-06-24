@@ -105,7 +105,7 @@ public class TestPBHelper {
   }
 
   private static StorageInfo getStorageInfo() {
-    return new StorageInfo(1, 2, "cid", 3);
+    return new StorageInfo(1, 2, "cid", 3, "bpid"); //HOP: added "bpid"
   }
 
   @Test
@@ -237,21 +237,21 @@ public class TestPBHelper {
     assertEquals(expKeys.getTokenLifetime(), expKeys1.getTokenLifetime());
   }
 
-  @Test
-  public void testConvertCheckpointSignature() {
-    CheckpointSignature s = new CheckpointSignature(getStorageInfo(), "bpid",
-        100, 1);
-    CheckpointSignatureProto sProto = PBHelper.convert(s);
-    CheckpointSignature s1 = PBHelper.convert(sProto);
-    assertEquals(s.getBlockpoolID(), s1.getBlockpoolID());
-    assertEquals(s.getClusterID(), s1.getClusterID());
-    assertEquals(s.getCTime(), s1.getCTime());
-    assertEquals(s.getCurSegmentTxId(), s1.getCurSegmentTxId());
-    assertEquals(s.getLayoutVersion(), s1.getLayoutVersion());
-    assertEquals(s.getMostRecentCheckpointTxId(),
-        s1.getMostRecentCheckpointTxId());
-    assertEquals(s.getNamespaceID(), s1.getNamespaceID());
-  }
+//HOP  @Test
+//  public void testConvertCheckpointSignature() {
+//    CheckpointSignature s = new CheckpointSignature(getStorageInfo(), "bpid",
+//        100, 1);
+//    CheckpointSignatureProto sProto = PBHelper.convert(s);
+//    CheckpointSignature s1 = PBHelper.convert(sProto);
+//    assertEquals(s.getBlockpoolID(), s1.getBlockpoolID());
+//    assertEquals(s.getClusterID(), s1.getClusterID());
+//    assertEquals(s.getCTime(), s1.getCTime());
+//    assertEquals(s.getCurSegmentTxId(), s1.getCurSegmentTxId());
+//    assertEquals(s.getLayoutVersion(), s1.getLayoutVersion());
+//    assertEquals(s.getMostRecentCheckpointTxId(),
+//        s1.getMostRecentCheckpointTxId());
+//    assertEquals(s.getNamespaceID(), s1.getNamespaceID());
+//  }
   
   private static void compare(RemoteEditLog l1, RemoteEditLog l2) {
     assertEquals(l1.getEndTxId(), l2.getEndTxId());

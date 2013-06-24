@@ -38,4 +38,12 @@ public interface Namesystem extends RwLock, SafeMode {
   public boolean isGenStampInFuture(long generationStamp);
 
   public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal);
+  
+  //START_HOP_CODE
+  /** Is it a Leader  */
+  public boolean isLeader();
+  
+  /** Returns the namenode id*/
+  public long getNamenodeId();
+  //END_HOP_CODE
 }

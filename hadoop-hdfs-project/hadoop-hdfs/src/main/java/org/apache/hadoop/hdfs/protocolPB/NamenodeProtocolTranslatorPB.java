@@ -135,12 +135,16 @@ public class NamenodeProtocolTranslatorPB implements NamenodeProtocol,
 
   @Override
   public CheckpointSignature rollEditLog() throws IOException {
-    try {
-      return PBHelper.convert(rpcProxy.rollEditLog(NULL_CONTROLLER,
-          VOID_ROLL_EDITLOG_REQUEST).getSignature());
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
+//HOP    try {
+//      return PBHelper.convert(rpcProxy.rollEditLog(NULL_CONTROLLER,
+//          VOID_ROLL_EDITLOG_REQUEST).getSignature());
+//    } catch (ServiceException e) {
+//      throw ProtobufHelper.getRemoteException(e);
+//    }
+    
+   //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: Checkpointing is not supported");
+   //END_HOP_CODE
   }
 
   @Override
@@ -196,14 +200,18 @@ public class NamenodeProtocolTranslatorPB implements NamenodeProtocol,
   @Override
   public void endCheckpoint(NamenodeRegistration registration,
       CheckpointSignature sig) throws IOException {
-    EndCheckpointRequestProto req = EndCheckpointRequestProto.newBuilder()
-        .setRegistration(PBHelper.convert(registration))
-        .setSignature(PBHelper.convert(sig)).build();
-    try {
-      rpcProxy.endCheckpoint(NULL_CONTROLLER, req);
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
+//HOP    EndCheckpointRequestProto req = EndCheckpointRequestProto.newBuilder()
+//        .setRegistration(PBHelper.convert(registration))
+//        .setSignature(PBHelper.convert(sig)).build();
+//    try {
+//      rpcProxy.endCheckpoint(NULL_CONTROLLER, req);
+//    } catch (ServiceException e) {
+//      throw ProtobufHelper.getRemoteException(e);
+//    }
+    
+    //START_HOP_CODE
+    throw new UnsupportedOperationException("HOP: Checkpointing is no longer supported");
+    //END_HOP_CODE
   }
 
   @Override

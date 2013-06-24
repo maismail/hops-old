@@ -254,11 +254,11 @@ public class DatanodeProtocolServerSideTranslatorPB implements
 
   //HOP_CODE_START
   @Override
-  public ActiveNamenodeListResponseProto sendActiveNamenodes(RpcController controller, ActiveNamenodeListRequestProto request) throws ServiceException {
+  public ActiveNamenodeListResponseProto getActiveNamenodes(RpcController controller, ActiveNamenodeListRequestProto request) throws ServiceException {
     
     try
     {
-        ActiveNamenodeList anl = impl.sendActiveNamenodes();
+        ActiveNamenodeList anl = impl.getActiveNamenodes();
         ActiveNamenodeListResponseProto response = PBHelper.convert(anl);
         return response;  
     }catch (IOException e)

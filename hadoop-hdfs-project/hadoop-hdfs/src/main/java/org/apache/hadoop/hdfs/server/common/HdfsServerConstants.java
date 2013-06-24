@@ -137,8 +137,11 @@ public final class HdfsServerConstants {
   static public enum NamenodeRole {
     NAMENODE  ("NameNode"),
     BACKUP    ("Backup Node"),
-    CHECKPOINT("Checkpoint Node");
-
+    CHECKPOINT("Checkpoint Node"),
+    //START_HOPE_CODE
+    LEADER("Leader Node"),        // FIXME. remove the all three above roles i.e. name node, backup and checkpoint roles
+    SECONDARY("Secondary Node");
+    //END_HOP_CODE
     private String description = null;
     private NamenodeRole(String arg) {this.description = arg;}
   

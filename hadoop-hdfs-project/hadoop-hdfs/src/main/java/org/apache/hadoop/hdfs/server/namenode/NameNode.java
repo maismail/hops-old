@@ -54,7 +54,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.hdfs.server.namenode.ha.ActiveState;
-import org.apache.hadoop.hdfs.server.namenode.ha.BootstrapStandby;
+//import org.apache.hadoop.hdfs.server.namenode.ha.BootstrapStandby;
 import org.apache.hadoop.hdfs.server.namenode.ha.HAContext;
 import org.apache.hadoop.hdfs.server.namenode.ha.HAState;
 import org.apache.hadoop.hdfs.server.namenode.ha.StandbyState;
@@ -83,6 +83,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -255,6 +257,12 @@ public class NameNode {
   
   private NameNodeRpcServer rpcServer;
   
+  
+  //START_HOP_CODE
+  private long id = LeaderElection.LEADER_INITIALIZATION_ID;
+  protected LeaderElection leaderAlgo;
+  //END_HOP_CODE
+
   /** Format a new filesystem.  Destroys any filesystem that may already
    * exist at this location.  **/
   public static void format(Configuration conf) throws IOException {
@@ -407,11 +415,11 @@ public class NameNode {
     return nodeRegistration;
   }
 
-  NamenodeRegistration setRegistration() {
+  NamenodeRegistration setRegistration() throws IOException {
     nodeRegistration = new NamenodeRegistration(
         NetUtils.getHostPortString(rpcServer.getRpcAddress()),
         NetUtils.getHostPortString(getHttpAddress()),
-        getFSImage().getStorage(), getRole());
+        StorageInfo.getStorageInfoFromDB(), getRole());   //HOP change. previous code was getFSImage().getStorage()
     return nodeRegistration;
   }
 
@@ -437,6 +445,12 @@ public class NameNode {
     loadNamesystem(conf);
 
     rpcServer = createRpcServer(conf);
+    
+    //START_HOP_CODE
+    // Initialize the leader election algorithm (only once rpc server is created)
+    leaderAlgo = new LeaderElection(conf, this);
+    leaderAlgo.initialize();
+    //END_HOP_CODE
     
     try {
       validateConfigurationSettings(conf);
@@ -674,10 +688,10 @@ public class NameNode {
     return namesystem.isInSafeMode();
   }
     
-  /** get FSImage */
-  FSImage getFSImage() {
-    return namesystem.dir.fsImage;
-  }
+//HOP  /** get FSImage */
+//  FSImage getFSImage() {
+//    return namesystem.dir.fsImage;
+//  }
 
   /**
    * @return NameNode RPC address
@@ -745,19 +759,25 @@ public class NameNode {
     String clusterId = StartupOption.FORMAT.getClusterId();
     if(clusterId == null || clusterId.equals("")) {
       //Generate a new cluster id
-      clusterId = NNStorage.newClusterID();
+      clusterId = StorageInfo.newClusterID();
     }
     System.out.println("Formatting using clusterid: " + clusterId);
     
-    FSImage fsImage = new FSImage(conf, nameDirsToFormat, editDirsToFormat);
-    FSNamesystem fsn = new FSNamesystem(conf, fsImage);
-    fsImage.getEditLog().initJournalsForWrite();
+//HOP    FSImage fsImage = new FSImage(conf, nameDirsToFormat, editDirsToFormat);   //FSImage is no longer supported
+//    FSNamesystem fsn = new FSNamesystem(conf, fsImage);
+//    fsImage.getEditLog().initJournalsForWrite();
+//    
+//    if (!fsImage.confirmFormat(force, isInteractive)) {
+//      return true; // aborted
+//    }
+//    
+//    fsImage.format(fsn, clusterId);
     
-    if (!fsImage.confirmFormat(force, isInteractive)) {
-      return true; // aborted
-    }
+    //START_HOP_CODE
+    StorageFactory.setConfiguration(conf);
+    StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
+    //END_HOP_CODE
     
-    fsImage.format(fsn, clusterId);
     return false;
   }
 
@@ -772,16 +792,16 @@ public class NameNode {
     }
   }
   
-  @VisibleForTesting
-  public static boolean initializeSharedEdits(Configuration conf) throws IOException {
-    return initializeSharedEdits(conf, true);
-  }
-  
-  @VisibleForTesting
-  public static boolean initializeSharedEdits(Configuration conf,
-      boolean force) throws IOException {
-    return initializeSharedEdits(conf, force, false);
-  }
+//HOP  @VisibleForTesting
+//  public static boolean initializeSharedEdits(Configuration conf) throws IOException {
+//    return initializeSharedEdits(conf, true);
+//  }
+//  
+//  @VisibleForTesting
+//  public static boolean initializeSharedEdits(Configuration conf,
+//      boolean force) throws IOException {
+//    return initializeSharedEdits(conf, force, false);
+//  }
 
   /**
    * Clone the supplied configuration but remove the shared edits dirs.
@@ -803,160 +823,160 @@ public class NameNode {
     return confWithoutShared;
   }
 
-  /**
-   * Format a new shared edits dir and copy in enough edit log segments so that
-   * the standby NN can start up.
-   * 
-   * @param conf configuration
-   * @param force format regardless of whether or not the shared edits dir exists
-   * @param interactive prompt the user when a dir exists
-   * @return true if the command aborts, false otherwise
-   */
-  private static boolean initializeSharedEdits(Configuration conf,
-      boolean force, boolean interactive) throws IOException {
-    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
-    String namenodeId = HAUtil.getNameNodeId(conf, nsId);
-    initializeGenericKeys(conf, nsId, namenodeId);
-    
-    if (conf.get(DFSConfigKeys.DFS_NAMENODE_SHARED_EDITS_DIR_KEY) == null) {
-      LOG.fatal("No shared edits directory configured for namespace " +
-          nsId + " namenode " + namenodeId);
-      return false;
-    }
-
-    if (UserGroupInformation.isSecurityEnabled()) {
-      InetSocketAddress socAddr = getAddress(conf);
-      SecurityUtil.login(conf, DFS_NAMENODE_KEYTAB_FILE_KEY,
-          DFS_NAMENODE_USER_NAME_KEY, socAddr.getHostName());
-    }
-
-    NNStorage existingStorage = null;
-    try {
-      FSNamesystem fsns =
-          FSNamesystem.loadFromDisk(getConfigurationWithoutSharedEdits(conf));
-      
-      existingStorage = fsns.getFSImage().getStorage();
-      NamespaceInfo nsInfo = existingStorage.getNamespaceInfo();
-      
-      List<URI> sharedEditsDirs = FSNamesystem.getSharedEditsDirs(conf);
-      
-      FSImage sharedEditsImage = new FSImage(conf,
-          Lists.<URI>newArrayList(),
-          sharedEditsDirs);
-      sharedEditsImage.getEditLog().initJournalsForWrite();
-      
-      if (!sharedEditsImage.confirmFormat(force, interactive)) {
-        return true; // abort
-      }
-      
-      NNStorage newSharedStorage = sharedEditsImage.getStorage();
-      // Call Storage.format instead of FSImage.format here, since we don't
-      // actually want to save a checkpoint - just prime the dirs with
-      // the existing namespace info
-      newSharedStorage.format(nsInfo);
-      sharedEditsImage.getEditLog().formatNonFileJournals(nsInfo);
-
-      // Need to make sure the edit log segments are in good shape to initialize
-      // the shared edits dir.
-      fsns.getFSImage().getEditLog().close();
-      fsns.getFSImage().getEditLog().initJournalsForWrite();
-      fsns.getFSImage().getEditLog().recoverUnclosedStreams();
-
-      copyEditLogSegmentsToSharedDir(fsns, sharedEditsDirs, newSharedStorage,
-          conf);
-    } catch (IOException ioe) {
-      LOG.error("Could not initialize shared edits dir", ioe);
-      return true; // aborted
-    } finally {
-      // Have to unlock storage explicitly for the case when we're running in a
-      // unit test, which runs in the same JVM as NNs.
-      if (existingStorage != null) {
-        try {
-          existingStorage.unlockAll();
-        } catch (IOException ioe) {
-          LOG.warn("Could not unlock storage directories", ioe);
-          return true; // aborted
-        }
-      }
-    }
-    return false; // did not abort
-  }
-
-  private static void copyEditLogSegmentsToSharedDir(FSNamesystem fsns,
-      Collection<URI> sharedEditsDirs, NNStorage newSharedStorage,
-      Configuration conf) throws IOException {
-    Preconditions.checkArgument(!sharedEditsDirs.isEmpty(),
-        "No shared edits specified");
-    // Copy edit log segments into the new shared edits dir.
-    List<URI> sharedEditsUris = new ArrayList<URI>(sharedEditsDirs);
-    FSEditLog newSharedEditLog = new FSEditLog(conf, newSharedStorage,
-        sharedEditsUris);
-    newSharedEditLog.initJournalsForWrite();
-    newSharedEditLog.recoverUnclosedStreams();
-    
-    FSEditLog sourceEditLog = fsns.getFSImage().editLog;
-    
-    long fromTxId = fsns.getFSImage().getMostRecentCheckpointTxId();
-    Collection<EditLogInputStream> streams = sourceEditLog.selectInputStreams(
-        fromTxId+1, 0);
-
-    // Set the nextTxid to the CheckpointTxId+1
-    newSharedEditLog.setNextTxId(fromTxId + 1);
-    
-    // Copy all edits after last CheckpointTxId to shared edits dir
-    for (EditLogInputStream stream : streams) {
-      LOG.debug("Beginning to copy stream " + stream + " to shared edits");
-      FSEditLogOp op;
-      boolean segmentOpen = false;
-      while ((op = stream.readOp()) != null) {
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("copying op: " + op);
-        }
-        if (!segmentOpen) {
-          newSharedEditLog.startLogSegment(op.txid, false);
-          segmentOpen = true;
-        }
-        
-        newSharedEditLog.logEdit(op);
-
-        if (op.opCode == FSEditLogOpCodes.OP_END_LOG_SEGMENT) {
-          newSharedEditLog.logSync();
-          newSharedEditLog.endCurrentLogSegment(false);
-          LOG.debug("ending log segment because of END_LOG_SEGMENT op in " + stream);
-          segmentOpen = false;
-        }
-      }
-      
-      if (segmentOpen) {
-        LOG.debug("ending log segment because of end of stream in " + stream);
-        newSharedEditLog.logSync();
-        newSharedEditLog.endCurrentLogSegment(false);
-        segmentOpen = false;
-      }
-    }
-  }
-
-  private static boolean finalize(Configuration conf,
-                               boolean isConfirmationNeeded
-                               ) throws IOException {
-    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
-    String namenodeId = HAUtil.getNameNodeId(conf, nsId);
-    initializeGenericKeys(conf, nsId, namenodeId);
-
-    FSNamesystem nsys = new FSNamesystem(conf, new FSImage(conf));
-    System.err.print(
-        "\"finalize\" will remove the previous state of the files system.\n"
-        + "Recent upgrade will become permanent.\n"
-        + "Rollback option will not be available anymore.\n");
-    if (isConfirmationNeeded) {
-      if (!confirmPrompt("Finalize filesystem state?")) {
-        System.err.println("Finalize aborted.");
-        return true;
-      }
-    }
-    nsys.dir.fsImage.finalizeUpgrade();
-    return false;
-  }
+//HOP  /**
+//   * Format a new shared edits dir and copy in enough edit log segments so that
+//   * the standby NN can start up.
+//   * 
+//   * @param conf configuration
+//   * @param force format regardless of whether or not the shared edits dir exists
+//   * @param interactive prompt the user when a dir exists
+//   * @return true if the command aborts, false otherwise
+//   */
+//  private static boolean initializeSharedEdits(Configuration conf,
+//      boolean force, boolean interactive) throws IOException {
+//    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
+//    String namenodeId = HAUtil.getNameNodeId(conf, nsId);
+//    initializeGenericKeys(conf, nsId, namenodeId);
+//    
+//    if (conf.get(DFSConfigKeys.DFS_NAMENODE_SHARED_EDITS_DIR_KEY) == null) {
+//      LOG.fatal("No shared edits directory configured for namespace " +
+//          nsId + " namenode " + namenodeId);
+//      return false;
+//    }
+//
+//    if (UserGroupInformation.isSecurityEnabled()) {
+//      InetSocketAddress socAddr = getAddress(conf);
+//      SecurityUtil.login(conf, DFS_NAMENODE_KEYTAB_FILE_KEY,
+//          DFS_NAMENODE_USER_NAME_KEY, socAddr.getHostName());
+//    }
+//
+//    NNStorage existingStorage = null;
+//    try {
+//      FSNamesystem fsns =
+//          FSNamesystem.loadFromDisk(getConfigurationWithoutSharedEdits(conf));
+//      
+//      existingStorage = fsns.getFSImage().getStorage();
+//      NamespaceInfo nsInfo = existingStorage.getNamespaceInfo();
+//      
+//      List<URI> sharedEditsDirs = FSNamesystem.getSharedEditsDirs(conf);
+//      
+//      FSImage sharedEditsImage = new FSImage(conf,
+//          Lists.<URI>newArrayList(),
+//          sharedEditsDirs);
+//      sharedEditsImage.getEditLog().initJournalsForWrite();
+//      
+//      if (!sharedEditsImage.confirmFormat(force, interactive)) {
+//        return true; // abort
+//      }
+//      
+//      NNStorage newSharedStorage = sharedEditsImage.getStorage();
+//      // Call Storage.format instead of FSImage.format here, since we don't
+//      // actually want to save a checkpoint - just prime the dirs with
+//      // the existing namespace info
+//      newSharedStorage.format(nsInfo);
+//      sharedEditsImage.getEditLog().formatNonFileJournals(nsInfo);
+//
+//      // Need to make sure the edit log segments are in good shape to initialize
+//      // the shared edits dir.
+//      fsns.getFSImage().getEditLog().close();
+//      fsns.getFSImage().getEditLog().initJournalsForWrite();
+//      fsns.getFSImage().getEditLog().recoverUnclosedStreams();
+//
+//      copyEditLogSegmentsToSharedDir(fsns, sharedEditsDirs, newSharedStorage,
+//          conf);
+//    } catch (IOException ioe) {
+//      LOG.error("Could not initialize shared edits dir", ioe);
+//      return true; // aborted
+//    } finally {
+//      // Have to unlock storage explicitly for the case when we're running in a
+//      // unit test, which runs in the same JVM as NNs.
+//      if (existingStorage != null) {
+//        try {
+//          existingStorage.unlockAll();
+//        } catch (IOException ioe) {
+//          LOG.warn("Could not unlock storage directories", ioe);
+//          return true; // aborted
+//        }
+//      }
+//    }
+//    return false; // did not abort
+//  }
+//
+//  private static void copyEditLogSegmentsToSharedDir(FSNamesystem fsns,
+//      Collection<URI> sharedEditsDirs, NNStorage newSharedStorage,
+//      Configuration conf) throws IOException {
+//    Preconditions.checkArgument(!sharedEditsDirs.isEmpty(),
+//        "No shared edits specified");
+//    // Copy edit log segments into the new shared edits dir.
+//    List<URI> sharedEditsUris = new ArrayList<URI>(sharedEditsDirs);
+//    FSEditLog newSharedEditLog = new FSEditLog(conf, newSharedStorage,
+//        sharedEditsUris);
+//    newSharedEditLog.initJournalsForWrite();
+//    newSharedEditLog.recoverUnclosedStreams();
+//    
+//    FSEditLog sourceEditLog = fsns.getFSImage().editLog;
+//    
+//    long fromTxId = fsns.getFSImage().getMostRecentCheckpointTxId();
+//    Collection<EditLogInputStream> streams = sourceEditLog.selectInputStreams(
+//        fromTxId+1, 0);
+//
+//    // Set the nextTxid to the CheckpointTxId+1
+//    newSharedEditLog.setNextTxId(fromTxId + 1);
+//    
+//    // Copy all edits after last CheckpointTxId to shared edits dir
+//    for (EditLogInputStream stream : streams) {
+//      LOG.debug("Beginning to copy stream " + stream + " to shared edits");
+//      FSEditLogOp op;
+//      boolean segmentOpen = false;
+//      while ((op = stream.readOp()) != null) {
+//        if (LOG.isTraceEnabled()) {
+//          LOG.trace("copying op: " + op);
+//        }
+//        if (!segmentOpen) {
+//          newSharedEditLog.startLogSegment(op.txid, false);
+//          segmentOpen = true;
+//        }
+//        
+//        newSharedEditLog.logEdit(op);
+//
+//        if (op.opCode == FSEditLogOpCodes.OP_END_LOG_SEGMENT) {
+//          newSharedEditLog.logSync();
+//          newSharedEditLog.endCurrentLogSegment(false);
+//          LOG.debug("ending log segment because of END_LOG_SEGMENT op in " + stream);
+//          segmentOpen = false;
+//        }
+//      }
+//      
+//      if (segmentOpen) {
+//        LOG.debug("ending log segment because of end of stream in " + stream);
+//        newSharedEditLog.logSync();
+//        newSharedEditLog.endCurrentLogSegment(false);
+//        segmentOpen = false;
+//      }
+//    }
+//  }
+//
+//  private static boolean finalize(Configuration conf,
+//                               boolean isConfirmationNeeded
+//                               ) throws IOException {
+//    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
+//    String namenodeId = HAUtil.getNameNodeId(conf, nsId);
+//    initializeGenericKeys(conf, nsId, namenodeId);
+//
+//    FSNamesystem nsys = new FSNamesystem(conf, new FSImage(conf));
+//    System.err.print(
+//        "\"finalize\" will remove the previous state of the files system.\n"
+//        + "Recent upgrade will become permanent.\n"
+//        + "Rollback option will not be available anymore.\n");
+//    if (isConfirmationNeeded) {
+//      if (!confirmPrompt("Finalize filesystem state?")) {
+//        System.err.println("Finalize aborted.");
+//        return true;
+//      }
+//    }
+//    nsys.dir.fsImage.finalizeUpgrade();
+//    return false;
+//  }
 
   private static void printUsage(PrintStream out) {
     out.println(USAGE + "\n");
@@ -1132,33 +1152,46 @@ public class NameNode {
       }
       case GENCLUSTERID: {
         System.err.println("Generating new cluster id:");
-        System.out.println(NNStorage.newClusterID());
+        System.out.println(StorageInfo.newClusterID());
         terminate(0);
         return null;
       }
       case FINALIZE: {
-        boolean aborted = finalize(conf, true);
-        terminate(aborted ? 1 : 0);
-        return null; // avoid javac warning
+//HOP        boolean aborted = finalize(conf, true); 
+//        terminate(aborted ? 1 : 0);
+//        return null; // avoid javac warning
+        //START_HOP_CODE
+        throw new UnsupportedOperationException("HOP: FINALIZE is not supported anymore");
+        //END_HOP_CODE
       }
       case BOOTSTRAPSTANDBY: {
-        String toolArgs[] = Arrays.copyOfRange(argv, 1, argv.length);
-        int rc = BootstrapStandby.run(toolArgs, conf);
-        terminate(rc);
-        return null; // avoid warning
+//HOP        String toolArgs[] = Arrays.copyOfRange(argv, 1, argv.length);
+//        int rc = BootstrapStandby.run(toolArgs, conf);
+//        terminate(rc);
+//        return null; // avoid warning
+        //START_HOP_CODE
+        throw new UnsupportedOperationException("HOP: BOOTSTRAPSTANDBY is not supported anymore");
+        //END_HOP_CODE
       }
       case INITIALIZESHAREDEDITS: {
-        boolean aborted = initializeSharedEdits(conf,
-            startOpt.getForceFormat(),
-            startOpt.getInteractiveFormat());
-        terminate(aborted ? 1 : 0);
-        return null; // avoid warning
+//HOP        boolean aborted = initializeSharedEdits(conf,
+//            startOpt.getForceFormat(),
+//            startOpt.getInteractiveFormat());
+//        terminate(aborted ? 1 : 0);
+//        return null; // avoid warning
+        //START_HOP_CODE
+        throw new UnsupportedOperationException("HOP: INITIALIZESHAREDEDITS is not supported anymore");
+        //END_HOP_CODE
       }
       case BACKUP:
       case CHECKPOINT: {
-        NamenodeRole role = startOpt.toNodeRole();
-        DefaultMetricsSystem.initialize(role.toString().replace(" ", ""));
-        return new BackupNode(conf, role);
+//HOP        NamenodeRole role = startOpt.toNodeRole();
+//        DefaultMetricsSystem.initialize(role.toString().replace(" ", ""));
+//        return new BackupNode(conf, role);
+        //START_HOP_CODE
+          throw new UnsupportedOperationException("HOP: BACKUP/CHECKPOINT is not supported anymore");
+        //END_HOP_CODE  
+
       }
       case RECOVER: {
         NameNode.doRecovery(startOpt, conf);
@@ -1248,7 +1281,7 @@ public class NameNode {
     if (!haEnabled) {
       return; // no-op, if HA is not enabled
     }
-    getNamesystem().checkAvailableResources();
+//HOP    getNamesystem().checkAvailableResources();
     if (!getNamesystem().nameNodeHasResourcesAvailable()) {
       throw new HealthCheckFailedException(
           "The NameNode has no resources available");
@@ -1460,4 +1493,43 @@ public class NameNode {
       break;
     }
   }
+  
+  
+  //START_HOP_CODE
+  /**
+   * Returns the id of this namenode
+   */
+  public long getId() {
+    return id;
+  }
+
+  /**
+   * Sets a new id incase of crash
+   */
+  void setId(long id) {
+    this.id = id;
+    namesystem.setNameNodeId(id);
+  }
+
+  /**
+   * Return the {@link LeaderElection} object.
+   *
+   * @return {@link LeaderElection} object.
+   */
+  public LeaderElection getLeaderElectionInstance() {
+    return leaderAlgo;
+  }
+
+  /**
+   * Set the role for Namenode
+   */
+  synchronized void setRole(NamenodeRole role) {
+    this.role = role;
+    namesystem.setNameNodeRole(role);
+  }
+
+  public boolean isLeader() {
+    return role.equals(NamenodeRole.LEADER);
+  }
+  //END_HOP_CODE
 }
