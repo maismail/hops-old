@@ -7,6 +7,7 @@
 .project
 .settings
 target
+build
 hadoop-hdfs-project/hadoop-hdfs/downloads
 hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
 *.junit
