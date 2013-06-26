@@ -159,4 +159,8 @@ public class Lease implements Comparable<Lease> {
     getPaths().remove(oldpath);
     getPaths().add(newpath);
   }
+  
+  boolean expiredSoftLimit() {
+        throw new UnsupportedOperationException("Not yet implemented");
+  }
 }

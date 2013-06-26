@@ -426,21 +426,21 @@ public class LeaseManager {
       private SortedSet<String> leasePaths = null;
       @Override
       public void acquireLock() throws PersistanceException, IOException {
-        String holder = (String) getParams()[0];
-        TransactionLockManager tlm = new TransactionLockManager();
-        tlm.addINode(TransactionLockManager.INodeLockType.WRITE).
-                addBlock(TransactionLockManager.LockType.WRITE).
-                addLease(TransactionLockManager.LockType.WRITE, holder).
-                addNameNodeLease(LockType.WRITE).
-                addLeasePath(TransactionLockManager.LockType.WRITE).
-                addReplica(TransactionLockManager.LockType.READ).
-                addCorrupt(TransactionLockManager.LockType.READ).
-                addExcess(TransactionLockManager.LockType.READ).
-                addReplicaUc(TransactionLockManager.LockType.READ).
-                addUnderReplicatedBlock(LockType.READ).
-                addGenerationStamp(LockType.WRITE).
-                acquireByLease(leasePaths);
-      }
+            String holder = (String) getParams()[0];
+            TransactionLockManager tlm = new TransactionLockManager();
+//FIXME            tlm.addINode(TransactionLockManager.INodeLockType.WRITE);
+//FIXME            tlm.addBlock(TransactionLockManager.LockType.WRITE);
+            tlm.addLease(TransactionLockManager.LockType.WRITE, holder);
+            tlm.addNameNodeLease(LockType.WRITE);
+            tlm.addLeasePath(TransactionLockManager.LockType.WRITE);
+//FIXME            tlm.addReplica(TransactionLockManager.LockType.READ);
+//FIXME            tlm.addCorrupt(TransactionLockManager.LockType.READ);
+//FIXME            tlm.addExcess(TransactionLockManager.LockType.READ);
+//FIXME            tlm.addReplicaUc(TransactionLockManager.LockType.READ);
+//FIXME            tlm.addUnderReplicatedBlock(LockType.READ);
+//FIXME            tlm.addGenerationStamp(LockType.WRITE);
+            tlm.acquireByLease(leasePaths);
+        }
       
       @Override
       public void setUp() throws StorageException

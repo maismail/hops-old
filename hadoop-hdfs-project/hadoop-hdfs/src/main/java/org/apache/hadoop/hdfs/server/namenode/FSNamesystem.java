@@ -165,7 +165,7 @@ import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.common.Storage.StorageDirType;
 import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.common.Util;
-import org.apache.hadoop.hdfs.server.namenode.LeaseManager.Lease;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
 //import org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer; //HOP does not support it anymore
 import org.apache.hadoop.hdfs.server.namenode.ha.HAContext;
@@ -208,7 +208,10 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -1738,25 +1741,38 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * For description of parameters and exceptions thrown see 
    * {@link ClientProtocol#create()}
    */
-  void startFile(String src, PermissionStatus permissions, String holder,
-      String clientMachine, EnumSet<CreateFlag> flag, boolean createParent,
-      short replication, long blockSize) throws AccessControlException,
+  void startFile(final String src, final PermissionStatus permissions, final String holder,
+      final String clientMachine, final EnumSet<CreateFlag> flag, final boolean createParent,
+      final short replication, final long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
       FileNotFoundException, ParentNotDirectoryException, IOException {
-    try {
-      startFileInt(src, permissions, holder, clientMachine, flag, createParent,
-                   replication, blockSize);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "create", src);
-      throw e;
-    }
+      TransactionalRequestHandler startFileHanlder = new TransactionalRequestHandler(OperationType.START_FILE) {
+
+              @Override
+              public void acquireLock() throws PersistanceException, IOException {
+                  try {
+                      startFileInt(src, permissions, holder, clientMachine, flag, createParent,
+                              replication, blockSize);
+                  } catch (AccessControlException e) {
+                      logAuditEvent(false, "create", src);
+                      throw e;
+                  }
+              }
+
+              @Override
+              public Object performTask() throws PersistanceException, IOException {
+                  throw new UnsupportedOperationException("Not supported yet.");
+              }
+      };
+      startFileHanlder.handleWithWriteLock(this);
+    
   }
 
   private void startFileInt(String src, PermissionStatus permissions, String holder,
       String clientMachine, EnumSet<CreateFlag> flag, boolean createParent,
       short replication, long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
-      FileNotFoundException, ParentNotDirectoryException, IOException {
+      FileNotFoundException, ParentNotDirectoryException, IOException, PersistanceException {
     boolean skipSync = false;
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -1800,7 +1816,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       EnumSet<CreateFlag> flag, boolean createParent, short replication,
       long blockSize) throws SafeModeException, FileAlreadyExistsException,
       AccessControlException, UnresolvedLinkException, FileNotFoundException,
-      ParentNotDirectoryException, IOException {
+      ParentNotDirectoryException, IOException, PersistanceException {
     assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: src=" + src
@@ -1917,7 +1933,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   LocatedBlock prepareFileForWrite(String src, INodeFile file,
       String leaseHolder, String clientMachine, DatanodeDescriptor clientNode,
-      boolean writeToEditLog) throws IOException {
+      boolean writeToEditLog) throws IOException, PersistanceException {
     INodeFileUnderConstruction cons = new INodeFileUnderConstruction(
                                     file.getLocalNameBytes(),
                                     file.getBlockReplication(),
@@ -1990,7 +2006,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void recoverLeaseInternal(INode fileInode, 
       String src, String holder, String clientMachine, boolean force)
-      throws IOException {
+      throws IOException, PersistanceException {
     assert hasWriteLock();
     if (fileInode != null && fileInode.isUnderConstruction()) {
       INodeFileUnderConstruction pendingFile = (INodeFileUnderConstruction) fileInode;

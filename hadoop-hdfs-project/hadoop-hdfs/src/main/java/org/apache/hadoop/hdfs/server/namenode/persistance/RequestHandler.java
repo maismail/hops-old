@@ -124,7 +124,7 @@ public abstract class RequestHandler {
   protected abstract Object run(boolean writeLock, boolean readLock, Namesystem namesystem) throws IOException;
   
   public abstract Object performTask() throws PersistanceException, IOException;
-
+  
   public RequestHandler setParams(Object... params) {
     this.params = params;
     return this;
