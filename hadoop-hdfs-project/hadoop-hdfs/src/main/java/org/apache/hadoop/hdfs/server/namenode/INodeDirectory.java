@@ -32,7 +32,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 /**
  * Directory INode class.
  */
-class INodeDirectory extends INode {
+public class INodeDirectory extends INode {
   /** Cast INode to INodeDirectory. */
   public static INodeDirectory valueOf(INode inode, String path
       ) throws IOException {

@@ -32,7 +32,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 
 /** I-node for closed file. */
 @InterfaceAudience.Private
-class INodeFile extends INode implements BlockCollection {
+public class INodeFile extends INode implements BlockCollection {
   /** Cast INode to INodeFile. */
   public static INodeFile valueOf(INode inode, String path) throws IOException {
     if (inode == null) {

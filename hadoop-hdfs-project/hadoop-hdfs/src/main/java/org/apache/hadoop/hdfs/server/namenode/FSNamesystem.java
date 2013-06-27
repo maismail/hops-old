@@ -207,11 +207,16 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import java.util.LinkedList;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -703,16 +708,19 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param haContext 
    * @throws IOException
    */
-  void startCommonServices(Configuration conf, HAContext haContext) throws IOException {
+  void startCommonServices(Configuration conf, HAContext haContext) throws IOException, StorageException, PersistanceException {
     this.registerMBean(); // register the MBean for the FSNamesystemState
     writeLock();
     this.haContext = haContext;
     try {
-//HOP      nnResourceChecker = new NameNodeResourceChecker(conf);
+//HOP   nnResourceChecker = new NameNodeResourceChecker(conf);
 //      checkAvailableResources();
       assert safeMode != null &&
         !safeMode.isPopulatingReplQueues();
+      EntityManager.begin();        //HOP FIXME very hacky code 
+      EntityManager.readCommited();
       setBlockTotal();
+      EntityManager.commit();
       blockManager.activate(conf);
     } finally {
       writeUnlock();
@@ -1746,23 +1754,43 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final short replication, final long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
       FileNotFoundException, ParentNotDirectoryException, IOException {
+      final boolean resolveLink = false;
       TransactionalRequestHandler startFileHanlder = new TransactionalRequestHandler(OperationType.START_FILE) {
+          protected LinkedList<INode> resolvedInodes = null; // For the operations requires to have inodes before starting transactions.  
 
-              @Override
-              public void acquireLock() throws PersistanceException, IOException {
-                  try {
-                      startFileInt(src, permissions, holder, clientMachine, flag, createParent,
-                              replication, blockSize);
-                  } catch (AccessControlException e) {
-                      logAuditEvent(false, "create", src);
-                      throw e;
-                  }
-              }
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager(resolvedInodes);
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH_WITH_UNKNOWN_HEAD,
+                      TransactionLockManager.INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src});
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
+              tla.addLease(TransactionLockManager.LockType.WRITE, holder);
+              tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+              tla.addReplica(TransactionLockManager.LockType.WRITE);
+              tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+              tla.addExcess(TransactionLockManager.LockType.READ);
+              tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+              tla.addGenerationStamp(TransactionLockManager.LockType.WRITE);
+              tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquire(); //FIXME this calls fake acquire function
+          }
 
-              @Override
-              public Object performTask() throws PersistanceException, IOException {
-                  throw new UnsupportedOperationException("Not supported yet.");
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              try {
+                  startFileInt(src, permissions, holder, clientMachine, flag, createParent,
+                          replication, blockSize);
+                  return null;
+              } catch (AccessControlException e) {
+                  logAuditEvent(false, "create", src);
+                  throw e;
               }
+          }
+
+          @Override
+          public void setUp() throws PersistanceException, IOException {
+              resolvedInodes = INodeUtil.resolvePathWithNoTransaction(src, resolveLink);
+          }
       };
       startFileHanlder.handleWithWriteLock(this);
     
@@ -1965,43 +1993,69 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @return true if the file is already closed
    * @throws IOException
    */
-  boolean recoverLease(String src, String holder, String clientMachine)
+  boolean recoverLease(final String src, final String holder, final String clientMachine)
       throws IOException {
-    boolean skipSync = false;
-    FSPermissionChecker pc = getPermissionChecker();
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
+      
+      TransactionalRequestHandler recoverLeaseHandler = new TransactionalRequestHandler(OperationType.RECOVER_LEASE) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+                tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH,
+                TransactionLockManager.INodeLockType.WRITE,
+                new String[]{src});
+                tla.addBlock(TransactionLockManager.LockType.WRITE);
+                tla.addLease(TransactionLockManager.LockType.WRITE, holder);
+                tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+                tla.addReplica(TransactionLockManager.LockType.READ);
+                tla.addCorrupt(TransactionLockManager.LockType.READ);
+                tla.addExcess(TransactionLockManager.LockType.READ);
+                tla.addReplicaUc(TransactionLockManager.LockType.READ);
+                tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+                tla.addGenerationStamp(TransactionLockManager.LockType.WRITE);
+                tla.acquire();
+          }
 
-      if (isInSafeMode()) {
-        throw new SafeModeException(
-            "Cannot recover the lease of " + src, safeMode);
-      }
-      if (!DFSUtil.isValidName(src)) {
-        throw new IOException("Invalid file name: " + src);
-      }
-  
-      final INodeFile inode = INodeFile.valueOf(dir.getINode(src), src);
-      if (!inode.isUnderConstruction()) {
-        return true;
-      }
-      if (isPermissionEnabled) {
-        checkPathAccess(pc, src, FsAction.WRITE);
-      }
-  
-      recoverLeaseInternal(inode, src, holder, clientMachine, true);
-    } catch (StandbyException se) {
-      skipSync = true;
-      throw se;
-    } finally {
-      writeUnlock();
-      // There might be transactions logged while trying to recover the lease.
-      // They need to be sync'ed even when an exception was thrown.
-//HOP      if (!skipSync) {
-//        getEditLog().logSync();
-//      }
-    }
-    return false;
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              boolean skipSync = false;
+              FSPermissionChecker pc = getPermissionChecker();
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+
+                  if (isInSafeMode()) {
+                      throw new SafeModeException(
+                              "Cannot recover the lease of " + src, safeMode);
+                  }
+                  if (!DFSUtil.isValidName(src)) {
+                      throw new IOException("Invalid file name: " + src);
+                  }
+
+                  final INodeFile inode = INodeFile.valueOf(dir.getINode(src), src);
+                  if (!inode.isUnderConstruction()) {
+                      return true;
+                  }
+                  if (isPermissionEnabled) {
+                      checkPathAccess(pc, src, FsAction.WRITE);
+                  }
+
+                  recoverLeaseInternal(inode, src, holder, clientMachine, true);
+              } catch (StandbyException se) {
+                  skipSync = true;
+                  throw se;
+              } finally {
+                  writeUnlock();
+                  // There might be transactions logged while trying to recover the lease.
+                  // They need to be sync'ed even when an exception was thrown.
+//HOP             if (!skipSync) {
+//                      getEditLog().logSync();
+//                  }
+              }
+              return false;
+          }
+      };
+      
+      return (Boolean) recoverLeaseHandler.handleWithWriteLock(this);
   }
 
   private void recoverLeaseInternal(INode fileInode, 
@@ -2082,22 +2136,46 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Append to an existing file in the namespace.
    */
-  LocatedBlock appendFile(String src, String holder, String clientMachine)
+  LocatedBlock appendFile(final String src, final String holder, final String clientMachine)
       throws AccessControlException, SafeModeException,
       FileAlreadyExistsException, FileNotFoundException,
-      ParentNotDirectoryException, IOException {
-    try {
-      return appendFileInt(src, holder, clientMachine);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "append", src);
-      throw e;
-    }
+            ParentNotDirectoryException, IOException {
+      TransactionalRequestHandler appendFileHandler = new TransactionalRequestHandler(OperationType.APPEND_FILE) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE,
+                      false, new String[]{src});
+              tla.addBlock(TransactionLockManager.LockType.READ);
+              tla.addLease(TransactionLockManager.LockType.WRITE, holder);
+              tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+              tla.addReplica(TransactionLockManager.LockType.READ);
+              tla.addCorrupt(TransactionLockManager.LockType.READ);
+              tla.addExcess(TransactionLockManager.LockType.READ);
+              tla.addReplicaUc(TransactionLockManager.LockType.READ);
+              tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.addInvalidatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              try {
+                  return appendFileInt(src, holder, clientMachine);
+              } catch (AccessControlException e) {
+                  logAuditEvent(false, "append", src);
+                  throw e;
+              }
+          }
+      };
+    LocatedBlock lb = (LocatedBlock) appendFileHandler.handleWithWriteLock(this);
+    return lb;
   }
 
   private LocatedBlock appendFileInt(String src, String holder, String clientMachine)
       throws AccessControlException, SafeModeException,
       FileAlreadyExistsException, FileNotFoundException,
-      ParentNotDirectoryException, IOException {
+      ParentNotDirectoryException, IOException, UnresolvedLinkException, PersistanceException {
     boolean skipSync = false;
     if (!supportAppends) {
       throw new UnsupportedOperationException(
@@ -2156,94 +2234,113 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * are replicated.  Will return an empty 2-elt array if we want the
    * client to "try again later".
    */
-  LocatedBlock getAdditionalBlock(String src,
-                                         String clientName,
-                                         ExtendedBlock previous,
-                                         HashMap<Node, Node> excludedNodes
-                                         ) 
-      throws LeaseExpiredException, NotReplicatedYetException,
-      QuotaExceededException, SafeModeException, UnresolvedLinkException,
-      IOException {
-    long blockSize;
-    int replication;
-    DatanodeDescriptor clientNode = null;
+    LocatedBlock getAdditionalBlock(final String src,
+            final String clientName,
+            final ExtendedBlock previous,
+            final HashMap<Node, Node> excludedNodes)
+            throws LeaseExpiredException, NotReplicatedYetException,
+            QuotaExceededException, SafeModeException, UnresolvedLinkException,
+            IOException {
+        TransactionalRequestHandler additionalBlockHanlder = new TransactionalRequestHandler(OperationType.GET_ADDITIONAL_BLOCK) {
+            @Override
+            public void acquireLock() throws PersistanceException, IOException {
+                TransactionLockManager tla = new TransactionLockManager();
+                tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
+                tla.addBlock(TransactionLockManager.LockType.WRITE);
+                tla.addReplica(TransactionLockManager.LockType.READ);
+                tla.addLease(TransactionLockManager.LockType.READ);
+                tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+                tla.addExcess(TransactionLockManager.LockType.WRITE);
+                tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+                tla.addGenerationStamp(TransactionLockManager.LockType.WRITE);
+                tla.acquire();
+            }
 
-    if(NameNode.stateChangeLog.isDebugEnabled()) {
-      NameNode.stateChangeLog.debug(
-          "BLOCK* NameSystem.getAdditionalBlock: file "
-          +src+" for "+clientName);
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+                long blockSize;
+                int replication;
+                DatanodeDescriptor clientNode = null;
+
+                if (NameNode.stateChangeLog.isDebugEnabled()) {
+                    NameNode.stateChangeLog.debug(
+                            "BLOCK* NameSystem.getAdditionalBlock: file "
+                            + src + " for " + clientName);
+                }
+
+                // Part I. Analyze the state of the file with respect to the input data.
+                readLock();
+                try {
+                    LocatedBlock[] onRetryBlock = new LocatedBlock[1];
+                    final INode[] inodes = analyzeFileState(
+                            src, clientName, previous, onRetryBlock);
+                    final INodeFileUnderConstruction pendingFile =
+                            (INodeFileUnderConstruction) inodes[inodes.length - 1];
+
+                    if (onRetryBlock[0] != null) {
+                        // This is a retry. Just return the last block.
+                        return onRetryBlock[0];
+                    }
+
+                    blockSize = pendingFile.getPreferredBlockSize();
+                    clientNode = pendingFile.getClientNode();
+                    replication = pendingFile.getBlockReplication();
+                } finally {
+                    readUnlock();
+                }
+
+                // choose targets for the new block to be allocated.
+                final DatanodeDescriptor targets[] = getBlockManager().chooseTarget(
+                        src, replication, clientNode, excludedNodes, blockSize);
+
+                // Part II.
+                // Allocate a new block, add it to the INode and the BlocksMap. 
+                Block newBlock = null;
+                long offset;
+                writeLock();
+                try {
+                    // Run the full analysis again, since things could have changed
+                    // while chooseTarget() was executing.
+                    LocatedBlock[] onRetryBlock = new LocatedBlock[1];
+                    INode[] inodes =
+                            analyzeFileState(src, clientName, previous, onRetryBlock);
+                    final INodeFileUnderConstruction pendingFile =
+                            (INodeFileUnderConstruction) inodes[inodes.length - 1];
+
+                    if (onRetryBlock[0] != null) {
+                        // This is a retry. Just return the last block.
+                        return onRetryBlock[0];
+                    }
+
+                    // commit the last block and complete it if it has minimum replicas
+                    commitOrCompleteLastBlock(pendingFile,
+                            ExtendedBlock.getLocalBlock(previous));
+
+                    // allocate new block, record block locations in INode.
+                    newBlock = createNewBlock();
+                    saveAllocatedBlock(src, inodes, newBlock, targets);
+
+                    dir.persistBlocks(src, pendingFile);
+                    offset = pendingFile.computeFileSize(true);
+                } finally {
+                    writeUnlock();
+                }
+//HOP           if (persistBlocks) {
+//                  getEditLog().logSync();
+//              }
+
+                // Return located block
+                return makeLocatedBlock(newBlock, targets, offset);
+            }
+        };
+        return (LocatedBlock) additionalBlockHanlder.handleWithWriteLock(this);
     }
-
-    // Part I. Analyze the state of the file with respect to the input data.
-    readLock();
-    try {
-      LocatedBlock[] onRetryBlock = new LocatedBlock[1];
-      final INode[] inodes = analyzeFileState(
-          src, clientName, previous, onRetryBlock);
-      final INodeFileUnderConstruction pendingFile =
-          (INodeFileUnderConstruction) inodes[inodes.length - 1];
-
-      if(onRetryBlock[0] != null) {
-        // This is a retry. Just return the last block.
-        return onRetryBlock[0];
-      }
-
-      blockSize = pendingFile.getPreferredBlockSize();
-      clientNode = pendingFile.getClientNode();
-      replication = pendingFile.getBlockReplication();
-    } finally {
-      readUnlock();
-    }
-
-    // choose targets for the new block to be allocated.
-    final DatanodeDescriptor targets[] = getBlockManager().chooseTarget(
-        src, replication, clientNode, excludedNodes, blockSize);
-
-    // Part II.
-    // Allocate a new block, add it to the INode and the BlocksMap. 
-    Block newBlock = null;
-    long offset;
-    writeLock();
-    try {
-      // Run the full analysis again, since things could have changed
-      // while chooseTarget() was executing.
-      LocatedBlock[] onRetryBlock = new LocatedBlock[1];
-      INode[] inodes =
-          analyzeFileState(src, clientName, previous, onRetryBlock);
-      final INodeFileUnderConstruction pendingFile =
-          (INodeFileUnderConstruction) inodes[inodes.length - 1];
-
-      if(onRetryBlock[0] != null) {
-        // This is a retry. Just return the last block.
-        return onRetryBlock[0];
-      }
-
-      // commit the last block and complete it if it has minimum replicas
-      commitOrCompleteLastBlock(pendingFile,
-                                ExtendedBlock.getLocalBlock(previous));
-
-      // allocate new block, record block locations in INode.
-      newBlock = createNewBlock();
-      saveAllocatedBlock(src, inodes, newBlock, targets);
-
-      dir.persistBlocks(src, pendingFile);
-      offset = pendingFile.computeFileSize(true);
-    } finally {
-      writeUnlock();
-    }
-//HOP    if (persistBlocks) {
-//      getEditLog().logSync();
-//    }
-
-    // Return located block
-    return makeLocatedBlock(newBlock, targets, offset);
-  }
 
   INode[] analyzeFileState(String src,
                                 String clientName,
                                 ExtendedBlock previous,
                                 LocatedBlock[] onRetryBlock)
-          throws IOException  {
+          throws IOException, LeaseExpiredException, PersistanceException  {
     assert hasReadOrWriteLock();
 
     checkBlock(previous);
@@ -2348,94 +2445,126 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final DatanodeInfo[] existings,  final HashMap<Node, Node> excludes,
       final int numAdditionalNodes, final String clientName
       ) throws IOException {
-    //check if the feature is enabled
-    dtpReplaceDatanodeOnFailure.checkEnabled();
+      TransactionalRequestHandler getAdditionalDatanodeHandler = new TransactionalRequestHandler(OperationType.GET_ADDITIONAL_DATANODE) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
+              tla.addLease(TransactionLockManager.LockType.READ, clientName);
+              tla.acquire();
+          }
 
-    final DatanodeDescriptor clientnode;
-    final long preferredblocksize;
-    final List<DatanodeDescriptor> chosen;
-    readLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      //check safe mode
-      if (isInSafeMode()) {
-        throw new SafeModeException("Cannot add datanode; src=" + src
-            + ", blk=" + blk, safeMode);
-      }
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              //check if the feature is enabled
+              dtpReplaceDatanodeOnFailure.checkEnabled();
 
-      //check lease
-      final INodeFileUnderConstruction file = checkLease(src, clientName);
-      clientnode = file.getClientNode();
-      preferredblocksize = file.getPreferredBlockSize();
+              final DatanodeDescriptor clientnode;
+              final long preferredblocksize;
+              final List<DatanodeDescriptor> chosen;
+              readLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+                  //check safe mode
+                  if (isInSafeMode()) {
+                      throw new SafeModeException("Cannot add datanode; src=" + src
+                              + ", blk=" + blk, safeMode);
+                  }
 
-      //find datanode descriptors
-      chosen = new ArrayList<DatanodeDescriptor>();
-      for(DatanodeInfo d : existings) {
-        final DatanodeDescriptor descriptor = blockManager.getDatanodeManager(
-            ).getDatanode(d);
-        if (descriptor != null) {
-          chosen.add(descriptor);
-        }
-      }
-    } finally {
-      readUnlock();
-    }
+                  //check lease
+                  final INodeFileUnderConstruction file = checkLease(src, clientName);
+                  clientnode = file.getClientNode();
+                  preferredblocksize = file.getPreferredBlockSize();
 
-    // choose new datanodes.
-    final DatanodeInfo[] targets = blockManager.getBlockPlacementPolicy(
-        ).chooseTarget(src, numAdditionalNodes, clientnode, chosen, true,
-        excludes, preferredblocksize);
-    final LocatedBlock lb = new LocatedBlock(blk, targets);
-    blockManager.setBlockToken(lb, AccessMode.COPY);
-    return lb;
+                  //find datanode descriptors
+                  chosen = new ArrayList<DatanodeDescriptor>();
+                  for (DatanodeInfo d : existings) {
+                      final DatanodeDescriptor descriptor = blockManager.getDatanodeManager().getDatanode(d);
+                      if (descriptor != null) {
+                          chosen.add(descriptor);
+                      }
+                  }
+              } finally {
+                  readUnlock();
+              }
+
+              // choose new datanodes.
+              final DatanodeInfo[] targets = blockManager.getBlockPlacementPolicy().chooseTarget(src, numAdditionalNodes, clientnode, chosen, true,
+                      excludes, preferredblocksize);
+              final LocatedBlock lb = new LocatedBlock(blk, targets);
+              blockManager.setBlockToken(lb, AccessMode.COPY);
+              return lb;
+          }
+      };
+      return (LocatedBlock) getAdditionalDatanodeHandler.handleWithReadLock(this);
   }
 
   /**
    * The client would like to let go of the given block
    */
-  boolean abandonBlock(ExtendedBlock b, String src, String holder)
+  boolean abandonBlock(final ExtendedBlock b, final String src, final String holder)
       throws LeaseExpiredException, FileNotFoundException,
       UnresolvedLinkException, IOException {
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      //
-      // Remove the block from the pending creates list
-      //
-      if(NameNode.stateChangeLog.isDebugEnabled()) {
-        NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
-                                      +b+"of file "+src);
-      }
-      if (isInSafeMode()) {
-        throw new SafeModeException("Cannot abandon block " + b +
-                                    " for fle" + src, safeMode);
-      }
-      INodeFileUnderConstruction file = checkLease(src, holder);
-      dir.removeBlock(src, file, ExtendedBlock.getLocalBlock(b));
-      if(NameNode.stateChangeLog.isDebugEnabled()) {
-        NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
-                                      + b + " is removed from pendingCreates");
-      }
-      dir.persistBlocks(src, file);
-    } finally {
-      writeUnlock();
-    }
-//HOP    if (persistBlocks) {
-//      getEditLog().logSync();
-//    }
+      TransactionalRequestHandler abandonBlockHandler = new TransactionalRequestHandler(OperationType.ABANDON_BLOCK) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE_ON_PARENT, new String[]{src});
+              tla.addReplica(TransactionLockManager.LockType.WRITE);
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
+              tla.addLease(TransactionLockManager.LockType.READ);
+              tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+              tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+              tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquire();
+          }
 
-    return true;
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+                  //
+                  // Remove the block from the pending creates list
+                  //
+                  if (NameNode.stateChangeLog.isDebugEnabled()) {
+                      NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
+                              + b + "of file " + src);
+                  }
+                  if (isInSafeMode()) {
+                      throw new SafeModeException("Cannot abandon block " + b
+                              + " for fle" + src, safeMode);
+                  }
+                  INodeFileUnderConstruction file = checkLease(src, holder);
+                  dir.removeBlock(src, file, ExtendedBlock.getLocalBlock(b));
+                  if (NameNode.stateChangeLog.isDebugEnabled()) {
+                      NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
+                              + b + " is removed from pendingCreates");
+                  }
+                  dir.persistBlocks(src, file);
+              } finally {
+                  writeUnlock();
+              }
+//HOP         if (persistBlocks) {
+//              getEditLog().logSync();
+//            }
+
+              return true;
+          }
+      };
+    return (Boolean)abandonBlockHandler.handleWithWriteLock(this);
+    
   }
   
   // make sure that we still have the lease on this file.
   private INodeFileUnderConstruction checkLease(String src, String holder) 
-      throws LeaseExpiredException, UnresolvedLinkException {
+      throws LeaseExpiredException, UnresolvedLinkException, PersistanceException {
     assert hasReadOrWriteLock();
     return checkLease(src, holder, dir.getINode(src));
   }
 
   private INodeFileUnderConstruction checkLease(String src, String holder,
-      INode file) throws LeaseExpiredException {
+      INode file) throws LeaseExpiredException, PersistanceException {
     assert hasReadOrWriteLock();
     if (file == null || !(file instanceof INodeFile)) {
       Lease lease = leaseManager.getLease(holder);
@@ -2465,26 +2594,47 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    *         (e.g if not all blocks have reached minimum replication yet)
    * @throws IOException on error (eg lease mismatch, file not open, file deleted)
    */
-  boolean completeFile(String src, String holder, ExtendedBlock last) 
+  boolean completeFile(final String src, final String holder, final ExtendedBlock last) 
     throws SafeModeException, UnresolvedLinkException, IOException {
-    checkBlock(last);
-    boolean success = false;
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
+      TransactionalRequestHandler completeFileHandler = new TransactionalRequestHandler(OperationType.COMPLETE_FILE) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
+              tla.addLease(TransactionLockManager.LockType.WRITE, holder);
+              tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+              tla.addReplica(TransactionLockManager.LockType.READ);
+              tla.addCorrupt(TransactionLockManager.LockType.READ);
+              tla.addExcess(TransactionLockManager.LockType.READ);
+              tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+              tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquire();
+          }
 
-      success = completeFileInternal(src, holder, 
-        ExtendedBlock.getLocalBlock(last));
-    } finally {
-      writeUnlock();
-    }
-//HOP    getEditLog().logSync();
-    return success;
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              checkBlock(last);
+              boolean success = false;
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+
+                  success = completeFileInternal(src, holder,
+                          ExtendedBlock.getLocalBlock(last));
+              } finally {
+                  writeUnlock();
+              }
+//HOP         getEditLog().logSync();
+              return success;
+          }
+      };
+      return (Boolean) completeFileHandler.handleWithWriteLock(this);
   }
 
   private boolean completeFileInternal(String src, 
       String holder, Block last) throws SafeModeException,
-      UnresolvedLinkException, IOException {
+      UnresolvedLinkException, IOException, PersistanceException {
     assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.completeFile: " +
@@ -2684,31 +2834,53 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
 
   /** Rename src to dst */
-  void renameTo(String src, String dst, Options.Rename... options)
-      throws IOException, UnresolvedLinkException {
-    HdfsFileStatus resultingStat = null;
-    if (NameNode.stateChangeLog.isDebugEnabled()) {
-      NameNode.stateChangeLog.debug("DIR* NameSystem.renameTo: with options - "
-          + src + " to " + dst);
+    void renameTo(final String src, final String dst, final Options.Rename... options)
+            throws IOException, UnresolvedLinkException {
+        TransactionalRequestHandler renameToHandler = new TransactionalRequestHandler(OperationType.RENAME_TO) {
+            @Override
+            public void acquireLock() throws PersistanceException, IOException {
+                TransactionLockManager tla = new TransactionLockManager();
+                tla.addINode(TransactionLockManager.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                        TransactionLockManager.INodeLockType.WRITE, false, new String[]{src, dst});
+                tla.addLease(TransactionLockManager.LockType.WRITE);
+                tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+                tla.addBlock(TransactionLockManager.LockType.WRITE);
+                //addReplica(TransactionLockManager.LockType.WRITE).
+                //addCorrupt(TransactionLockManager.LockType.WRITE).
+                //addReplicaUc(TransactionLockManager.LockType.WRITE).
+                //addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE).
+                tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
+            }
+
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+                HdfsFileStatus resultingStat = null;
+                if (NameNode.stateChangeLog.isDebugEnabled()) {
+                    NameNode.stateChangeLog.debug("DIR* NameSystem.renameTo: with options - "
+                            + src + " to " + dst);
+                }
+                FSPermissionChecker pc = getPermissionChecker();
+                writeLock();
+                try {
+                    checkOperation(OperationCategory.WRITE);
+                    renameToInternal(pc, src, dst, options);
+                    resultingStat = getAuditFileInfo(dst, false);
+                } finally {
+                    writeUnlock();
+                }
+//HOP           getEditLog().logSync();
+                if (resultingStat != null) {
+                    StringBuilder cmd = new StringBuilder("rename options=");
+                    for (Rename option : options) {
+                        cmd.append(option.value()).append(" ");
+                    }
+                    logAuditEvent(true, cmd.toString(), src, dst, resultingStat);
+                }
+                return null;
+            }
+        };
+        renameToHandler.handleWithWriteLock(this);
     }
-    FSPermissionChecker pc = getPermissionChecker();
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      renameToInternal(pc, src, dst, options);
-      resultingStat = getAuditFileInfo(dst, false);
-    } finally {
-      writeUnlock();
-    }
-//HOP    getEditLog().logSync();
-    if (resultingStat != null) {
-      StringBuilder cmd = new StringBuilder("rename options=");
-      for (Rename option : options) {
-        cmd.append(option.value()).append(" ");
-      }
-      logAuditEvent(true, cmd.toString(), src, dst, resultingStat);
-    }
-  }
 
   private void renameToInternal(FSPermissionChecker pc, String src, String dst,
       Options.Rename... options) throws IOException {
@@ -2830,7 +3002,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
   
-  void removePathAndBlocks(String src, List<Block> blocks) {
+  void removePathAndBlocks(String src, List<Block> blocks) throws PersistanceException {
     assert hasWriteLock();
     leaseManager.removeLeaseWithPrefixPath(src);
     if (blocks == null) {
@@ -3038,24 +3210,40 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    *                        under construction reported from client.
    * @throws IOException if path does not exist
    */
-  void fsync(String src, String clientName, long lastBlockLength) 
+  void fsync(final String src, final String clientName, final long lastBlockLength) 
       throws IOException, UnresolvedLinkException {
-    NameNode.stateChangeLog.info("BLOCK* fsync: " + src + " for " + clientName);
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      if (isInSafeMode()) {
-        throw new SafeModeException("Cannot fsync file " + src, safeMode);
-      }
-      INodeFileUnderConstruction pendingFile  = checkLease(src, clientName);
-      if (lastBlockLength > 0) {
-        pendingFile.updateLengthOfLastBlock(lastBlockLength);
-      }
-      dir.persistBlocks(src, pendingFile);
-    } finally {
-      writeUnlock();
-    }
-//HOP    getEditLog().logSync();
+      TransactionalRequestHandler fsyncHandler = new TransactionalRequestHandler(OperationType.FSYNC) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
+              tla.addBlock(TransactionLockManager.LockType.READ);
+              tla.addLease(TransactionLockManager.LockType.READ);
+              tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              NameNode.stateChangeLog.info("BLOCK* fsync: " + src + " for " + clientName);
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+                  if (isInSafeMode()) {
+                      throw new SafeModeException("Cannot fsync file " + src, safeMode);
+                  }
+                  INodeFileUnderConstruction pendingFile = checkLease(src, clientName);
+                  if (lastBlockLength > 0) {
+                      pendingFile.updateLengthOfLastBlock(lastBlockLength);
+                  }
+                  dir.persistBlocks(src, pendingFile);
+              } finally {
+                  writeUnlock();
+              }
+//HOP         getEditLog().logSync();
+              return null;
+          }
+      };
+      fsyncHandler.handleWithWriteLock(this);
   }
 
   /**
@@ -3074,7 +3262,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean internalReleaseLease(Lease lease, String src, 
       String recoveryLeaseHolder) throws AlreadyBeingCreatedException, 
-      IOException, UnresolvedLinkException {
+      IOException, UnresolvedLinkException, PersistanceException {
     LOG.info("Recovering " + lease + ", src=" + src);
     assert !isInSafeMode();
     assert hasWriteLock();
@@ -3187,7 +3375,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private Lease reassignLease(Lease lease, String src, String newHolder,
-      INodeFileUnderConstruction pendingFile) {
+      INodeFileUnderConstruction pendingFile) throws PersistanceException {
     assert hasWriteLock();
     if(newHolder == null)
       return lease;
@@ -3197,14 +3385,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   Lease reassignLeaseInternal(Lease lease, String src, String newHolder,
-      INodeFileUnderConstruction pendingFile) {
+      INodeFileUnderConstruction pendingFile) throws PersistanceException {
     assert hasWriteLock();
     pendingFile.setClientName(newHolder);
     return leaseManager.reassignLease(lease, src, newHolder);
   }
 
   private void commitOrCompleteLastBlock(final INodeFileUnderConstruction fileINode,
-      final Block commitBlock) throws IOException {
+      final Block commitBlock) throws IOException, PersistanceException {
     assert hasWriteLock();
     if (!blockManager.commitOrCompleteLastBlock(fileINode, commitBlock)) {
       return;
@@ -3224,7 +3412,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void finalizeINodeFileUnderConstruction(String src, 
       INodeFileUnderConstruction pendingFile) 
-      throws IOException, UnresolvedLinkException {
+      throws IOException, UnresolvedLinkException, PersistanceException {
     assert hasWriteLock();
     leaseManager.removeLease(pendingFile.getClientName(), src);
 
@@ -3239,126 +3427,169 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     blockManager.checkReplication(newFile);
   }
 
-  void commitBlockSynchronization(ExtendedBlock lastblock,
-      long newgenerationstamp, long newlength,
-      boolean closeFile, boolean deleteblock, DatanodeID[] newtargets,
-      String[] newtargetstorages)
+  void commitBlockSynchronization(final ExtendedBlock lastblock,
+      final long newgenerationstamp, final long newlength,
+      final boolean closeFile, final boolean deleteblock, final DatanodeID[] newtargets,
+      final String[] newtargetstorages)
       throws IOException, UnresolvedLinkException {
-    String src = "";
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      // If a DN tries to commit to the standby, the recovery will
-      // fail, and the next retry will succeed on the new NN.
-  
-      if (isInSafeMode()) {
-        throw new SafeModeException(
-          "Cannot commitBlockSynchronization while in safe mode",
-          safeMode);
-      }
-      LOG.info("commitBlockSynchronization(lastblock=" + lastblock
-               + ", newgenerationstamp=" + newgenerationstamp
-               + ", newlength=" + newlength
-               + ", newtargets=" + Arrays.asList(newtargets)
-               + ", closeFile=" + closeFile
-               + ", deleteBlock=" + deleteblock
-               + ")");
-      final BlockInfo storedBlock = blockManager.getStoredBlock(ExtendedBlock
-        .getLocalBlock(lastblock));
-      if (storedBlock == null) {
-        throw new IOException("Block (=" + lastblock + ") not found");
-      }
-      INodeFile iFile = (INodeFile) storedBlock.getBlockCollection();
-      if (!iFile.isUnderConstruction() || storedBlock.isComplete()) {
-        throw new IOException("Unexpected block (=" + lastblock
+      TransactionalRequestHandler commitBlockSyncHanlder = new TransactionalRequestHandler(OperationType.COMMIT_BLOCK_SYNCHRONIZATION) {
+          private LinkedList<INode> resolvedInodes = null;
+          private long inodeId;
+          @Override        
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager(resolvedInodes);
+              tla.addINode(TransactionLockManager.INodeResolveType.FROM_CHILD_TO_ROOT, TransactionLockManager.INodeLockType.WRITE);
+              tla.addBlock(TransactionLockManager.LockType.WRITE, lastblock.getBlockId());
+              tla.addLease(TransactionLockManager.LockType.WRITE);
+              tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+              tla.addReplica(TransactionLockManager.LockType.WRITE);
+              tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+              tla.addExcess(TransactionLockManager.LockType.READ);
+              tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+              tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquireByBlock(inodeId);
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              String src = "";
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+                  // If a DN tries to commit to the standby, the recovery will
+                  // fail, and the next retry will succeed on the new NN.
+
+                  if (isInSafeMode()) {
+                      throw new SafeModeException(
+                              "Cannot commitBlockSynchronization while in safe mode",
+                              safeMode);
+                  }
+                  LOG.info("commitBlockSynchronization(lastblock=" + lastblock
+                          + ", newgenerationstamp=" + newgenerationstamp
+                          + ", newlength=" + newlength
+                          + ", newtargets=" + Arrays.asList(newtargets)
+                          + ", closeFile=" + closeFile
+                          + ", deleteBlock=" + deleteblock
+                          + ")");
+                  final BlockInfo storedBlock = blockManager.getStoredBlock(ExtendedBlock
+                          .getLocalBlock(lastblock));
+                  if (storedBlock == null) {
+                      throw new IOException("Block (=" + lastblock + ") not found");
+                  }
+                  INodeFile iFile = (INodeFile) storedBlock.getBlockCollection();
+                  if (!iFile.isUnderConstruction() || storedBlock.isComplete()) {
+                      throw new IOException("Unexpected block (=" + lastblock
                               + ") since the file (=" + iFile.getLocalName()
                               + ") is not under construction");
-      }
+                  }
 
-      long recoveryId =
-        ((BlockInfoUnderConstruction)storedBlock).getBlockRecoveryId();
-      if(recoveryId != newgenerationstamp) {
-        throw new IOException("The recovery id " + newgenerationstamp
+                  long recoveryId =
+                          ((BlockInfoUnderConstruction) storedBlock).getBlockRecoveryId();
+                  if (recoveryId != newgenerationstamp) {
+                      throw new IOException("The recovery id " + newgenerationstamp
                               + " does not match current recovery id "
-                              + recoveryId + " for block " + lastblock); 
-      }
+                              + recoveryId + " for block " + lastblock);
+                  }
 
-      INodeFileUnderConstruction pendingFile = (INodeFileUnderConstruction)iFile;
+                  INodeFileUnderConstruction pendingFile = (INodeFileUnderConstruction) iFile;
 
-      if (deleteblock) {
-        pendingFile.removeLastBlock(ExtendedBlock.getLocalBlock(lastblock));
-        blockManager.removeBlockFromMap(storedBlock);
-      }
-      else {
-        // update last block
-        storedBlock.setGenerationStamp(newgenerationstamp);
-        storedBlock.setNumBytes(newlength);
+                  if (deleteblock) {
+                      pendingFile.removeLastBlock(ExtendedBlock.getLocalBlock(lastblock));
+                      blockManager.removeBlockFromMap(storedBlock);
+                  } else {
+                      // update last block
+                      storedBlock.setGenerationStamp(newgenerationstamp);
+                      storedBlock.setNumBytes(newlength);
 
-        // find the DatanodeDescriptor objects
-        // There should be no locations in the blockManager till now because the
-        // file is underConstruction
-        DatanodeDescriptor[] descriptors = null;
-        if (newtargets.length > 0) {
-          descriptors = new DatanodeDescriptor[newtargets.length];
-          for(int i = 0; i < newtargets.length; i++) {
-            descriptors[i] = blockManager.getDatanodeManager().getDatanode(
-                newtargets[i]);
+                      // find the DatanodeDescriptor objects
+                      // There should be no locations in the blockManager till now because the
+                      // file is underConstruction
+                      DatanodeDescriptor[] descriptors = null;
+                      if (newtargets.length > 0) {
+                          descriptors = new DatanodeDescriptor[newtargets.length];
+                          for (int i = 0; i < newtargets.length; i++) {
+                              descriptors[i] = blockManager.getDatanodeManager().getDatanode(
+                                      newtargets[i]);
+                          }
+                      }
+                      if ((closeFile) && (descriptors != null)) {
+                          // the file is getting closed. Insert block locations into blockManager.
+                          // Otherwise fsck will report these blocks as MISSING, especially if the
+                          // blocksReceived from Datanodes take a long time to arrive.
+                          for (int i = 0; i < descriptors.length; i++) {
+                              descriptors[i].addBlock(storedBlock);
+                          }
+                      }
+                      // add pipeline locations into the INodeUnderConstruction
+                      pendingFile.setLastBlock(storedBlock, descriptors);
+                  }
+
+                  src = leaseManager.findPath(pendingFile);
+                  if (closeFile) {
+                      // commit the last block and complete it if it has minimum replicas
+                      commitOrCompleteLastBlock(pendingFile, storedBlock);
+
+                      //remove lease, close file
+                      finalizeINodeFileUnderConstruction(src, pendingFile);
+                  } else {
+                      // If this commit does not want to close the file, persist blocks
+                      dir.persistBlocks(src, pendingFile);
+                  }
+              } finally {
+                  writeUnlock();
+              }
+//HOP         getEditLog().logSync();
+              if (closeFile) {
+                  LOG.info("commitBlockSynchronization(newblock=" + lastblock
+                          + ", file=" + src
+                          + ", newgenerationstamp=" + newgenerationstamp
+                          + ", newlength=" + newlength
+                          + ", newtargets=" + Arrays.asList(newtargets) + ") successful");
+              } else {
+                  LOG.info("commitBlockSynchronization(" + lastblock + ") successful");
+              }
+              return null;
           }
-        }
-        if ((closeFile) && (descriptors != null)) {
-          // the file is getting closed. Insert block locations into blockManager.
-          // Otherwise fsck will report these blocks as MISSING, especially if the
-          // blocksReceived from Datanodes take a long time to arrive.
-          for (int i = 0; i < descriptors.length; i++) {
-            descriptors[i].addBlock(storedBlock);
+
+          @Override
+          public void setUp() throws PersistanceException {
+              inodeId = INodeUtil.findINodeIdByBlock(lastblock.getBlockId());
+              resolvedInodes = INodeUtil.findPathINodesById(inodeId);
           }
-        }
-        // add pipeline locations into the INodeUnderConstruction
-        pendingFile.setLastBlock(storedBlock, descriptors);
-      }
-
-      src = leaseManager.findPath(pendingFile);
-      if (closeFile) {
-        // commit the last block and complete it if it has minimum replicas
-        commitOrCompleteLastBlock(pendingFile, storedBlock);
-
-        //remove lease, close file
-        finalizeINodeFileUnderConstruction(src, pendingFile);
-      } else {
-        // If this commit does not want to close the file, persist blocks
-        dir.persistBlocks(src, pendingFile);
-      }
-    } finally {
-      writeUnlock();
-    }
-//HOP    getEditLog().logSync();
-    if (closeFile) {
-      LOG.info("commitBlockSynchronization(newblock=" + lastblock
-          + ", file=" + src
-          + ", newgenerationstamp=" + newgenerationstamp
-          + ", newlength=" + newlength
-          + ", newtargets=" + Arrays.asList(newtargets) + ") successful");
-    } else {
-      LOG.info("commitBlockSynchronization(" + lastblock + ") successful");
-    }
+      };
+      commitBlockSyncHanlder.handleWithWriteLock(this);   
   }
 
 
   /**
    * Renew the lease(s) held by the given client
    */
-  void renewLease(String holder) throws IOException {
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
+  void renewLease(final String holder) throws IOException {
+      TransactionalRequestHandler renewLeaseHandler = new TransactionalRequestHandler(OperationType.RENEW_LEASE) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addLease(TransactionLockManager.LockType.WRITE, holder);
+              tla.acquire();
+          }
 
-      if (isInSafeMode()) {
-        throw new SafeModeException("Cannot renew lease for " + holder, safeMode);
-      }
-      leaseManager.renewLease(holder);
-    } finally {
-      writeUnlock();
-    }
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+
+                  if (isInSafeMode()) {
+                      throw new SafeModeException("Cannot renew lease for " + holder, safeMode);
+                  }
+                  leaseManager.renewLease(holder);
+              } finally {
+                  writeUnlock();
+              }
+              return null;
+          }
+      };
+      renewLeaseHandler.handleWithWriteLock(this);
   }
 
   /**
@@ -4371,7 +4602,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Set the total number of blocks in the system. 
    */
-  public void setBlockTotal() {
+  public void setBlockTotal() throws PersistanceException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4392,7 +4623,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Get the total number of COMPLETE blocks in the system.
    * For safe mode only complete blocks are counted.
    */
-  private long getCompleteBlocksTotal() {
+  private long getCompleteBlocksTotal() throws PersistanceException {
     // Calculate number of blocks under construction
     long numUCBlocks = 0;
     readLock();
@@ -4887,36 +5118,57 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param newNodes datanodes in the pipeline
    * @throws IOException if any error occurs
    */
-  void updatePipeline(String clientName, ExtendedBlock oldBlock, 
-      ExtendedBlock newBlock, DatanodeID[] newNodes)
+  void updatePipeline(final String clientName, final ExtendedBlock oldBlock, 
+     final  ExtendedBlock newBlock, final DatanodeID[] newNodes)
       throws IOException {
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
+      TransactionalRequestHandler updatePipelineHanlder = new TransactionalRequestHandler(OperationType.UPDATE_PIPELINE) {
+          long inodeId;
+          @Override
+          public void setUp() throws StorageException {
+              inodeId = INodeUtil.findINodeIdByBlock(oldBlock.getBlockId());
+          }
 
-      if (isInSafeMode()) {
-        throw new SafeModeException("Pipeline not updated", safeMode);
-      }
-      assert newBlock.getBlockId()==oldBlock.getBlockId() : newBlock + " and "
-        + oldBlock + " has different block identifier";
-      LOG.info("updatePipeline(block=" + oldBlock
-               + ", newGenerationStamp=" + newBlock.getGenerationStamp()
-               + ", newLength=" + newBlock.getNumBytes()
-               + ", newNodes=" + Arrays.asList(newNodes)
-               + ", clientName=" + clientName
-               + ")");
-      updatePipelineInternal(clientName, oldBlock, newBlock, newNodes);
-    } finally {
-      writeUnlock();
-    }
-//HOP    getEditLog().logSync();
-    LOG.info("updatePipeline(" + oldBlock + ") successfully to " + newBlock);
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager lm = new TransactionLockManager();
+              lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                      addBlock(TransactionLockManager.LockType.WRITE, oldBlock.getBlockId()).
+                      addReplicaUc(TransactionLockManager.LockType.READ);
+              lm.acquireByBlock(inodeId);
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              writeLock();
+              try {
+                  checkOperation(OperationCategory.WRITE);
+
+                  if (isInSafeMode()) {
+                      throw new SafeModeException("Pipeline not updated", safeMode);
+                  }
+                  assert newBlock.getBlockId() == oldBlock.getBlockId() : newBlock + " and "
+                          + oldBlock + " has different block identifier";
+                  LOG.info("updatePipeline(block=" + oldBlock
+                          + ", newGenerationStamp=" + newBlock.getGenerationStamp()
+                          + ", newLength=" + newBlock.getNumBytes()
+                          + ", newNodes=" + Arrays.asList(newNodes)
+                          + ", clientName=" + clientName
+                          + ")");
+                  updatePipelineInternal(clientName, oldBlock, newBlock, newNodes);
+              } finally {
+                  writeUnlock();
+              }
+//HOP         getEditLog().logSync();
+              LOG.info("updatePipeline(" + oldBlock + ") successfully to " + newBlock);
+              return null;
+          }
+      };
   }
 
   /** @see #updatePipeline(String, ExtendedBlock, ExtendedBlock, DatanodeID[]) */
   private void updatePipelineInternal(String clientName, ExtendedBlock oldBlock, 
       ExtendedBlock newBlock, DatanodeID[] newNodes)
-      throws IOException {
+      throws IOException, PersistanceException {
     assert hasWriteLock();
     // check the vadility of the block and lease holder name
     final INodeFileUnderConstruction pendingFile
@@ -4955,7 +5207,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   // rename was successful. If any part of the renamed subtree had
   // files that were being written to, update with new filename.
-  void unprotectedChangeLease(String src, String dst) {
+  void unprotectedChangeLease(String src, String dst) throws PersistanceException {
     assert hasWriteLock();
     leaseManager.changeLease(src, dst);
   }

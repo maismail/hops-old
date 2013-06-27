@@ -87,6 +87,10 @@ public class FSDirectory implements Closeable {
   // lock to protect the directory and BlockMap
   private ReentrantReadWriteLock dirLock;
   private Condition cond;
+  
+  //START_HOP_CODE
+  public final static long ROOT_ID = 0L;
+  //END_HOP_CODE
 
   // utility methods to acquire and release read lock and write lock
   void readLock() {

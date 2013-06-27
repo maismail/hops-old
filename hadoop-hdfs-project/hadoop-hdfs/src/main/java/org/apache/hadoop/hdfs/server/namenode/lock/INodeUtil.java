@@ -11,15 +11,15 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
-//import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
-//import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
@@ -74,18 +74,18 @@ public class INodeUtil {
 //
 //    return lastComp;
 //  }
-//
-//  public static String constructPath(byte[][] components, int start, int end) {
-//    StringBuilder buf = new StringBuilder();
-//    for (int i = start; i < end; i++) {
-//      buf.append(DFSUtil.bytes2String(components[i]));
-//      if (i < end - 1) {
-//        buf.append(Path.SEPARATOR);
-//      }
-//    }
-//    return buf.toString();
-//  }
-//
+
+  public static String constructPath(byte[][] components, int start, int end) {
+    StringBuilder buf = new StringBuilder();
+    for (int i = start; i < end; i++) {
+      buf.append(DFSUtil.bytes2String(components[i]));
+      if (i < end - 1) {
+        buf.append(Path.SEPARATOR);
+      }
+    }
+    return buf.toString();
+  }
+
 //  private static INode getChildINode(
 //          byte[] name,
 //          long parentId,
@@ -101,22 +101,22 @@ public class INodeUtil {
 //    }
 //  }
 
-//  private static INode findINodeWithNoTransaction(
-//          String name,
-//          long parentId)
-//          throws StorageException {
-//    LOG.info(String.format(
-//            "Read inode with no transaction by parent-id=%d, name=%s",
-//            parentId,
-//            name));
-//    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
-//    return da.findInodeByNameAndParentId(name, parentId);
-//  }
-//
-//  public static LinkedList<INode> resolvePathWithNoTransaction(
-//          String path,
-//          boolean resolveLink)
-//          throws UnresolvedPathException, PersistanceException {
+  private static INode findINodeWithNoTransaction(
+          String name,
+          long parentId)
+          throws StorageException {
+    LOG.info(String.format(
+            "Read inode with no transaction by parent-id=%d, name=%s",
+            parentId,
+            name));
+    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+    return da.findInodeByNameAndParentId(name, parentId);
+  }
+
+  public static LinkedList<INode> resolvePathWithNoTransaction(
+          String path,
+          boolean resolveLink)
+          throws UnresolvedPathException, PersistanceException {
 //    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
 //
 //    if (path == null) {
@@ -151,9 +151,10 @@ public class INodeUtil {
 //    }
 //
 //    return resolvedInodes;
-//  }
-//
-//  public static long findINodeIdByBlock(long blockId) throws StorageException {
+          return null;
+  }
+
+  public static long findINodeIdByBlock(long blockId) throws StorageException {
 //    LOG.info(String.format(
 //            "Read block with no transaction by bid=%d",
 //            blockId));
@@ -163,9 +164,10 @@ public class INodeUtil {
 //      return INode.NON_EXISTING_ID;
 //    }
 //    return bInfo.getInodeId();
-//  }
-//
-//  public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
+      return 0L; //FIXME uncomment code above and delete this line. only for testing
+  }
+
+  public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
 //    LinkedList<INode> pathInodes = new LinkedList<INode>();
 //    if (inodeId != INode.NON_EXISTING_ID) {
 //      INode inode = readById(inodeId);
@@ -175,7 +177,8 @@ public class INodeUtil {
 //      readFromLeafToRoot(inode, pathInodes);
 //    }
 //    return pathInodes;
-//  }
+      return null; //FIXME uncomment code above and delete this line. only for testing
+  }
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
     SortedSet<String> sortedPaths = new TreeSet<String>();
@@ -192,18 +195,18 @@ public class INodeUtil {
     return sortedPaths;
   }
 
-//  private static INode readRoot() throws StorageException {
-//    return readById(FSDirectory.ROOT_ID);
-//  }
-//
-//  private static INode readById(long id) throws StorageException {
-//    LOG.info(String.format(
-//            "Read inode with no transaction by id=%d",
-//            id));
-//    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
-//    return da.findInodeById(id);
-//  }
-//
+  private static INode readRoot() throws StorageException {
+    return readById(FSDirectory.ROOT_ID);
+  }
+
+  private static INode readById(long id) throws StorageException {
+    LOG.info(String.format(
+            "Read inode with no transaction by id=%d",
+            id));
+    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+    return da.findInodeById(id);
+  }
+
 //  private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
 //    if (inode.getParentId() == -1) {
 //      list.add(inode);

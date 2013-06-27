@@ -40,7 +40,7 @@ import com.google.common.primitives.SignedBytes;
  * directory inodes.
  */
 @InterfaceAudience.Private
-abstract class INode implements Comparable<byte[]> {
+public abstract class INode implements Comparable<byte[]> {
   static final List<INode> EMPTY_LIST = Collections.unmodifiableList(new ArrayList<INode>());
   /**
    *  The inode name is in java UTF8 encoding; 
@@ -53,6 +53,13 @@ abstract class INode implements Comparable<byte[]> {
   protected INodeDirectory parent;
   protected long modificationTime;
   protected long accessTime;
+  
+    //START_HOP_CODE
+    protected long id; // Added for KTHFS
+    protected long parentid; // Added for KTHFS
+    // FIXME [H]: min value can be chosen as the inode id. Change this.
+    public static final long NON_EXISTING_ID = Long.MIN_VALUE;
+    //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
    *  nsCount (namespace consumed) and dsCount (diskspace consumed).
@@ -346,7 +353,7 @@ abstract class INode implements Comparable<byte[]> {
    * @return array of byte arrays each of which represents 
    * a single path component.
    */
-  static byte[][] getPathComponents(String path) {
+  public static byte[][] getPathComponents(String path) {
     return getPathComponents(getPathNames(path));
   }
 

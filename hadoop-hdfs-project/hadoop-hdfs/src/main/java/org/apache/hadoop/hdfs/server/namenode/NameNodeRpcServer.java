@@ -482,6 +482,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
                                ExtendedBlock previous,
                                DatanodeInfo[] excludedNodes)
       throws IOException {
+      
     if(stateChangeLog.isDebugEnabled()) {
       stateChangeLog.debug("*BLOCK* NameNode.addBlock: file "
           +src+" for "+clientName);
