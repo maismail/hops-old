@@ -31,7 +31,7 @@ import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.junit.Test;
 
 public class TestDFSRename {
-  static int countLease(MiniDFSCluster cluster) {
+  static int countLease(MiniDFSCluster cluster) throws IOException {
     return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()).countLease();
   }
   

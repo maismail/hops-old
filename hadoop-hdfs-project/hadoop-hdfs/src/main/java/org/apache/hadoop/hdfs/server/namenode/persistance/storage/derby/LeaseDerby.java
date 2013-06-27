@@ -119,7 +119,7 @@ public class LeaseDerby extends LeaseDataAccess {
     try {
       PreparedStatement updt = conn.prepareStatement(update);
       for (Lease l : modified) {
-        updt.setLong(1, l.getLastUpdated());
+        updt.setLong(1, l.getLastUpdate());
         updt.setInt(2, l.getHolderID());
         updt.setString(3, l.getHolder());
         updt.addBatch();
@@ -129,7 +129,7 @@ public class LeaseDerby extends LeaseDataAccess {
       PreparedStatement insrt = conn.prepareStatement(insert);
       for (Lease l : newed) {
         insrt.setString(1, l.getHolder());
-        insrt.setLong(2, l.getLastUpdated());
+        insrt.setLong(2, l.getLastUpdate());
         insrt.setInt(3, l.getHolderID());
         insrt.addBatch();
       }

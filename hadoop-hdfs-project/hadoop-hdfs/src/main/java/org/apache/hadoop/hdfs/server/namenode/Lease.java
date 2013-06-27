@@ -56,7 +56,7 @@ public class Lease implements Comparable<Lease> {
     this.paths = paths;
   }
   
-  public long getLastUpdated() {
+  public long getLastUpdate() {
     return this.lastUpdate;
   }
 
@@ -143,18 +143,12 @@ public class Lease implements Comparable<Lease> {
     return holder.hashCode();
   }
 
-  
-  public Collection<String> getPaths() throws PersistanceException {
+  public Collection<LeasePath> getPaths() throws PersistanceException {
     if (paths == null) {
       paths = EntityManager.findList(LeasePath.Finder.ByHolderId, holderID);
     }
 
-    Collection<String> ret = new TreeSet<String>();
-    for(LeasePath path : paths)
-    {
-        ret.add(path.getPath());
-    }
-    return ret;
+    return paths;
   }
 
   public String getHolder() {

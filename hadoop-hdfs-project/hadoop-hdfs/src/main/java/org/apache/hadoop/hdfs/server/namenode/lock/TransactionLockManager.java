@@ -735,4 +735,12 @@ public class TransactionLockManager {
   public void acquireByBlock(long inodeId) throws PersistanceException, UnresolvedPathException {
       acquire();
   }
+  
+  public void acquireForRename() throws PersistanceException, UnresolvedPathException {
+      acquireForRename(false);
+  }
+  
+  public void acquireByLease(SortedSet<String> sortedPaths) throws PersistanceException, UnresolvedPathException {
+       acquire();
+  }
 }

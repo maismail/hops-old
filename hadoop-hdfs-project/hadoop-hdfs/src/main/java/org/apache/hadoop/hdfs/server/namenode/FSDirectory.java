@@ -61,6 +61,7 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /*************************************************
  * FSDirectory stores the filesystem directory state.
@@ -462,7 +463,7 @@ public class FSDirectory implements Closeable {
   @Deprecated
   boolean renameTo(String src, String dst) 
       throws QuotaExceededException, UnresolvedLinkException, 
-      FileAlreadyExistsException {
+      FileAlreadyExistsException, PersistanceException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.renameTo: "
           +src+" to "+dst);
@@ -486,7 +487,7 @@ public class FSDirectory implements Closeable {
   void renameTo(String src, String dst, Options.Rename... options)
       throws FileAlreadyExistsException, FileNotFoundException,
       ParentNotDirectoryException, QuotaExceededException,
-      UnresolvedLinkException, IOException {
+      UnresolvedLinkException, IOException, PersistanceException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.renameTo: " + src
           + " to " + dst);
@@ -517,7 +518,8 @@ public class FSDirectory implements Closeable {
   @Deprecated
   boolean unprotectedRenameTo(String src, String dst, long timestamp)
     throws QuotaExceededException, UnresolvedLinkException, 
-    FileAlreadyExistsException {
+    FileAlreadyExistsException,
+    PersistanceException {
     assert hasWriteLock();
     INode[] srcInodes = rootDir.getExistingPathINodes(src, false);
     INode srcInode = srcInodes[srcInodes.length-1];
@@ -633,7 +635,7 @@ public class FSDirectory implements Closeable {
   boolean unprotectedRenameTo(String src, String dst, long timestamp,
       Options.Rename... options) throws FileAlreadyExistsException,
       FileNotFoundException, ParentNotDirectoryException,
-      QuotaExceededException, UnresolvedLinkException, IOException {
+      QuotaExceededException, UnresolvedLinkException, IOException, PersistanceException {
     assert hasWriteLock();
     boolean overwrite = false;
     if (null != options) {
@@ -1006,7 +1008,7 @@ public class FSDirectory implements Closeable {
    * @return true on successful deletion; else false
    */
   boolean delete(String src, List<Block>collectedBlocks) 
-    throws UnresolvedLinkException {
+    throws UnresolvedLinkException, PersistanceException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.delete: " + src);
     }
@@ -1056,7 +1058,7 @@ public class FSDirectory implements Closeable {
    * @param mtime the time the inode is removed
    */ 
   void unprotectedDelete(String src, long mtime) 
-    throws UnresolvedLinkException {
+    throws UnresolvedLinkException, PersistanceException {
     assert hasWriteLock();
     List<Block> collectedBlocks = new ArrayList<Block>();
     int filesRemoved = unprotectedDelete(src, collectedBlocks, mtime);

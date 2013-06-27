@@ -84,6 +84,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**********************************************************
@@ -437,7 +438,7 @@ public class NameNode {
    * 
    * @param conf the configuration
    */
-  protected void initialize(Configuration conf) throws IOException {
+  protected void initialize(Configuration conf) throws IOException, PersistanceException {
     UserGroupInformation.setConfiguration(conf);
     loginAsNameNodeUser(conf);
 
@@ -494,7 +495,7 @@ public class NameNode {
   }
 
   /** Start the services common to active and standby states */
-  private void startCommonServices(Configuration conf) throws IOException {
+  private void startCommonServices(Configuration conf) throws IOException, PersistanceException {
     namesystem.startCommonServices(conf, haContext);
     startHttpServer(conf);
     rpcServer.start();
@@ -604,12 +605,12 @@ public class NameNode {
    * @param conf  confirguration
    * @throws IOException
    */
-  public NameNode(Configuration conf) throws IOException {
+  public NameNode(Configuration conf) throws IOException, PersistanceException {
     this(conf, NamenodeRole.NAMENODE);
   }
 
   protected NameNode(Configuration conf, NamenodeRole role) 
-      throws IOException { 
+      throws IOException, PersistanceException { 
     this.conf = conf;
     this.role = role;
     String nsId = getNameServiceId(conf);
@@ -1125,7 +1126,7 @@ public class NameNode {
   }
 
   public static NameNode createNameNode(String argv[], Configuration conf)
-      throws IOException {
+      throws IOException, PersistanceException {
     if (conf == null)
       conf = new HdfsConfiguration();
     StartupOption startOpt = parseArguments(argv);

@@ -572,10 +572,10 @@ public class LeaseManager {
   }
   
   private boolean expiredHardLimit(Lease lease) {
-    return now() - lease.getLastUpdated() > hardLimit;
+    return now() - lease.getLastUpdate() > hardLimit;
   }
 
   public boolean expiredSoftLimit(Lease lease) {
-    return now() - lease.getLastUpdated() > softLimit;
+    return now() - lease.getLastUpdate() > softLimit;
   }
 }

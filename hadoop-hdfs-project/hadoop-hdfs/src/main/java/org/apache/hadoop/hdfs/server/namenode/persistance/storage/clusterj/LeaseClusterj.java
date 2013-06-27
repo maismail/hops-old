@@ -167,6 +167,6 @@ public class LeaseClusterj extends LeaseDataAccess {
   private void createPersistableLeaseInstance(Lease lease, LeaseDTO lTable) {
     lTable.setHolder(lease.getHolder());
     lTable.setHolderId(lease.getHolderID());
-    lTable.setLastUpdate(lease.getLastUpdated());
+    lTable.setLastUpdate(lease.getLastUpdate());
   }
 }

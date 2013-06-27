@@ -2767,18 +2767,42 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @deprecated Use {@link #renameTo(String, String, Options.Rename...)} instead.
    */
   @Deprecated
-  boolean renameTo(String src, String dst) 
+  boolean renameTo(final String src, final String dst) 
       throws IOException, UnresolvedLinkException {
-    try {
-      return renameToInt(src, dst);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "rename", src, dst, null);
-      throw e;
-    }
+      TransactionalRequestHandler renameToHandler = new TransactionalRequestHandler(OperationType.RENAME_TO) {
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager tla = new TransactionLockManager();
+              tla.addINode(
+                      TransactionLockManager.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                      TransactionLockManager.INodeLockType.WRITE,
+                      false,
+                      new String[]{src, dst});
+              tla.addLease(TransactionLockManager.LockType.WRITE);
+              tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
+              //addReplica(TransactionLockManager.LockType.WRITE).
+              //addCorrupt(TransactionLockManager.LockType.WRITE).
+              //addReplicaUc(TransactionLockManager.LockType.WRITE).
+              //addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE).
+              tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              try {
+                  return renameToInt(src, dst);
+              } catch (AccessControlException e) {
+                  logAuditEvent(false, "rename", src, dst, null);
+                  throw e;
+              }
+          }
+      };
+      return (Boolean) renameToHandler.handleWithWriteLock(this);
   }
 
   private boolean renameToInt(String src, String dst) 
-    throws IOException, UnresolvedLinkException {
+    throws IOException, UnresolvedLinkException, PersistanceException {
     boolean status = false;
     HdfsFileStatus resultingStat = null;
     if (NameNode.stateChangeLog.isDebugEnabled()) {
@@ -2807,7 +2831,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /** @deprecated See {@link #renameTo(String, String)} */
   @Deprecated
   private boolean renameToInternal(FSPermissionChecker pc, String src, String dst)
-    throws IOException, UnresolvedLinkException {
+    throws IOException, UnresolvedLinkException, PersistanceException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot rename " + src, safeMode);
@@ -2836,7 +2860,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /** Rename src to dst */
     void renameTo(final String src, final String dst, final Options.Rename... options)
             throws IOException, UnresolvedLinkException {
-        TransactionalRequestHandler renameToHandler = new TransactionalRequestHandler(OperationType.RENAME_TO) {
+        TransactionalRequestHandler renameTo2Handler = new TransactionalRequestHandler(OperationType.RENAME_TO2) {
             @Override
             public void acquireLock() throws PersistanceException, IOException {
                 TransactionLockManager tla = new TransactionLockManager();
@@ -2845,11 +2869,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 tla.addLease(TransactionLockManager.LockType.WRITE);
                 tla.addLeasePath(TransactionLockManager.LockType.WRITE);
                 tla.addBlock(TransactionLockManager.LockType.WRITE);
-                //addReplica(TransactionLockManager.LockType.WRITE).
-                //addCorrupt(TransactionLockManager.LockType.WRITE).
-                //addReplicaUc(TransactionLockManager.LockType.WRITE).
-                //addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE).
-                tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
+                tla.addReplica(TransactionLockManager.LockType.WRITE);
+                tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+                tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+                tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+                tla.acquireForRename();
             }
 
             @Override
@@ -2879,11 +2903,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 return null;
             }
         };
-        renameToHandler.handleWithWriteLock(this);
+        renameTo2Handler.handleWithWriteLock(this);
     }
 
   private void renameToInternal(FSPermissionChecker pc, String src, String dst,
-      Options.Rename... options) throws IOException {
+      Options.Rename... options) throws IOException, PersistanceException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot rename " + src, safeMode);
@@ -2899,15 +2923,47 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     dir.renameTo(src, dst, options);
   }
   
+
   /**
    * Remove the indicated file from namespace.
    * 
    * @see ClientProtocol#delete(String, boolean) for detailed descriptoin and 
    * description of exceptions
    */
+  
+    boolean deleteWithTransaction(final String src, final boolean recursive)
+            throws AccessControlException, SafeModeException,
+            UnresolvedLinkException, IOException {
+        TransactionalRequestHandler deleteHandler = new TransactionalRequestHandler(OperationType.DELETE) {
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+                return delete(src, recursive);
+            }
+
+            @Override
+            public void acquireLock() throws PersistanceException, IOException {
+                TransactionLockManager tla = new TransactionLockManager();
+                tla.addINode(
+                        TransactionLockManager.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                        TransactionLockManager.INodeLockType.WRITE,
+                        false,
+                        new String[]{src});
+                tla.addLease(TransactionLockManager.LockType.WRITE);
+                tla.addLeasePath(TransactionLockManager.LockType.WRITE);
+                tla.addBlock(TransactionLockManager.LockType.WRITE);
+                tla.addReplica(TransactionLockManager.LockType.WRITE);
+                tla.addCorrupt(TransactionLockManager.LockType.WRITE);
+                tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
+                tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+                tla.acquire();
+            }
+        };
+        return (Boolean) deleteHandler.handleWithWriteLock(this);
+    }
+    
   boolean delete(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
-      UnresolvedLinkException, IOException {
+      UnresolvedLinkException, IOException, PersistanceException {
     try {
       return deleteInt(src, recursive);
     } catch (AccessControlException e) {
@@ -2918,7 +2974,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
   private boolean deleteInt(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
-      UnresolvedLinkException, IOException {
+      UnresolvedLinkException, IOException, PersistanceException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.delete: " + src);
     }
@@ -2947,7 +3003,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private boolean deleteInternal(String src, boolean recursive,
       boolean enforcePermission)
       throws AccessControlException, SafeModeException, UnresolvedLinkException,
-             IOException {
+             IOException, PersistanceException {
     ArrayList<Block> collectedBlocks = new ArrayList<Block>();
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -4629,10 +4685,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     readLock();
     try {
       for (Lease lease : leaseManager.getSortedLeases()) {
-        for (String path : lease.getPaths()) {
+        for (LeasePath path : lease.getPaths()) {
           final INodeFileUnderConstruction cons;
           try {
-            cons = INodeFileUnderConstruction.valueOf(dir.getINode(path), path);
+            cons = INodeFileUnderConstruction.valueOf(dir.getINode(path.getPath()), path.getPath());
           } catch (UnresolvedLinkException e) {
             throw new AssertionError("Lease files should reside on this FS");
           } catch (IOException e) {
