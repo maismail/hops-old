@@ -443,21 +443,21 @@ public class TransactionLockManager {
 //    acquireLeaderLock();
 //  }
 
-  private void acquireLeaderLock() throws PersistanceException {
-    if (leaderLock != null) {
-      if (leaderIds.length == 0) {
-        TransactionLockAcquirer.acquireLockList(leaderLock, Leader.Finder.All);
-      } else {
-        for (long id : leaderIds) {
-          TransactionLockAcquirer.acquireLock(
-                  leaderLock,
-                  Leader.Finder.ById,
-                  id,
-                  Leader.DEFAULT_PARTITION_VALUE);
-        }
-      }
-    }
-  }
+//  private void acquireLeaderLock() throws PersistanceException {
+//    if (leaderLock != null) {
+//      if (leaderIds.length == 0) {
+//        TransactionLockAcquirer.acquireLockList(leaderLock, Leader.Finder.All);
+//      } else {
+//        for (long id : leaderIds) {
+//          TransactionLockAcquirer.acquireLock(
+//                  leaderLock,
+//                  Leader.Finder.ById,
+//                  id,
+//                  Leader.DEFAULT_PARTITION_VALUE);
+//        }
+//      }
+//    }
+//  }
 
 //  private void acquireLeaseAndLpathLockNormal() throws PersistanceException {
 //    if (leaseLock != null) {
@@ -724,8 +724,12 @@ public class TransactionLockManager {
   
   public void acquire() throws PersistanceException, UnresolvedPathException 
   {
-     PersistanceException e = new PersistanceException("delete this") {};
-     throw e;
+    if (leaseLock != null) {
+      TransactionLockAcquirer.acquireLockList(leaseLock, Lease.Finder.All, null);
+    }
+    if (lpLock != null) {
+      TransactionLockAcquirer.acquireLockList(lpLock, LeasePath.Finder.All, null);
+    }
   }
   
   public void acquireForRename(boolean t) throws PersistanceException, UnresolvedPathException {

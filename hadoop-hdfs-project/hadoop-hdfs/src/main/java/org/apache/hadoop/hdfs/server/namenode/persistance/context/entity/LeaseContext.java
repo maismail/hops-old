@@ -94,14 +94,16 @@ public class LeaseContext extends EntityContext<Lease> {
           result = leases.get(holder);
         } else {
           log("find-lease-by-pk", CacheHitState.LOSS, new String[]{"holder", holder});
-          aboutToAccessStorage();
-          result = dataAccess.findByPKey(holder);
-          if (result == null) {
-            byHoldernullCount++;
-          } else {
-            idToLease.put(result.getHolderID(), result);
+          if (!allLeasesRead) {
+            aboutToAccessStorage();
+            result = dataAccess.findByPKey(holder);
+            if (result == null) {
+              byHoldernullCount++;
+            } else {
+              idToLease.put(result.getHolderID(), result);
+            }
+            leases.put(holder, result);
           }
-          leases.put(holder, result);
         }
         return result;
       case ByHolderId:
@@ -111,14 +113,16 @@ public class LeaseContext extends EntityContext<Lease> {
           result = idToLease.get(holderId);
         } else {
           log("find-lease-by-holderid", CacheHitState.LOSS, new String[]{"hid", Integer.toString(holderId)});
-          aboutToAccessStorage();
-          result = dataAccess.findByHolderId(holderId);
-          if (result == null) {
-            byIdNullCount++;
-          } else {
-            leases.put(result.getHolder(), result);
+          if (!allLeasesRead) {
+            aboutToAccessStorage();
+            result = dataAccess.findByHolderId(holderId);
+            if (result == null) {
+              byIdNullCount++;
+            } else {
+              leases.put(result.getHolder(), result);
+            }
+            idToLease.put(holderId, result);
           }
-          idToLease.put(holderId, result);
         }
         return result;
     }
