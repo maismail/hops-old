@@ -523,7 +523,7 @@ public class TestLeaseRecovery2 {
     AppendTestUtil.checkFullFile(dfs, filePath, size, buffer, fileStr);
   }
   
-  static void checkLease(String f, int size) {
+  static void checkLease(String f, int size) throws IOException {
     final String holder = NameNodeAdapter.getLeaseHolderForPath(
         cluster.getNameNode(), f); 
     if (size == 0) {

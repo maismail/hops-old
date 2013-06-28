@@ -438,7 +438,7 @@ public class NameNode {
    * 
    * @param conf the configuration
    */
-  protected void initialize(Configuration conf) throws IOException, PersistanceException {
+  protected void initialize(Configuration conf) throws IOException {
     UserGroupInformation.setConfiguration(conf);
     loginAsNameNodeUser(conf);
 
@@ -460,7 +460,12 @@ public class NameNode {
       throw e;
     }
 
+    try{
     startCommonServices(conf);
+    }catch (PersistanceException e)
+    {
+      throw new RuntimeException(e.getMessage());
+    }
   }
   
   /**
@@ -605,12 +610,12 @@ public class NameNode {
    * @param conf  confirguration
    * @throws IOException
    */
-  public NameNode(Configuration conf) throws IOException, PersistanceException {
+  public NameNode(Configuration conf) throws IOException {
     this(conf, NamenodeRole.NAMENODE);
   }
 
   protected NameNode(Configuration conf, NamenodeRole role) 
-      throws IOException, PersistanceException { 
+      throws IOException { 
     this.conf = conf;
     this.role = role;
     String nsId = getNameServiceId(conf);
@@ -1126,7 +1131,7 @@ public class NameNode {
   }
 
   public static NameNode createNameNode(String argv[], Configuration conf)
-      throws IOException, PersistanceException {
+      throws IOException {
     if (conf == null)
       conf = new HdfsConfiguration();
     StartupOption startOpt = parseArguments(argv);
