@@ -33,8 +33,8 @@ public enum MysqlServerConnector implements StorageConnector<Connection> {
 
   @Override
   public void setConfiguration(Configuration conf) {
-    this.protocol = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PROTOCOL_KEY);
-    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_KEY);
+    this.protocol = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PROTOCOL_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_PROTOCOL_DEFAULT);
+    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_DEFAULT);
     this.password = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PASSWORD_KEY, DEFAULT_PASSWORD);
     loadDriver();
   }
