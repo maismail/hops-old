@@ -97,6 +97,11 @@ public class TestSafeMode {
    *  
    * @throws IOException
    */
+  //HOP this test case is failing because of the cluster restart
+  //In this test two files are created. Each file has one block.
+  //When the cluster restarts the namenode does not find any blocks 
+  //and it thinks that it does not have to enter in the safe mode. 
+  //when all the blocks will be persisted then this test should pass 
   @Test
   public void testManualSafeMode() throws IOException {      
     fs = (DistributedFileSystem)cluster.getFileSystem();
@@ -154,6 +159,7 @@ public class TestSafeMode {
    * Test that the NN initializes its under-replicated blocks queue
    * before it is ready to exit safemode (HDFS-1476)
    */
+  //HOP: this test fails because of namenode restart. namenode metadata is not yet persisted
   @Test(timeout=45000)
   public void testInitializeReplQueuesEarly() throws Exception {
     // Spray the blocks around the cluster when we add DNs instead of
@@ -386,6 +392,7 @@ public class TestSafeMode {
     assertFalse("State was expected to be out of safemode.", dfs.isInSafeMode());
   }
   
+  //HOP: this test case fails because of namenode restart. metadata is not yet persisted
   @Test
   public void testSafeModeWhenZeroBlockLocations() throws IOException {
 
