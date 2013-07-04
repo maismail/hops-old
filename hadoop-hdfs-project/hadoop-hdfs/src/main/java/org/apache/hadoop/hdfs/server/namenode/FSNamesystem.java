@@ -2107,7 +2107,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         // If the original holder has not renewed in the last SOFTLIMIT 
         // period, then start lease recovery.
         //
-        if (lease.expiredSoftLimit()) {
+        if (leaseManager.expiredSoftLimit(lease)) {
           LOG.info("startFile: recover " + lease + ", src=" + src + " client "
               + pendingFile.getClientName());
           boolean isClosed = internalReleaseLease(lease, src, null);
