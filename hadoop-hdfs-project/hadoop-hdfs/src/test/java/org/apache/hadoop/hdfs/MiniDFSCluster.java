@@ -786,7 +786,7 @@ public class MiniDFSCluster {
           // from the first one.
           formatThisOne = false;
           assert (null != prevNNDirs);
-          copyNameDirs(prevNNDirs, namespaceDirs, conf);
+          //copyNameDirs(prevNNDirs, namespaceDirs, conf);  //HOP. FSImage is no longer supported
         }
         
         nnCounterForFormat++;

@@ -243,8 +243,8 @@ public class TestDFSStartupVersions {
     Configuration conf = UpgradeUtilities.initializeStorageStateConf(1, 
                                                       new HdfsConfiguration());
     StorageData[] versions = initializeVersions();
-    UpgradeUtilities.createNameNodeStorageDirs(
-        conf.getStrings(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY), "current");
+//HOP    UpgradeUtilities.createNameNodeStorageDirs(
+//        conf.getStrings(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY), "current");
     cluster = new MiniDFSCluster.Builder(conf).numDataNodes(0)
                                               .format(false)
                                               .manageDataDfsDirs(false)

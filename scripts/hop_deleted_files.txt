@@ -48,3 +48,4 @@ TestStandbyCheckpoints.java
 TestStandbyIsHot.java
 TestStateTransitionFailure.java
 TestNameNodeMetrics.java
+TestFetchImage.java
