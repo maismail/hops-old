@@ -158,11 +158,7 @@ public class TestAllowFormat {
    */
   @Test
   public void testFormatShouldBeIgnoredForNonFileBasedDirs() throws Exception {
-    //START_HOP_CODE
-    if(true)
-      throw new UnsupportedOperationException("HOP: fix me or delete me ");
-    //END_HOP_CODE
-      
+    
     Configuration conf = new HdfsConfiguration();
     String logicalName = "mycluster";
 

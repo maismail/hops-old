@@ -786,7 +786,7 @@ public class MiniDFSCluster {
           // from the first one.
           formatThisOne = false;
           assert (null != prevNNDirs);
-          copyNameDirs(prevNNDirs, namespaceDirs, conf);
+          //copyNameDirs(prevNNDirs, namespaceDirs, conf); //HOP: no namenode dirs
         }
         
         nnCounterForFormat++;
