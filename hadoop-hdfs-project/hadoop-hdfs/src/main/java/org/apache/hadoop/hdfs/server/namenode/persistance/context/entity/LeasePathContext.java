@@ -100,7 +100,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
   @Override
   public Collection<LeasePath> findList(FinderType<LeasePath> finder, Object... params) throws PersistanceException {
     LeasePath.Finder lFinder = (LeasePath.Finder) finder;
-    Collection<LeasePath> result = null;
+    Collection<LeasePath> result = new TreeSet<LeasePath>();
 
     switch (lFinder) {
       case ByHolderId:
@@ -109,10 +109,12 @@ public class LeasePathContext extends EntityContext<LeasePath> {
           log("find-lpaths-by-holderid", CacheHitState.HIT, new String[]{"hid", Long.toString(holderId)});
           result = holderLeasePaths.get(holderId);
         } else {
-          log("find-lpaths-by-holderid", CacheHitState.LOSS, new String[]{"hid", Long.toString(holderId)});
-          aboutToAccessStorage();
-          result = syncLeasePathInstances(dataAccess.findByHolderId(holderId), false);
-          holderLeasePaths.put(holderId, result);
+          if (!allLeasePathsRead) {
+            log("find-lpaths-by-holderid", CacheHitState.LOSS, new String[]{"hid", Long.toString(holderId)});
+            aboutToAccessStorage();
+            result = syncLeasePathInstances(dataAccess.findByHolderId(holderId), false);
+            holderLeasePaths.put(holderId, result);
+          }
         }
         return result;
       case ByPrefix:
