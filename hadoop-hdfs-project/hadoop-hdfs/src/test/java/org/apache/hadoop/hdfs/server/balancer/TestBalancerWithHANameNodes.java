@@ -87,7 +87,7 @@ public class TestBalancerWithHANameNodes {
       long totalUsedSpace = totalCapacity * 3 / 10;
       TestBalancer.createFile(cluster, TestBalancer.filePath, totalUsedSpace
           / numOfDatanodes, (short) numOfDatanodes, 1);
-
+      
       // start up an empty node with the same capacity and on the same rack
       cluster.startDataNodes(conf, 1, true, null, new String[] { newNodeRack },
           new long[] { newNodeCapacity });

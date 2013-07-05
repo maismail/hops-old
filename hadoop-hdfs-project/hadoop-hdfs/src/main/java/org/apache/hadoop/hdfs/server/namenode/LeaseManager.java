@@ -405,9 +405,9 @@ public class LeaseManager {
         try {
           fsnamesystem.writeLockInterruptibly();
           try {
-//HOP            if (!fsnamesystem.isInSafeMode()) {      //HOP: edit log is no longer supported
-//              needSync = checkLeases();
-//            }
+            if (!fsnamesystem.isInSafeMode()) {      //HOP: edit log is no longer supported
+              needSync = checkLeases();
+            }
           } finally {
             fsnamesystem.writeUnlock();
             // lease reassignments should to be sync'ed.

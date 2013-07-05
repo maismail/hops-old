@@ -298,7 +298,7 @@ public class TestPersistBlocks {
    * {@link TestDFSUpgradeFromImage} but none of those images include
    * a multi-block file.
    */
-  @Test
+  @Test     //HOP also fails in the master branch
   public void testEarlierVersionEditLog() throws Exception {
     final Configuration conf = new HdfsConfiguration();
         
