@@ -48,8 +48,8 @@ TestStandbyCheckpoints.java
 TestStandbyIsHot.java
 TestStateTransitionFailure.java
 TestNameNodeMetrics.java
+TestFetchImage.java
 FSEditLog.java
 FSEditLogOpCodes.java
 FSEditLogLoader.java
 FSEditLogOp.java
-

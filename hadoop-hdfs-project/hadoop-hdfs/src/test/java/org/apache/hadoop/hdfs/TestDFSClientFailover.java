@@ -80,7 +80,7 @@ public class TestDFSClientFailover {
    * Make sure that client failover works when an active NN dies and the standby
    * takes over.
    */
-  @Test
+  //@Test   HOP Test not supported
   public void testDfsClientFailover() throws IOException, URISyntaxException {
     FileSystem fs = HATestUtil.configureFailoverFs(cluster, conf);
     

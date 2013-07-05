@@ -155,8 +155,8 @@ public class UpgradeUtilities {
       FileUtil.fullyDelete(new File(namenodeStorage,"in_use.lock"));
       FileUtil.fullyDelete(new File(datanodeStorage,"in_use.lock"));
     }
-    namenodeStorageChecksum = checksumContents(NAME_NODE, 
-        new File(namenodeStorage, "current"));
+//HOP    namenodeStorageChecksum = checksumContents(NAME_NODE, 
+//        new File(namenodeStorage, "current"));
     File dnCurDir = new File(datanodeStorage, "current");
     datanodeStorageChecksum = checksumContents(DATA_NODE, dnCurDir);
     
