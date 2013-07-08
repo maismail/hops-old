@@ -5219,6 +5219,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               return null;
           }
       };
+      updatePipelineHanlder.handleWithWriteLock(this);
   }
 
   /** @see #updatePipeline(String, ExtendedBlock, ExtendedBlock, DatanodeID[]) */
