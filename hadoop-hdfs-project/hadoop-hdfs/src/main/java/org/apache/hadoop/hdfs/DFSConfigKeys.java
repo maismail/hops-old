@@ -43,6 +43,9 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_MYSQL_PROTOCOL_KEY = "dfs.storage.mysql.protocol";
   public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
   public static final String DFS_STORAGE_MYSQL_PASSWORD_KEY = "dfs.storage.mysql.password";
+  public static final String DFS_STORAGE_MYSQL_PROTOCOL_DEFAULT = "jdbc:mysql://"+ DFS_DB_CONNECTOR_STRING_DEFAULT + ":3306/" + DFS_DB_DATABASE_DEFAULT;
+  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hooman";
+
   public static final String DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
   public static final String DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
@@ -61,6 +64,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911;
+  
 
   //END_HOP_CODE
 

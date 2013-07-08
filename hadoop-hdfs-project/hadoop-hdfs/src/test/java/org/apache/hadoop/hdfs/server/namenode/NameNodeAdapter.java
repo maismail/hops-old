@@ -36,7 +36,11 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
-import org.apache.hadoop.hdfs.server.namenode.LeaseManager.Lease;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
 import org.apache.hadoop.ipc.Server;
@@ -129,22 +133,47 @@ public class NameNodeAdapter {
     namesystem.leaseManager.triggerMonitorCheckNow();
   }
 
-  public static String getLeaseHolderForPath(NameNode namenode, String path) {
-    Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
-    return l == null? null: l.getHolder();
+  public static String getLeaseHolderForPath(final NameNode namenode, final String path) throws IOException {
+
+    return (String) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager tl = new TransactionLockManager();
+        tl.acquireByLeasePath(path, TransactionLockManager.LockType.READ, TransactionLockManager.LockType.READ);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
+        return l == null ? null : l.getHolder();
+      }
+    }.handle();
   }
 
   /**
    * @return the timestamp of the last renewal of the given lease,
    *   or -1 in the case that the lease doesn't exist.
    */
-  public static long getLeaseRenewalTime(NameNode nn, String path) {
-    LeaseManager lm = nn.getNamesystem().leaseManager;
-    Lease l = lm.getLeaseByPath(path);
-    if (l == null) {
-      return -1;
-    }
-    return l.getLastUpdate();
+  public static long getLeaseRenewalTime(final NameNode nn, final String path) throws IOException {
+
+    TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager tl = new TransactionLockManager();
+        tl.acquireByLeasePath(path, TransactionLockManager.LockType.READ, TransactionLockManager.LockType.READ);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LeaseManager lm = nn.getNamesystem().leaseManager;
+        Lease l = lm.getLeaseByPath(path);
+        if (l == null) {
+          return -1;
+        }
+        return (Object)l.getLastUpdate();
+      }
+    };
+         return (Long)leaseRenewalTimeHandler.handle();
   }
 
   /**

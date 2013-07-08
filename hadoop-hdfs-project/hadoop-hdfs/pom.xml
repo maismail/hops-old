@@ -176,19 +176,20 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <artifactId>xmlenc</artifactId>
       <scope>compile</scope>
     </dependency>
-    <dependency>
-      <!--</dependency
-      //START_HOP_CODE
-      -->      
+    <!--START_HOP_CODE --> 
+    <dependency>  
       <groupId>se.sics.ndb</groupId>
       <artifactId>clusterj</artifactId>
       <version>7.1.15a</version>
     </dependency>
-    <!--</dependency
-    //END_HOP_CODE
-    -->      
+     <dependency>
+       <groupId>mysql</groupId>
+       <artifactId>mysql-connector-java</artifactId>
+       <version>5.1.18</version>
+     </dependency> 
+    <!--END_HOP_CODE -->     
   </dependencies>
-  <!--</dependency
+  <!--
   //START_HOP_CODE
   --> 
   <repositories>
@@ -201,7 +202,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       </snapshots>
     </repository>
   </repositories>
-  <!--</dependency
+  <!--
   //END_HOP_CODE
   --> 
   <build>

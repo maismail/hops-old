@@ -25,8 +25,8 @@ public class StorageFactory {
 //  private static ExcessReplicaDataAccess excessReplicaDataAccess;
 //  private static InodeDataAccess inodeDataAccess;
 //  private static InvalidateBlockDataAccess invalidateBlockDataAccess;
-//  private static LeaseDataAccess leaseDataAccess;
-//  private static LeasePathDataAccess leasePathDataAccess;
+  private static LeaseDataAccess leaseDataAccess;
+  private static LeasePathDataAccess leasePathDataAccess;
 //  private static PendingBlockDataAccess pendingBlockDataAccess;
 //  private static ReplicaDataAccess replicaDataAccess;
 //  private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
@@ -43,8 +43,8 @@ public class StorageFactory {
 //    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
 //    dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
 //    dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
-//    dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
-//    dataAccessMap.put(leasePathDataAccess.getClass().getSuperclass(), leasePathDataAccess);
+    dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
+    dataAccessMap.put(leasePathDataAccess.getClass().getSuperclass(), leasePathDataAccess);
 //    dataAccessMap.put(pendingBlockDataAccess.getClass().getSuperclass(), pendingBlockDataAccess);
 //    dataAccessMap.put(replicaDataAccess.getClass().getSuperclass(), replicaDataAccess);
 //    dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
@@ -71,8 +71,8 @@ public class StorageFactory {
 //      excessReplicaDataAccess = new ExcessReplicaDerby();
 //      inodeDataAccess = new InodeDerby();
 //      invalidateBlockDataAccess = new InvalidatedBlockDerby();
-//      leaseDataAccess = new LeaseDerby();
-//      leasePathDataAccess = new LeasePathDerby();
+      leaseDataAccess = new LeaseDerby();
+      leasePathDataAccess = new LeasePathDerby();
 //      pendingBlockDataAccess = new PendingBlockDerby();
 //      replicaDataAccess = new ReplicaDerby();
 //      replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionDerby();
@@ -83,15 +83,15 @@ public class StorageFactory {
 //      // TODO[Hooman]: Add derby data access for storage info
     } else if (storageType.equals("clusterj")) {
       defaultStorage = ClusterjConnector.INSTANCE;
-//      MysqlServerConnector.INSTANCE.setConfiguration(conf);
+      MysqlServerConnector.INSTANCE.setConfiguration(conf);
       defaultStorage.setConfiguration(conf);
 //      blockInfoDataAccess = new BlockInfoClusterj();
 //      corruptReplicaDataAccess = new CorruptReplicaClusterj();
 //      excessReplicaDataAccess = new ExcessReplicaClusterj();
 //      inodeDataAccess = new InodeClusterj();
 //      invalidateBlockDataAccess = new InvalidatedBlockClusterj();
-//      leaseDataAccess = new LeaseClusterj();
-//      leasePathDataAccess = new LeasePathClusterj();
+      leaseDataAccess = new LeaseClusterj();
+      leasePathDataAccess = new LeasePathClusterj();
 //      pendingBlockDataAccess = new PendingBlockClusterj();
 //      replicaDataAccess = new ReplicaClusterj();
 //      replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
@@ -114,8 +114,8 @@ public class StorageFactory {
 //    entityContexts.put(IndexedReplica.class, new ReplicaContext(replicaDataAccess));
 //    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
 //    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
-//    entityContexts.put(Lease.class, new LeaseContext(leaseDataAccess));
-//    entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
+    entityContexts.put(Lease.class, new LeaseContext(leaseDataAccess));
+    entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
 //    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
 //    InodeContext inodeContext = new InodeContext(inodeDataAccess);
 //    entityContexts.put(INode.class, inodeContext);

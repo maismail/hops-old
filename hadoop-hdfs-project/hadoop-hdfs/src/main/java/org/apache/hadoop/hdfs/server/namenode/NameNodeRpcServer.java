@@ -482,6 +482,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
                                ExtendedBlock previous,
                                DatanodeInfo[] excludedNodes)
       throws IOException {
+      
     if(stateChangeLog.isDebugEnabled()) {
       stateChangeLog.debug("*BLOCK* NameNode.addBlock: file "
           +src+" for "+clientName);
@@ -634,7 +635,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
       stateChangeLog.debug("*DIR* Namenode.delete: src=" + src
           + ", recursive=" + recursive);
     }
-    boolean ret = namesystem.delete(src, recursive);
+    boolean ret = namesystem.deleteWithTransaction(src, recursive);
     if (ret) 
       metrics.incrDeleteFileOps();
     return ret;

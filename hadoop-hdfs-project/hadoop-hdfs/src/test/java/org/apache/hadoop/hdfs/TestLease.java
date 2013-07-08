@@ -37,6 +37,10 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -47,12 +51,29 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 public class TestLease {
-  static boolean hasLease(MiniDFSCluster cluster, Path src) {
-    return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()
+  
+    static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
+    return (Boolean) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager tl = new TransactionLockManager();
+                tl.acquireByLeasePath(
+                src.toString(),
+                TransactionLockManager.LockType.READ,
+                TransactionLockManager.LockType.WRITE);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()
         ).getLeaseByPath(src.toString()) != null;
+      }
+    }.handle();
   }
 
-  static int leaseCount(MiniDFSCluster cluster) {
+
+  static int leaseCount(MiniDFSCluster cluster) throws IOException {
     return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()).countLease();
   }
   

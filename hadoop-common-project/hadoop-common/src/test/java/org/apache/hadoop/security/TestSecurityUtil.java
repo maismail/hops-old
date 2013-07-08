@@ -110,6 +110,8 @@ public class TestSecurityUtil {
     verify(principalInConf, hostname, principal);
   }
 
+  //HOP: Mahmoud: it fails on my machine because of getServerPrincipal lower
+  //              the case of the hostname and getLocalHostName doesn't
   @Test
   public void testLocalHostNameForNullOrWild() throws Exception {
     String local = SecurityUtil.getLocalHostName();

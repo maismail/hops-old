@@ -84,6 +84,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**********************************************************
@@ -459,7 +460,12 @@ public class NameNode {
       throw e;
     }
 
+    try{
     startCommonServices(conf);
+    }catch (PersistanceException e)
+    {
+      throw new RuntimeException(e.getMessage());
+    }
   }
   
   /**
@@ -494,7 +500,7 @@ public class NameNode {
   }
 
   /** Start the services common to active and standby states */
-  private void startCommonServices(Configuration conf) throws IOException {
+  private void startCommonServices(Configuration conf) throws IOException, PersistanceException {
     namesystem.startCommonServices(conf, haContext);
     startHttpServer(conf);
     rpcServer.start();
@@ -774,8 +780,14 @@ public class NameNode {
 //    fsImage.format(fsn, clusterId);
     
     //START_HOP_CODE
+    try{
     StorageFactory.setConfiguration(conf);
+    StorageFactory.getConnector().formatStorage();
     StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
+    }catch(PersistanceException e)
+    {
+      throw new RuntimeException(e.getMessage());
+    }
     //END_HOP_CODE
     
     return false;
