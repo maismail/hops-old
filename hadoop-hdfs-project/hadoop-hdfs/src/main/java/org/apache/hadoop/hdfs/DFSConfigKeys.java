@@ -50,6 +50,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
   public static final String DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
+  public static final String DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
+  public static final boolean DFS_QUOTA_ENABLED_KEY_DEFAULT = false;
   
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
@@ -64,8 +66,6 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911;
-  
-
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

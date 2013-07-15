@@ -33,6 +33,12 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.primitives.SignedBytes;
+import java.util.Comparator;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.
@@ -40,8 +46,45 @@ import com.google.common.primitives.SignedBytes;
  * directory inodes.
  */
 @InterfaceAudience.Private
+//HOP: change class to public
 public abstract class INode implements Comparable<byte[]> {
+  
   static final List<INode> EMPTY_LIST = Collections.unmodifiableList(new ArrayList<INode>());
+
+  //START_HOP_CODE
+  public static enum Finder implements FinderType<INode> {
+
+    ByPKey, ByParentId, ByNameAndParentId, ByIds;
+
+    @Override
+    public Class getType() {
+      return INode.class;
+    }
+  }
+
+  public static enum Order implements Comparator<INode> {
+
+    ByName() {
+      @Override
+      public int compare(INode o1, INode o2) {
+        // TODO - JIM why not compare by ID - more efficient?
+        return o1.compareTo(o2.getLocalNameBytes());
+      }
+    };
+
+    @Override
+    public abstract int compare(INode o1, INode o2);
+
+    public Comparator acsending() {
+      return this;
+    }
+
+    public Comparator descending() {
+      return Collections.reverseOrder(this);
+    }
+  }
+  //END_HOP_CODE
+    
   /**
    *  The inode name is in java UTF8 encoding; 
    *  The name in HdfsFileStatus should keep the same encoding as this.
@@ -55,8 +98,8 @@ public abstract class INode implements Comparable<byte[]> {
   protected long accessTime;
   
     //START_HOP_CODE
-    protected long id; // Added for KTHFS
-    protected long parentid; // Added for KTHFS
+  protected long id;
+  protected long parentId;
     // FIXME [H]: min value can be chosen as the inode id. Change this.
     public static final long NON_EXISTING_ID = Long.MIN_VALUE;
     //END_HOP_CODE
@@ -123,12 +166,16 @@ public abstract class INode implements Comparable<byte[]> {
    * 
    * @param other Other node to be copied
    */
-  INode(INode other) {
+  INode(INode other) throws PersistanceException {
     setLocalName(other.getLocalName());
     this.parent = other.getParent();
     setPermissionStatus(other.getPermissionStatus());
     setModificationTime(other.getModificationTime());
     setAccessTime(other.getAccessTime());
+    //START_HOP_CODE
+    this.parentId = other.getParentId();
+    this.id = other.getId();
+    //STOP_HOP_CODE
   }
 
   /**
@@ -144,8 +191,10 @@ public abstract class INode implements Comparable<byte[]> {
     setGroup(ps.getGroupName());
     setPermission(ps.getPermission());
   }
+  
+  //HOP: protected => public
   /** Get the {@link PermissionStatus} */
-  protected PermissionStatus getPermissionStatus() {
+  public PermissionStatus getPermissionStatus() {
     return new PermissionStatus(getUserName(),getGroupName(),getFsPermission());
   }
   private void updatePermissionStatus(PermissionStatusFormat f, long n) {
@@ -196,10 +245,10 @@ public abstract class INode implements Comparable<byte[]> {
    * Count and return the number of files in the sub tree.
    * Also clears references since this INode is deleted.
    */
-  abstract int collectSubtreeBlocksAndClear(List<Block> v);
+  abstract int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException;
 
   /** Compute {@link ContentSummary}. */
-  public final ContentSummary computeContentSummary() {
+  public final ContentSummary computeContentSummary() throws PersistanceException{
     long[] a = computeContentSummary(new long[]{0,0,0,0});
     return new ContentSummary(a[0], a[1], a[2], getNsQuota(), 
                               a[3], getDsQuota());
@@ -208,17 +257,18 @@ public abstract class INode implements Comparable<byte[]> {
    * @return an array of three longs. 
    * 0: length, 1: file count, 2: directory count 3: disk space
    */
-  abstract long[] computeContentSummary(long[] summary);
+  abstract long[] computeContentSummary(long[] summary) throws PersistanceException;
   
   /**
    * Get the quota set for this inode
    * @return the quota if it is set; -1 otherwise
    */
-  long getNsQuota() {
+  //HOP: package private ==> public
+  public long getNsQuota() {
     return -1;
   }
 
-  long getDsQuota() {
+  public long getDsQuota() {
     return -1;
   }
   
@@ -231,18 +281,19 @@ public abstract class INode implements Comparable<byte[]> {
    * this tree to counts.
    * Returns updated counts object.
    */
-  abstract DirCounts spaceConsumedInTree(DirCounts counts);
+  abstract DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException;
   
   /**
    * Get local file name
    * @return local file name
    */
-  String getLocalName() {
+  //HOP: package private ==> public
+  public String getLocalName() {
     return DFSUtil.bytes2String(name);
   }
 
 
-  String getLocalParentDir() {
+  String getLocalParentDir() throws PersistanceException {
     INode inode = isRoot() ? this : getParent();
     String parentDir = "";
     if (inode != null) {
@@ -259,37 +310,49 @@ public abstract class INode implements Comparable<byte[]> {
     return name;
   }
 
+  
+  //HOP: in KTHFS, these methods were set/getName
   /**
    * Set local file name
    */
-  void setLocalName(String name) {
+  public void setLocalName(String name) {
     this.name = DFSUtil.string2Bytes(name);
   }
 
   /**
    * Set local file name
    */
-  void setLocalName(byte[] name) {
+  public void setLocalName(byte[] name) {
     this.name = name;
   }
 
-  public String getFullPathName() {
+  public String getFullPathName() throws PersistanceException{
     // Get the full path name of this inode.
     return FSDirectory.getFullPathName(this);
   }
 
   @Override
   public String toString() {
+      try {
     return "\"" + getFullPathName() + "\":"
     + getUserName() + ":" + getGroupName() + ":"
     + (isDirectory()? "d": "-") + getFsPermission();
+      } catch (PersistanceException ex) {
+          Logger.getLogger(INode.class.getName()).log(Level.SEVERE, null, ex);
+      }
+      return null;
   }
 
   /**
    * Get parent directory 
    * @return parent INode
    */
-  INodeDirectory getParent() {
+  INodeDirectory getParent() throws PersistanceException{
+    //START_HOP_CODE
+    if(parent == null){
+        parent = (INodeDirectory) EntityManager.find(INode.Finder.ByPKey, getParentId());
+    }
+    //END_HOP_CODE
     return this.parent;
   }
 
@@ -304,7 +367,8 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last modification time of inode.
    */
-  void setModificationTime(long modtime) {
+  //HOP: package private ==> public
+  public void setModificationTime(long modtime) {
     assert isDirectory();
     if (this.modificationTime <= modtime) {
       this.modificationTime = modtime;
@@ -316,6 +380,8 @@ public abstract class INode implements Comparable<byte[]> {
    */
   void setModificationTimeForce(long modtime) {
     this.modificationTime = modtime;
+    
+    
   }
 
   /**
@@ -329,7 +395,8 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last access time of inode.
    */
-  void setAccessTime(long atime) {
+  //HOP: package private ==> public
+  public void setAccessTime(long atime) {
     accessTime = atime;
   }
 
@@ -358,7 +425,7 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
   /** Convert strings to byte arrays for path components. */
-  static byte[][] getPathComponents(String[] strings) {
+  public static byte[][] getPathComponents(String[] strings) {
     if (strings.length == 0) {
       return new byte[][]{null};
     }
@@ -399,15 +466,17 @@ public abstract class INode implements Comparable<byte[]> {
     return buf.toString();
   }
 
-  boolean removeNode() {
-    if (parent == null) {
-      return false;
-    } else {
-      parent.removeChild(this);
-      parent = null;
-      return true;
-    }
-  }
+  
+//HOP: this methods is removed, only called inside FSDirectory.replaceNode which is removed also
+//  boolean removeNode() {
+//    if (parent == null) {
+//      return false;
+//    } else {
+//      parent.removeChild(this);
+//      parent = null;
+//      return true;
+//    }
+//  }
 
   private static final byte[] EMPTY_BYTES = {};
 
@@ -434,41 +503,66 @@ public abstract class INode implements Comparable<byte[]> {
     return Arrays.hashCode(this.name);
   }
   
-  /**
-   * Create an INode; the inode's name is not set yet
-   * 
-   * @param permissions permissions
-   * @param blocks blocks if a file
-   * @param symlink symblic link if a symbolic link
-   * @param replication replication factor
-   * @param modificationTime modification time
-   * @param atime access time
-   * @param nsQuota namespace quota
-   * @param dsQuota disk quota
-   * @param preferredBlockSize block size
-   * @return an inode
-   */
-  static INode newINode(PermissionStatus permissions,
-                        BlockInfo[] blocks,
-                        String symlink,
-                        short replication,
-                        long modificationTime,
-                        long atime,
-                        long nsQuota,
-                        long dsQuota,
-                        long preferredBlockSize) {
-    if (symlink.length() != 0) { // check if symbolic link
-      return new INodeSymlink(symlink, modificationTime, atime, permissions);
-    }  else if (blocks == null) { //not sym link and blocks null? directory!
-      if (nsQuota >= 0 || dsQuota >= 0) {
-        return new INodeDirectoryWithQuota(
-            permissions, modificationTime, nsQuota, dsQuota);
-      } 
-      // regular directory
-      return new INodeDirectory(permissions, modificationTime);
-    }
-    // file
-    return new INodeFile(permissions, blocks, replication,
-        modificationTime, atime, preferredBlockSize);
+//  /**
+//   * Create an INode; the inode's name is not set yet
+//   * 
+//   * @param permissions permissions
+//   * @param blocks blocks if a file
+//   * @param symlink symblic link if a symbolic link
+//   * @param replication replication factor
+//   * @param modificationTime modification time
+//   * @param atime access time
+//   * @param nsQuota namespace quota
+//   * @param dsQuota disk quota
+//   * @param preferredBlockSize block size
+//   * @return an inode
+//   */
+//  static INode newINode(PermissionStatus permissions,
+//                        BlockInfo[] blocks,
+//                        String symlink,
+//                        short replication,
+//                        long modificationTime,
+//                        long atime,
+//                        long nsQuota,
+//                        long dsQuota,
+//                        long preferredBlockSize) {
+//    if (symlink.length() != 0) { // check if symbolic link
+//      return new INodeSymlink(symlink, modificationTime, atime, permissions);
+//    }  else if (blocks == null) { //not sym link and blocks null? directory!
+//      if (nsQuota >= 0 || dsQuota >= 0) {
+//        return new INodeDirectoryWithQuota(
+//            permissions, modificationTime, nsQuota, dsQuota);
+//      } 
+//      // regular directory
+//      return new INodeDirectory(permissions, modificationTime);
+//    }
+//    // file
+//    return new INodeFile(permissions, blocks, replication,
+//        modificationTime, atime, preferredBlockSize);
+//  }
+  
+  //START_HOP_CODE
+  public final void setId(long id) {
+    this.id = id;
   }
+  public long getId() {
+    return this.id;
+  }
+  
+  public void setParent(INodeDirectory p) {
+    this.parent = p;
+  }
+
+  public void setParentId(long pid) {
+    this.parentId = pid;
+  }
+
+  public long getParentId() {
+    return this.parentId;
+  }
+
+  public String nameParentKey() {
+    return parentId + getLocalName();
+  }
+  //END_HOP_CODE:
 }

@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * Directory INode class that has a quota restriction
@@ -38,7 +39,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @param other The other inode from which all other properties are copied
    */
   INodeDirectoryWithQuota(long nsQuota, long dsQuota,
-      INodeDirectory other) {
+      INodeDirectory other) throws PersistanceException {
     super(other);
     INode.DirCounts counts = new INode.DirCounts();
     other.spaceConsumedInTree(counts);
@@ -69,7 +70,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @return this directory's namespace quota
    */
   @Override
-  long getNsQuota() {
+  public long getNsQuota() {
     return nsQuota;
   }
   
@@ -77,7 +78,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @return this directory's diskspace quota
    */
   @Override
-  long getDsQuota() {
+  public long getDsQuota() {
     return dsQuota;
   }
   

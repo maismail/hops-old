@@ -784,6 +784,7 @@ public class NameNode {
     StorageFactory.setConfiguration(conf);
     StorageFactory.getConnector().formatStorage();
     StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
+    FSNamesystem.
     }catch(PersistanceException e)
     {
       throw new RuntimeException(e.getMessage());

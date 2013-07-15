@@ -20,6 +20,8 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.FsAction;
@@ -29,6 +31,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /** I-node for closed file. */
 @InterfaceAudience.Private
@@ -166,13 +169,18 @@ public class INodeFile extends INode implements BlockCollection {
   
   @Override
   public String getName() {
-    // Get the full path name of this inode.
-    return getFullPathName();
+      try {
+          // Get the full path name of this inode.
+          return getFullPathName();
+      } catch (PersistanceException ex) {
+          Logger.getLogger(INodeFile.class.getName()).log(Level.SEVERE, null, ex);
+          return ex.toString();
+      }
   }
 
 
   @Override
-  long[] computeContentSummary(long[] summary) {
+  long[] computeContentSummary(long[] summary) throws PersistanceException {
     summary[0] += computeFileSize(true);
     summary[1]++;
     summary[3] += diskspaceConsumed();

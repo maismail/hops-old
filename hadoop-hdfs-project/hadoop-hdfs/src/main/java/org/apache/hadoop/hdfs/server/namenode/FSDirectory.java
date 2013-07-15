@@ -61,7 +61,13 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /*************************************************
  * FSDirectory stores the filesystem directory state.
@@ -74,13 +80,14 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
  *************************************************/
 public class FSDirectory implements Closeable {
 
-  INodeDirectoryWithQuota rootDir;
-  //START_HOP_CODE
-//  FSImage fsImage; START 
-  //END_HOP_CODE
+  
+//START_HOP_CODE
+//  FSImage fsImage; 
+//  INodeDirectoryWithQuota rootDir;
+//END_HOP_CODE
   private final FSNamesystem namesystem;
   private volatile boolean ready = false;
-  private static final long UNKNOWN_DISK_SPACE = -1;
+  public static final long UNKNOWN_DISK_SPACE = -1;
   private final int maxComponentLength;
   private final int maxDirItems;
   private final int lsLimit;  // max list limit
@@ -91,6 +98,9 @@ public class FSDirectory implements Closeable {
   
   //START_HOP_CODE
   public final static long ROOT_ID = 0L;
+  public final static String ROOT = "";
+  public final static long ROOT_PARENT_ID = -1L;
+  private boolean quotaEnabled;
   //END_HOP_CODE
 
   // utility methods to acquire and release read lock and write lock
@@ -124,12 +134,18 @@ public class FSDirectory implements Closeable {
    */
   private final NameCache<ByteArray> nameCache;
 
-  FSDirectory(FSNamesystem ns, Configuration conf) {
+  FSDirectory(FSNamesystem ns, Configuration conf) throws IOException {
+     //START_HOP_CODE
+     this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_QUOTA_ENABLED_KEY,
+                DFSConfigKeys.DFS_QUOTA_ENABLED_KEY_DEFAULT);  
+     //END_HOP_CODE
+      
     this.dirLock = new ReentrantReadWriteLock(true); // fair
     this.cond = dirLock.writeLock().newCondition();
-    rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
-        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
-        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
+//HOP     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
+//        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
+//        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
+    createRootInode(ns);
 
     int configuredLimit = conf.getInt(
         DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
@@ -412,7 +428,6 @@ public class FSDirectory implements Closeable {
     try {
       // file is closed
       file.setModificationTimeForce(now);
-
       if (NameNode.stateChangeLog.isDebugEnabled()) {
         NameNode.stateChangeLog.debug("DIR* FSDirectory.closeFile: "
             +path+" with "+ file.getBlocks().length 
@@ -1104,6 +1119,7 @@ public class FSDirectory implements Closeable {
     }
     // set the parent's modification time
     inodes[pos-1].setModificationTime(mtime);
+    
     int filesRemoved = targetNode.collectSubtreeBlocksAndClear(collectedBlocks);
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedDelete: "
@@ -2179,4 +2195,37 @@ public class FSDirectory implements Closeable {
       inode.setLocalName(name.getBytes());
     }
   }
+  
+  //START_HOP_CODE
+  public INodeDirectoryWithQuota getRootDir() throws PersistanceException, IOException {
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByNameAndParentId, ROOT, ROOT_PARENT_ID);
+  }
+
+  public boolean isQuotaEnabled() {
+    return this.quotaEnabled;
+  }
+  
+  //add root inode if its not there
+   public void createRootInode(final FSNamesystem ns) throws IOException {                          
+    LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+        INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(FSDirectory.ROOT_ID); 
+        if (rootInode == null) 
+        {
+          INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME, ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
+          newRootINode.setId(0);
+          newRootINode.setParentId(-1);
+          List<INode> newINodes = new ArrayList();
+          newINodes.add(newRootINode);
+          da.prepare(null, newINodes, null);
+          LOG.info("Added new root inode");
+      }
+        return null;
+    }
+    };
+    addRootINode.handle();
+  }
+  //END_HOP_CODE
 }

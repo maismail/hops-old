@@ -212,10 +212,12 @@ import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /***************************************************
@@ -5997,6 +5999,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   {
     this.nameNodeRole = role;
   }
+  
+  
+            
+  
   //END_HOP_CODE
   
 
