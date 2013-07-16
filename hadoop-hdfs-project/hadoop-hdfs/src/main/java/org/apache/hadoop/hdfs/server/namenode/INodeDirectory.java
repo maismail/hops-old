@@ -28,6 +28,7 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import static org.apache.hadoop.hdfs.server.namenode.INode.NON_EXISTING_ID;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
@@ -74,7 +75,9 @@ public class INodeDirectory extends INode {
    */
   INodeDirectory(INodeDirectory other) throws PersistanceException {
     super(other);
-   // this.children = other.getChildren();
+    // this.children = other.getChildren();
+    //HOP: Mahmoud: the new directory has the same id as the "other" directory
+    //              so we don't need to notify the children of the directory change
   }
   
   /** @return true unconditionally. */
@@ -84,13 +87,13 @@ public class INodeDirectory extends INode {
   }
 
   INode removeChild(INode node) throws PersistanceException {
-//HOP    assert children != null;
-//    int low = Collections.binarySearch(children, node.name);
-//    if (low >= 0) {
-//      return children.remove(low);
-//    } else {
-//      return null;
-//    }
+/*HOP    assert children != null;
+    int low = Collections.binarySearch(children, node.name);
+    if (low >= 0) {
+      return children.remove(low);
+    } else {
+      return null;
+    }*/
 
       INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, node.getLocalName(), getId());
       if (inode != null) {
@@ -106,20 +109,21 @@ public class INodeDirectory extends INode {
    * @param newChild Child node to be added
    */
   void replaceChild(INode newChild) throws PersistanceException {
-//HOP    if ( children == null ) {
-//      throw new IllegalArgumentException("The directory is empty");
-//    }
-//    int low = Collections.binarySearch(children, newChild.name);
-//    if (low>=0) { // an old child exists so replace by the newChild
-//      children.set(low, newChild);
-//    } else {
-//      throw new IllegalArgumentException("No child exists to be replaced");
-//    }
+/*HOP    if ( children == null ) {
+      throw new IllegalArgumentException("The directory is empty");
+    }
+    int low = Collections.binarySearch(children, newChild.name);
+    if (low>=0) { // an old child exists so replace by the newChild
+      children.set(low, newChild);
+    } else {
+      throw new IllegalArgumentException("No child exists to be replaced");
+    }*/
       //FIXME: Salman check if the cache is handling it correctly
-      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, newChild.getLocalName(), getId() );
+      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, newChild.getLocalName(), getId());
       if (inode != null) {
-          EntityManager.remove(inode);
-          EntityManager.add(newChild);
+        EntityManager.update(inode);
+      }else{
+        throw new NullPointerException("inode not found");
       }
   }
   
@@ -128,15 +132,15 @@ public class INodeDirectory extends INode {
   }
 
   private INode getChildINode(byte[] name) throws PersistanceException {
-//HOP    if (children == null) {
-//      return null;
-//    }
-//    int low = Collections.binarySearch(children, name);
-//    if (low >= 0) {
-//      return children.get(low);
-//    }
-//    return null;
-      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, new String(name), getId()); //here parent id is the id of current node
+/*HOP    if (children == null) {
+      return null;
+    }
+    int low = Collections.binarySearch(children, name);
+    if (low >= 0) {
+      return children.get(low);
+    }
+    return null;*/
+      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, DFSUtil.bytes2String(name), getId()); //here parent id is the id of current node
       if (inode != null) {
           return inode;
       } else {
@@ -305,27 +309,35 @@ public class INodeDirectory extends INode {
    */
   <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
 
-/*HOP*/      List<INode> children = getChildren();
-      if (children == null) {
-          children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-      }
-      
-      int low = Collections.binarySearch(children, node.name);
-      if (low >= 0) {
-          return null;
-      }
-      node.parent = this;
-//HOP      children.add(-low - 1, node); //adding using entitymanager at the end of the function
-      // update modification time of the parent directory
-      if (setModTime) {
-          setModificationTime(node.getModificationTime());
-      }
-      if (node.getGroupName() == null) {
-          node.setGroup(getGroupName());
-      }
-      
-      EntityManager.add(node);
-      return node;
+ /*if (children == null) {
+      children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
+    }
+    int low = Collections.binarySearch(children, node.name);
+    if(low >= 0)
+      return null;*/
+    
+    //HOP:
+    INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
+            node.getLocalName(), getId());
+    if (existingInode != null)
+      return null;
+    
+    if(node.getId() == NON_EXISTING_ID){
+        node.setId(DFSUtil.getRandom().nextLong()); 
+        EntityManager.add(node);
+    }
+    
+    node.setParent(this);
+    
+    // update modification time of the parent directory
+    if (setModTime){
+      setModificationTime(node.getModificationTime());
+    }
+    if (node.getGroupName() == null) {
+      node.setGroup(getGroupName());
+    }
+    
+    return node;
   }
 
   /**
@@ -404,7 +416,7 @@ public class INodeDirectory extends INode {
     INodeDirectory parent = getParent(pathComponents);
     return parent.addChild(newNode, propagateModTime) == null? null: parent;
   }
-
+  //HOP: TODO: Mahmoud: need to revist this code for quota support
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
     counts.nsCount += 1;
@@ -476,10 +488,9 @@ public class INodeDirectory extends INode {
     }
     
     parent = null;
-    children = null;
-    EntityManager.remove(parent);
-    for(INode child: children)
-    {
+    
+    EntityManager.remove(this);
+    for(INode child: children){
         EntityManager.remove(child);
     } 
     return total;

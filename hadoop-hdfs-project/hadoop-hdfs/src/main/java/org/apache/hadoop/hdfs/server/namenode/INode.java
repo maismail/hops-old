@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.primitives.SignedBytes;
@@ -98,11 +97,11 @@ public abstract class INode implements Comparable<byte[]> {
   protected long accessTime;
   
     //START_HOP_CODE
-  protected long id;
+  protected long id = NON_EXISTING_ID;
   protected long parentId;
-    // FIXME [H]: min value can be chosen as the inode id. Change this.
-    public static final long NON_EXISTING_ID = Long.MIN_VALUE;
-    //END_HOP_CODE
+  // FIXME [H]: min value can be chosen as the inode id. Change this.
+  public static final long NON_EXISTING_ID = Long.MIN_VALUE;
+  //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
    *  nsCount (namespace consumed) and dsCount (diskspace consumed).
@@ -153,13 +152,13 @@ public abstract class INode implements Comparable<byte[]> {
     this.name = null;
     this.parent = null;
     this.modificationTime = mTime;
-    setAccessTime(atime);
-    setPermissionStatus(permissions);
+    setAccessTimeNoPersistance(atime);
+    setPermissionStatusNoPersistance(permissions);
   }
 
   protected INode(String name, PermissionStatus permissions) {
     this(permissions, 0L, 0L);
-    setLocalName(name);
+    setLocalNameNoPersistance(name);
   }
   
   /** copy constructor
@@ -167,11 +166,11 @@ public abstract class INode implements Comparable<byte[]> {
    * @param other Other node to be copied
    */
   INode(INode other) throws PersistanceException {
-    setLocalName(other.getLocalName());
+    setLocalNameNoPersistance(other.getLocalName());
     this.parent = other.getParent();
-    setPermissionStatus(other.getPermissionStatus());
-    setModificationTime(other.getModificationTime());
-    setAccessTime(other.getAccessTime());
+    setPermissionStatusNoPersistance(other.getPermissionStatus());
+    setModificationTimeNoPersistance(other.getModificationTime());
+    setAccessTimeNoPersistance(other.getAccessTime());
     //START_HOP_CODE
     this.parentId = other.getParentId();
     this.id = other.getId();
@@ -186,10 +185,10 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
   /** Set the {@link PermissionStatus} */
-  protected void setPermissionStatus(PermissionStatus ps) {
-    setUser(ps.getUserName());
-    setGroup(ps.getGroupName());
-    setPermission(ps.getPermission());
+  private void setPermissionStatusNoPersistance(PermissionStatus ps) {
+    setUserNoPersistance(ps.getUserName());
+    setGroupNoPersistance(ps.getGroupName());
+    setPermissionNoPersistance(ps.getPermission());
   }
   
   //HOP: protected => public
@@ -206,7 +205,7 @@ public abstract class INode implements Comparable<byte[]> {
     return SerialNumberManager.INSTANCE.getUser(n);
   }
   /** Set user */
-  protected void setUser(String user) {
+  private void setUserNoPersistance(String user) {
     int n = SerialNumberManager.INSTANCE.getUserSerialNumber(user);
     updatePermissionStatus(PermissionStatusFormat.USER, n);
   }
@@ -216,7 +215,7 @@ public abstract class INode implements Comparable<byte[]> {
     return SerialNumberManager.INSTANCE.getGroup(n);
   }
   /** Set group */
-  protected void setGroup(String group) {
+  private void setGroupNoPersistance(String group) {
     int n = SerialNumberManager.INSTANCE.getGroupSerialNumber(group);
     updatePermissionStatus(PermissionStatusFormat.GROUP, n);
   }
@@ -229,7 +228,7 @@ public abstract class INode implements Comparable<byte[]> {
     return (short)PermissionStatusFormat.MODE.retrieve(permission);
   }
   /** Set the {@link FsPermission} of this {@link INode} */
-  void setPermission(FsPermission permission) {
+  private void setPermissionNoPersistance(FsPermission permission) {
     updatePermissionStatus(PermissionStatusFormat.MODE, permission.toShort());
   }
 
@@ -263,7 +262,6 @@ public abstract class INode implements Comparable<byte[]> {
    * Get the quota set for this inode
    * @return the quota if it is set; -1 otherwise
    */
-  //HOP: package private ==> public
   public long getNsQuota() {
     return -1;
   }
@@ -287,7 +285,6 @@ public abstract class INode implements Comparable<byte[]> {
    * Get local file name
    * @return local file name
    */
-  //HOP: package private ==> public
   public String getLocalName() {
     return DFSUtil.bytes2String(name);
   }
@@ -315,7 +312,7 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set local file name
    */
-  public void setLocalName(String name) {
+  private void setLocalNameNoPersistance(String name) {
     this.name = DFSUtil.string2Bytes(name);
   }
 
@@ -367,8 +364,7 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last modification time of inode.
    */
-  //HOP: package private ==> public
-  public void setModificationTime(long modtime) {
+  private void setModificationTimeNoPersistance(long modtime) {
     assert isDirectory();
     if (this.modificationTime <= modtime) {
       this.modificationTime = modtime;
@@ -395,8 +391,7 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last access time of inode.
    */
-  //HOP: package private ==> public
-  public void setAccessTime(long atime) {
+  private void setAccessTimeNoPersistance(long atime) {
     accessTime = atime;
   }
 
@@ -466,17 +461,16 @@ public abstract class INode implements Comparable<byte[]> {
     return buf.toString();
   }
 
-  
-//HOP: this methods is removed, only called inside FSDirectory.replaceNode which is removed also
-//  boolean removeNode() {
-//    if (parent == null) {
-//      return false;
-//    } else {
-//      parent.removeChild(this);
-//      parent = null;
-//      return true;
-//    }
-//  }
+
+  boolean removeNode() throws PersistanceException {
+    if (parent == null) {
+      return false;
+    } else {
+      parent.removeChild(this);
+      parent = null;
+      return true;
+    }
+  }
 
   private static final byte[] EMPTY_BYTES = {};
 
@@ -503,57 +497,59 @@ public abstract class INode implements Comparable<byte[]> {
     return Arrays.hashCode(this.name);
   }
   
-//  /**
-//   * Create an INode; the inode's name is not set yet
-//   * 
-//   * @param permissions permissions
-//   * @param blocks blocks if a file
-//   * @param symlink symblic link if a symbolic link
-//   * @param replication replication factor
-//   * @param modificationTime modification time
-//   * @param atime access time
-//   * @param nsQuota namespace quota
-//   * @param dsQuota disk quota
-//   * @param preferredBlockSize block size
-//   * @return an inode
-//   */
-//  static INode newINode(PermissionStatus permissions,
-//                        BlockInfo[] blocks,
-//                        String symlink,
-//                        short replication,
-//                        long modificationTime,
-//                        long atime,
-//                        long nsQuota,
-//                        long dsQuota,
-//                        long preferredBlockSize) {
-//    if (symlink.length() != 0) { // check if symbolic link
-//      return new INodeSymlink(symlink, modificationTime, atime, permissions);
-//    }  else if (blocks == null) { //not sym link and blocks null? directory!
-//      if (nsQuota >= 0 || dsQuota >= 0) {
-//        return new INodeDirectoryWithQuota(
-//            permissions, modificationTime, nsQuota, dsQuota);
-//      } 
-//      // regular directory
-//      return new INodeDirectory(permissions, modificationTime);
-//    }
-//    // file
-//    return new INodeFile(permissions, blocks, replication,
-//        modificationTime, atime, preferredBlockSize);
-//  }
+  /**
+   * Create an INode; the inode's name is not set yet
+   * 
+   * @param permissions permissions
+   * @param blocks blocks if a file
+   * @param symlink symblic link if a symbolic link
+   * @param replication replication factor
+   * @param modificationTime modification time
+   * @param atime access time
+   * @param nsQuota namespace quota
+   * @param dsQuota disk quota
+   * @param preferredBlockSize block size
+   * @return an inode
+   */
+  /*static INode newINode(PermissionStatus permissions,
+                        BlockInfo[] blocks,
+                        String symlink,
+                        short replication,
+                        long modificationTime,
+                        long atime,
+                        long nsQuota,
+                        long dsQuota,
+                        long preferredBlockSize) {
+    if (symlink.length() != 0) { // check if symbolic link
+      return new INodeSymlink(symlink, modificationTime, atime, permissions);
+    }  else if (blocks == null) { //not sym link and blocks null? directory!
+      if (nsQuota >= 0 || dsQuota >= 0) {
+        return new INodeDirectoryWithQuota(
+            permissions, modificationTime, nsQuota, dsQuota);
+      } 
+      // regular directory
+      return new INodeDirectory(permissions, modificationTime);
+    }
+    // file
+    return new INodeFile(permissions, blocks, replication,
+        modificationTime, atime, preferredBlockSize);
+  }*/
   
   //START_HOP_CODE
-  public final void setId(long id) {
+  protected final void setId(long id) {
     this.id = id;
   }
   public long getId() {
     return this.id;
   }
   
-  public void setParent(INodeDirectory p) {
+  public void setParent(INodeDirectory p) throws PersistanceException {
     this.parent = p;
+    this.parentId = p.getId();
+    save();
   }
 
-  public void setParentId(long pid) {
+  protected void setParentId(long pid) throws PersistanceException {
     this.parentId = pid;
   }
 
@@ -563,6 +559,47 @@ public abstract class INode implements Comparable<byte[]> {
 
   public String nameParentKey() {
     return parentId + getLocalName();
+  }
+  
+   /** Set user */
+  protected void setUser(String user) throws PersistanceException {
+    setUserNoPersistance(user);
+    save();
+  }
+
+  protected void setGroup(String group) throws PersistanceException {
+    setGroupNoPersistance(group);
+    save();
+  }
+
+  void setPermission(FsPermission permission) throws PersistanceException {
+    setPermissionNoPersistance(permission);
+    save();
+  }
+
+  protected void setPermissionStatus(PermissionStatus ps) throws PersistanceException {
+    setUser(ps.getUserName());
+    setGroup(ps.getGroupName());
+    setPermission(ps.getPermission());
+  }
+
+  public void setLocalName(String name) throws PersistanceException {
+    setLocalNameNoPersistance(name);
+    save();
+  }
+
+  public void setModificationTime(long modtime) throws PersistanceException {
+    setModificationTimeNoPersistance(modtime);
+    save();
+  }
+
+  public void setAccessTime(long atime) throws PersistanceException {
+      setAccessTimeNoPersistance(atime);
+      save();
+  } 
+  
+  protected void save() throws PersistanceException {
+    EntityManager.update(this);
   }
   //END_HOP_CODE:
 }

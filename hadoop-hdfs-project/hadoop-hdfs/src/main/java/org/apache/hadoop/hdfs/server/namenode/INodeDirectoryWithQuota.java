@@ -26,7 +26,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 /**
  * Directory INode class that has a quota restriction
  */
-class INodeDirectoryWithQuota extends INodeDirectory {
+public class INodeDirectoryWithQuota extends INodeDirectory {
   private long nsQuota; /// NameSpace quota
   private long nsCount;
   private long dsQuota; /// disk space quota
@@ -58,7 +58,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
   }
   
   /** constructor with no quota verification */
-  INodeDirectoryWithQuota(String name, PermissionStatus permissions,
+  public INodeDirectoryWithQuota(String name, PermissionStatus permissions,
       long nsQuota, long dsQuota) {
     super(name, permissions);
     this.nsQuota = nsQuota;
@@ -159,5 +159,14 @@ class INodeDirectoryWithQuota extends INodeDirectory {
         throw new DSQuotaExceededException(dsQuota, newDiskspace);
       }
     }
+  }
+  
+  
+  public static INodeDirectoryWithQuota createRootDir(String name, PermissionStatus permissions,
+          long nsQuota, long dsQuota) throws PersistanceException {
+    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(name, permissions, nsQuota, dsQuota);
+    newRootINode.setId(0);
+    newRootINode.setParentId(-1);
+    return newRootINode;
   }
 }
