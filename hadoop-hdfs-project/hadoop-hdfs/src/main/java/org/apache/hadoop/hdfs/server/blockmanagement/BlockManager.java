@@ -77,6 +77,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * Keeps information related to the blocks stored in the Hadoop cluster.
@@ -624,7 +625,7 @@ public class BlockManager {
    * @return the last block locations if the block is partial or null otherwise
    */
   public LocatedBlock convertLastBlockToUnderConstruction(
-      MutableBlockCollection bc) throws IOException {
+      MutableBlockCollection bc) throws IOException, PersistanceException {
     BlockInfo oldBlock = bc.getLastBlock();
     if(oldBlock == null ||
         bc.getPreferredBlockSize() == oldBlock.getNumBytes())

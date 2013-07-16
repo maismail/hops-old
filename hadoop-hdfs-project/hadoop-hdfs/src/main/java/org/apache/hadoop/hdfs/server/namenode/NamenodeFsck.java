@@ -58,6 +58,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * This class provides rudimentary checking of DFS volumes for errors and
@@ -264,7 +265,7 @@ public class NamenodeFsck {
   }
   
   @VisibleForTesting
-  void check(String parent, HdfsFileStatus file, Result res) throws IOException {
+  void check(String parent, HdfsFileStatus file, Result res) throws IOException, PersistanceException {
     String path = file.getFullName(parent);
     boolean isOpen = false;
 

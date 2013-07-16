@@ -65,6 +65,7 @@ import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 class NamenodeJspHelper {
   static String fraction2String(double value) {
@@ -93,7 +94,7 @@ class NamenodeJspHelper {
     }
   }
 
-  static String getInodeLimitText(FSNamesystem fsn) {
+  static String getInodeLimitText(FSNamesystem fsn) throws PersistanceException {
     long inodes = fsn.dir.totalInodes();
     long blocks = fsn.getBlocksTotal();
     long maxobjects = fsn.getMaxObjects();
@@ -794,7 +795,7 @@ class NamenodeJspHelper {
       }
     }
 
-    public void toXML(XMLOutputter doc) throws IOException {
+    public void toXML(XMLOutputter doc) throws IOException, PersistanceException {
       doc.startTag("block_info");
       if (block == null) {
         doc.startTag("error");
