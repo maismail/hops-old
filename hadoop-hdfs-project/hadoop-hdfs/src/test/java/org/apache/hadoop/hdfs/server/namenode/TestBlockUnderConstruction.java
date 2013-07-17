@@ -38,6 +38,7 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -81,7 +82,7 @@ public class TestBlockUnderConstruction {
   }
 
   private void verifyFileBlocks(String file,
-                                boolean isFileOpen) throws IOException {
+                                boolean isFileOpen) throws IOException, PersistanceException {
     FSNamesystem ns = cluster.getNamesystem();
     final INodeFile inode = INodeFile.valueOf(ns.dir.getINode(file), file);
     assertTrue("File " + inode.toString() +
@@ -130,7 +131,7 @@ public class TestBlockUnderConstruction {
   }
 
   @Test
-  public void testBlockCreation() throws IOException {
+  public void testBlockCreation() throws IOException, PersistanceException {
     Path file1 = new Path(BASE_DIR, "file1.dat");
     FSDataOutputStream out = TestFileCreation.createFile(hdfs, file1, 3);
 

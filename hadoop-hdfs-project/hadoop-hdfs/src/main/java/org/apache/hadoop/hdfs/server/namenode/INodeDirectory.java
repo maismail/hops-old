@@ -294,7 +294,7 @@ public class INodeDirectory extends INode {
     getChildren().add(-low - 1, node);
     
     if(node.getId() == NON_EXISTING_ID){
-        node.setId(DFSUtil.getRandom().nextLong()); 
+        node.setIdNoPersistance(DFSUtil.getRandom().nextLong()); 
         EntityManager.add(node);
     }
     

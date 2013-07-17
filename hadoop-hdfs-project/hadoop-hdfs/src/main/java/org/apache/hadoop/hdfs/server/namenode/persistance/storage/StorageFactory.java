@@ -23,7 +23,7 @@ public class StorageFactory {
 //  private static BlockInfoDataAccess blockInfoDataAccess;
 //  private static CorruptReplicaDataAccess corruptReplicaDataAccess;
 //  private static ExcessReplicaDataAccess excessReplicaDataAccess;
-//  private static InodeDataAccess inodeDataAccess;
+  private static InodeDataAccess inodeDataAccess;
 //  private static InvalidateBlockDataAccess invalidateBlockDataAccess;
   private static LeaseDataAccess leaseDataAccess;
   private static LeasePathDataAccess leasePathDataAccess;
@@ -41,7 +41,7 @@ public class StorageFactory {
 //    dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
 //    dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
 //    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
-//    dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
+    dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
 //    dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
     dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
     dataAccessMap.put(leasePathDataAccess.getClass().getSuperclass(), leasePathDataAccess);
@@ -71,8 +71,8 @@ public class StorageFactory {
 //      excessReplicaDataAccess = new ExcessReplicaDerby();
 //      inodeDataAccess = new InodeDerby();
 //      invalidateBlockDataAccess = new InvalidatedBlockDerby();
-      leaseDataAccess = new LeaseDerby();
-      leasePathDataAccess = new LeasePathDerby();
+//      leaseDataAccess = new LeaseDerby();
+//      leasePathDataAccess = new LeasePathDerby();
 //      pendingBlockDataAccess = new PendingBlockDerby();
 //      replicaDataAccess = new ReplicaDerby();
 //      replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionDerby();
@@ -88,7 +88,7 @@ public class StorageFactory {
 //      blockInfoDataAccess = new BlockInfoClusterj();
 //      corruptReplicaDataAccess = new CorruptReplicaClusterj();
 //      excessReplicaDataAccess = new ExcessReplicaClusterj();
-//      inodeDataAccess = new InodeClusterj();
+      inodeDataAccess = new InodeClusterj();
 //      invalidateBlockDataAccess = new InvalidatedBlockClusterj();
       leaseDataAccess = new LeaseClusterj();
       leasePathDataAccess = new LeasePathClusterj();
@@ -117,12 +117,12 @@ public class StorageFactory {
     entityContexts.put(Lease.class, new LeaseContext(leaseDataAccess));
     entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
 //    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
-//    InodeContext inodeContext = new InodeContext(inodeDataAccess);
-//    entityContexts.put(INode.class, inodeContext);
-//    entityContexts.put(INodeDirectory.class, inodeContext);
-//    entityContexts.put(INodeFile.class, inodeContext);
-//    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
-//    entityContexts.put(INodeSymlink.class, inodeContext);
+    InodeContext inodeContext = new InodeContext(inodeDataAccess);
+    entityContexts.put(INode.class, inodeContext);
+    entityContexts.put(INodeDirectory.class, inodeContext);
+    entityContexts.put(INodeFile.class, inodeContext);
+    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
+    entityContexts.put(INodeSymlink.class, inodeContext);
 //    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
 //    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));

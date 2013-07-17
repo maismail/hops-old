@@ -63,9 +63,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -2211,24 +2211,27 @@ public class FSDirectory implements Closeable {
   }
   
   //add root inode if its not there
-   public void createRootInode(final FSNamesystem ns, final boolean overwrite) throws IOException{                          
-    LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
+   public void createRootInode(final FSNamesystem ns, final boolean overwrite) throws IOException{
+     //HOP: FIXME: use context
+     TransactionalRequestHandler addRootINode = new TransactionalRequestHandler(RequestHandler.OperationType.SET_ROOT) {
       @Override
       public Object performTask() throws PersistanceException {
         InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(FSDirectory.ROOT_ID); 
         if (rootInode == null || overwrite == true) 
         {
-          INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME, ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
-          newRootINode.setId(0);
-          newRootINode.setParentId(-1);
+          INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(INodeDirectory.ROOT_NAME, ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
           List<INode> newINodes = new ArrayList();
           newINodes.add(newRootINode);
-          da.prepare(null, newINodes, null);
+          da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
           LOG.info("Added new root inode");
       }
         return null;
     }
+
+       @Override
+       public void acquireLock() throws PersistanceException, IOException {
+       }
     };
     addRootINode.handle();
   }

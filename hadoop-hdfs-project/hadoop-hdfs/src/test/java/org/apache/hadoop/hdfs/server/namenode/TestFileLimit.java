@@ -31,6 +31,7 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.junit.Test;
 
 
@@ -56,7 +57,7 @@ public class TestFileLimit {
     stm.close();
   }
 
-  private void waitForLimit(FSNamesystem namesys, long num)
+  private void waitForLimit(FSNamesystem namesys, long num) throws PersistanceException
   {
     // wait for number of blocks to decrease
     while (true) {
@@ -77,7 +78,7 @@ public class TestFileLimit {
    * Test that file data becomes available before file is closed.
    */
   @Test
-  public void testFileLimit() throws IOException {
+  public void testFileLimit() throws IOException, PersistanceException {
     Configuration conf = new HdfsConfiguration();
     int maxObjects = 5;
     conf.setLong(DFSConfigKeys.DFS_NAMENODE_MAX_OBJECTS_KEY, maxObjects);
@@ -169,7 +170,7 @@ public class TestFileLimit {
   }
 
   @Test
-  public void testFileLimitSimulated() throws IOException {
+  public void testFileLimitSimulated() throws IOException, PersistanceException {
     simulatedStorage = true;
     testFileLimit();
     simulatedStorage = false;

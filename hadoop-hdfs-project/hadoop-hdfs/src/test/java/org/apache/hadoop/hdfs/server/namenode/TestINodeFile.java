@@ -29,6 +29,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.junit.Test;
 
 public class TestINodeFile {
@@ -127,7 +128,7 @@ public class TestINodeFile {
   }
 
   @Test
-  public void testGetFullPathName() {
+  public void testGetFullPathName() throws PersistanceException {
     PermissionStatus perms = new PermissionStatus(
       userName, null, FsPermission.getDefault());
 
@@ -157,7 +158,7 @@ public class TestINodeFile {
   }
   
   @Test
-  public void testAppendBlocks() {
+  public void testAppendBlocks() throws PersistanceException {
     INodeFile origFile = createINodeFiles(1, "origfile")[0];
     assertEquals("Number of blocks didn't match", origFile.numBlocks(), 1L);
 
@@ -184,7 +185,7 @@ public class TestINodeFile {
    * @param nCount Number of INodes to create
    * @return Array of INode files
    */
-  private INodeFile[] createINodeFiles(int nCount, String fileNamePrefix) {
+  private INodeFile[] createINodeFiles(int nCount, String fileNamePrefix) throws PersistanceException {
     if(nCount <= 0)
       return new INodeFile[1];
 

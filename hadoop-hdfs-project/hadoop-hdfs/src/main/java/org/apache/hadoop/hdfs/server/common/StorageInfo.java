@@ -32,10 +32,11 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-//import org.apache.hadoop.hdfs.server.namenode.NNStorage;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.net.DNS;
@@ -124,12 +125,17 @@ public class StorageInfo {
   }
   
   //START_HOP_CODE
+  //HOP FIXME use context
   public static StorageInfo getStorageInfoFromDB() throws IOException {
-    LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
+    TransactionalRequestHandler getStorageInfoHandler = new TransactionalRequestHandler(OperationType.GET_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
       }
     };
     return (StorageInfo) getStorageInfoHandler.handle();
@@ -138,7 +144,8 @@ public class StorageInfo {
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
                                                                                        // FIXME [S] it can cause problems in the future when we try to run multiple NN
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
-    LightWeightRequestHandler formatHandler = new LightWeightRequestHandler(OperationType.ADD_STORAGE_INFO) {
+    // HOP FIXME use context
+    TransactionalRequestHandler formatHandler = new TransactionalRequestHandler(OperationType.ADD_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
@@ -149,6 +156,10 @@ public class StorageInfo {
                 clusterId, 0L, bpid));
         LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID+" CID:"+clusterId+" pbid:"+bpid);
         return null;
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
       }
     };
     formatHandler.handle();

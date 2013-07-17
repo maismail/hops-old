@@ -327,9 +327,9 @@ public class InodeClusterj extends InodeDataAccess {
       }
     }
 
-    inode.setId(persistable.getId());
+    inode.setIdNoPersistance(persistable.getId());
     inode.setLocalNameNoPersistance(persistable.getName());
-    inode.setParentId(persistable.getParentId());
+    inode.setParentIdNoPersistance(persistable.getParentId());
 
     return inode;
   }

@@ -63,7 +63,7 @@ public class NameNodeAdapter {
    * Get block locations within the specified range.
    */
   public static LocatedBlocks getBlockLocations(NameNode namenode,
-      String src, long offset, long length) throws IOException {
+      String src, long offset, long length) throws IOException, PersistanceException {
     return namenode.getNamesystem().getBlockLocations(
         src, offset, length, false, true, true);
   }

@@ -53,7 +53,7 @@ public abstract class INode implements Comparable<byte[]> {
   //START_HOP_CODE
   public static enum Finder implements FinderType<INode> {
 
-    ByPKey, ByParentId, ByNameAndParentId, ByIds;
+    ByPKey, ByParentId, ByNameAndParentId, ByIds, All/*only for debuggin*/;
 
     @Override
     public Class getType() {
@@ -534,7 +534,7 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  public final void setId(long id) {
+  public final void setIdNoPersistance(long id) {
     this.id = id;
   }
   public long getId() {
@@ -547,7 +547,7 @@ public abstract class INode implements Comparable<byte[]> {
     save();
   }
 
-  public void setParentId(long pid) {
+  public void setParentIdNoPersistance(long pid) {
     this.parentId = pid;
   }
 

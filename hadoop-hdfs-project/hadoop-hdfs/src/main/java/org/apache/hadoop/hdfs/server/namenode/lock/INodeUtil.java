@@ -33,47 +33,47 @@ public class INodeUtil {
 
   private final static Log LOG = LogFactory.getLog(INodeUtil.class);
 
-//  // This code is based on FSDirectory code for resolving the path.
-//  public static boolean getNextChild(
-//          INode[] curInode,
-//          byte[][] components,
-//          int[] count,
-//          LinkedList<INode> resolvedInodes,
-//          boolean resolveLink,
-//          boolean transactional) throws UnresolvedPathException, PersistanceException {
-//
-//    boolean lastComp = (count[0] == components.length - 1);
-//    if (curInode[0].isLink() && (!lastComp || (lastComp && resolveLink))) {
-//      final String symPath = constructPath(components, 0, components.length);
-//      final String preceding = constructPath(components, 0, count[0]);
-//      final String remainder =
-//              constructPath(components, count[0] + 1, components.length);
-//      final String link = DFSUtil.bytes2String(components[count[0]]);
-//      final String target = ((INodeSymlink) curInode[0]).getLinkValue();
-//      if (NameNode.stateChangeLog.isDebugEnabled()) {
-//        NameNode.stateChangeLog.debug("UnresolvedPathException "
-//                + " path: " + symPath + " preceding: " + preceding
-//                + " count: " + count + " link: " + link + " target: " + target
-//                + " remainder: " + remainder);
-//      }
-//      throw new UnresolvedPathException(symPath, preceding, remainder, target);
-//    }
-//
-//    if (lastComp || !curInode[0].isDirectory()) {
-//      return true;
-//    }
-//
-//    curInode[0] = getChildINode(
-//            components[count[0] + 1],
-//            curInode[0].getId(),
-//            transactional);
-//    if (curInode[0] != null) {
-//      resolvedInodes.add(curInode[0]);
-//    }
-//    count[0] = count[0] + 1;
-//
-//    return lastComp;
-//  }
+  // This code is based on FSDirectory code for resolving the path.
+  public static boolean getNextChild(
+          INode[] curInode,
+          byte[][] components,
+          int[] count,
+          LinkedList<INode> resolvedInodes,
+          boolean resolveLink,
+          boolean transactional) throws UnresolvedPathException, PersistanceException {
+
+    boolean lastComp = (count[0] == components.length - 1);
+    if (curInode[0].isSymlink() && (!lastComp || (lastComp && resolveLink))) {
+      final String symPath = constructPath(components, 0, components.length);
+      final String preceding = constructPath(components, 0, count[0]);
+      final String remainder =
+              constructPath(components, count[0] + 1, components.length);
+      final String link = DFSUtil.bytes2String(components[count[0]]);
+      final String target = ((INodeSymlink) curInode[0]).getLinkValue();
+      if (NameNode.stateChangeLog.isDebugEnabled()) {
+        NameNode.stateChangeLog.debug("UnresolvedPathException "
+                + " path: " + symPath + " preceding: " + preceding
+                + " count: " + count + " link: " + link + " target: " + target
+                + " remainder: " + remainder);
+      }
+      throw new UnresolvedPathException(symPath, preceding, remainder, target);
+    }
+
+    if (lastComp || !curInode[0].isDirectory()) {
+      return true;
+    }
+
+    curInode[0] = getChildINode(
+            components[count[0] + 1],
+            curInode[0].getId(),
+            transactional);
+    if (curInode[0] != null) {
+      resolvedInodes.add(curInode[0]);
+    }
+    count[0] = count[0] + 1;
+
+    return lastComp;
+  }
 
   public static String constructPath(byte[][] components, int start, int end) {
     StringBuilder buf = new StringBuilder();
@@ -86,20 +86,20 @@ public class INodeUtil {
     return buf.toString();
   }
 
-//  private static INode getChildINode(
-//          byte[] name,
-//          long parentId,
-//          boolean transactional)
-//          throws PersistanceException {
-//    String nameString = DFSUtil.bytes2String(name);
-//    if (transactional) {
-//      // TODO - Memcache success check - do primary key instead.
-//      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
-//      return EntityManager.find(INode.Finder.ByNameAndParentId, nameString, parentId);
-//    } else {
-//      return findINodeWithNoTransaction(nameString, parentId);
-//    }
-//  }
+  private static INode getChildINode(
+          byte[] name,
+          long parentId,
+          boolean transactional)
+          throws PersistanceException {
+    String nameString = DFSUtil.bytes2String(name);
+    if (transactional) {
+      // TODO - Memcache success check - do primary key instead.
+      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
+      return EntityManager.find(INode.Finder.ByNameAndParentId, nameString, parentId);
+    } else {
+      return findINodeWithNoTransaction(nameString, parentId);
+    }
+  }
 
   private static INode findINodeWithNoTransaction(
           String name,

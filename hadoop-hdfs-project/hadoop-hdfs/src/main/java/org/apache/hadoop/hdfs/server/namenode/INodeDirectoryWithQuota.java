@@ -163,10 +163,10 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   
   
   public static INodeDirectoryWithQuota createRootDir(String name, PermissionStatus permissions,
-          long nsQuota, long dsQuota) throws PersistanceException {
+          long nsQuota, long dsQuota) {
     INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(name, permissions, nsQuota, dsQuota);
-    newRootINode.setId(0);
-    newRootINode.setParentId(-1);
+    newRootINode.setIdNoPersistance(0);
+    newRootINode.setParentIdNoPersistance(-1);
     return newRootINode;
   }
 }

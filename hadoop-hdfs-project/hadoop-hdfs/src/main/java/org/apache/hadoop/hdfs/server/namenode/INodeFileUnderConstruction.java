@@ -63,7 +63,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
     this.clientNode = clientNode;
   }
 
-  /*public INodeFileUnderConstruction(byte[] name,
+  public INodeFileUnderConstruction(byte[] name,
                              short blockReplication,
                              long modificationTime,
                              long preferredBlockSize,
@@ -78,7 +78,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
     this.clientName = clientName;
     this.clientMachine = clientMachine;
     this.clientNode = clientNode;
-  }*/
+    throw new UnsupportedOperationException("HOP: This constructor should not be used"); // The only reason it is here that it is called in some FSImage Classes that are not deleted. 
+  }
 
    //HOP: used instead of INodeFile.convertToUnderConstruction
   INodeFileUnderConstruction(INodeFile file,
