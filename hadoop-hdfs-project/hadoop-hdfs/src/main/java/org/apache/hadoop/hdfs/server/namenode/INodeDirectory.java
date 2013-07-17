@@ -49,18 +49,18 @@ public class INodeDirectory extends INode {
   }
 
   protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
-  final static String ROOT_NAME = "";
+  public final static String ROOT_NAME = "";
 
-  //private List<INode> children;       // no need for a list here. get it from the DB
+  private List<INode> children;       // no need for a list here. get it from the DB
 
-  INodeDirectory(String name, PermissionStatus permissions) {
+  public INodeDirectory(String name, PermissionStatus permissions) {
     super(name, permissions);
-//HOP    this.children = null;
+    this.children = null;
   }
 
   public INodeDirectory(PermissionStatus permissions, long mTime) {
     super(permissions, mTime, 0);
-//HOP    this.children = null;
+    this.children = null;
   }
 
   /** constructor */
@@ -75,8 +75,8 @@ public class INodeDirectory extends INode {
    */
   INodeDirectory(INodeDirectory other) throws PersistanceException {
     super(other);
-    // this.children = other.getChildren();
-    //HOP: Mahmoud: the new directory has the same id as the "other" directory
+    this.children = other.getChildren();
+    //HOP: FIXME: Mahmoud: the new directory has the same id as the "other" directory
     //              so we don't need to notify the children of the directory change
   }
   
@@ -87,21 +87,12 @@ public class INodeDirectory extends INode {
   }
 
   INode removeChild(INode node) throws PersistanceException {
-/*HOP    assert children != null;
-    int low = Collections.binarySearch(children, node.name);
-    if (low >= 0) {
-      return children.remove(low);
-    } else {
-      return null;
-    }*/
-
-      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, node.getLocalName(), getId());
-      if (inode != null) {
-          EntityManager.remove(inode);
-          return inode;
-      } else {
-          return null;
-      }
+    if (getChildrenList().contains(node)) {
+      getChildrenList().remove(node);
+      EntityManager.remove(node);
+      return node;
+    }
+    return null;
   }
 
   /** Replace a child that has the same name as newChild by newChild.
@@ -109,22 +100,16 @@ public class INodeDirectory extends INode {
    * @param newChild Child node to be added
    */
   void replaceChild(INode newChild) throws PersistanceException {
-/*HOP    if ( children == null ) {
-      throw new IllegalArgumentException("The directory is empty");
-    }
-    int low = Collections.binarySearch(children, newChild.name);
-    if (low>=0) { // an old child exists so replace by the newChild
-      children.set(low, newChild);
-    } else {
+    //HOP: Mahmoud: equals based on the inode name
+    if (!getChildrenList().contains(newChild)) {
       throw new IllegalArgumentException("No child exists to be replaced");
-    }*/
-      //FIXME: Salman check if the cache is handling it correctly
-      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, newChild.getLocalName(), getId());
-      if (inode != null) {
-        EntityManager.update(inode);
-      }else{
-        throw new NullPointerException("inode not found");
-      }
+    } else {
+      int index = getChildrenList().indexOf(newChild);
+      getChildrenList().remove(index);
+      getChildrenList().add(index, newChild);
+      //HOP: Mahmoud: make sure that the newChild has the same parentid
+      EntityManager.update(newChild);
+    }
   }
   
   INode getChild(String name) throws PersistanceException {
@@ -132,20 +117,11 @@ public class INodeDirectory extends INode {
   }
 
   private INode getChildINode(byte[] name) throws PersistanceException {
-/*HOP    if (children == null) {
-      return null;
-    }
-    int low = Collections.binarySearch(children, name);
+    int low = Collections.binarySearch(getChildrenList(), name);
     if (low >= 0) {
-      return children.get(low);
+      return getChildrenList().get(low);
     }
-    return null;*/
-      INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, DFSUtil.bytes2String(name), getId()); //here parent id is the id of current node
-      if (inode != null) {
-          return inode;
-      } else {
-          return null;
-      }
+    return null;
   }
 
   /**
@@ -284,17 +260,14 @@ public class INodeDirectory extends INode {
    * @return the index of the next child
    */
   int nextChild(byte[] name) throws PersistanceException {
-      if (name.length == 0) { // empty name
-          return 0;
-      }
-      //START_HOP_CODE
-      List<INode> children = getChildren();  
-      //END_HOP_CODE
-      int nextPos = Collections.binarySearch(children, name) + 1;
-      if (nextPos >= 0) {
-          return nextPos;
-      }
-      return -nextPos;
+    if (name.length == 0) { // empty name
+      return 0;
+    }
+    int nextPos = Collections.binarySearch(getChildrenList(), name) + 1;
+    if (nextPos >= 0) {
+      return nextPos;
+    }
+    return -nextPos;
   }
 
   /**
@@ -308,19 +281,17 @@ public class INodeDirectory extends INode {
    *          node, otherwise
    */
   <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
-
- /*if (children == null) {
-      children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-    }
-    int low = Collections.binarySearch(children, node.name);
-    if(low >= 0)
-      return null;*/
     
     //HOP:
-    INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
-            node.getLocalName(), getId());
-    if (existingInode != null)
+    if(getChildren() == null){
+      children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
+    }
+    
+    int low = Collections.binarySearch(getChildren(), node.name);
+    if(low >= 0)
       return null;
+    
+    getChildren().add(-low - 1, node);
     
     if(node.getId() == NON_EXISTING_ID){
         node.setId(DFSUtil.getRandom().nextLong()); 
@@ -472,8 +443,10 @@ public class INodeDirectory extends INode {
   }
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
-      List<INode> children = (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId()); // get all children 
-      return children;
+    if (children == null || (children != null && children.isEmpty())) {
+      children = (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId()); // get all children 
+    }
+    return children;
   }
 
   @Override
