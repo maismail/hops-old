@@ -3319,7 +3319,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Create all the necessary directories
    */
   boolean mkdirs(final String src, final PermissionStatus permissions,
-      final boolean createParent) throws IOException, UnresolvedLinkException {
+          final boolean createParent) throws IOException, UnresolvedLinkException {
     final boolean resolvedLink = false;
     TransactionalRequestHandler mkdirsHanlder = new TransactionalRequestHandler(OperationType.MKDIRS) {
       @Override
@@ -3335,12 +3335,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-    try {
-      return mkdirsInt(src, permissions, createParent);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "mkdirs", src);
-      throw e;
-    }
+        try {
+          return mkdirsInt(src, permissions, createParent);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "mkdirs", src);
+          throw e;
+        }
       }
       private LinkedList<INode> resolvedINodes = null;
 

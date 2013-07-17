@@ -117,41 +117,40 @@ public class INodeUtil {
           String path,
           boolean resolveLink)
           throws UnresolvedPathException, PersistanceException {
-//    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
-//
-//    if (path == null) {
-//      return resolvedInodes;
-//    }
-//
-//    byte[][] components = INode.getPathComponents(path);
-//    INode[] curNode = new INode[1];
-//
-//    int[] count = new int[]{0};
-//    boolean lastComp = (count[0] == components.length - 1);
-//    if (lastComp) // if root is the last directory, we should acquire the write lock over the root
-//    {
-//      resolvedInodes.add(readRoot());
-//      return resolvedInodes;
-//    } else {
-//      curNode[0] = readRoot();
-//    }
-//
-//    while (count[0] < components.length && curNode[0] != null) {
-//
-//      lastComp = INodeUtil.getNextChild(
-//              curNode,
-//              components,
-//              count,
-//              resolvedInodes,
-//              resolveLink,
-//              false);
-//      if (lastComp) {
-//        break;
-//      }
-//    }
-//
-//    return resolvedInodes;
-          return null;
+    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
+
+    if (path == null) {
+      return resolvedInodes;
+    }
+
+    byte[][] components = INode.getPathComponents(path);
+    INode[] curNode = new INode[1];
+
+    int[] count = new int[]{0};
+    boolean lastComp = (count[0] == components.length - 1);
+    if (lastComp) // if root is the last directory, we should acquire the write lock over the root
+    {
+      resolvedInodes.add(readRoot());
+      return resolvedInodes;
+    } else {
+      curNode[0] = readRoot();
+    }
+
+    while (count[0] < components.length && curNode[0] != null) {
+
+      lastComp = INodeUtil.getNextChild(
+              curNode,
+              components,
+              count,
+              resolvedInodes,
+              resolveLink,
+              false);
+      if (lastComp) {
+        break;
+      }
+    }
+
+    return resolvedInodes;  
   }
 
   public static long findINodeIdByBlock(long blockId) throws StorageException {
@@ -168,16 +167,15 @@ public class INodeUtil {
   }
 
   public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
-//    LinkedList<INode> pathInodes = new LinkedList<INode>();
-//    if (inodeId != INode.NON_EXISTING_ID) {
-//      INode inode = readById(inodeId);
-//      if (inode == null) {
-//        return pathInodes;
-//      }
-//      readFromLeafToRoot(inode, pathInodes);
-//    }
-//    return pathInodes;
-      return null; //FIXME uncomment code above and delete this line. only for testing
+    LinkedList<INode> pathInodes = new LinkedList<INode>();
+    if (inodeId != INode.NON_EXISTING_ID) {
+      INode inode = readById(inodeId);
+      if (inode == null) {
+        return pathInodes;
+      }
+      readFromLeafToRoot(inode, pathInodes);
+    }
+    return pathInodes;
   }
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
@@ -207,14 +205,14 @@ public class INodeUtil {
     return da.findInodeById(id);
   }
 
-//  private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
-//    if (inode.getParentId() == -1) {
-//      list.add(inode);
-//      return;
-//    }
-//
-//    readFromLeafToRoot(readById(inode.getParentId()), list);
-//    INode i = readById(inode.getId());
-//    list.add(i);
-//  }
+  private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
+    if (inode.getParentId() == -1) {
+      list.add(inode);
+      return;
+    }
+
+    readFromLeafToRoot(readById(inode.getParentId()), list);
+    INode i = readById(inode.getId());
+    list.add(i);
+  }
 }
