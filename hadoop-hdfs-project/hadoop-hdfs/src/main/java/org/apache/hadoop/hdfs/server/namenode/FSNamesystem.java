@@ -1198,7 +1198,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void setPermission(final String src, final FsPermission permission)
           throws AccessControlException, FileNotFoundException, SafeModeException,
           UnresolvedLinkException, IOException {
-    TransactionalRequestHandler setPermisssionHandler = new TransactionalRequestHandler(OperationType.SET_PERMISSION) {
+    TransactionalRequestHandler setPermissionHandler = new TransactionalRequestHandler(OperationType.SET_PERMISSION) {
       @Override
       public void acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
@@ -1220,7 +1220,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         return null;
       }
     };
-    setPermisssionHandler.handleWithWriteLock(this);
+    setPermissionHandler.handleWithWriteLock(this);
   }
 
   private void setPermissionInt(String src, FsPermission permission)
@@ -2125,12 +2125,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String leaseHolder, String clientMachine, DatanodeDescriptor clientNode,
       boolean writeToEditLog) throws IOException, PersistanceException {
     INodeFileUnderConstruction cons = new INodeFileUnderConstruction(
-                                    file.getLocalNameBytes(),
-                                    file.getBlockReplication(),
-                                    file.getModificationTime(),
-                                    file.getPreferredBlockSize(),
-                                    file.getBlocks(),
-                                    file.getPermissionStatus(),
+                                    file,
                                     leaseHolder,
                                     clientMachine,
                                     clientNode);
@@ -2445,7 +2440,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     }
 
                     blockSize = pendingFile.getPreferredBlockSize();
-                    clientNode = pendingFile.getClientNode();
+                    //clientNode = pendingFile.getClientNode(); HOP
+                    clientNode = getBlockManager().getDatanodeManager().getDatanode(pendingFile.getClientNode());
                     replication = pendingFile.getBlockReplication();
                 } finally {
                     readUnlock();
@@ -2635,7 +2631,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
                   //check lease
                   final INodeFileUnderConstruction file = checkLease(src, clientName);
-                  clientnode = file.getClientNode();
+                  //clientnode = file.getClientNode(); HOP
+                  clientnode = getBlockManager().getDatanodeManager().getDatanode(file.getClientNode());
                   preferredblocksize = file.getPreferredBlockSize();
 
                   //find datanode descriptors
