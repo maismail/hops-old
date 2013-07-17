@@ -60,22 +60,30 @@ public class INodeFile extends INode implements BlockCollection {
 
   private BlockInfo[] blocks;
 
-  INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
+  public INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
                       short replication, long modificationTime,
                       long atime, long preferredBlockSize) {
     super(permissions, modificationTime, atime);
-    this.setReplication(replication);
-    this.setPreferredBlockSize(preferredBlockSize);
+    this.setReplicationNoPersistance(replication);
+    this.setPreferredBlockSizeNoPersistance(preferredBlockSize);
     this.blocks = blklist;
   }
-
+  
+   //HOP:
+  public INodeFile(INodeFile other) throws PersistanceException {
+    super(other);
+    setBlocks(other.getBlocks());
+    setReplicationNoPersistance(other.getBlockReplication());
+    setPreferredBlockSizeNoPersistance(other.getPreferredBlockSize());
+  }
+  
   /**
    * Set the {@link FsPermission} of this {@link INodeFile}.
    * Since this is a file,
    * the {@link FsAction#EXECUTE} action, if any, is ignored.
    */
   @Override
-  void setPermission(FsPermission permission) {
+  void setPermission(FsPermission permission) throws PersistanceException {
     super.setPermission(permission.applyUMask(UMASK));
   }
 
@@ -85,7 +93,7 @@ public class INodeFile extends INode implements BlockCollection {
     return (short) ((header & HEADERMASK) >> BLOCKBITS);
   }
 
-  void setReplication(short replication) {
+  private void setReplicationNoPersistance(short replication) {
     if(replication <= 0)
        throw new IllegalArgumentException("Unexpected value for the replication");
     header = ((long)replication << BLOCKBITS) | (header & ~HEADERMASK);
@@ -97,7 +105,7 @@ public class INodeFile extends INode implements BlockCollection {
     return header & ~HEADERMASK;
   }
 
-  private void setPreferredBlockSize(long preferredBlkSize) {
+  private void setPreferredBlockSizeNoPersistance(long preferredBlkSize) {
     if((preferredBlkSize < 0) || (preferredBlkSize > ~HEADERMASK ))
        throw new IllegalArgumentException("Unexpected value for the block size");
     header = (header & HEADERMASK) | (preferredBlkSize & ~HEADERMASK);
@@ -256,4 +264,25 @@ public class INodeFile extends INode implements BlockCollection {
   public int numBlocks() {
     return blocks == null ? 0 : blocks.length;
   }
+  
+  //START_HOP_CODE
+  
+  public long getHeader() {
+    return header;
+  }
+
+  public static short getBlockReplication(long header) {
+    return (short) ((header & HEADERMASK) >> BLOCKBITS);
+  }
+
+  public static long getPreferredBlockSize(long header) {
+    return header & ~HEADERMASK;
+  }
+  
+  void setReplication(short replication) throws PersistanceException {
+    setReplicationNoPersistance(replication);
+    save();
+  }
+ 
+  //END_HOP_CODE
 }
