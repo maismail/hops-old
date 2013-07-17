@@ -312,14 +312,14 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set local file name
    */
-  private void setLocalNameNoPersistance(String name) {
+  public void setLocalNameNoPersistance(String name) {
     this.name = DFSUtil.string2Bytes(name);
   }
 
   /**
    * Set local file name
    */
-  public void setLocalName(byte[] name) {
+  public void setLocalNameNoPersistance(byte[] name) {
     this.name = name;
   }
 
@@ -364,7 +364,7 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last modification time of inode.
    */
-  private void setModificationTimeNoPersistance(long modtime) {
+  public void setModificationTimeNoPersistance(long modtime) {
     assert isDirectory();
     if (this.modificationTime <= modtime) {
       this.modificationTime = modtime;
@@ -374,10 +374,8 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Always set the last modification time of inode.
    */
-  void setModificationTimeForce(long modtime) {
+  protected void setModificationTimeForceNoPersistance(long modtime) {
     this.modificationTime = modtime;
-    
-    
   }
 
   /**
@@ -391,7 +389,7 @@ public abstract class INode implements Comparable<byte[]> {
   /**
    * Set last access time of inode.
    */
-  private void setAccessTimeNoPersistance(long atime) {
+  public void setAccessTimeNoPersistance(long atime) {
     accessTime = atime;
   }
 
@@ -536,7 +534,7 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  protected final void setId(long id) {
+  public final void setId(long id) {
     this.id = id;
   }
   public long getId() {
@@ -549,7 +547,7 @@ public abstract class INode implements Comparable<byte[]> {
     save();
   }
 
-  protected void setParentId(long pid) throws PersistanceException {
+  public void setParentId(long pid) {
     this.parentId = pid;
   }
 
@@ -587,17 +585,27 @@ public abstract class INode implements Comparable<byte[]> {
     setLocalNameNoPersistance(name);
     save();
   }
-
+  
+  public void setLocalName(byte[] name) throws PersistanceException {
+    setLocalNameNoPersistance(name);
+    save();
+  }
+  
   public void setModificationTime(long modtime) throws PersistanceException {
     setModificationTimeNoPersistance(modtime);
     save();
   }
 
   public void setAccessTime(long atime) throws PersistanceException {
-      setAccessTimeNoPersistance(atime);
-      save();
-  } 
-  
+    setAccessTimeNoPersistance(atime);
+    save();
+  }
+
+  void setModificationTimeForce(long modtime) throws PersistanceException {
+    setModificationTimeNoPersistance(modtime);
+    save();
+  }
+
   protected void save() throws PersistanceException {
     EntityManager.update(this);
   }
