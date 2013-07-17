@@ -23,6 +23,8 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * An INode representing a symbolic link.
@@ -31,13 +33,13 @@ import org.apache.hadoop.hdfs.protocol.Block;
 public class INodeSymlink extends INode {
   private byte[] symlink; // The target URI
 
-  INodeSymlink(String value, long modTime, long atime,
+  public INodeSymlink(String value, long modTime, long atime,
                PermissionStatus permissions) {
     super(permissions, modTime, atime);
     assert value != null;
     setLinkValue(value);
-    setModificationTimeForce(modTime);
-    setAccessTime(atime);
+    setModificationTimeForceNoPersistance(modTime);
+    setAccessTimeNoPersistance(atime);
   }
 
   @Override
@@ -64,7 +66,9 @@ public class INodeSymlink extends INode {
   }
   
   @Override
-  int collectSubtreeBlocksAndClear(List<Block> v) {
+  int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException {
+    //HOP:
+    EntityManager.remove(this);
     return 1;
   }
 
