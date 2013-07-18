@@ -1162,4 +1162,104 @@ public class TestFileCreation {
     }
   }
 
+  
+  //START_HOP_CODE
+   @Test
+  public void testFileCreationSimple() throws IOException {
+    checkFileCreationSimple(null, false);
+  }
+    
+  public void checkFileCreationSimple(String netIf, boolean useDnHostname)
+      throws IOException {
+    Configuration conf = new HdfsConfiguration();
+    if (netIf != null) {
+      conf.set(DFSConfigKeys.DFS_CLIENT_LOCAL_INTERFACES, netIf);
+    }
+    conf.setBoolean(DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME, useDnHostname);
+    if (useDnHostname) {
+      // Since the mini cluster only listens on the loopback we have to
+      // ensure the hostname used to access DNs maps to the loopback. We
+      // do this by telling the DN to advertise localhost as its hostname
+      // instead of the default hostname.
+      conf.set(DFSConfigKeys.DFS_DATANODE_HOST_NAME_KEY, "localhost");
+    }
+    if (simulatedStorage) {
+      SimulatedFSDataset.setFactory(conf);
+    }
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+      .checkDataNodeHostConfig(true)
+      .build();
+    FileSystem fs = cluster.getFileSystem();
+    try {
+
+      //
+      // check that / exists
+      //
+      Path path = new Path("/");
+      System.out.println("Path : \"" + path.toString() + "\"");
+      System.out.println(fs.getFileStatus(path).isDirectory()); 
+      assertTrue("/ should be a directory", 
+                 fs.getFileStatus(path).isDirectory());
+
+      //
+      // Create a directory inside /, then try to overwrite it
+      //
+      Path dir1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5");
+      fs.mkdirs(dir1);
+      System.out.println("createFile: Creating " + dir1.getName() + 
+        " for overwrite of existing directory.");
+      try {
+        fs.create(dir1, true); // Create path, overwrite=true
+        fs.close();
+        assertTrue("Did not prevent directory from being overwritten.", false);
+      } catch (IOException ie) {
+        if (!ie.getMessage().contains("already exists as a directory."))
+          throw ie;
+      }
+      
+      
+//      // create a new file in home directory. Do not close it.
+//      //
+//      Path file1 = new Path("filestatus.dat");
+//      Path parent = file1.getParent();
+//      fs.mkdirs(parent);
+//      DistributedFileSystem dfs = (DistributedFileSystem)fs;
+//      dfs.setQuota(file1.getParent(), 100L, blockSize*5);
+//      FSDataOutputStream stm = createFile(fs, file1, 1);
+//
+//      // verify that file exists in FS namespace
+//      assertTrue(file1 + " should be a file", 
+//                 fs.getFileStatus(file1).isFile());
+//      System.out.println("Path : \"" + file1 + "\"");
+//
+//      // write to file
+//      writeFile(stm);
+//
+//      stm.close();
+//
+//      // verify that file size has changed to the full size
+//      long len = fs.getFileStatus(file1).getLen();
+//      assertTrue(file1 + " should be of size " + fileSize +
+//                 " but found to be of size " + len, 
+//                  len == fileSize);
+//      
+//      // verify the disk space the file occupied
+//      long diskSpace = dfs.getContentSummary(file1.getParent()).getLength();
+//      assertEquals(file1 + " should take " + fileSize + " bytes disk space " +
+//          "but found to take " + diskSpace + " bytes", fileSize, diskSpace);
+//      
+//      // Check storage usage 
+//      // can't check capacities for real storage since the OS file system may be changing under us.
+//      if (simulatedStorage) {
+//        DataNode dn = cluster.getDataNodes().get(0);
+//        FsDatasetSpi<?> dataset = DataNodeTestUtils.getFSDataset(dn);
+//        assertEquals(fileSize, dataset.getDfsUsed());
+//        assertEquals(SimulatedFSDataset.DEFAULT_CAPACITY-fileSize,
+//            dataset.getRemaining());
+//      }
+    } finally {
+      cluster.shutdown();
+    }
+  }
+  //END_HOP_CODE
 }
