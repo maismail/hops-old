@@ -605,7 +605,13 @@ public abstract class INode implements Comparable<byte[]> {
     setModificationTimeNoPersistance(modtime);
     save();
   }
-
+  
+  public boolean exists(){
+    if(id == NON_EXISTING_ID)
+      return false;
+    //FIXME:
+    return true;
+  }
   protected void save() throws PersistanceException {
     EntityManager.update(this);
   }

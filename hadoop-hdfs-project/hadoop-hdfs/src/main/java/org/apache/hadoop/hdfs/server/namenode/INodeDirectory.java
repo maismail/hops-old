@@ -284,7 +284,7 @@ public class INodeDirectory extends INode {
    */
   <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
     INode existingInode = getChildINode(node.name);
-    if (existingInode != null) {
+    if (existingInode != null && existingInode.exists()) {
       return null;
     }
 
