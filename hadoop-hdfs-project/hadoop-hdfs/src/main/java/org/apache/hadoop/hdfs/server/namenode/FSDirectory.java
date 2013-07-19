@@ -1365,6 +1365,8 @@ public class FSDirectory implements Closeable {
   private void updateCount(INode[] inodes, int numOfINodes, 
                            long nsDelta, long dsDelta, boolean checkQuota)
                            throws QuotaExceededException {
+    if(!isQuotaEnabled()) return;   //HOP
+    
     assert hasWriteLock();
     if (!ready) {
       //still initializing. do not check or update quotas.
@@ -1408,6 +1410,8 @@ public class FSDirectory implements Closeable {
    */
    void unprotectedUpdateCount(INode[] inodes, int numOfINodes, 
                                       long nsDelta, long dsDelta) {
+     if(!isQuotaEnabled()) return;    //HOP
+     
      assert hasWriteLock();
     for(int i=0; i < numOfINodes; i++) {
       if (inodes[i].isQuotaSet()) { // a directory with quota
@@ -1658,6 +1662,9 @@ public class FSDirectory implements Closeable {
    */
   private void verifyQuotaForRename(INode[] srcInodes, INode[]dstInodes)
       throws QuotaExceededException, PersistanceException {
+    
+    if(!isQuotaEnabled()) return;    //HOP
+    
     if (!ready) {
       // Do not check quota if edits log is still being processed
       return;
@@ -1737,10 +1744,13 @@ public class FSDirectory implements Closeable {
     }
     
     INode.DirCounts counts = new INode.DirCounts();
-    child.spaceConsumedInTree(counts);
+    if(isQuotaEnabled()){       //HOP
+      child.spaceConsumedInTree(counts);
+    }
     if (childDiskspace < 0) {
       childDiskspace = counts.getDsCount();
     }
+  
     updateCount(pathComponents, pos, counts.getNsCount(), childDiskspace,
         checkQuota);
     if (pathComponents[pos-1] == null) {
@@ -1782,7 +1792,9 @@ public class FSDirectory implements Closeable {
       ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
     if (removedNode != null) {
       INode.DirCounts counts = new INode.DirCounts();
-      removedNode.spaceConsumedInTree(counts);
+      if(isQuotaEnabled()){     //HOP
+        removedNode.spaceConsumedInTree(counts);
+      }
       updateCountNoQuotaCheck(pathComponents, pos,
                   -counts.getNsCount(), -counts.getDsCount());
     }
@@ -1905,6 +1917,8 @@ public class FSDirectory implements Closeable {
   INodeDirectory unprotectedSetQuota(String src, long nsQuota, long dsQuota)
     throws FileNotFoundException, QuotaExceededException, 
       UnresolvedLinkException, PersistanceException {
+    if(!isQuotaEnabled()) return null;    //HOP
+    
     assert hasWriteLock();
     // sanity check
     if ((nsQuota < 0 && nsQuota != HdfsConstants.QUOTA_DONT_SET && 

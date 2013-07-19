@@ -121,13 +121,13 @@ public class INodeDirectory extends INode {
     return getChildINode(DFSUtil.string2Bytes(name));
   }
 
-  private INode getChildINode(byte[] name) throws PersistanceException {    
-    INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
-            DFSUtil.bytes2String(name), getId());
+  private INode getChildINode(byte[] name) throws PersistanceException {
+     INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
+              DFSUtil.bytes2String(name), getId());
     if (existingInode != null && existingInode.exists()) {
-      return null;
+      return existingInode;
     }
-    return existingInode;
+    return null;
   }
 
   /**
