@@ -123,6 +123,7 @@ public class StorageFactory {
     entityContexts.put(INodeFile.class, inodeContext);
     entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
     entityContexts.put(INodeSymlink.class, inodeContext);
+    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
 //    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
 //    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
