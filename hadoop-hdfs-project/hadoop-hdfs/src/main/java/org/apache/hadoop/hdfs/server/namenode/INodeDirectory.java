@@ -121,9 +121,13 @@ public class INodeDirectory extends INode {
     return getChildINode(DFSUtil.string2Bytes(name));
   }
 
-  private INode getChildINode(byte[] name) throws PersistanceException {
-    return EntityManager.find(INode.Finder.ByNameAndParentId,
-              DFSUtil.bytes2String(name), getId());
+  private INode getChildINode(byte[] name) throws PersistanceException {    
+    INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
+            DFSUtil.bytes2String(name), getId());
+    if (existingInode != null && existingInode.exists()) {
+      return null;
+    }
+    return existingInode;
   }
 
   /**
@@ -284,7 +288,7 @@ public class INodeDirectory extends INode {
    */
   <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
     INode existingInode = getChildINode(node.name);
-    if (existingInode != null && existingInode.exists()) {
+    if (existingInode != null) {
       return null;
     }
 
