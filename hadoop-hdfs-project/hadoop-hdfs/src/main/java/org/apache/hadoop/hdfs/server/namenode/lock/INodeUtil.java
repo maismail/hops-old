@@ -12,6 +12,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
@@ -130,10 +131,10 @@ public class INodeUtil {
     boolean lastComp = (count[0] == components.length - 1);
     if (lastComp) // if root is the last directory, we should acquire the write lock over the root
     {
-      resolvedInodes.add(readRoot());
+      resolvedInodes.add(getRoot());
       return resolvedInodes;
     } else {
-      curNode[0] = readRoot();
+      curNode[0] = getRoot();
     }
 
     while (count[0] < components.length && curNode[0] != null) {
@@ -193,8 +194,8 @@ public class INodeUtil {
     return sortedPaths;
   }
 
-  private static INode readRoot() throws StorageException {
-    return readById(FSDirectory.ROOT_ID);
+  private static INode getRoot() throws StorageException {
+    return readById(INodeDirectory.ROOT_ID);
   }
 
   private static INode readById(long id) throws StorageException {

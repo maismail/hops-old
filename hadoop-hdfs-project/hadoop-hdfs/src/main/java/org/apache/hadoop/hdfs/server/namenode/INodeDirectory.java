@@ -50,17 +50,21 @@ public class INodeDirectory extends INode {
 
   protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
   public final static String ROOT_NAME = "";
-
-  private List<INode> children;       // no need for a list here. get it from the DB
-
+  //START_HOP_CODE
+  public final static long ROOT_ID = 0L;
+  public final static long ROOT_PARENT_ID = -1L;
+  //END_HOP_CODE
+  
+  //private List<INode> children;       // no need for a list here. get it from the DB
+  
   public INodeDirectory(String name, PermissionStatus permissions) {
     super(name, permissions);
-    this.children = null;
+    //this.children = null;
   }
 
   public INodeDirectory(PermissionStatus permissions, long mTime) {
     super(permissions, mTime, 0);
-    this.children = null;
+    //this.children = null;
   }
 
   /** constructor */
@@ -75,7 +79,7 @@ public class INodeDirectory extends INode {
    */
   INodeDirectory(INodeDirectory other) throws PersistanceException {
     super(other);
-    this.children = other.getChildren();
+    //this.children = other.getChildren();
     //HOP: FIXME: Mahmoud: the new directory has the same id as the "other" directory
     //              so we don't need to notify the children of the directory change
   }
@@ -87,10 +91,10 @@ public class INodeDirectory extends INode {
   }
 
   INode removeChild(INode node) throws PersistanceException {
-    if (getChildrenList().contains(node)) {
-      getChildrenList().remove(node);
-      EntityManager.remove(node);
-      return node;
+    INode existingInode = getChildINode(node.getLocalNameBytes());    
+    if (existingInode != null) {
+      remove(existingInode);
+      return existingInode;
     }
     return null;
   }
@@ -101,13 +105,14 @@ public class INodeDirectory extends INode {
    */
   void replaceChild(INode newChild) throws PersistanceException {
     //HOP: Mahmoud: equals based on the inode name
-    if (!getChildrenList().contains(newChild)) {
+    INode existingINode = getChildINode(newChild.getLocalNameBytes());
+    if (existingINode== null) {
       throw new IllegalArgumentException("No child exists to be replaced");
     } else {
-      int index = getChildrenList().indexOf(newChild);
-      getChildrenList().remove(index);
-      getChildrenList().add(index, newChild);
-      //HOP: Mahmoud: make sure that the newChild has the same parentid
+     //[M] make sure that the newChild has the same parentid
+      if(existingINode.getParentId() != newChild.getParentId()){
+        throw new IllegalArgumentException("Invalid parentid");
+      }
       EntityManager.update(newChild);
     }
   }
@@ -117,11 +122,8 @@ public class INodeDirectory extends INode {
   }
 
   private INode getChildINode(byte[] name) throws PersistanceException {
-    int low = Collections.binarySearch(getChildrenList(), name);
-    if (low >= 0) {
-      return getChildrenList().get(low);
-    }
-    return null;
+    return EntityManager.find(INode.Finder.ByNameAndParentId,
+              DFSUtil.bytes2String(name), getId());
   }
 
   /**
@@ -281,33 +283,26 @@ public class INodeDirectory extends INode {
    *          node, otherwise
    */
   <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
-    
-    //HOP:
-    if(getChildren() == null){
-      children = new ArrayList<INode>(DEFAULT_FILES_PER_DIRECTORY);
-    }
-    
-    int low = Collections.binarySearch(getChildren(), node.name);
-    if(low >= 0)
+    INode existingInode = getChildINode(node.name);
+    if (existingInode != null) {
       return null;
-    
-    getChildren().add(-low - 1, node);
-    
-    if(node.getId() == NON_EXISTING_ID){
-        node.setIdNoPersistance(DFSUtil.getRandom().nextLong()); 
-        EntityManager.add(node);
     }
-    
+
+    if (node.getId() == NON_EXISTING_ID) {
+      node.setIdNoPersistance(DFSUtil.getRandom().nextLong());
+      EntityManager.add(node);
+    }
+
     node.setParent(this);
-    
+
     // update modification time of the parent directory
-    if (setModTime){
+    if (setModTime) {
       setModificationTime(node.getModificationTime());
     }
     if (node.getGroupName() == null) {
       node.setGroup(getGroupName());
     }
-    
+
     return node;
   }
 
@@ -390,14 +385,15 @@ public class INodeDirectory extends INode {
   //HOP: TODO: Mahmoud: need to revist this code for quota support
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
-    counts.nsCount += 1;
+    /*counts.nsCount += 1;
      List<INode> children = getChildren();  
     if (children != null) {
       for (INode child : children) {
         child.spaceConsumedInTree(counts);
       }
     }
-    return counts;    
+    return counts;*/
+    throw new UnsupportedOperationException("Quota not supported yet");
   }
 
   @Override
@@ -443,10 +439,7 @@ public class INodeDirectory extends INode {
   }
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
-    if (children == null || (children != null && children.isEmpty())) {
-      children = (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId()); // get all children 
-    }
-    return children;
+    return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
   }
 
   @Override
@@ -462,11 +455,16 @@ public class INodeDirectory extends INode {
     
     parent = null;
     
-    EntityManager.remove(this);
+    remove(this);
     for(INode child: children){
-        EntityManager.remove(child);
+        remove(child);
     } 
     return total;
   }
   
+  //START_HOP_CODE
+  private void remove(INode node) throws PersistanceException{
+     EntityManager.remove(node);
+  }
+  //END_HOP_CODE
 }

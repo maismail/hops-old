@@ -21,6 +21,7 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
@@ -160,13 +161,18 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
       }
     }
   }
-  
-  
-  public static INodeDirectoryWithQuota createRootDir(String name, PermissionStatus permissions,
+ 
+  //START_HOP_CODE
+  public static INodeDirectoryWithQuota createRootDir(PermissionStatus permissions,
           long nsQuota, long dsQuota) {
-    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(name, permissions, nsQuota, dsQuota);
-    newRootINode.setIdNoPersistance(0);
-    newRootINode.setParentIdNoPersistance(-1);
+    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(ROOT_NAME, permissions, nsQuota, dsQuota);
+    newRootINode.setIdNoPersistance(ROOT_ID);
+    newRootINode.setParentIdNoPersistance(ROOT_PARENT_ID);
     return newRootINode;
   }
+
+  public static INodeDirectoryWithQuota getRootDir() throws PersistanceException {
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByNameAndParentId, ROOT_NAME, ROOT_PARENT_ID);
+  }
+  //END_HOP_CODE
 }

@@ -97,9 +97,6 @@ public class FSDirectory implements Closeable {
   private Condition cond;
   
   //START_HOP_CODE
-  public final static long ROOT_ID = 0L;
-  public final static String ROOT = "";
-  public final static long ROOT_PARENT_ID = -1L;
   private boolean quotaEnabled;
   //END_HOP_CODE
 
@@ -2203,7 +2200,7 @@ public class FSDirectory implements Closeable {
   
   //START_HOP_CODE
   public INodeDirectoryWithQuota getRootDir() throws PersistanceException {
-    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByNameAndParentId, ROOT, ROOT_PARENT_ID);
+    return INodeDirectoryWithQuota.getRootDir();
   }
 
   public boolean isQuotaEnabled() {
@@ -2217,10 +2214,10 @@ public class FSDirectory implements Closeable {
       @Override
       public Object performTask() throws PersistanceException {
         InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
-        INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(FSDirectory.ROOT_ID); 
+        INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID); 
         if (rootInode == null || overwrite == true) 
         {
-          INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(INodeDirectory.ROOT_NAME, ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
+          INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
           List<INode> newINodes = new ArrayList();
           newINodes.add(newRootINode);
           da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
