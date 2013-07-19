@@ -94,7 +94,7 @@ class NamenodeJspHelper {
     }
   }
 
-  static String getInodeLimitText(FSNamesystem fsn) throws PersistanceException {
+  static String getInodeLimitText(FSNamesystem fsn) throws IOException {
     long inodes = fsn.dir.totalInodes();
     long blocks = fsn.getBlocksTotal();
     long maxobjects = fsn.getMaxObjects();

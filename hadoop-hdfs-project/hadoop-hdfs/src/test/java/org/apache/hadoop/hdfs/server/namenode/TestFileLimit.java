@@ -57,7 +57,7 @@ public class TestFileLimit {
     stm.close();
   }
 
-  private void waitForLimit(FSNamesystem namesys, long num) throws PersistanceException
+  private void waitForLimit(FSNamesystem namesys, long num) throws  IOException
   {
     // wait for number of blocks to decrease
     while (true) {

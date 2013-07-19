@@ -1994,10 +1994,23 @@ public class FSDirectory implements Closeable {
     }
   }
   
-  long totalInodes() throws PersistanceException {
+  long totalInodes() throws IOException {
     readLock();
     try {
-      return getRootDir().numItemsInTree();
+      //HOP return getRootDir().numItemsInTree();
+      // TODO[Hooman]: after fixing quota, we can use root.getNscount instead of this.
+      TransactionalRequestHandler totalInodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+          return da.countAll();
+        }
+
+        @Override
+        public void acquireLock() throws PersistanceException, IOException {
+        }
+      };
+      return (Integer) totalInodesHandler.handle();
     } finally {
       readUnlock();
     }

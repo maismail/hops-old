@@ -1144,7 +1144,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     metaSaveHanlder.handle();
   }
 
-  private void metaSave(PrintWriter out) throws PersistanceException {
+  private void metaSave(PrintWriter out) throws  IOException {
     assert hasWriteLock();
     long totalInodes = this.dir.totalInodes();
     long totalBlocks = this.getBlocksTotal();
@@ -1154,7 +1154,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     blockManager.metaSave(out);
   }
 
-  private String metaSaveAsString() throws PersistanceException {
+  private String metaSaveAsString() throws  IOException {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     metaSave(pw);
