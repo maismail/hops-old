@@ -108,7 +108,7 @@ public enum ClusterjConnector implements StorageConnector<Session> {
     session.setLockMode(LockMode.READ_COMMITTED);
     try {
       tx.begin();
-//HOP FIXME      session.deletePersistentAll(InodeClusterj.InodeDTO.class);
+      session.deletePersistentAll(InodeClusterj.InodeDTO.class);
 //HOP FIXME      session.deletePersistentAll(BlockInfoClusterj.BlockInfoDTO.class);
       session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
       session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
