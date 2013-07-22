@@ -612,8 +612,22 @@ public abstract class INode implements Comparable<byte[]> {
     //FIXME:
     return true;
   }
+  
   protected void save() throws PersistanceException {
-    EntityManager.update(this);
+    save(this);
   }
+
+  protected void save(INode node) throws PersistanceException {
+    EntityManager.update(node);
+  }
+
+  protected void remove() throws PersistanceException {
+    remove(this);
+  }
+
+  protected void remove(INode node) throws PersistanceException {
+    EntityManager.remove(node);
+  }
+
   //END_HOP_CODE:
 }

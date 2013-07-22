@@ -2118,12 +2118,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   LocatedBlock prepareFileForWrite(String src, INodeFile file,
       String leaseHolder, String clientMachine, DatanodeDescriptor clientNode,
       boolean writeToEditLog) throws IOException, PersistanceException {
-    INodeFileUnderConstruction cons = new INodeFileUnderConstruction(
-                                    file,
-                                    leaseHolder,
-                                    clientMachine,
-                                    clientNode);
-    dir.replaceNode(src, file, cons);
+    INodeFileUnderConstruction cons = file.convertToUnderConstruction(
+                                            leaseHolder,
+                                            clientMachine,
+                                            clientNode);
+//    dir.replaceNode(src, file, cons);     //HOP commented as calling the convertToUnderConstruction will also persist the obj
     leaseManager.addLease(cons.getClientName(), src);
     
     LocatedBlock ret = blockManager.convertLastBlockToUnderConstruction(cons);
@@ -3701,7 +3700,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     // The file is no longer pending.
     // Create permanent INode, update blocks
     INodeFile newFile = pendingFile.convertToInodeFile();
-    dir.replaceNode(src, pendingFile, newFile);
+//    dir.replaceNode(src, pendingFile, newFile);             //HOP commented as calling the convertToUnderConstruction will also persist the obj
 
     // close file and persist block allocations for this file
     dir.closeFile(src, newFile);

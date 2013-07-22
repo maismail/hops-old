@@ -1,321 +1,209 @@
 /**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with this
+ * work for additional information regarding copyright ownership. The ASF
+ * licenses this file to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations under
+ * the License.
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import org.apache.hadoop.hdfs.util.LightWeightGSet;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
- * Internal class for block metadata.
- * BlockInfo class maintains for a given block
- * the {@link BlockCollection} it is part of and datanodes where the replicas of 
- * the block are stored.
+ * Internal class for block metadata. BlockInfo class maintains for a given
+ * block the {@link BlockCollection} it is part of and datanodes where the
+ * replicas of the block are stored.
  */
 @InterfaceAudience.Private
-public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
-  public static final BlockInfo[] EMPTY_ARRAY = {}; 
-
-  private BlockCollection bc;
-
-  /** For implementing {@link LightWeightGSet.LinkedElement} interface */
-  private LightWeightGSet.LinkedElement nextLinkedElement;
-
-  /**
-   * This array contains triplets of references.
-   * For each i-th datanode the block belongs to
-   * triplets[3*i] is the reference to the DatanodeDescriptor
-   * and triplets[3*i+1] and triplets[3*i+2] are references 
-   * to the previous and the next blocks, respectively, in the 
-   * list of blocks belonging to this data-node.
-   */
-  private Object[] triplets;
-
-  /**
-   * Construct an entry for blocksmap
-   * @param replication the block's replication factor
-   */
-  public BlockInfo(int replication) {
-    this.triplets = new Object[3*replication];
-    this.bc = null;
+public class BlockInfo extends Block {
+  
+  public static final BlockInfo[] EMPTY_ARRAY = {};
+  private static final List<IndexedReplica> EMPTY_REPLICAS_ARRAY = Collections.unmodifiableList(new ArrayList<IndexedReplica>());
+  
+  public static enum Counter implements CounterType<BlockInfo> {
+    
+    All;
+    
+    @Override
+    public Class getType() {
+      return BlockInfo.class;
+    }
   }
   
-  public BlockInfo(Block blk, int replication) {
+  public static enum Finder implements FinderType<BlockInfo> {
+    
+    ById, ByInodeId, All, ByStorageId;
+    
+    @Override
+    public Class getType() {
+      return BlockInfo.class;
+    }
+  }
+  
+  public static enum Order implements Comparator<BlockInfo> {
+    
+    ByBlockIndex() {
+      @Override
+      public int compare(BlockInfo o1, BlockInfo o2) {
+        if (o1.getBlockIndex() < o2.getBlockIndex()) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    },
+    ByGenerationStamp() {
+      @Override
+      public int compare(BlockInfo o1, BlockInfo o2) {
+        if (o1.getGenerationStamp() < o2.getGenerationStamp()) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    };
+    
+    @Override
+    public abstract int compare(BlockInfo o1, BlockInfo o2);
+    
+    public Comparator acsending() {
+      return this;
+    }
+    
+    public Comparator descending() {
+      return Collections.reverseOrder(this);
+    }
+  }
+  private BlockCollection bc;
+  private int blockIndex = -1;  
+  private long timestamp = 1;
+  protected long inodeId = -1;
+  
+  public BlockInfo(Block blk) {
     super(blk);
-    this.triplets = new Object[3*replication];
-    this.bc = null;
+    if (blk instanceof BlockInfo) {
+      this.bc = ((BlockInfo) blk).bc;
+    }
   }
 
   /**
-   * Copy construction.
-   * This is used to convert BlockInfoUnderConstruction
+   * Copy construction. This is used to convert BlockInfoUnderConstruction
+   *
    * @param from BlockInfo to copy from.
    */
   protected BlockInfo(BlockInfo from) {
-    this(from, from.bc.getBlockReplication());
+    super(from);
     this.bc = from.bc;
   }
-
-  public BlockCollection getBlockCollection() {
+  
+  public BlockCollection getBlockCollection() throws PersistanceException {
+    if (bc == null) {
+      setBlockCollection((BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId));
+    }
     return bc;
   }
-
-  public void setBlockCollection(BlockCollection bc) {
+  
+  public void setBlockCollection(BlockCollection bc) throws PersistanceException {
     this.bc = bc;
-  }
-
-  DatanodeDescriptor getDatanode(int index) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-    return (DatanodeDescriptor)triplets[index*3];
-  }
-
-  BlockInfo getPrevious(int index) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+1];
-    assert info == null || 
-        info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-              "BlockInfo is expected at " + index*3;
-    return info;
-  }
-
-  BlockInfo getNext(int index) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+2];
-    assert info == null || 
-        info.getClass().getName().startsWith(BlockInfo.class.getName()) : 
-              "BlockInfo is expected at " + index*3;
-    return info;
-  }
-
-  void setDatanode(int index, DatanodeDescriptor node) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3 < triplets.length : "Index is out of bound";
-    triplets[index*3] = node;
-  }
-
-  void setPrevious(int index, BlockInfo to) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-    triplets[index*3+1] = to;
-  }
-
-  void setNext(int index, BlockInfo to) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-    triplets[index*3+2] = to;
-  }
-
-  /**
-   * Return the previous block on the block list for the datanode at
-   * position index. Set the previous block on the list to "to".
-   *
-   * @param index - the datanode index
-   * @param to - block to be set to previous on the list of blocks
-   * @return current previous block on the list of blocks
-   */
-  BlockInfo getSetPrevious(int index, BlockInfo to) {
-	assert this.triplets != null : "BlockInfo is not initialized";
-	assert index >= 0 && index*3+1 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+1];
-    triplets[index*3+1] = to;
-    return info;
-  }
-
-  /**
-   * Return the next block on the block list for the datanode at
-   * position index. Set the next block on the list to "to".
-   *
-   * @param index - the datanode index
-   * @param to - block to be set to next on the list of blocks
-   *    * @return current next block on the list of blocks
-   */
-  BlockInfo getSetNext(int index, BlockInfo to) {
-	assert this.triplets != null : "BlockInfo is not initialized";
-	assert index >= 0 && index*3+2 < triplets.length : "Index is out of bound";
-    BlockInfo info = (BlockInfo)triplets[index*3+2];
-    triplets[index*3+2] = to;
-    return info;
-  }
-
-  int getCapacity() {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-    return triplets.length / 3;
-  }
-
-  /**
-   * Ensure that there is enough  space to include num more triplets.
-   * @return first free triplet index.
-   */
-  private int ensureCapacity(int num) {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    int last = numNodes();
-    if(triplets.length >= (last+num)*3)
-      return last;
-    /* Not enough space left. Create a new array. Should normally 
-     * happen only when replication is manually increased by the user. */
-    Object[] old = triplets;
-    triplets = new Object[(last+num)*3];
-    System.arraycopy(old, 0, triplets, 0, last*3);
-    return last;
+    if (bc != null) {
+      setINodeId(bc.getId());      
+    } else {
+      setINodeIdNoPersistance(-1);
+      remove();
+    }
   }
 
   /**
    * Count the number of data-nodes the block belongs to.
    */
-  public int numNodes() {
-    assert this.triplets != null : "BlockInfo is not initialized";
-    assert triplets.length % 3 == 0 : "Malformed BlockInfo";
-    for(int idx = getCapacity()-1; idx >= 0; idx--) {
-      if(getDatanode(idx) != null)
-        return idx+1;
+  public int numNodes() throws PersistanceException {
+    return getReplicas().size();
+  }
+
+  //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
+  List<IndexedReplica> getReplicas() throws PersistanceException {
+    List<IndexedReplica> replicas = (List<IndexedReplica>) EntityManager.findList(IndexedReplica.Finder.ByBlockId, getBlockId());
+    if (replicas == null) {
+      replicas = EMPTY_REPLICAS_ARRAY;
+    } else {
+      Collections.sort(replicas, IndexedReplica.Order.ByIndex);
     }
-    return 0;
+    return replicas;
   }
 
   /**
-   * Add data-node this block belongs to.
+   * Adds new replica for this block.
    */
-  public boolean addNode(DatanodeDescriptor node) {
-    if(findDatanode(node) >= 0) // the node is already there
-      return false;
-    // find the last null node
-    int lastNode = ensureCapacity(1);
-    setDatanode(lastNode, node);
-    setNext(lastNode, null);
-    setPrevious(lastNode, null);
-    return true;
+  IndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
+    IndexedReplica replica = new IndexedReplica(getBlockId(), dn.getStorageID(), getReplicas().size());
+    add(replica);    
+    return replica;
   }
 
   /**
-   * Remove data-node from the block.
-   */
-  public boolean removeNode(DatanodeDescriptor node) {
-    int dnIndex = findDatanode(node);
-    if(dnIndex < 0) // the node is not found
-      return false;
-    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-      "Block is still in the list and must be removed first.";
-    // find the last not null node
-    int lastNode = numNodes()-1; 
-    // replace current node triplet by the lastNode one 
-    setDatanode(dnIndex, getDatanode(lastNode));
-    setNext(dnIndex, getNext(lastNode)); 
-    setPrevious(dnIndex, getPrevious(lastNode)); 
-    // set the last triplet to null
-    setDatanode(lastNode, null);
-    setNext(lastNode, null); 
-    setPrevious(lastNode, null); 
-    return true;
-  }
-
-  /**
-   * Find specified DatanodeDescriptor.
-   * @param dn
-   * @return index or -1 if not found.
-   */
-  int findDatanode(DatanodeDescriptor dn) {
-    int len = getCapacity();
-    for(int idx = 0; idx < len; idx++) {
-      DatanodeDescriptor cur = getDatanode(idx);
-      if(cur == dn)
-        return idx;
-      if(cur == null)
-        break;
-    }
-    return -1;
-  }
-
-  /**
-   * Insert this block into the head of the list of blocks 
-   * related to the specified DatanodeDescriptor.
-   * If the head is null then form a new list.
-   * @return current block as the new head of the list.
-   */
-  public BlockInfo listInsert(BlockInfo head, DatanodeDescriptor dn) {
-    int dnIndex = this.findDatanode(dn);
-    assert dnIndex >= 0 : "Data node is not found: current";
-    assert getPrevious(dnIndex) == null && getNext(dnIndex) == null : 
-            "Block is already in the list and cannot be inserted.";
-    this.setPrevious(dnIndex, null);
-    this.setNext(dnIndex, head);
-    if(head != null)
-      head.setPrevious(head.findDatanode(dn), this);
-    return this;
-  }
-
-  /**
-   * Remove this block from the list of blocks 
-   * related to the specified DatanodeDescriptor.
-   * If this block is the head of the list then return the next block as 
-   * the new head.
-   * @return the new head of the list or null if the list becomes
-   * empty after deletion.
-   */
-  public BlockInfo listRemove(BlockInfo head, DatanodeDescriptor dn) {
-    if(head == null)
-      return null;
-    int dnIndex = this.findDatanode(dn);
-    if(dnIndex < 0) // this block is not on the data-node list
-      return head;
-
-    BlockInfo next = this.getNext(dnIndex);
-    BlockInfo prev = this.getPrevious(dnIndex);
-    this.setNext(dnIndex, null);
-    this.setPrevious(dnIndex, null);
-    if(prev != null)
-      prev.setNext(prev.findDatanode(dn), next);
-    if(next != null)
-      next.setPrevious(next.findDatanode(dn), prev);
-    if(this == head)  // removing the head
-      head = next;
-    return head;
-  }
-
-  /**
-   * Remove this block from the list of blocks related to the specified
-   * DatanodeDescriptor. Insert it into the head of the list of blocks.
+   * removes a replica of this block related to storageId
    *
-   * @return the new head of the list.
+   * @param storageId
+   * @return
    */
-  public BlockInfo moveBlockToHead(BlockInfo head, DatanodeDescriptor dn,
-      int curIndex, int headIndex) {
-    if (head == this) {
-      return this;
+  IndexedReplica removeReplica(DatanodeDescriptor dn) throws PersistanceException {
+    List<IndexedReplica> replicas = getReplicas();
+    IndexedReplica replica = null;
+    int index = -1;
+    for (int i = 0; i < replicas.size(); i++) {
+      if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
+        index = i;
+        break;
+      }
     }
-    BlockInfo next = this.getSetNext(curIndex, head);
-    BlockInfo prev = this.getSetPrevious(curIndex, null);
-
-    head.setPrevious(headIndex, this);
-    prev.setNext(prev.findDatanode(dn), next);
-    if (next != null)
-      next.setPrevious(next.findDatanode(dn), prev);
-    return this;
+    if (index >= 0) {
+      replica = replicas.remove(index);
+      remove(replica);
+      
+      for (int i = index; i < replicas.size(); i++) {        
+        IndexedReplica r1 = replicas.get(i);
+        r1.setIndex(i);
+        save(r1);
+      }
+      
+    }
+    return replica;
+  }
+  
+  boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
+    for (IndexedReplica replica : getReplicas()) {
+      if (replica.getStorageId().equals(dn.getStorageID())) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
-   * BlockInfo represents a block that is not being constructed.
-   * In order to start modifying the block, the BlockInfo should be converted
-   * to {@link BlockInfoUnderConstruction}.
+   * BlockInfo represents a block that is not being constructed. In order to
+   * start modifying the block, the BlockInfo should be converted to
+   * {@link BlockInfoUnderConstruction}.
+   *
    * @return {@link BlockUCState#COMPLETE}
    */
   public BlockUCState getBlockUCState() {
@@ -324,7 +212,7 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   /**
    * Is this block complete?
-   * 
+   *
    * @return true if the state of the block is {@link BlockUCState#COMPLETE}
    */
   public boolean isComplete() {
@@ -333,22 +221,72 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
 
   /**
    * Convert a complete block to an under construction block.
-   * 
-   * @return BlockInfoUnderConstruction -  an under construction block.
+   *
+   * @return BlockInfoUnderConstruction - an under construction block.
    */
   public BlockInfoUnderConstruction convertToBlockUnderConstruction(
-      BlockUCState s, DatanodeDescriptor[] targets) {
-    if(isComplete()) {
-      return new BlockInfoUnderConstruction(
-          this, getBlockCollection().getBlockReplication(), s, targets);
+          BlockUCState s, DatanodeDescriptor[] targets) throws PersistanceException {
+    if (isComplete()) {
+      return new BlockInfoUnderConstruction(this, s, targets);
     }
     // the block is already under construction
-    BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)this;
+    BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) this;
     ucBlock.setBlockUCState(s);
     ucBlock.setExpectedLocations(targets);
     return ucBlock;
   }
-
+  
+  public long getInodeId() {
+    return inodeId;
+  }
+  
+  public void setINodeIdNoPersistance(long id) {
+    this.inodeId = id;
+  }
+  
+  public void setINodeId(long id) throws PersistanceException {
+    setINodeIdNoPersistance(id);
+    save();
+  }
+  
+  public int getBlockIndex() {
+    return this.blockIndex;
+  }
+  
+  public void setBlockIndexNoPersistance(int bindex) {
+    this.blockIndex = bindex;
+  }
+  
+  public void setBlockIndex(int bindex) throws PersistanceException {
+    setBlockIndexNoPersistance(bindex);
+    save();
+  }
+  
+  public long getTimestamp() {
+    return this.timestamp;
+  }
+  
+  public void setTimestampNoPersistance(long ts) {
+    this.timestamp = ts;
+  }
+  
+  public void setTimestamp(long ts) throws PersistanceException {
+    setTimestampNoPersistance(ts);
+    save();
+  }
+  
+  protected void add(IndexedReplica replica) throws PersistanceException {
+    EntityManager.add(replica);
+  }
+  
+  protected void remove(IndexedReplica replica) throws PersistanceException {
+    EntityManager.remove(replica);
+  }
+  
+  protected void save(IndexedReplica replica) throws PersistanceException {
+    EntityManager.update(replica);
+  }
+  
   @Override
   public int hashCode() {
     // Super implementation is sufficient
@@ -359,15 +297,5 @@ public class BlockInfo extends Block implements LightWeightGSet.LinkedElement {
   public boolean equals(Object obj) {
     // Sufficient to rely on super's implementation
     return (this == obj) || super.equals(obj);
-  }
-
-  @Override
-  public LightWeightGSet.LinkedElement getNext() {
-    return nextLinkedElement;
-  }
-
-  @Override
-  public void setNext(LightWeightGSet.LinkedElement next) {
-    this.nextLinkedElement = next;
   }
 }

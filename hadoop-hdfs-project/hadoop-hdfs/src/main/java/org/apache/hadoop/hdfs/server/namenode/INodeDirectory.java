@@ -465,10 +465,4 @@ public class INodeDirectory extends INode {
     } 
     return total;
   }
-  
-  //START_HOP_CODE
-  private void remove(INode node) throws PersistanceException{
-     EntityManager.remove(node);
-  }
-  //END_HOP_CODE
 }

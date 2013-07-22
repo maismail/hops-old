@@ -82,7 +82,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   }
 
    //HOP: used instead of INodeFile.convertToUnderConstruction
-  INodeFileUnderConstruction(INodeFile file,
+  protected INodeFileUnderConstruction(INodeFile file,
                              String clientName,
                              String clientMachine,
                              DatanodeID clientNode) throws PersistanceException {
@@ -96,8 +96,9 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
     return clientName;
   }
 
-  void setClientName(String clientName) {
+  void setClientName(String clientName) throws PersistanceException {
     this.clientName = clientName;
+    save();
   }
 
   public String getClientMachine() {
@@ -146,7 +147,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
    * Remove a block from the block list. This block should be
    * the last one on the list.
    */
-  void removeLastBlock(Block oldblock) throws IOException {
+  void removeLastBlock(Block oldblock) throws IOException, PersistanceException {
     final BlockInfo[] blocks = getBlocks();
     if (blocks == null) {
       throw new IOException("Trying to delete non-existant block " + oldblock);
@@ -156,10 +157,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
       throw new IOException("Trying to delete non-last block " + oldblock);
     }
 
-    //copy to a new list
-    BlockInfo[] newlist = new BlockInfo[size_1];
-    System.arraycopy(blocks, 0, newlist, 0, size_1);
-    setBlocks(newlist);
+    removeBlock((BlockInfo) oldblock);  
   }
 
   /**
@@ -168,7 +166,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
    */
   @Override
   public BlockInfoUnderConstruction setLastBlock(BlockInfo lastBlock,
-      DatanodeDescriptor[] targets) throws IOException {
+      DatanodeDescriptor[] targets) throws IOException, PersistanceException {
     if (numBlocks() == 0) {
       throw new IOException("Failed to set last block: File is empty.");
     }
@@ -196,5 +194,19 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
         + " is not a BlockInfoUnderConstruction when updating its length";
     lastBlock.setNumBytes(lastBlockLength);
   }
-  
+ 
+  //START_HOP_CODE
+    public void removeBlock(BlockInfo block) throws PersistanceException {
+    BlockInfo[] blks = getBlocks();
+    int index = block.getBlockIndex();
+    
+    block.setBlockCollection(null);
+    
+    if (index != blks.length) {
+      for (int i = index+1; i < blks.length; i++) {
+        blks[i].setBlockIndex(i-1);
+      }
+    }
+  }
+  //END_HOP_CODE
 }

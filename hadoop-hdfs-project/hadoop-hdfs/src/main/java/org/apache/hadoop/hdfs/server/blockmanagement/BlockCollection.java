@@ -32,7 +32,7 @@ public interface BlockCollection {
   /**
    * Get the last block of the collection.
    */
-  public BlockInfo getLastBlock() throws IOException;
+  public BlockInfo getLastBlock() throws IOException, PersistanceException;
 
   /** 
    * Get content summary.
@@ -42,12 +42,12 @@ public interface BlockCollection {
   /**
    * @return the number of blocks
    */ 
-  public int numBlocks();
+  public int numBlocks() throws PersistanceException;
 
   /**
    * Get the blocks.
    */
-  public BlockInfo[] getBlocks();
+  public BlockInfo[] getBlocks() throws PersistanceException;
 
   /**
    * Get preferred block size for the collection 
@@ -64,5 +64,10 @@ public interface BlockCollection {
   /**
    * Get the name of the collection.
    */
-  public String getName();
+  public String getName() throws PersistanceException;
+  
+  /** HOP:
+   * Get the Id of associated INode
+   */
+  public long getId();
 }

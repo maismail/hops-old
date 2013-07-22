@@ -24,6 +24,8 @@ import java.util.regex.Pattern;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.io.*;
 
 /**************************************************
@@ -89,7 +91,7 @@ public class Block implements Writable, Comparable<Block> {
   public Block() {this(0, 0, 0);}
 
   public Block(final long blkid, final long len, final long generationStamp) {
-    set(blkid, len, generationStamp);
+    setNoPersistance(blkid, len, generationStamp);
   }
 
   public Block(final long blkid) {
@@ -107,7 +109,7 @@ public class Block implements Writable, Comparable<Block> {
     this(filename2id(f.getName()), len, genstamp);
   }
 
-  public void set(long blkid, long len, long genStamp) {
+  private void setNoPersistance(long blkid, long len, long genStamp) {
     this.blockId = blkid;
     this.numBytes = len;
     this.generationStamp = genStamp;
@@ -118,7 +120,7 @@ public class Block implements Writable, Comparable<Block> {
     return blockId;
   }
   
-  public void setBlockId(long bid) {
+  private void setBlockIdNoPersistance(long bid) {
     blockId = bid;
   }
 
@@ -133,7 +135,7 @@ public class Block implements Writable, Comparable<Block> {
   public long getNumBytes() {
     return numBytes;
   }
-  public void setNumBytes(long len) {
+  private void setNumBytesNoPersistance(long len) {
     this.numBytes = len;
   }
 
@@ -141,7 +143,7 @@ public class Block implements Writable, Comparable<Block> {
     return generationStamp;
   }
   
-  public void setGenerationStamp(long stamp) {
+  private void setGenerationStampNoPersistance(long stamp) {
     generationStamp = stamp;
   }
 
@@ -233,4 +235,43 @@ public class Block implements Writable, Comparable<Block> {
     //GenerationStamp is IRRELEVANT and should not be used here
     return (int)(blockId^(blockId>>>32));
   }
+  
+  //START_HOP_CODE
+  
+  public void setBlockId(long bid) throws PersistanceException {
+    setBlockIdNoPersistance(bid);
+    save();
+  }
+
+  public void setNumBytes(long len) throws PersistanceException {
+    setNumBytesNoPersistance(len);
+    save();
+  }
+
+  public void setGenerationStamp(long stamp) throws PersistanceException {
+    setGenerationStampNoPersistance(stamp);
+    save();
+  }
+
+  public void set(long blkid, long len, long genStamp) throws PersistanceException {
+    set(blkid, len, genStamp);
+    save();
+  }
+
+  protected void save() throws PersistanceException {
+    save(this);
+  }
+
+  protected void save(Block blk) throws PersistanceException {
+    EntityManager.update(blk);
+  }
+
+  protected void remove() throws PersistanceException {
+    remove(this);
+  }
+
+  protected void remove(Block blk) throws PersistanceException {
+    EntityManager.remove(blk);
+  }
+  //END_HOP_CODE
 }

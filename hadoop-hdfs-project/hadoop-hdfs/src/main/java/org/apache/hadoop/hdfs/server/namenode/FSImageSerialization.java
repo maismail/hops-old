@@ -78,45 +78,45 @@ public class FSImageSerialization {
   // Helper function that reads in an INodeUnderConstruction
   // from the input stream
   //
-  static INodeFileUnderConstruction readINodeUnderConstruction(
-                            DataInputStream in) throws IOException {
-    byte[] name = readBytes(in);
-    short blockReplication = in.readShort();
-    long modificationTime = in.readLong();
-    long preferredBlockSize = in.readLong();
-    int numBlocks = in.readInt();
-    BlockInfo[] blocks = new BlockInfo[numBlocks];
-    Block blk = new Block();
-    int i = 0;
-    for (; i < numBlocks-1; i++) {
-      blk.readFields(in);
-      blocks[i] = new BlockInfo(blk, blockReplication);
-    }
-    // last block is UNDER_CONSTRUCTION
-    if(numBlocks > 0) {
-      blk.readFields(in);
-      blocks[i] = new BlockInfoUnderConstruction(
-        blk, blockReplication, BlockUCState.UNDER_CONSTRUCTION, null);
-    }
-    PermissionStatus perm = PermissionStatus.read(in);
-    String clientName = readString(in);
-    String clientMachine = readString(in);
-
-    // We previously stored locations for the last block, now we
-    // just record that there are none
-    int numLocs = in.readInt();
-    assert numLocs == 0 : "Unexpected block locations";
-
-    return new INodeFileUnderConstruction(name, 
-                                          blockReplication, 
-                                          modificationTime,
-                                          preferredBlockSize,
-                                          blocks,
-                                          perm,
-                                          clientName,
-                                          clientMachine,
-                                          null);
-  }
+//  static INodeFileUnderConstruction readINodeUnderConstruction(
+//                            DataInputStream in) throws IOException {
+//    byte[] name = readBytes(in);
+//    short blockReplication = in.readShort();
+//    long modificationTime = in.readLong();
+//    long preferredBlockSize = in.readLong();
+//    int numBlocks = in.readInt();
+//    BlockInfo[] blocks = new BlockInfo[numBlocks];
+//    Block blk = new Block();
+//    int i = 0;
+//    for (; i < numBlocks-1; i++) {
+//      blk.readFields(in);
+//      blocks[i] = new BlockInfo(blk, blockReplication);
+//    }
+//    // last block is UNDER_CONSTRUCTION
+//    if(numBlocks > 0) {
+//      blk.readFields(in);
+//      blocks[i] = new BlockInfoUnderConstruction(
+//        blk, blockReplication, BlockUCState.UNDER_CONSTRUCTION, null);
+//    }
+//    PermissionStatus perm = PermissionStatus.read(in);
+//    String clientName = readString(in);
+//    String clientMachine = readString(in);
+//
+//    // We previously stored locations for the last block, now we
+//    // just record that there are none
+//    int numLocs = in.readInt();
+//    assert numLocs == 0 : "Unexpected block locations";
+//
+//    return new INodeFileUnderConstruction(name, 
+//                                          blockReplication, 
+//                                          modificationTime,
+//                                          preferredBlockSize,
+//                                          blocks,
+//                                          perm,
+//                                          clientName,
+//                                          clientMachine,
+//                                          null);
+//  }
 
   // Helper function that writes an INodeUnderConstruction
   // into the input stream

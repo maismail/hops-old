@@ -18,19 +18,17 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.util.Time;
 
@@ -97,7 +95,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
     }
   }
 
-  private volatile BlockInfo blockList = null;
+  //HOP: 
+  //private volatile BlockInfo blockList = null;
   private int numBlocks = 0;
   // isAlive == heartbeats.contains(this)
   // This is an optimization, because contains takes O(n) time on Arraylist
@@ -135,6 +134,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
   /** A queue of blocks to be recovered by this datanode */
   private BlockQueue<BlockInfoUnderConstruction> recoverBlocks =
                                 new BlockQueue<BlockInfoUnderConstruction>();
+  //HOP: TODO: do we need to change datastructure type?!
   /** A set of blocks to be invalidated by this datanode */
   private LightWeightHashSet<Block> invalidateBlocks = new LightWeightHashSet<Block>();
 
@@ -220,15 +220,16 @@ public class DatanodeDescriptor extends DatanodeInfo {
         failedVolumes);
   }
 
+  //HOP: Mahmoud: i kept both addBlock, removeBlock to encapsulate 
+  //              creation/deletion of replicas 
   /**
    * Add datanode to the block.
    * Add block to the head of the list of blocks belonging to the data-node.
    */
-  public boolean addBlock(BlockInfo b) {
-    if(!b.addNode(this))
+  public boolean addBlock(BlockInfo b) throws PersistanceException {
+    if(b.hasReplicaIn(this))
       return false;
-    // add to the head of the data-node list
-    blockList = b.listInsert(blockList, this);
+    b.addReplica(this);
     numBlocks++;
     return true;
   }
@@ -237,47 +238,47 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Remove block from the list of blocks belonging to the data-node.
    * Remove datanode from the block.
    */
-  public boolean removeBlock(BlockInfo b) {
-    blockList = b.listRemove(blockList, this);
-    if ( b.removeNode(this) ) {
+  public boolean removeBlock(BlockInfo b) throws PersistanceException {
+    if(b.removeReplica(this) != null){
       numBlocks--;
       return true;
-    } else {
+    }else{
       return false;
     }
   }
 
-  /**
-   * Move block to the head of the list of blocks belonging to the data-node.
-   * @return the index of the head of the blockList
-   */
-  int moveBlockToHead(BlockInfo b, int curIndex, int headIndex) {
-    blockList = b.moveBlockToHead(blockList, this, curIndex, headIndex);
-    return curIndex;
-  }
-
-  /**
-   * Used for testing only
-   * @return the head of the blockList
-   */
-  protected BlockInfo getHead(){
-    return blockList;
-  }
-
-  /**
-   * Replace specified old block with a new one in the DataNodeDescriptor.
-   *
-   * @param oldBlock - block to be replaced
-   * @param newBlock - a replacement block
-   * @return the new block
-   */
-  public BlockInfo replaceBlock(BlockInfo oldBlock, BlockInfo newBlock) {
-    boolean done = removeBlock(oldBlock);
-    assert done : "Old block should belong to the data-node when replacing";
-    done = addBlock(newBlock);
-    assert done : "New block should not belong to the data-node when replacing";
-    return newBlock;
-  }
+//HOP: 
+//  /**
+//   * Move block to the head of the list of blocks belonging to the data-node.
+//   * @return the index of the head of the blockList
+//   */
+//  int moveBlockToHead(BlockInfo b, int curIndex, int headIndex) {
+//    blockList = b.moveBlockToHead(blockList, this, curIndex, headIndex);
+//    return curIndex;
+//  }
+//
+//  /**
+//   * Used for testing only
+//   * @return the head of the blockList
+//   */
+//  protected BlockInfo getHead(){
+//    return blockList;
+//  }
+//HOP: we don't need this method, only used in BlockMap which is removed in KTHFS
+//  /**
+//   * Replace specified old block with a new one in the DataNodeDescriptor.
+//   *
+//   * @param oldBlock - block to be replaced
+//   * @param newBlock - a replacement block
+//   * @return the new block
+//   */
+//  public BlockInfo replaceBlock(BlockInfo oldBlock, BlockInfo newBlock) {
+//    boolean done = removeBlock(oldBlock);
+//    assert done : "Old block should belong to the data-node when replacing";
+//    done = addBlock(newBlock);
+//    assert done : "New block should not belong to the data-node when replacing";
+//    return newBlock;
+//  }
 
   public void resetBlocks() {
     setCapacity(0);
@@ -285,7 +286,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     setBlockPoolUsed(0);
     setDfsUsed(0);
     setXceiverCount(0);
-    this.blockList = null;
+    //this.blockList = null;
     this.invalidateBlocks.clear();
     this.volumeFailures = 0;
   }
@@ -317,40 +318,40 @@ public class DatanodeDescriptor extends DatanodeInfo {
     this.heartbeatedSinceFailover = true;
     rollBlocksScheduled(getLastUpdate());
   }
-
-  /**
-   * Iterates over the list of blocks belonging to the datanode.
-   */
-  public static class BlockIterator implements Iterator<BlockInfo> {
-    private BlockInfo current;
-    private DatanodeDescriptor node;
-      
-    BlockIterator(BlockInfo head, DatanodeDescriptor dn) {
-      this.current = head;
-      this.node = dn;
-    }
-
-    @Override
-    public boolean hasNext() {
-      return current != null;
-    }
-
-    @Override
-    public BlockInfo next() {
-      BlockInfo res = current;
-      current = current.getNext(current.findDatanode(node));
-      return res;
-    }
-
-    @Override
-    public void remove()  {
-      throw new UnsupportedOperationException("Sorry. can't remove.");
-    }
-  }
-
-  public Iterator<BlockInfo> getBlockIterator() {
-    return new BlockIterator(this.blockList, this);
-  }
+//HOP: we don't need the iterator
+//  /**
+//   * Iterates over the list of blocks belonging to the datanode.
+//   */
+//  public static class BlockIterator implements Iterator<BlockInfo> {
+//    private BlockInfo current;
+//    private DatanodeDescriptor node;
+//      
+//    BlockIterator(BlockInfo head, DatanodeDescriptor dn) {
+//      this.current = head;
+//      this.node = dn;
+//    }
+//
+//    @Override
+//    public boolean hasNext() {
+//      return current != null;
+//    }
+//
+//    @Override
+//    public BlockInfo next() {
+//      BlockInfo res = current;
+//      current = current.getNext(current.findDatanode(node));
+//      return res;
+//    }
+//
+//    @Override
+//    public void remove()  {
+//      throw new UnsupportedOperationException("Sorry. can't remove.");
+//    }
+//  }
+//
+//  public Iterator<BlockInfo> getBlockIterator() {
+//    return new BlockIterator(this.blockList, this);
+//  }
   
   /**
    * Store block replication work.

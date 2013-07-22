@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,9 +29,11 @@ import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /** I-node for closed file. */
@@ -58,7 +61,7 @@ public class INodeFile extends INode implements BlockCollection {
 
   private long header;
 
-  private BlockInfo[] blocks;
+  //private BlockInfo[] blocks;
 
   public INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
                       short replication, long modificationTime,
@@ -66,13 +69,13 @@ public class INodeFile extends INode implements BlockCollection {
     super(permissions, modificationTime, atime);
     this.setReplicationNoPersistance(replication);
     this.setPreferredBlockSizeNoPersistance(preferredBlockSize);
-    this.blocks = blklist;
+//HOP    this.blocks = blklist;
   }
   
    //HOP:
   public INodeFile(INodeFile other) throws PersistanceException {
     super(other);
-    setBlocks(other.getBlocks());
+//HOP    setBlocks(other.getBlocks());
     setReplicationNoPersistance(other.getBlockReplication());
     setPreferredBlockSizeNoPersistance(other.getPreferredBlockSize());
   }
@@ -113,58 +116,50 @@ public class INodeFile extends INode implements BlockCollection {
 
   /** @return the blocks of the file. */
   @Override
-  public BlockInfo[] getBlocks() {
-    return this.blocks;
+  public BlockInfo[] getBlocks() throws PersistanceException {
+    List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByInodeId, id);
+    if (blocks != null) {
+      Collections.sort(blocks, BlockInfo.Order.ByBlockIndex);
+      return (BlockInfo[]) blocks.toArray();
+    } else {
+      return BlockInfo.EMPTY_ARRAY;
+    }
   }
 
   /**
    * append array of blocks to this.blocks
    */
-  void appendBlocks(INodeFile [] inodes, int totalAddedBlocks) {
-    int size = this.blocks.length;
-    
-    BlockInfo[] newlist = new BlockInfo[size + totalAddedBlocks];
-    System.arraycopy(this.blocks, 0, newlist, 0, size);
-    
-    for(INodeFile in: inodes) {
-      System.arraycopy(in.blocks, 0, newlist, size, in.blocks.length);
-      size += in.blocks.length;
+  void appendBlocks(INodeFile[] inodes, int totalAddedBlocks /*HOP not used*/) throws PersistanceException {
+    for (INodeFile srcInode : inodes) {
+      for (BlockInfo block : srcInode.getBlocks()) {
+        addBlock(block);
+        block.setBlockCollection(this);
+      }
     }
-    
-    for(BlockInfo bi: newlist) {
-      bi.setBlockCollection(this);
-    }
-    setBlocks(newlist);
   }
   
   /**
    * add a block to the block list
    */
-  void addBlock(BlockInfo newblock) {
-    if (this.blocks == null) {
-      this.setBlocks(new BlockInfo[]{newblock});
-    } else {
-      int size = this.blocks.length;
-      BlockInfo[] newlist = new BlockInfo[size + 1];
-      System.arraycopy(this.blocks, 0, newlist, 0, size);
-      newlist[size] = newblock;
-      this.setBlocks(newlist);
-    }
+  void addBlock(BlockInfo newblock) throws PersistanceException {
+    BlockInfo[] blks = getBlocks();
+    newblock.setBlockIndex(blks.length);
   }
 
   /** Set the block of the file at the given index. */
-  public void setBlock(int idx, BlockInfo blk) {
-    this.blocks[idx] = blk;
+  public void setBlock(int idx, BlockInfo blk) throws PersistanceException {
+    blk.setBlockIndex(idx);    
   }
 
   /** Set the blocks. */
   public void setBlocks(BlockInfo[] blocks) {
-    this.blocks = blocks;
+//    this.blocks = blocks;
   }
 
   @Override
-  int collectSubtreeBlocksAndClear(List<Block> v) {
+  int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException {
     parent = null;
+    BlockInfo[] blocks = getBlocks();
     if(blocks != null && v != null) {
       for (BlockInfo blk : blocks) {
         v.add(blk);
@@ -198,7 +193,8 @@ public class INodeFile extends INode implements BlockCollection {
   /** Compute file size.
    * May or may not include BlockInfoUnderConstruction.
    */
-  long computeFileSize(boolean includesBlockInfoUnderConstruction) {
+  long computeFileSize(boolean includesBlockInfoUnderConstruction) throws PersistanceException {
+    BlockInfo[] blocks = getBlocks();
     if (blocks == null || blocks.length == 0) {
       return 0;
     }
@@ -215,14 +211,14 @@ public class INodeFile extends INode implements BlockCollection {
   
 
   @Override
-  DirCounts spaceConsumedInTree(DirCounts counts) {
+  DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
     counts.nsCount += 1;
     counts.dsCount += diskspaceConsumed();
     return counts;
   }
 
-  long diskspaceConsumed() {
-    return diskspaceConsumed(blocks);
+  long diskspaceConsumed() throws PersistanceException {
+    return diskspaceConsumed(getBlocks());
   }
   
   private long diskspaceConsumed(Block[] blkArr) {
@@ -248,7 +244,8 @@ public class INodeFile extends INode implements BlockCollection {
   /**
    * Return the penultimate allocated block for this file.
    */
-  BlockInfo getPenultimateBlock() {
+  BlockInfo getPenultimateBlock() throws PersistanceException {
+    BlockInfo[] blocks = getBlocks();    
     if (blocks == null || blocks.length <= 1) {
       return null;
     }
@@ -256,12 +253,14 @@ public class INodeFile extends INode implements BlockCollection {
   }
 
   @Override
-  public BlockInfo getLastBlock() throws IOException {
+  public BlockInfo getLastBlock() throws IOException, PersistanceException {
+    BlockInfo[] blocks = getBlocks();
     return blocks == null || blocks.length == 0? null: blocks[blocks.length-1];
   }
 
   @Override
-  public int numBlocks() {
+  public int numBlocks() throws PersistanceException {
+    BlockInfo[] blocks = getBlocks();
     return blocks == null ? 0 : blocks.length;
   }
   
@@ -284,5 +283,11 @@ public class INodeFile extends INode implements BlockCollection {
     save();
   }
  
+  public INodeFileUnderConstruction convertToUnderConstruction(String clientName, 
+          String clientMachine,DatanodeID clientNode) throws PersistanceException {
+    INodeFileUnderConstruction ucfile = new INodeFileUnderConstruction(this, clientName, clientMachine, clientNode);
+    save(ucfile);
+    return ucfile;
+  }
   //END_HOP_CODE
 }
