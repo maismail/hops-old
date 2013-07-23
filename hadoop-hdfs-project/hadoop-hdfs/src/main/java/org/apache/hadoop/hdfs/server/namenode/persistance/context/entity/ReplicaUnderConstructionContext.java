@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
+import java.util.ArrayList;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.ReplicaUnderConstruntionDataAccess;
 import java.util.HashMap;
 import java.util.List;
@@ -22,7 +23,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
    */
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> newReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> removedReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
-  private Map<Long, List<ReplicaUnderConstruction>> blockReplicasUc = new HashMap<Long, List<ReplicaUnderConstruction>>();
+  private Map<Long, List<ReplicaUnderConstruction>> blockReplicasUCAll = new HashMap<Long, List<ReplicaUnderConstruction>>();
   private ReplicaUnderConstruntionDataAccess dataAccess;
 
   public ReplicaUnderConstructionContext(ReplicaUnderConstruntionDataAccess dataAccess) {
@@ -36,6 +37,14 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     }
 
     newReplicasUc.put(replica, replica);
+    if(replica.getBlockId() == -1){
+          throw new IllegalArgumentException("Block Id is -1");
+    }
+    if( blockReplicasUCAll.get(replica.getBlockId())== null){
+      blockReplicasUCAll.put(replica.getBlockId(), new ArrayList<ReplicaUnderConstruction>());
+    }
+    blockReplicasUCAll.get(replica.getBlockId()).add(replica);
+    
     log("added-replicauc", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
               "sid", replica.getStorageId(), "state", replica.getState().name()});
@@ -46,7 +55,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     storageCallPrevented = false;
     newReplicasUc.clear();
     removedReplicasUc.clear();
-    blockReplicasUc.clear();
+    blockReplicasUCAll.clear();
   }
 
   @Override
@@ -62,14 +71,14 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     switch (rFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
-        if (blockReplicasUc.containsKey(blockId)) {
+        if (blockReplicasUCAll.containsKey(blockId)) {
           log("find-replicaucs-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
-          result = blockReplicasUc.get(blockId);
+          result = blockReplicasUCAll.get(blockId);
         } else {
           log("find-replicaucs-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
           result = dataAccess.findReplicaUnderConstructionByBlockId(blockId);
-          blockReplicasUc.put(blockId, result);
+          blockReplicasUCAll.put(blockId, result);
         }
         break;
     }
@@ -91,13 +100,13 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   public void remove(ReplicaUnderConstruction replica) throws PersistanceException {
     
     boolean removed = false;  
-    if(blockReplicasUc.containsKey(replica.getBlockId()))
+    if(blockReplicasUCAll.containsKey(replica.getBlockId()))
     {
-        List<ReplicaUnderConstruction> urbs = blockReplicasUc.get(replica.getBlockId());
+        List<ReplicaUnderConstruction> urbs = blockReplicasUCAll.get(replica.getBlockId());
         if(urbs.contains(replica))
         {
             removedReplicasUc.put(replica, replica);
-            blockReplicasUc.remove(replica);
+            blockReplicasUCAll.remove(replica);
             removed = true;
         }
     }
