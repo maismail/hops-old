@@ -87,9 +87,12 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * length) has not been committed by the client or it does not have at least a
    * minimal number of replicas reported from data-nodes.
    */
-  BlockInfo convertToCompleteBlock() throws IOException {
+  BlockInfo convertToCompleteBlock() throws IOException, PersistanceException {
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "Trying to convert a COMPLETE block";
+    for(ReplicaUnderConstruction replica : getExpectedReplicas()){
+      remove(replica);
+    }
     return new BlockInfo(this);
   }
 
@@ -110,12 +113,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   //we'll add a DataNodeManager argument
   public DatanodeDescriptor[] getExpectedLocations(DatanodeManager datanodeMgr) throws PersistanceException {
     List<ReplicaUnderConstruction> rpls = getExpectedReplicas();
-    int numLocations = rpls.size();
-    DatanodeDescriptor[] locations = new DatanodeDescriptor[numLocations];
-    for (int i = 0; i < numLocations; i++) {
-      locations[i] = datanodeMgr.getDatanode(rpls.get(i).getStorageId());
-    }
-    return locations;
+    return getDatanodes(datanodeMgr, rpls);
   }
 
   //HOP:

@@ -143,6 +143,11 @@ public class BlockInfo extends Block {
     return getReplicas().size();
   }
 
+  public DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr) throws PersistanceException{
+    List<IndexedReplica> replicas = getReplicas();
+    return getDatanodes(datanodeMgr, replicas);
+  }
+  
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
   List<IndexedReplica> getReplicas() throws PersistanceException {
     List<IndexedReplica> replicas = (List<IndexedReplica>) EntityManager.findList(IndexedReplica.Finder.ByBlockId, getBlockId());
@@ -163,6 +168,11 @@ public class BlockInfo extends Block {
     return replica;
   }
 
+  public void removeAllReplicas() throws PersistanceException {
+    for (IndexedReplica replica : getReplicas()) {
+      remove(replica);
+    }
+  }
   /**
    * removes a replica of this block related to storageId
    *
@@ -193,6 +203,16 @@ public class BlockInfo extends Block {
     return replica;
   }
   
+  int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
+    List<IndexedReplica> replicas = getReplicas();
+    for (int i = 0; i < replicas.size(); i++) {
+      if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
+        return i;
+      }
+    }
+    return -1;
+  }
+
   boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
     for (IndexedReplica replica : getReplicas()) {
       if (replica.getStorageId().equals(dn.getStorageID())) {
@@ -278,6 +298,15 @@ public class BlockInfo extends Block {
     save();
   }
   
+  protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends Replica> replicas){
+    int numLocations = replicas.size();
+    DatanodeDescriptor[] locations = new DatanodeDescriptor[numLocations];
+    for (int i = 0; i < numLocations; i++) {
+      locations[i] = datanodeMgr.getDatanode(replicas.get(i).getStorageId());
+    }
+    return locations;
+  }
+    
   protected void add(IndexedReplica replica) throws PersistanceException {
     EntityManager.add(replica);
   }

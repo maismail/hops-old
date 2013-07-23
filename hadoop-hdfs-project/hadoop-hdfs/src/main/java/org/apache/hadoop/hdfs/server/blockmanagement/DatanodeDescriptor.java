@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
@@ -27,6 +28,7 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.util.Time;
@@ -348,9 +350,9 @@ public class DatanodeDescriptor extends DatanodeInfo {
 //    }
 //  }
 //
-//  public Iterator<BlockInfo> getBlockIterator() {
-//    return new BlockIterator(this.blockList, this);
-//  }
+  public Iterator<BlockInfo> getBlockIterator() throws PersistanceException {
+    return EntityManager.findList(BlockInfo.Finder.ByStorageId, getStorageID()).iterator();
+  }
   
   /**
    * Store block replication work.
