@@ -143,7 +143,7 @@ public class TestBlockReport {
         LOG.debug("Setting new length");
       }
       tempLen = rand.nextInt(BLOCK_SIZE);
-      b.set(b.getBlockId(), tempLen, b.getGenerationStamp());
+      b.setNoPersistance(b.getBlockId(), tempLen, b.getGenerationStamp());
       if(LOG.isDebugEnabled()) {
         LOG.debug("Block " + b.getBlockName() + " after\t " + "Size " +
             b.getNumBytes());
@@ -269,7 +269,7 @@ public class TestBlockReport {
       prepareForRide(filePath, METHOD_NAME, FILE_SIZE);
 
     // The block with modified GS won't be found. Has to be deleted
-    blocks.get(0).setGenerationStamp(rand.nextLong());
+    blocks.get(0).setGenerationStampNoPersistance(rand.nextLong());
     // This new block is unknown to NN and will be mark for deletion.
     blocks.add(new Block());
     
@@ -793,7 +793,7 @@ public class TestBlockReport {
     long newLen = oldLen - rand.nextLong();
     assertTrue("Old and new length shouldn't be the same",
       block.getNumBytes() != newLen);
-    block.setNumBytes(newLen);
+    block.setNumBytesNoPersistance(newLen);
     if(LOG.isDebugEnabled()) {
       LOG.debug("Length of " + block.getBlockName() +
           " is changed to " + newLen + " from " + oldLen);
@@ -809,7 +809,7 @@ public class TestBlockReport {
     long newGS = oldGS - rand.nextLong();
     assertTrue("Old and new GS shouldn't be the same",
       block.getGenerationStamp() != newGS);
-    block.setGenerationStamp(newGS);
+    block.setGenerationStampNoPersistance(newGS);
     if(LOG.isDebugEnabled()) {
       LOG.debug("Generation stamp of " + block.getBlockName() +
           " is changed to " + block.getGenerationStamp() + " from " + oldGS);

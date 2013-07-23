@@ -74,15 +74,15 @@ public class ExtendedBlock {
   }
 
   public void setBlockId(final long bid) {
-    block.setBlockId(bid);
+    block.setBlockIdNoPersistance(bid);
   }
   
   public void setGenerationStamp(final long genStamp) {
-    block.setGenerationStamp(genStamp);
+    block.setGenerationStampNoPersistance(genStamp);
   }
 
   public void setNumBytes(final long len) {
-    block.setNumBytes(len);
+    block.setNumBytesNoPersistance(len);
   }
   
   public void set(String poolId, Block blk) {

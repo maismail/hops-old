@@ -226,7 +226,7 @@ abstract public class ReplicaInfo extends Block implements Replica {
       throw new IOException("New generation stamp (" + newGS 
           + ") must be greater than current one (" + curGS + ")");
     }
-    setGenerationStamp(newGS);
+    setGenerationStampNoPersistance(newGS);
   }
   
   @Override  //Object

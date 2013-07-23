@@ -75,6 +75,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -1068,7 +1069,7 @@ public class DatanodeManager {
       final String blockPoolId,
       long capacity, long dfsUsed, long remaining, long blockPoolUsed,
       int xceiverCount, int maxTransfers, int failedVolumes
-      ) throws IOException {
+      ) throws IOException, PersistanceException {
     synchronized (heartbeatManager) {
       synchronized (datanodeMap) {
         DatanodeDescriptor nodeinfo = null;
@@ -1099,7 +1100,7 @@ public class DatanodeManager {
               blocks.length);
           for (BlockInfoUnderConstruction b : blocks) {
             brCommand.add(new RecoveringBlock(
-                new ExtendedBlock(blockPoolId, b), b.getExpectedLocations(), b
+                new ExtendedBlock(blockPoolId, b), b.getExpectedLocations(this), b
                     .getBlockRecoveryId()));
           }
           return new DatanodeCommand[] { brCommand };

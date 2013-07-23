@@ -105,7 +105,10 @@ public class BlockInfo extends Block {
       this.bc = ((BlockInfo) blk).bc;
     }
   }
-
+  
+  public BlockInfo(){
+    this.bc = null;
+  }
   /**
    * Copy construction. This is used to convert BlockInfoUnderConstruction
    *

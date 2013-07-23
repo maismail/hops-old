@@ -2563,7 +2563,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src + ". Returning previously allocated block " + lastBlockInFile);
         long offset = pendingFile.computeFileSize(true);
         onRetryBlock[0] = makeLocatedBlock(lastBlockInFile,
-            ((BlockInfoUnderConstruction)lastBlockInFile).getExpectedLocations(),
+            ((BlockInfoUnderConstruction)lastBlockInFile).getExpectedLocations(getBlockManager().getDatanodeManager()),
             offset);
         return inodes;
       } else {
@@ -2856,7 +2856,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Create new block with a unique block id and a new generation stamp.
    */
-  Block createNewBlock() throws IOException {
+  Block createNewBlock() throws IOException, PersistanceException {
     assert hasWriteLock();
     Block b = new Block(HOPBlockIDGen.getUniqueBlockId(this), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
@@ -3640,7 +3640,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       // start recovery of the last block for this file
       long blockRecoveryId = nextGenerationStamp();
       lease = reassignLease(lease, src, recoveryLeaseHolder, pendingFile);
-      uc.initializeBlockRecovery(blockRecoveryId);
+      uc.initializeBlockRecovery(blockRecoveryId, getBlockManager().getDatanodeManager());
       leaseManager.renewLease(lease);
       // Cannot close file right now, since the last block requires recovery.
       // This may potentially cause infinite loop in lease recovery
@@ -4001,7 +4001,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   HeartbeatResponse handleHeartbeat(DatanodeRegistration nodeReg,
       long capacity, long dfsUsed, long remaining, long blockPoolUsed,
       int xceiverCount, int xmitsInProgress, int failedVolumes) 
-        throws IOException {
+        throws IOException, PersistanceException {
     readLock();
     try {
       final int maxTransfer = blockManager.getMaxReplicationStreams()

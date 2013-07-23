@@ -125,20 +125,20 @@ public class FSImageSerialization {
                                            INodeFileUnderConstruction cons,
                                            String path) 
                                            throws IOException {
-    writeString(path, out);
-    out.writeShort(cons.getBlockReplication());
-    out.writeLong(cons.getModificationTime());
-    out.writeLong(cons.getPreferredBlockSize());
-    int nrBlocks = cons.getBlocks().length;
-    out.writeInt(nrBlocks);
-    for (int i = 0; i < nrBlocks; i++) {
-      cons.getBlocks()[i].write(out);
-    }
-    cons.getPermissionStatus().write(out);
-    writeString(cons.getClientName(), out);
-    writeString(cons.getClientMachine(), out);
-
-    out.writeInt(0); //  do not store locations of last block
+//HOP    writeString(path, out);
+//    out.writeShort(cons.getBlockReplication());
+//    out.writeLong(cons.getModificationTime());
+//    out.writeLong(cons.getPreferredBlockSize());
+//    int nrBlocks = cons.getBlocks().length;
+//    out.writeInt(nrBlocks);
+//    for (int i = 0; i < nrBlocks; i++) {
+//      cons.getBlocks()[i].write(out);
+//    }
+//    cons.getPermissionStatus().write(out);
+//    writeString(cons.getClientName(), out);
+//    writeString(cons.getClientMachine(), out);
+//
+//    out.writeInt(0); //  do not store locations of last block
   }
 
   /*
@@ -146,48 +146,48 @@ public class FSImageSerialization {
    */
   static void saveINode2Image(INode node,
                               DataOutputStream out) throws IOException {
-    byte[] name = node.getLocalNameBytes();
-    out.writeShort(name.length);
-    out.write(name);
-    FsPermission filePerm = TL_DATA.get().FILE_PERM;
-    if (node.isDirectory()) {
-      out.writeShort(0);  // replication
-      out.writeLong(node.getModificationTime());
-      out.writeLong(0);   // access time
-      out.writeLong(0);   // preferred block size
-      out.writeInt(-1);   // # of blocks
-      out.writeLong(node.getNsQuota());
-      out.writeLong(node.getDsQuota());
-      filePerm.fromShort(node.getFsPermissionShort());
-      PermissionStatus.write(out, node.getUserName(),
-                             node.getGroupName(),
-                             filePerm);
-    } else if (node.isSymlink()) {
-      out.writeShort(0);  // replication
-      out.writeLong(0);   // modification time
-      out.writeLong(0);   // access time
-      out.writeLong(0);   // preferred block size
-      out.writeInt(-2);   // # of blocks
-      Text.writeString(out, ((INodeSymlink)node).getLinkValue());
-      filePerm.fromShort(node.getFsPermissionShort());
-      PermissionStatus.write(out, node.getUserName(),
-                             node.getGroupName(),
-                             filePerm);      
-    } else {
-      INodeFile fileINode = (INodeFile)node;
-      out.writeShort(fileINode.getBlockReplication());
-      out.writeLong(fileINode.getModificationTime());
-      out.writeLong(fileINode.getAccessTime());
-      out.writeLong(fileINode.getPreferredBlockSize());
-      Block[] blocks = fileINode.getBlocks();
-      out.writeInt(blocks.length);
-      for (Block blk : blocks)
-        blk.write(out);
-      filePerm.fromShort(fileINode.getFsPermissionShort());
-      PermissionStatus.write(out, fileINode.getUserName(),
-                             fileINode.getGroupName(),
-                             filePerm);
-    }
+//HOP    byte[] name = node.getLocalNameBytes();
+//    out.writeShort(name.length);
+//    out.write(name);
+//    FsPermission filePerm = TL_DATA.get().FILE_PERM;
+//    if (node.isDirectory()) {
+//      out.writeShort(0);  // replication
+//      out.writeLong(node.getModificationTime());
+//      out.writeLong(0);   // access time
+//      out.writeLong(0);   // preferred block size
+//      out.writeInt(-1);   // # of blocks
+//      out.writeLong(node.getNsQuota());
+//      out.writeLong(node.getDsQuota());
+//      filePerm.fromShort(node.getFsPermissionShort());
+//      PermissionStatus.write(out, node.getUserName(),
+//                             node.getGroupName(),
+//                             filePerm);
+//    } else if (node.isSymlink()) {
+//      out.writeShort(0);  // replication
+//      out.writeLong(0);   // modification time
+//      out.writeLong(0);   // access time
+//      out.writeLong(0);   // preferred block size
+//      out.writeInt(-2);   // # of blocks
+//      Text.writeString(out, ((INodeSymlink)node).getLinkValue());
+//      filePerm.fromShort(node.getFsPermissionShort());
+//      PermissionStatus.write(out, node.getUserName(),
+//                             node.getGroupName(),
+//                             filePerm);      
+//    } else {
+//      INodeFile fileINode = (INodeFile)node;
+//      out.writeShort(fileINode.getBlockReplication());
+//      out.writeLong(fileINode.getModificationTime());
+//      out.writeLong(fileINode.getAccessTime());
+//      out.writeLong(fileINode.getPreferredBlockSize());
+//      Block[] blocks = fileINode.getBlocks();
+//      out.writeInt(blocks.length);
+//      for (Block blk : blocks)
+//        blk.write(out);
+//      filePerm.fromShort(fileINode.getFsPermissionShort());
+//      PermissionStatus.write(out, fileINode.getUserName(),
+//                             fileINode.getGroupName(),
+//                             filePerm);
+//    }
   }
 
   // This should be reverted to package private once the ImageLoader

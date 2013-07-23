@@ -38,7 +38,7 @@ public class RandomBlockIdGenerator implements IdGenerator {
   public long nextValue() {
     Block b = new Block(DFSUtil.getRandom().nextLong(), 0, 0); 
     while(isValidBlock(b)) {
-      b.setBlockId(DFSUtil.getRandom().nextLong());
+      b.setBlockIdNoPersistance(DFSUtil.getRandom().nextLong());
     }
     return b.getBlockId();
   }

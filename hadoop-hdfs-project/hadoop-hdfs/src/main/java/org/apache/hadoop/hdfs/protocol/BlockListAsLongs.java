@@ -155,7 +155,7 @@ public class BlockListAsLongs implements Iterable<Block> {
 
     @Override
     public Block next() {
-      block.set(blockId(currentBlockIndex),
+      block.setNoPersistance(blockId(currentBlockIndex),
                 blockLength(currentBlockIndex),
                 blockGenerationStamp(currentBlockIndex));
       currentReplicaState = blockReplicaState(currentBlockIndex);

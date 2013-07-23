@@ -116,7 +116,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
     BInfo(String bpid, Block b, boolean forWriting) throws IOException {
       theBlock = new Block(b);
       if (theBlock.getNumBytes() < 0) {
-        theBlock.setNumBytes(0);
+        theBlock.setNumBytesNoPersistance(0);
       }
       if (!storage.alloc(bpid, theBlock.getNumBytes())) { 
         // expected length - actual length may
@@ -149,11 +149,11 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
     }
 
     @Override
-    synchronized public void setNumBytes(long length) {
+    synchronized public void setNumBytesNoPersistance(long length) {
       if (!finalized) {
          bytesRcvd = length;
       } else {
-        theBlock.setNumBytes(length);
+        theBlock.setNumBytesNoPersistance(length);
       }
     }
     
@@ -195,7 +195,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
       } else {
         storage.free(bpid, -extraLen);
       }
-      theBlock.setNumBytes(finalSize);  
+      theBlock.setNumBytesNoPersistance(finalSize);  
 
       finalized = true;
       oStream = null;
@@ -612,7 +612,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
       binfo.unfinalizeBlock();
     }
     map.remove(b);
-    binfo.theBlock.setGenerationStamp(newGS);
+    binfo.theBlock.setGenerationStampNoPersistance(newGS);
     map.put(binfo.theBlock, binfo);
     return binfo;
   }
@@ -630,7 +630,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
       binfo.finalizeBlock(b.getBlockPoolId(), binfo.getNumBytes());
     }
     map.remove(b.getLocalBlock());
-    binfo.theBlock.setGenerationStamp(newGS);
+    binfo.theBlock.setGenerationStampNoPersistance(newGS);
     map.put(binfo.theBlock, binfo);
   }
   
@@ -648,7 +648,7 @@ public class SimulatedFSDataset implements FsDatasetSpi<FsVolumeSpi> {
           + " is valid, and cannot be written to.");
     }
     map.remove(b);
-    binfo.theBlock.setGenerationStamp(newGS);
+    binfo.theBlock.setGenerationStampNoPersistance(newGS);
     map.put(binfo.theBlock, binfo);
     return binfo;
   }

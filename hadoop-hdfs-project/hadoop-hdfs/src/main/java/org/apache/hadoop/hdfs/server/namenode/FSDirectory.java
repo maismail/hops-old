@@ -360,7 +360,7 @@ public class FSDirectory implements Closeable {
                      INode[] inodes,
                      Block block,
                      DatanodeDescriptor targets[]
-  ) throws QuotaExceededException {
+  ) throws QuotaExceededException, PersistanceException {
     waitForReady();
 
     writeLock();
@@ -378,7 +378,6 @@ public class FSDirectory implements Closeable {
       BlockInfoUnderConstruction blockInfo =
         new BlockInfoUnderConstruction(
             block,
-            fileINode.getBlockReplication(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
       getBlockManager().addBlockCollection(blockInfo, fileINode);
@@ -399,7 +398,7 @@ public class FSDirectory implements Closeable {
   /**
    * Persist the block list for the inode.
    */
-  void persistBlocks(String path, INodeFileUnderConstruction file) {
+  void persistBlocks(String path, INodeFileUnderConstruction file) throws PersistanceException {
     waitForReady();
 
     writeLock();
@@ -2089,7 +2088,7 @@ public class FSDirectory implements Closeable {
    * @throws IOException if any error occurs
    */
   private HdfsFileStatus createFileStatus(byte[] path, INode node,
-      boolean needLocation) throws IOException {
+      boolean needLocation) throws IOException, PersistanceException {
     if (needLocation) {
       return createLocatedFileStatus(path, node);
     } else {
@@ -2099,7 +2098,7 @@ public class FSDirectory implements Closeable {
   /**
    * Create FileStatus by file INode 
    */
-   private HdfsFileStatus createFileStatus(byte[] path, INode node) {
+   private HdfsFileStatus createFileStatus(byte[] path, INode node) throws PersistanceException {
      long size = 0;     // length is zero for directories
      short replication = 0;
      long blocksize = 0;
@@ -2127,7 +2126,7 @@ public class FSDirectory implements Closeable {
     * Create FileStatus with location info by file INode 
     */
     private HdfsLocatedFileStatus createLocatedFileStatus(
-        byte[] path, INode node) throws IOException {
+        byte[] path, INode node) throws IOException, PersistanceException {
       assert hasReadLock();
       long size = 0;     // length is zero for directories
       short replication = 0;

@@ -113,7 +113,7 @@ public class NameNodeAdapter {
   }
 
   public static HeartbeatResponse sendHeartBeat(DatanodeRegistration nodeReg,
-      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException {
+      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException, PersistanceException {
     return namesystem.handleHeartbeat(nodeReg, dd.getCapacity(), 
         dd.getDfsUsed(), dd.getRemaining(), dd.getBlockPoolUsed(), 0, 0, 0);
   }

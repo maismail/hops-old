@@ -109,7 +109,7 @@ public class Block implements Writable, Comparable<Block> {
     this(filename2id(f.getName()), len, genstamp);
   }
 
-  private void setNoPersistance(long blkid, long len, long genStamp) {
+  public void setNoPersistance(long blkid, long len, long genStamp) {
     this.blockId = blkid;
     this.numBytes = len;
     this.generationStamp = genStamp;
@@ -120,7 +120,7 @@ public class Block implements Writable, Comparable<Block> {
     return blockId;
   }
   
-  private void setBlockIdNoPersistance(long bid) {
+  public void setBlockIdNoPersistance(long bid) {
     blockId = bid;
   }
 
@@ -135,7 +135,7 @@ public class Block implements Writable, Comparable<Block> {
   public long getNumBytes() {
     return numBytes;
   }
-  private void setNumBytesNoPersistance(long len) {
+  public void setNumBytesNoPersistance(long len) {
     this.numBytes = len;
   }
 
@@ -143,7 +143,7 @@ public class Block implements Writable, Comparable<Block> {
     return generationStamp;
   }
   
-  private void setGenerationStampNoPersistance(long stamp) {
+  public void setGenerationStampNoPersistance(long stamp) {
     generationStamp = stamp;
   }
 

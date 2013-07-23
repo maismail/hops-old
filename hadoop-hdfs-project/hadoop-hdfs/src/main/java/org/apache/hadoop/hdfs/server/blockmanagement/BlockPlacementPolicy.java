@@ -29,6 +29,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSClusterStats;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.ReflectionUtils;
@@ -112,7 +113,7 @@ public abstract class BlockPlacementPolicy {
                                     DatanodeDescriptor writer,
                                     List<DatanodeDescriptor> chosenNodes,
                                     HashMap<Node, Node> excludedNodes,
-                                    long blocksize) {
+                                    long blocksize) throws PersistanceException {
     return chooseTarget(srcBC.getName(), numOfReplicas, writer,
                         chosenNodes, false, excludedNodes, blocksize);
   }

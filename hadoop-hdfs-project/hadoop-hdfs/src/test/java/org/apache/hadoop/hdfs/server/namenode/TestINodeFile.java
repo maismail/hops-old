@@ -172,7 +172,7 @@ public class TestINodeFile {
    * @param files Array of INode files
    * @return total count of blocks
    */
-  private int getTotalBlocks(INodeFile[] files) {
+  private int getTotalBlocks(INodeFile[] files) throws PersistanceException {
     int nBlocks=0;
     for(int i=0; i < files.length; i++) {
        nBlocks += files[i].numBlocks();
@@ -198,7 +198,7 @@ public class TestINodeFile {
       iNodes[i] = new INodeFile(perms, null, replication, 0L, 0L,
           preferredBlockSize);
       iNodes[i].setLocalName(fileNamePrefix +  Integer.toString(i));
-      BlockInfo newblock = new BlockInfo(replication);
+      BlockInfo newblock = new BlockInfo();
       iNodes[i].addBlock(newblock);
     }
     
