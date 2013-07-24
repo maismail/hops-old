@@ -75,7 +75,11 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -355,7 +359,7 @@ public class DatanodeManager {
    * Remove a datanode descriptor.
    * @param nodeInfo datanode descriptor.
    */
-  private void removeDatanode(DatanodeDescriptor nodeInfo) throws PersistanceException {
+  private void removeDatanode(DatanodeDescriptor nodeInfo) {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     blockManager.removeBlocksAssociatedTo(nodeInfo);
@@ -1069,7 +1073,7 @@ public class DatanodeManager {
       final String blockPoolId,
       long capacity, long dfsUsed, long remaining, long blockPoolUsed,
       int xceiverCount, int maxTransfers, int failedVolumes
-      ) throws IOException, PersistanceException {
+      ) throws IOException {
     synchronized (heartbeatManager) {
       synchronized (datanodeMap) {
         DatanodeDescriptor nodeinfo = null;
@@ -1100,7 +1104,7 @@ public class DatanodeManager {
               blocks.length);
           for (BlockInfoUnderConstruction b : blocks) {
             brCommand.add(new RecoveringBlock(
-                new ExtendedBlock(blockPoolId, b), b.getExpectedLocations(this), b
+                new ExtendedBlock(blockPoolId, b), getDataNodeDescriptorsTx(b), b
                     .getBlockRecoveryId()));
           }
           return new DatanodeCommand[] { brCommand };
@@ -1187,4 +1191,25 @@ public class DatanodeManager {
   public String toString() {
     return getClass().getSimpleName() + ": " + host2DatanodeMap;
   }
+  
+  //START_HOP_CODE
+  DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
+    final DatanodeManager datanodeManager = this;
+    TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.HANDLE_HEARTBEAT) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
+        TransactionLockAcquirer.acquireLockList(LockType.READ_COMMITTED, ReplicaUnderConstruction.Finder.ByBlockId, b.getBlockId());
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
+        return b.getExpectedLocations(datanodeManager);
+      }
+    };
+    return (DatanodeDescriptor[]) handler.setParams(b).handle();
+
+  }
+  //END_HOP_CODE
 }

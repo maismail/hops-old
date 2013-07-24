@@ -4001,7 +4001,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   HeartbeatResponse handleHeartbeat(DatanodeRegistration nodeReg,
       long capacity, long dfsUsed, long remaining, long blockPoolUsed,
       int xceiverCount, int xmitsInProgress, int failedVolumes) 
-        throws IOException, PersistanceException {
+        throws IOException {
     readLock();
     try {
       final int maxTransfer = blockManager.getMaxReplicationStreams()

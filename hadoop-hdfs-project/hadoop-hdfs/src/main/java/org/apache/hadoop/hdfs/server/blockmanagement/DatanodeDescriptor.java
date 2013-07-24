@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,6 +31,10 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.util.Time;
 
@@ -352,6 +357,21 @@ public class DatanodeDescriptor extends DatanodeInfo {
 //
   public Iterator<BlockInfo> getBlockIterator() throws PersistanceException {
     return EntityManager.findList(BlockInfo.Finder.ByStorageId, getStorageID()).iterator();
+  }
+  
+  public List<BlockInfo> getAllMachineBlocks() throws IOException {
+    TransactionalRequestHandler findBlocksHandler = new TransactionalRequestHandler(OperationType.PREPARE_PROCESS_REPORT) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        return da.findByStorageId(getStorageID());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
+    };
+    return (List<BlockInfo>) findBlocksHandler.handle();
   }
   
   /**
