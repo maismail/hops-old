@@ -359,7 +359,7 @@ public class DatanodeManager {
    * Remove a datanode descriptor.
    * @param nodeInfo datanode descriptor.
    */
-  private void removeDatanode(DatanodeDescriptor nodeInfo) {
+  private void removeDatanode(DatanodeDescriptor nodeInfo) throws IOException {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     blockManager.removeBlocksAssociatedTo(nodeInfo);
@@ -376,7 +376,7 @@ public class DatanodeManager {
    * @throws UnregisteredNodeException 
    */
   public void removeDatanode(final DatanodeID node
-      ) throws UnregisteredNodeException, PersistanceException {
+      ) throws UnregisteredNodeException, IOException {
     namesystem.writeLock();
     try {
       final DatanodeDescriptor descriptor = getDatanode(node);
@@ -392,7 +392,7 @@ public class DatanodeManager {
   }
 
   /** Remove a dead datanode. */
-  void removeDeadDatanode(final DatanodeID nodeID) throws PersistanceException {
+  void removeDeadDatanode(final DatanodeID nodeID) throws IOException {
       synchronized(datanodeMap) {
         DatanodeDescriptor d;
         try {
@@ -415,7 +415,7 @@ public class DatanodeManager {
   }
 
   /** Add a datanode. */
-  void addDatanode(final DatanodeDescriptor node) throws PersistanceException {
+  void addDatanode(final DatanodeDescriptor node) throws IOException {
     // To keep host2DatanodeMap consistent with datanodeMap,
     // remove  from host2DatanodeMap the datanodeDescriptor removed
     // from datanodeMap before adding node to host2DatanodeMap.
@@ -547,7 +547,7 @@ public class DatanodeManager {
   /**
    * Decommission the node if it is in exclude list.
    */
-  private void checkDecommissioning(DatanodeDescriptor nodeReg) throws PersistanceException { 
+  private void checkDecommissioning(DatanodeDescriptor nodeReg) throws IOException { 
     // If the registered node is in exclude list, then decommission it
     if (inExcludedHostsList(nodeReg)) {
       startDecommission(nodeReg);
@@ -558,7 +558,7 @@ public class DatanodeManager {
    * Change, if appropriate, the admin state of a datanode to 
    * decommission completed. Return true if decommission is complete.
    */
-  boolean checkDecommissionState(DatanodeDescriptor node) throws PersistanceException {
+  boolean checkDecommissionState(DatanodeDescriptor node) throws IOException {
     // Check to see if all blocks in this decommissioned
     // node has reached their target replication factor.
     if (node.isDecommissionInProgress()) {
@@ -571,7 +571,7 @@ public class DatanodeManager {
   }
 
   /** Start decommissioning the specified datanode. */
-  private void startDecommission(DatanodeDescriptor node) throws PersistanceException {
+  private void startDecommission(DatanodeDescriptor node) throws IOException {
     if (!node.isDecommissionInProgress() && !node.isDecommissioned()) {
       LOG.info("Start Decommissioning " + node + " with " + 
           node.numBlocks() +  " blocks");
@@ -584,7 +584,7 @@ public class DatanodeManager {
   }
 
   /** Stop decommissioning the specified datanodes. */
-  void stopDecommission(DatanodeDescriptor node) throws PersistanceException {
+  void stopDecommission(DatanodeDescriptor node) throws IOException {
     if (node.isDecommissionInProgress() || node.isDecommissioned()) {
       LOG.info("Stop Decommissioning " + node);
       heartbeatManager.stopDecommission(node);
@@ -623,7 +623,7 @@ public class DatanodeManager {
    *    denied because the datanode does not match includes/excludes
    */
   public void registerDatanode(DatanodeRegistration nodeReg)
-      throws DisallowedDatanodeException, PersistanceException {
+      throws DisallowedDatanodeException, IOException {
     InetAddress dnAddress = Server.getRemoteIp();
     if (dnAddress != null) {
       // Mostly called inside an RPC, update ip and peer hostname
@@ -732,7 +732,7 @@ public class DatanodeManager {
    * Rereads the files to update the hosts and exclude lists.  It
    * checks if any of the hosts have changed states:
    */
-  public void refreshNodes(final Configuration conf) throws IOException, PersistanceException {
+  public void refreshNodes(final Configuration conf) throws IOException {
     refreshHostsReader(conf);
     namesystem.writeLock();
     try {
@@ -760,7 +760,7 @@ public class DatanodeManager {
    * 3. Added to exclude --> start decommission.
    * 4. Removed from exclude --> stop decommission.
    */
-  private void refreshDatanodes() throws PersistanceException {
+  private void refreshDatanodes() throws IOException {
     for(DatanodeDescriptor node : datanodeMap.values()) {
       // Check if not include.
       if (!inHostsList(node)) {
@@ -915,7 +915,7 @@ public class DatanodeManager {
    * @param node DN which caused cluster to become multi-rack. Used for logging.
    */
   @VisibleForTesting
-  void checkIfClusterIsNowMultiRack(DatanodeDescriptor node) throws PersistanceException {
+  void checkIfClusterIsNowMultiRack(DatanodeDescriptor node) throws IOException {
     if (!hasClusterEverBeenMultiRack && networktopology.getNumOfRacks() > 1) {
       String message = "DN " + node + " joining cluster has expanded a formerly " +
           "single-rack cluster to be multi-rack. ";

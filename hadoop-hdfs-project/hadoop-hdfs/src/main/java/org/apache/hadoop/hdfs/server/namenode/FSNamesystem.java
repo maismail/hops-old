@@ -1144,7 +1144,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     metaSaveHanlder.handle();
   }
 
-  private void metaSave(PrintWriter out) throws  IOException {
+  private void metaSave(PrintWriter out) throws  IOException, PersistanceException {
     assert hasWriteLock();
     long totalInodes = this.dir.totalInodes();
     long totalBlocks = this.getBlocksTotal();
@@ -1154,7 +1154,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     blockManager.metaSave(out);
   }
 
-  private String metaSaveAsString() throws  IOException {
+  private String metaSaveAsString() throws  IOException, PersistanceException {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     metaSave(pw);
@@ -3191,7 +3191,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Writelock is dropped and reacquired every BLOCK_DELETION_INCREMENT to
    * ensure that other waiters on the lock can get in. See HDFS-2938
    */
-  private void removeBlocks(List<Block> blocks) {
+  private void removeBlocks(List<Block> blocks) throws PersistanceException {
     int start = 0;
     int end = 0;
     while (start < blocks.size()) {

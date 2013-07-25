@@ -17,12 +17,19 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
  * This class maintains the map from a block to its metadata.
@@ -114,16 +121,40 @@ class BlocksMap {
     return removed;
   }
 
-  int size() {
-    throw new UnsupportedOperationException("return count using mysql server countall");
+  int size() throws IOException {
+    TransactionalRequestHandler getAllBlocksSizeHander = new TransactionalRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfo.class);
+        return bida.countAll();
+      }
+    };
+    return (Integer) getAllBlocksSizeHander.handle();
   }
 
-  Iterable<BlockInfo> getBlocks() {
-    throw new UnsupportedOperationException("return all blockinfo in the fs");
+  Iterable<BlockInfo> getBlocks() throws IOException {
+    TransactionalRequestHandler getAllBlocksHander = new TransactionalRequestHandler(OperationType.GET_ALL_BLOCKS) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        //FIXME. Very inefficient way of block processing
+        EntityContext.log(OperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfo.class);
+        return bida.findAllBlocks();
+      }
+    };
+    return (List<BlockInfo>) getAllBlocksHander.handle();
   }
   
   /** Get the capacity of the HashMap that stores blocks */
-  int getCapacity() {
+  int getCapacity() throws PersistanceException {
     throw new UnsupportedOperationException("return capacity");
   }
 

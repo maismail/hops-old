@@ -355,12 +355,12 @@ public class DatanodeDescriptor extends DatanodeInfo {
 //    }
 //  }
 //
-  public Iterator<BlockInfo> getBlockIterator() throws PersistanceException {
-    return EntityManager.findList(BlockInfo.Finder.ByStorageId, getStorageID()).iterator();
+  public Iterator<BlockInfo> getBlockIterator() throws IOException  {
+    return getAllMachineBlocks().iterator();
   }
   
   public List<BlockInfo> getAllMachineBlocks() throws IOException {
-    TransactionalRequestHandler findBlocksHandler = new TransactionalRequestHandler(OperationType.PREPARE_PROCESS_REPORT) {
+    TransactionalRequestHandler findBlocksHandler = new TransactionalRequestHandler(OperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);

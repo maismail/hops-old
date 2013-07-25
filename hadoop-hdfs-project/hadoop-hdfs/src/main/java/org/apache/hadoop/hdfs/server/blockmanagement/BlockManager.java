@@ -883,7 +883,7 @@ public class BlockManager {
    * @param datanode on which blocks are located
    * @param size total size of blocks
    */
-  public BlocksWithLocations getBlocks(DatanodeID datanode, long size
+  public BlocksWithLocations getBlocks(DatanodeID datanode, long size           // used in the namenode protocol
       ) throws IOException, PersistanceException {
     namesystem.readLock();
     try {
@@ -939,9 +939,9 @@ public class BlockManager {
    
   /** Remove the blocks associated to the given datanode. */
   void removeBlocksAssociatedTo(final DatanodeDescriptor node) throws IOException {
-    final List<? extends Block> blocks = node.getAllMachineBlocks();
-    for(Block b : blocks) {
-      removeStoredBlock(b, node);
+    final Iterator<? extends Block> it = node.getBlockIterator();
+    while (it.hasNext()) {
+      removeStoredBlockTx(it.next(), node);
     }
 
     node.resetBlocks();
@@ -2327,47 +2327,78 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * For each block in the name-node verify whether it belongs to any file,
    * over or under replicated. Place it into the respective queue.
    */
-  public void processMisReplicatedBlocks() throws PersistanceException {
+  public void processMisReplicatedBlocks() throws IOException {
     assert namesystem.hasWriteLock();
 
-    long nrInvalid = 0, nrOverReplicated = 0, nrUnderReplicated = 0, nrPostponed = 0,
-         nrUnderConstruction = 0;
+    final long[] nrInvalid = {0}, nrOverReplicated = {0}, nrUnderReplicated = {0}, nrPostponed = {0},
+            nrUnderConstruction = {0};
     neededReplications.clear();
+
+
+    TransactionalRequestHandler processMisReplicatedBlocksHandler = new TransactionalRequestHandler(OperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        Block b = (Block) getParams()[0];
+        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        Block b = (Block) getParams()[0];
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, b.getBlockId()).
+                addInvalidatedBlock(LockType.WRITE).
+                addReplica(LockType.WRITE).
+                addExcess(LockType.WRITE);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfo block = (BlockInfo) getParams()[0];
+        MisReplicationResult res = processMisReplicatedBlock(block);
+        if (LOG.isTraceEnabled()) {
+          LOG.trace("block " + block + ": " + res);
+        }
+        switch (res) {
+          case UNDER_REPLICATED:
+            nrUnderReplicated[0]++;
+            break;
+          case OVER_REPLICATED:
+            nrOverReplicated[0]++;
+            break;
+          case INVALID:
+            nrInvalid[0]++;
+            break;
+          case POSTPONE:
+            nrPostponed[0]++;
+            postponeBlock(block);
+            break;
+          case UNDER_CONSTRUCTION:
+            nrUnderConstruction[0]++;
+            break;
+          case OK:
+            break;
+          default:
+            throw new AssertionError("Invalid enum value: " + res);
+        }
+        return null;
+      }
+    };
     for (BlockInfo block : blocksMap.getBlocks()) {
-      MisReplicationResult res = processMisReplicatedBlock(block);
-      if (LOG.isTraceEnabled()) {
-        LOG.trace("block " + block + ": " + res);
-      }
-      switch (res) {
-      case UNDER_REPLICATED:
-        nrUnderReplicated++;
-        break;
-      case OVER_REPLICATED:
-        nrOverReplicated++;
-        break;
-      case INVALID:
-        nrInvalid++;
-        break;
-      case POSTPONE:
-        nrPostponed++;
-        postponeBlock(block);
-        break;
-      case UNDER_CONSTRUCTION:
-        nrUnderConstruction++;
-        break;
-      case OK:
-        break;
-      default:
-        throw new AssertionError("Invalid enum value: " + res);
-      }
+      processMisReplicatedBlocksHandler.setParams(block);
+      processMisReplicatedBlocksHandler.handle();
     }
-    
+
     LOG.info("Total number of blocks            = " + blocksMap.size());
-    LOG.info("Number of invalid blocks          = " + nrInvalid);
-    LOG.info("Number of under-replicated blocks = " + nrUnderReplicated);
-    LOG.info("Number of  over-replicated blocks = " + nrOverReplicated +
-        ((nrPostponed > 0) ? ( " (" + nrPostponed + " postponed)") : ""));
-    LOG.info("Number of blocks being written    = " + nrUnderConstruction);
+    LOG.info("Number of invalid blocks          = " + nrInvalid[0]);
+    LOG.info("Number of under-replicated blocks = " + nrUnderReplicated[0]);
+    LOG.info("Number of  over-replicated blocks = " + nrOverReplicated[0]
+            + ((nrPostponed[0] > 0) ? (" (" + nrPostponed[0] + " postponed)") : ""));
+    LOG.info("Number of blocks being written    = " + nrUnderConstruction[0]);
   }
 
   /**
@@ -2375,7 +2406,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * appropriate queues if necessary, and returns a result code indicating
    * what happened with it.
    */
-  private MisReplicationResult processMisReplicatedBlock(BlockInfo block) throws PersistanceException {
+  private MisReplicationResult processMisReplicatedBlock(BlockInfo block) throws PersistanceException  {
     BlockCollection bc = block.getBlockCollection();
     if (bc == null) {
       // block does not belong to any file
@@ -2713,9 +2744,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
      final String poolId, 
      final ReceivedDeletedBlockInfo blockInfos[]
   ) throws IOException {
-    int received = 0;
-    int deleted = 0;
-    int receiving = 0;
+    final int[] received = {0};
+    final int[] deleted = {0};
+    final int[] receiving = {0};
     final DatanodeDescriptor node = datanodeManager.getDatanode(nodeID);
     
     TransactionalRequestHandler processIncrementalBlockReportHandler = new TransactionalRequestHandler(OperationType.BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT) {
@@ -2746,13 +2777,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         switch (rdbi.getStatus()) {
         case DELETED_BLOCK:
           removeStoredBlock(rdbi.getBlock(), node);
+          deleted[0]++;
           break;
         case RECEIVED_BLOCK:
           addBlock(node, rdbi.getBlock(), rdbi.getDelHints());
+          received[0]++;
           break;
         case RECEIVING_BLOCK:
           processAndHandleReportedBlock(node, rdbi.getBlock(),
               ReplicaState.RBW, null);
+          received[0]++;
           break;
         default:
           String msg = 
@@ -2787,28 +2821,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       for (ReceivedDeletedBlockInfo rdbi : blockInfos) {
         processIncrementalBlockReportHandler.setParams(rdbi);
         processIncrementalBlockReportHandler.handle();
-        switch (rdbi.getStatus()) {
-        case DELETED_BLOCK:
-          deleted++;
-          break;
-        case RECEIVED_BLOCK:
-          received++;
-          break;
-        case RECEIVING_BLOCK:
-          receiving++;
-          break;
-        default:
-          break;
-        }
       }
     } finally {
       namesystem.writeUnlock();
       blockLog
           .debug("*BLOCK* NameNode.processIncrementalBlockReport: " + "from "
               + nodeID
-              +  " receiving: " + receiving + ", "
-              + " received: " + received + ", "
-              + " deleted: " + deleted);
+              +  " receiving: " + receiving[0] + ", "
+              + " received: " + received[0] + ", "
+              + " deleted: " + deleted[0]);
     }
      
   }
@@ -2901,77 +2922,140 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * If there are any excess replicas, call processOverReplicatedBlock()
    */
   void processOverReplicatedBlocksOnReCommission(
-      final DatanodeDescriptor srcNode) throws PersistanceException {
+          final DatanodeDescriptor srcNode) throws IOException {
+    final int[] numOverReplicated = {0};
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
-    int numOverReplicated = 0;
-    while(it.hasNext()) {
-      final Block block = it.next();
-      BlockCollection bc = blocksMap.getBlockCollection(block);
-      short expectedReplication = bc.getBlockReplication();
-      NumberReplicas num = countNodes(block);
-      int numCurrentReplica = num.liveReplicas();
-      if (numCurrentReplica > expectedReplication) {
-        // over-replicated block 
-        processOverReplicatedBlock(block, expectedReplication, null, null);
-        numOverReplicated++;
+    TransactionalRequestHandler processBlockHandler = new TransactionalRequestHandler(OperationType.PROCESS_OVER_REPLICATED_BLOCKS_ON_RECOMMISSION) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        Block block = (Block) getParams()[0];
+        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
       }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        final Block block = (Block) getParams()[0];
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, block.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addPendingBlock(LockType.READ).
+                addUnderReplicatedBlock(LockType.WRITE);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        final Block block = (Block) getParams()[0];
+        BlockCollection bc = blocksMap.getBlockCollection(block);
+        short expectedReplication = bc.getBlockReplication();
+        NumberReplicas num = countNodes(block);
+        int numCurrentReplica = num.liveReplicas();
+        if (numCurrentReplica > expectedReplication) {
+          // over-replicated block 
+          processOverReplicatedBlock(block, expectedReplication, null, null);
+          numOverReplicated[0]++;
+        }
+        return null;
+      }
+    };
+
+    while (it.hasNext()) {
+      processBlockHandler.setParams(it.next()).handle();
+
     }
-    LOG.info("Invalidated " + numOverReplicated + " over-replicated blocks on " +
-        srcNode + " during recommissioning");
+    LOG.info("Invalidated " + numOverReplicated[0] + " over-replicated blocks on "
+            + srcNode + " during recommissioning");
   }
 
   /**
    * Return true if there are any blocks on this node that have not
    * yet reached their replication factor. Otherwise returns false.
    */
-  boolean isReplicationInProgress(DatanodeDescriptor srcNode) throws PersistanceException {
-    boolean status = false;
-    int underReplicatedBlocks = 0;
-    int decommissionOnlyReplicas = 0;
-    int underReplicatedInOpenFiles = 0;
-    final Iterator<? extends Block> it = srcNode.getBlockIterator();
-    while(it.hasNext()) {
-      final Block block = it.next();
-      BlockCollection bc = blocksMap.getBlockCollection(block);
+  boolean isReplicationInProgress(final DatanodeDescriptor srcNode) throws IOException {
+    final boolean[] status = new boolean[]{false};
+    final int[] underReplicatedBlocks = new int[]{0};
+    final int[] decommissionOnlyReplicas = new int[]{0};
+    final int[] underReplicatedInOpenFiles = new int[]{0};
 
-      if (bc != null) {
-        NumberReplicas num = countNodes(block);
-        int curReplicas = num.liveReplicas();
-        int curExpectedReplicas = getReplication(block);
-        if (isNeededReplication(block, curExpectedReplicas, curReplicas)) {
-          if (curExpectedReplicas > curReplicas) {
-            //Log info about one block for this node which needs replication
-            if (!status) {
-              status = true;
-              logBlockReplicationInfo(block, srcNode, num);
+    final Iterator<? extends Block> it = srcNode.getBlockIterator();
+
+    TransactionalRequestHandler checkReplicationHandler = new TransactionalRequestHandler(OperationType.CHECK_REPLICATION_IN_PROGRESS) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        Block block = (Block) getParams()[0];
+        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        final Block block = (Block) getParams()[0];
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, block.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addUnderReplicatedBlock(LockType.WRITE).
+                addPendingBlock(LockType.READ);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        final Block block = it.next();
+        BlockCollection bc = blocksMap.getBlockCollection(block);
+
+        if (bc != null) {
+          NumberReplicas num = countNodes(block);
+          int curReplicas = num.liveReplicas();
+          int curExpectedReplicas = getReplication(block);
+          if (isNeededReplication(block, curExpectedReplicas, curReplicas)) {
+            if (curExpectedReplicas > curReplicas) {
+              //Log info about one block for this node which needs replication
+              if (!status[0]) {
+                status[0] = true;
+                logBlockReplicationInfo(block, srcNode, num);
+              }
+              underReplicatedBlocks[0]++;
+              if ((curReplicas == 0) && (num.decommissionedReplicas() > 0)) {
+                decommissionOnlyReplicas[0]++;
+              }
+              if (bc instanceof MutableBlockCollection) {
+                underReplicatedInOpenFiles[0]++;
+              }
             }
-            underReplicatedBlocks++;
-            if ((curReplicas == 0) && (num.decommissionedReplicas() > 0)) {
-              decommissionOnlyReplicas++;
+            if (!neededReplications.contains(block)
+                    && pendingReplications.getNumReplicas(block) == 0) {
+              //
+              // These blocks have been reported from the datanode
+              // after the startDecommission method has been executed. These
+              // blocks were in flight when the decommissioning was started.
+              //
+              neededReplications.add(block,
+                      curReplicas,
+                      num.decommissionedReplicas(),
+                      curExpectedReplicas);
             }
-            if (bc instanceof MutableBlockCollection) {
-              underReplicatedInOpenFiles++;
-            }
-          }
-          if (!neededReplications.contains(block) &&
-            pendingReplications.getNumReplicas(block) == 0) {
-            //
-            // These blocks have been reported from the datanode
-            // after the startDecommission method has been executed. These
-            // blocks were in flight when the decommissioning was started.
-            //
-            neededReplications.add(block,
-                                   curReplicas,
-                                   num.decommissionedReplicas(),
-                                   curExpectedReplicas);
           }
         }
+        return null;
       }
+    };
+    while (it.hasNext()) {
+      checkReplicationHandler.setParams(it.next());
+      checkReplicationHandler.handle();
     }
-    srcNode.decommissioningStatus.set(underReplicatedBlocks,
-        decommissionOnlyReplicas, 
-        underReplicatedInOpenFiles);
-    return status;
+    srcNode.decommissioningStatus.set(underReplicatedBlocks[0],
+            decommissionOnlyReplicas[0],
+            underReplicatedInOpenFiles[0]);
+    return status[0];
   }
 
   public int getActiveBlockCount() {
@@ -3324,8 +3408,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   //START_HOP_CODE
-  private void removeStoredBlockTX(final Block b, final DatanodeDescriptor node, OperationType opType) throws IOException {
-    TransactionalRequestHandler removeBlockHandler = new TransactionalRequestHandler(opType) {
+  private void removeStoredBlockTx(final Block b, final DatanodeDescriptor node) throws IOException {
+    TransactionalRequestHandler removeBlockHandler = new TransactionalRequestHandler(OperationType.REMOVE_STORED_BLOCK) {
       long inodeId;
 
       @Override
