@@ -90,7 +90,7 @@ public class NameNodeAdapter {
     namenode.getNamesystem().enterSafeMode(resourcesLow);
   }
   
-  public static void leaveSafeMode(NameNode namenode) {
+  public static void leaveSafeMode(NameNode namenode) throws IOException {
     namenode.getNamesystem().leaveSafeMode();
   }
   

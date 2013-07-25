@@ -204,6 +204,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.LinkedList;
+import java.util.SortedSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
@@ -686,7 +689,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
   
-  private void startSecretManagerIfNecessary() {
+  private void startSecretManagerIfNecessary() throws IOException {
     boolean shouldRun = shouldUseDelegationTokens() &&
       !isInSafeMode() 
             //&& getEditLog().isOpenForWrite()      //HOP: Edit log not supported
@@ -708,7 +711,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param haContext 
    * @throws IOException
    */
-  void startCommonServices(Configuration conf, HAContext haContext) throws IOException, StorageException, PersistanceException {
+  void startCommonServices(Configuration conf, HAContext haContext) throws IOException {
     this.registerMBean(); // register the MBean for the FSNamesystemState
     writeLock();
     this.haContext = haContext;
@@ -717,10 +720,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //      checkAvailableResources();
       assert safeMode != null &&
         !safeMode.isPopulatingReplQueues();
-      EntityManager.begin();        //HOP FIXME very hacky code 
-      EntityManager.readCommited();
       setBlockTotal();
-      EntityManager.commit();
       blockManager.activate(conf);
     } finally {
       writeUnlock();
@@ -3209,7 +3209,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
   
-  void removePathAndBlocks(String src, List<Block> blocks) throws PersistanceException {
+  void removePathAndBlocks(String src, List<Block> blocks) throws PersistanceException, IOException {
     assert hasWriteLock();
     leaseManager.removeLeaseWithPrefixPath(src);
     if (blocks == null) {
@@ -4434,7 +4434,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check if safe mode is on.
      * @return true if in safe mode
      */
-    private synchronized boolean isOn() {
+    private synchronized boolean isOn() throws IOException {
       doConsistencyCheck();
       return this.reached >= 0;
     }
@@ -4458,7 +4458,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * <p>
      * Check for invalid, under- & over-replicated blocks in the end of startup.
      */
-    private synchronized void leave() {
+    private synchronized void leave() throws IOException {
       // if not done yet, initialize replication queues.
       // In the standby, do not populate repl queues
       if (!isPopulatingReplQueues() && shouldPopulateReplQueues()) {
@@ -4487,7 +4487,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Initialize replication queues.
      */
-    private synchronized void initializeReplQueues() {
+    private synchronized void initializeReplQueues() throws IOException {
       LOG.info("initializing replication queues");
       assert !isPopulatingReplQueues() : "Already initialized repl queues";
       long startTimeMisReplicatedScan = now();
@@ -4537,7 +4537,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Check and trigger safe mode if needed. 
      */
-    private void checkMode() {
+    private void checkMode() throws IOException {
       // Have to have write-lock since leaving safemode initializes
       // repl queues, which requires write lock
       assert hasWriteLock();
@@ -4575,7 +4575,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Set total number of blocks.
      */
-    private synchronized void setBlockTotal(int total) {
+    private synchronized void setBlockTotal(int total) throws IOException {
       this.blockTotal = total;
       this.blockThreshold = (int) (blockTotal * threshold);
       this.blockReplQueueThreshold = 
@@ -4596,7 +4596,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * reached minimal replication.
      * @param replication current replication 
      */
-    private synchronized void incrementSafeBlockCount(short replication) {
+    private synchronized void incrementSafeBlockCount(short replication) throws IOException {
       if (replication == safeReplication) {
         this.blockSafe++;
         checkMode();
@@ -4608,7 +4608,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * fallen below minimal replication.
      * @param replication current replication 
      */
-    private synchronized void decrementSafeBlockCount(short replication) {
+    private synchronized void decrementSafeBlockCount(short replication) throws IOException {
       if (replication == safeReplication-1) {
         this.blockSafe--;
         assert blockSafe >= 0 || isManual();
@@ -4732,7 +4732,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Checks consistency of the class state.
      * This is costly so only runs if asserts are enabled.
      */
-    private void doConsistencyCheck() {
+    private void doConsistencyCheck() throws IOException {
       boolean assertsOn = false;
       assert assertsOn = true; // set to true if asserts are on
       if (!assertsOn) return;
@@ -4751,7 +4751,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     }
 
-    private synchronized void adjustBlockTotals(int deltaSafe, int deltaTotal) {
+    private synchronized void adjustBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
       if (!shouldIncrementallyTrackBlocks) {
         return;
       }
@@ -4794,8 +4794,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if (!fsRunning) {
         LOG.info("NameNode is being shutdown, exit SafeModeMonitor thread");
       } else {
-        // leave safe mode and stop the monitor
-        leaveSafeMode();
+        try {
+          // leave safe mode and stop the monitor
+          leaveSafeMode();
+        } catch (IOException ex) {
+          LOG.error(ex);
+        }
       }
       smmthread = null;
     }
@@ -4819,7 +4823,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public void checkSafeMode() {
+  public void checkSafeMode() throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode != null) {
@@ -4828,7 +4832,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public boolean isInSafeMode() {
+  public boolean isInSafeMode() throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4837,7 +4841,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public boolean isInStartupSafeMode() {
+  public boolean isInStartupSafeMode() throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4864,7 +4868,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public void incrementSafeBlockCount(int replication) {
+  public void incrementSafeBlockCount(int replication) throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4873,7 +4877,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public void decrementSafeBlockCount(Block b) {
+  public void decrementSafeBlockCount(Block b) throws PersistanceException, IOException{
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null) // mostly true
@@ -4891,7 +4895,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param deltaTotal the change i nnumber of total blocks expected
    */
   @Override
-  public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal) {
+  public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4902,7 +4906,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Set the total number of blocks in the system. 
    */
-  public void setBlockTotal() throws PersistanceException {
+  public void setBlockTotal() throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
@@ -4915,7 +4919,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   @Override // FSNamesystemMBean
   @Metric
-  public long getBlocksTotal() {
+  public long getBlocksTotal() throws IOException{
     return blockManager.getTotalBlocks();
   }
 
@@ -4923,12 +4927,41 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Get the total number of COMPLETE blocks in the system.
    * For safe mode only complete blocks are counted.
    */
-  private long getCompleteBlocksTotal() throws PersistanceException {
+  private long getCompleteBlocksTotal() throws IOException{
     // Calculate number of blocks under construction
-    long numUCBlocks = 0;
+    final long[] numUCBlocks = {0};
     readLock();
-    try {
-      for (Lease lease : leaseManager.getSortedLeases()) {
+    TransactionalRequestHandler getCompleteBlocksTotal = new TransactionalRequestHandler(OperationType.GET_COMPLETE_BLOCKS_TOTAL) {
+     
+      private SortedSet<String> leasePaths = null;
+      @Override
+      public void setUp() throws StorageException
+      {
+        String holder = ((Lease) getParams()[0]).getHolder();
+        leasePaths = INodeUtil.findPathsByLeaseHolder(holder);
+      }
+      
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        String holder = ((Lease) getParams()[0]).getHolder();
+            TransactionLockManager tlm = new TransactionLockManager();
+            tlm.addINode(TransactionLockManager.INodeLockType.WRITE);
+            tlm.addBlock(TransactionLockManager.LockType.WRITE);
+            tlm.addLease(TransactionLockManager.LockType.WRITE, holder);
+            tlm.addNameNodeLease(LockType.WRITE);
+            tlm.addLeasePath(TransactionLockManager.LockType.WRITE);
+//            tlm.addReplica(TransactionLockManager.LockType.READ);
+//            tlm.addCorrupt(TransactionLockManager.LockType.READ);
+//            tlm.addExcess(TransactionLockManager.LockType.READ);
+//            tlm.addReplicaUc(TransactionLockManager.LockType.READ);
+//            tlm.addUnderReplicatedBlock(LockType.READ);
+//            tlm.addGenerationStamp(LockType.WRITE);
+            tlm.acquireByLease(leasePaths);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Lease lease = (Lease) getParams()[0];
         for (LeasePath path : lease.getPaths()) {
           final INodeFileUnderConstruction cons;
           try {
@@ -4939,16 +4972,25 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             throw new RuntimeException(e);
           }
           BlockInfo[] blocks = cons.getBlocks();
-          if(blocks == null)
+          if (blocks == null) {
             continue;
-          for(BlockInfo b : blocks) {
-            if(!b.isComplete())
-              numUCBlocks++;
+          }
+          for (BlockInfo b : blocks) {
+            if (!b.isComplete()) {
+              numUCBlocks[0]++;
+            }
           }
         }
+        return null;
       }
-      LOG.info("Number of blocks under construction: " + numUCBlocks);
-      return getBlocksTotal() - numUCBlocks;
+    };
+    try {
+      for (Lease lease : leaseManager.getSortedLeases()) {
+        getCompleteBlocksTotal.setParams(lease);
+        getCompleteBlocksTotal.handle();
+      }
+      LOG.info("Number of blocks under construction: " + numUCBlocks[0]);
+      return getBlocksTotal() - numUCBlocks[0];
     } finally {
       readUnlock();
     }
@@ -4996,7 +5038,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Leave safe mode.
    * @throws IOException
    */
-  void leaveSafeMode() {
+  void leaveSafeMode() throws IOException {
     writeLock();
     try {
       if (!isInSafeMode()) {
@@ -5009,7 +5051,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
     
-  String getSafeModeTip() {
+  String getSafeModeTip() throws IOException {
     readLock();
     try {
       if (!isInSafeMode()) {
@@ -5249,7 +5291,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override // FSNamesystemMBean
-  public String getFSState() {
+  public String getFSState() throws IOException{
     return isInSafeMode() ? "safeMode" : "Operational";
   }
   
@@ -5314,7 +5356,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Increments, logs and then returns the stamp
    */
-  private long nextGenerationStamp() throws SafeModeException {
+  private long nextGenerationStamp() throws SafeModeException, IOException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException(

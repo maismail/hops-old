@@ -154,8 +154,9 @@ class BlocksMap {
   }
   
   /** Get the capacity of the HashMap that stores blocks */
-  int getCapacity() throws PersistanceException {
-    throw new UnsupportedOperationException("return capacity");
+  int getCapacity(){
+    EntityContext.log("GET_CAPACITY", EntityContext.CacheHitState.LOSS, "FIXME. CAPACITY OF MEMORY IS 1");
+    return 1;
   }
 
   /**

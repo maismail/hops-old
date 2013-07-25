@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -219,7 +220,7 @@ class HeartbeatManager implements DatanodeStatistics {
    * dead at a time within the synchronized section. Otherwise, a cascading
    * effect causes more datanodes to be declared dead.
    */
-  void heartbeatCheck() {
+  void heartbeatCheck() throws IOException {
     final DatanodeManager dm = blockManager.getDatanodeManager();
     // It's OK to check safe mode w/o taking the lock here, we re-check
     // for safe mode after taking the lock before removing a datanode.

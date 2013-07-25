@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode.metrics;
 
+import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 
 /**
@@ -42,14 +43,14 @@ public interface FSNamesystemMBean {
    * The state of the file system: Safemode or Operational
    * @return the state
    */
-  public String getFSState();
+  public String getFSState()throws IOException;
   
   
   /**
    * Number of allocated blocks in the system
    * @return -  number of allocated blocks
    */
-  public long getBlocksTotal();
+  public long getBlocksTotal() throws IOException;
 
   /**
    * Total storage capacity

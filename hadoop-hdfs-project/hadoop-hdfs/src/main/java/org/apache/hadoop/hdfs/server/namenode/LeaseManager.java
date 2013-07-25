@@ -97,8 +97,19 @@ public class LeaseManager {
     return EntityManager.find(Lease.Finder.ByPKey, holder);
   }
   
-  SortedSet<Lease> getSortedLeases() throws PersistanceException {
-    return new TreeSet<Lease>(EntityManager.findList(Lease.Finder.All));
+  SortedSet<Lease> getSortedLeases() throws IOException {
+    TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(OperationType.GET_SORTED_LEASES) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+        return da.findAll();
+      }
+    };
+    return new TreeSet<Lease>((Collection<? extends Lease>) getSortedLeasesHandler.handle());
   }
 
   /** @return the lease containing src */

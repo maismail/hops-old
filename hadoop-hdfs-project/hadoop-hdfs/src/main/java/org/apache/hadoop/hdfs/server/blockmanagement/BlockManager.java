@@ -876,65 +876,65 @@ public class BlockManager {
                             minReplication);
   }
 
-  /**
-   * return a list of blocks & their locations on <code>datanode</code> whose
-   * total size is <code>size</code>
-   * 
-   * @param datanode on which blocks are located
-   * @param size total size of blocks
-   */
-  public BlocksWithLocations getBlocks(DatanodeID datanode, long size           // used in the namenode protocol
-      ) throws IOException, PersistanceException {
-    namesystem.readLock();
-    try {
-      namesystem.checkSuperuserPrivilege();
-      return getBlocksWithLocations(datanode, size);  
-    } finally {
-      namesystem.readUnlock();
-    }
-  }
-
-  /** Get all blocks with location information from a datanode. */
-  private BlocksWithLocations getBlocksWithLocations(final DatanodeID datanode,
-      final long size) throws UnregisteredNodeException, PersistanceException {
-    final DatanodeDescriptor node = getDatanodeManager().getDatanode(datanode);
-    if (node == null) {
-      blockLog.warn("BLOCK* getBlocks: "
-          + "Asking for blocks from an unrecorded node " + datanode);
-      throw new HadoopIllegalArgumentException(
-          "Datanode " + datanode + " not found.");
-    }
-
-    int numBlocks = node.numBlocks();
-    if(numBlocks == 0) {
-      return new BlocksWithLocations(new BlockWithLocations[0]);
-    }
-    Iterator<BlockInfo> iter = node.getBlockIterator();
-    int startBlock = DFSUtil.getRandom().nextInt(numBlocks); // starting from a random block
-    // skip blocks
-    for(int i=0; i<startBlock; i++) {
-      iter.next();
-    }
-    List<BlockWithLocations> results = new ArrayList<BlockWithLocations>();
-    long totalSize = 0;
-    BlockInfo curBlock;
-    while(totalSize<size && iter.hasNext()) {
-      curBlock = iter.next();
-      if(!curBlock.isComplete())  continue;
-      totalSize += addBlock(curBlock, results);
-    }
-    if(totalSize<size) {
-      iter = node.getBlockIterator(); // start from the beginning
-      for(int i=0; i<startBlock&&totalSize<size; i++) {
-        curBlock = iter.next();
-        if(!curBlock.isComplete())  continue;
-        totalSize += addBlock(curBlock, results);
-      }
-    }
-
-    return new BlocksWithLocations(
-        results.toArray(new BlockWithLocations[results.size()]));
-  }
+//HOP  /**                                                                        // used in the namenode protocol
+//   * return a list of blocks & their locations on <code>datanode</code> whose
+//   * total size is <code>size</code>
+//   * 
+//   * @param datanode on which blocks are located
+//   * @param size total size of blocks
+//   */
+//  public BlocksWithLocations getBlocks(DatanodeID datanode, long size           // used in the namenode protocol
+//      ) throws IOException, PersistanceException {
+//    namesystem.readLock();
+//    try {
+//      namesystem.checkSuperuserPrivilege();
+//      return getBlocksWithLocations(datanode, size);  
+//    } finally {
+//      namesystem.readUnlock();
+//    }
+//  }
+//
+//  /** Get all blocks with location information from a datanode. */
+//  private BlocksWithLocations getBlocksWithLocations(final DatanodeID datanode,
+//      final long size) throws UnregisteredNodeException, PersistanceException, IOException {
+//    final DatanodeDescriptor node = getDatanodeManager().getDatanode(datanode);
+//    if (node == null) {
+//      blockLog.warn("BLOCK* getBlocks: "
+//          + "Asking for blocks from an unrecorded node " + datanode);
+//      throw new HadoopIllegalArgumentException(
+//          "Datanode " + datanode + " not found.");
+//    }
+//
+//    int numBlocks = node.numBlocks();
+//    if(numBlocks == 0) {
+//      return new BlocksWithLocations(new BlockWithLocations[0]);
+//    }
+//    Iterator<BlockInfo> iter = node.getBlockIterator();
+//    int startBlock = DFSUtil.getRandom().nextInt(numBlocks); // starting from a random block
+//    // skip blocks
+//    for(int i=0; i<startBlock; i++) {
+//      iter.next();
+//    }
+//    List<BlockWithLocations> results = new ArrayList<BlockWithLocations>();
+//    long totalSize = 0;
+//    BlockInfo curBlock;
+//    while(totalSize<size && iter.hasNext()) {
+//      curBlock = iter.next();
+//      if(!curBlock.isComplete())  continue;
+//      totalSize += addBlock(curBlock, results);
+//    }
+//    if(totalSize<size) {
+//      iter = node.getBlockIterator(); // start from the beginning
+//      for(int i=0; i<startBlock&&totalSize<size; i++) {
+//        curBlock = iter.next();
+//        if(!curBlock.isComplete())  continue;
+//        totalSize += addBlock(curBlock, results);
+//      }
+//    }
+//
+//    return new BlocksWithLocations(
+//        results.toArray(new BlockWithLocations[results.size()]));
+//  }
 
    
   /** Remove the blocks associated to the given datanode. */
@@ -987,22 +987,50 @@ public class BlockManager {
    * @param blk Block to be marked as corrupt
    * @param dn Datanode which holds the corrupt replica
    * @param reason a textual reason why the block should be marked corrupt,
-   * for logging purposes
+ for
+   * logging purposes
    */
   public void findAndMarkBlockAsCorrupt(final ExtendedBlock blk,
-      final DatanodeInfo dn, String reason) throws IOException, PersistanceException {
-    assert namesystem.hasWriteLock();
-    final BlockInfo storedBlock = getStoredBlock(blk.getLocalBlock());
-    if (storedBlock == null) {
-      // Check if the replica is in the blockMap, if not
-      // ignore the request for now. This could happen when BlockScanner
-      // thread of Datanode reports bad block before Block reports are sent
-      // by the Datanode on startup
-      blockLog.info("BLOCK* findAndMarkBlockAsCorrupt: "
-          + blk + " not found");
-      return;
-    }
-    markBlockAsCorrupt(new BlockToMarkCorrupt(storedBlock, reason), dn);
+          final DatanodeInfo dn, final String reason) throws IOException {
+    TransactionalRequestHandler findAndMarkBlockAsCorruptHandler = new TransactionalRequestHandler(OperationType.FIND_AND_MARK_BLOCKS_AS_CORRUPT) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(blk.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, blk.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.WRITE).
+                addCorrupt(LockType.WRITE).
+                addUnderReplicatedBlock(LockType.WRITE).
+                addReplicaUc(LockType.READ);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        assert namesystem.hasWriteLock();
+        final BlockInfo storedBlock = getStoredBlock(blk.getLocalBlock());
+        if (storedBlock == null) {
+          // Check if the replica is in the blockMap, if not
+          // ignore the request for now. This could happen when BlockScanner
+          // thread of Datanode reports bad block before Block reports are sent
+          // by the Datanode on startup
+          blockLog.info("BLOCK* findAndMarkBlockAsCorrupt: "
+                  + blk + " not found");
+          return null;
+        }
+        markBlockAsCorrupt(new BlockToMarkCorrupt(storedBlock, reason), dn);
+        return null;
+      }
+    };
+    findAndMarkBlockAsCorruptHandler.handleWithWriteLock(namesystem);
   }
 
   private void markBlockAsCorrupt(BlockToMarkCorrupt b,
@@ -1099,7 +1127,7 @@ public class BlockManager {
    * @param nodesToProcess number of datanodes to schedule deletion work
    * @return total number of block for deletion
    */
-  int computeInvalidateWork(int nodesToProcess) {
+  int computeInvalidateWork(int nodesToProcess) throws IOException {
     final List<String> nodes = invalidateBlocks.getStorageIDs();
     Collections.shuffle(nodes);
 
@@ -1121,7 +1149,7 @@ public class BlockManager {
    *
    * @return number of blocks scheduled for replication during this iteration.
    */
-  int computeReplicationWork(int blocksToProcess) throws PersistanceException {
+  int computeReplicationWork(int blocksToProcess) {
     List<List<Block>> blocksToReplicate = null;
     namesystem.writeLock();
     try {
@@ -1140,7 +1168,7 @@ public class BlockManager {
    * @return the number of blocks scheduled for replication
    */
   @VisibleForTesting
-  int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws PersistanceException {
+  int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) {
     int requiredReplication, numEffectiveReplicas;
     List<DatanodeDescriptor> containingNodes, liveReplicaNodes;
     DatanodeDescriptor srcNode;
@@ -2636,7 +2664,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * Modify (block-->datanode) map. Possibly generate replication tasks, if the
    * removed block is still valid.
    */
-  public void removeStoredBlock(Block block, DatanodeDescriptor node) throws PersistanceException {
+  public void removeStoredBlock(Block block, DatanodeDescriptor node) throws PersistanceException, IOException {
     if(blockLog.isDebugEnabled()) {
       blockLog.debug("BLOCK* removeStoredBlock: "
           + block + " from " + node);
@@ -2878,7 +2906,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * @param b - the block being tested
    * @return count of live nodes for this block
    */
-  int countLiveNodes(BlockInfo b) throws PersistanceException {
+  int countLiveNodes(BlockInfo b) throws PersistanceException, IOException {
     if (!namesystem.isInStartupSafeMode()) {
       return countNodes(b).liveReplicas();
     }
@@ -3058,7 +3086,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return status[0];
   }
 
-  public int getActiveBlockCount() {
+  public int getActiveBlockCount() throws IOException {
     return blocksMap.size();
   }
 
@@ -3072,7 +3100,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return nodes;
   }
 
-  public int getTotalBlocks() {
+  public int getTotalBlocks() throws IOException {
     return blocksMap.size();
   }
 
@@ -3156,7 +3184,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    *
    * @return number of blocks scheduled for removal during this iteration.
    */
-  private int invalidateWorkForOneNode(String nodeId) {
+  private int invalidateWorkForOneNode(String nodeId) throws IOException {
     namesystem.writeLock();
     try {
       // blocks should not be replicated or removed if safe mode is on
@@ -3315,7 +3343,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * @return number of blocks scheduled for replication or removal.
    * @throws IOException
    */
-  int computeDatanodeWork() throws PersistanceException {
+  int computeDatanodeWork() throws  IOException {
     // Blocks should not be replicated or removed if in safe mode.
     // It's OK to check safe mode here w/o holding lock, in the worst
     // case extra replications will be scheduled, and these will get
