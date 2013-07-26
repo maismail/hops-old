@@ -1050,7 +1050,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override // HAServiceProtocol
   public synchronized HAServiceStatus getServiceStatus() 
-      throws AccessControlException, ServiceFailedException {
+      throws AccessControlException, ServiceFailedException, IOException {
     return nn.getServiceStatus();
   }
 

@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
@@ -33,6 +34,11 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
 
@@ -168,14 +174,29 @@ public class TestNodeCount {
   }
 
   /* threadsafe read of the replication counts for this block */
-  NumberReplicas countNodes(Block block, FSNamesystem namesystem) {
+  NumberReplicas countNodes(final Block block, final FSNamesystem namesystem) throws IOException {
     namesystem.readLock();
     try {
-      lastBlock = block;
-      lastNum = namesystem.getBlockManager().countNodes(block);
-      return lastNum;
-    }
-    finally {
+      return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
+         @Override
+        public void acquireLock() throws PersistanceException, IOException {
+          TransactionLockManager lm = new TransactionLockManager();
+          lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+                  addReplica(LockType.READ).
+                  addExcess(LockType.READ).
+                  addCorrupt(LockType.READ);
+          lm.acquire();
+        }
+         
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          lastBlock = block;
+          lastNum = namesystem.getBlockManager().countNodes(block);
+          return lastNum;
+        }
+
+      }.handleWithReadLock(namesystem);
+    } finally {
       namesystem.readUnlock();
     }
   }

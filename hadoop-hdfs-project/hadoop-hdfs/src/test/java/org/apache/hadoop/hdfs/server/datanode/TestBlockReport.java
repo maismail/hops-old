@@ -706,7 +706,7 @@ public class TestBlockReport {
         fileSize).getLocatedBlocks(), null);
   }
 
-  private void printStats() {
+  private void printStats() throws IOException {
     BlockManagerTestUtil.updateState(cluster.getNamesystem().getBlockManager());
     if(LOG.isDebugEnabled()) {
       LOG.debug("Missing " + cluster.getNamesystem().getMissingBlocksCount());

@@ -37,7 +37,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
   public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud11.sics.se";
   public static final String DFS_DB_DATABASE_KEY = "dfs.dbconnector.database";
-  public static final String DFS_DB_DATABASE_DEFAULT = "hop_salman";
+  public static final String DFS_DB_DATABASE_DEFAULT = "hop_mahmoud";
   public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
   public static final String DFS_STORAGE_MYSQL_PROTOCOL_KEY = "dfs.storage.mysql.protocol";

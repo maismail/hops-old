@@ -74,7 +74,7 @@ public class TestLargeDirectoryDelete {
     }
   }
   
-  private int getBlockCount() {
+  private int getBlockCount() throws IOException {
     Assert.assertNotNull("Null cluster", mc);
     Assert.assertNotNull("No Namenode in cluster", mc.getNameNode());
     FSNamesystem namesystem = mc.getNamesystem();

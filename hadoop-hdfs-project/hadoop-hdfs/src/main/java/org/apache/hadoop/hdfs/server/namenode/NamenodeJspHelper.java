@@ -65,7 +65,12 @@ import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 class NamenodeJspHelper {
   static String fraction2String(double value) {
@@ -76,7 +81,7 @@ class NamenodeJspHelper {
     return fraction2String(numerator/(double)denominator);
   }
 
-  static String getSafeModeText(FSNamesystem fsn) {
+  static String getSafeModeText(FSNamesystem fsn) throws IOException {
     if (!fsn.isInSafeMode())
       return "";
     return "Safe mode is ON. <em>" + fsn.getSafeModeTip() + "</em><br>";
@@ -783,7 +788,7 @@ class NamenodeJspHelper {
     final INodeFile inode;
     final BlockManager blockManager;
     
-    XMLBlockInfo(FSNamesystem fsn, Long blockId) {
+    XMLBlockInfo(FSNamesystem fsn, Long blockId) throws IOException {
       this.blockManager = fsn.getBlockManager();
 
       if (blockId == null) {
@@ -791,7 +796,26 @@ class NamenodeJspHelper {
         this.inode = null;
       } else {
         this.block = new Block(blockId);
-        this.inode = (INodeFile) blockManager.getBlockCollection(block);
+        this.inode = (INodeFile) new TransactionalRequestHandler(OperationType.GET_INODE) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            return blockManager.getBlockCollection(block);
+          }
+          long inodeId;
+
+          @Override
+          public void acquireLock() throws PersistanceException, IOException {
+            TransactionLockManager lm = new TransactionLockManager();
+            lm.addINode(TransactionLockManager.INodeLockType.READ).
+                    addBlock(TransactionLockManager.LockType.READ, block.getBlockId());
+            lm.acquireByBlock(inodeId);
+          }
+
+          @Override
+          public void setUp() throws StorageException {
+            inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+          }
+        }.handle();
       }
     }
 

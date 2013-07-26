@@ -57,8 +57,8 @@ public class TestDatanodeDescriptor {
   public void testBlocksCounter() throws Exception {
     DatanodeDescriptor dd = DFSTestUtil.getLocalDatanodeDescriptor();
     assertEquals(0, dd.numBlocks());
-    BlockInfo blk = new BlockInfo(new Block(1L), 1);
-    BlockInfo blk1 = new BlockInfo(new Block(2L), 2);
+    BlockInfo blk = new BlockInfo(new Block(1L));
+    BlockInfo blk1 = new BlockInfo(new Block(2L));
     // add first block
     assertTrue(dd.addBlock(blk));
     assertEquals(1, dd.numBlocks());

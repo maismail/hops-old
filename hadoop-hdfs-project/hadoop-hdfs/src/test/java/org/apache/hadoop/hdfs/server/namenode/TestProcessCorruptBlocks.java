@@ -33,6 +33,10 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.junit.Test;
 
 public class TestProcessCorruptBlocks {
@@ -253,8 +257,24 @@ public class TestProcessCorruptBlocks {
     }
   }
 
-  private static NumberReplicas countReplicas(final FSNamesystem namesystem, ExtendedBlock block) {
-    return namesystem.getBlockManager().countNodes(block.getLocalBlock());
+  private static NumberReplicas countReplicas(final FSNamesystem namesystem,
+          final ExtendedBlock block) throws IOException {
+    return (NumberReplicas) new TransactionalRequestHandler(RequestHandler.OperationType.COUNT_NODES) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+                addReplica(TransactionLockManager.LockType.READ).
+                addExcess(TransactionLockManager.LockType.READ).
+                addCorrupt(TransactionLockManager.LockType.READ);
+        lm.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return namesystem.getBlockManager().countNodes(block.getLocalBlock());
+      }
+    }.handleWithReadLock(namesystem);
   }
 
   private void corruptBlock(MiniDFSCluster cluster, FileSystem fs, final Path fileName,

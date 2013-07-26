@@ -117,7 +117,7 @@ public class MiniDFSClusterManager {
     sleepForever();
   }
 
-  private void sleepForever() {
+  private void sleepForever() throws IOException {
     while (true) {
       try {
         Thread.sleep(SLEEP_INTERVAL_MS);

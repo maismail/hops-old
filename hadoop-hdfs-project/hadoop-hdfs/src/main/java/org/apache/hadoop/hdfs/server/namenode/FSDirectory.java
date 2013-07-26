@@ -1020,7 +1020,7 @@ public class FSDirectory implements Closeable {
    * @return true on successful deletion; else false
    */
   boolean delete(String src, List<Block>collectedBlocks) 
-    throws UnresolvedLinkException, PersistanceException {
+    throws UnresolvedLinkException, PersistanceException, IOException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSDirectory.delete: " + src);
     }
@@ -1070,7 +1070,7 @@ public class FSDirectory implements Closeable {
    * @param mtime the time the inode is removed
    */ 
   void unprotectedDelete(String src, long mtime) 
-    throws UnresolvedLinkException, PersistanceException {
+    throws UnresolvedLinkException, PersistanceException, IOException {
     assert hasWriteLock();
     List<Block> collectedBlocks = new ArrayList<Block>();
     int filesRemoved = unprotectedDelete(src, collectedBlocks, mtime);

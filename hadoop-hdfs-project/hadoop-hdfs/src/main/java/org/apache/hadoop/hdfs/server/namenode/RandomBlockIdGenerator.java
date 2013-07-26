@@ -36,17 +36,18 @@ public class RandomBlockIdGenerator implements IdGenerator {
 
   @Override // NumberGenerator
   public long nextValue() {
-    Block b = new Block(DFSUtil.getRandom().nextLong(), 0, 0); 
-    while(isValidBlock(b)) {
-      b.setBlockIdNoPersistance(DFSUtil.getRandom().nextLong());
-    }
-    return b.getBlockId();
+//HOP FIXME    Block b = new Block(DFSUtil.getRandom().nextLong(), 0, 0); 
+//    while(isValidBlock(b)) {
+//      b.setBlockIdNoPersistance(DFSUtil.getRandom().nextLong());
+//    }
+//    return b.getBlockId();
+    return DFSUtil.getRandom().nextLong();
   }
 
   /**
    * Returns whether the given block is one pointed-to by a file.
    */
-  private boolean isValidBlock(Block b) {
-    return (blockManager.getBlockCollection(b) != null);
-  }
+//  private boolean isValidBlock(Block b) {
+//    return (blockManager.getBlockCollection(b) != null);
+//  }
 }

@@ -1149,17 +1149,24 @@ public class BlockManager {
    *
    * @return number of blocks scheduled for replication during this iteration.
    */
-  int computeReplicationWork(int blocksToProcess) {
+  int computeReplicationWork(int blocksToProcess) throws IOException {
     List<List<Block>> blocksToReplicate = null;
     namesystem.writeLock();
     try {
       // Choose the blocks to be replicated
       blocksToReplicate = neededReplications
-          .chooseUnderReplicatedBlocks(blocksToProcess);
+              .chooseUnderReplicatedBlocks(blocksToProcess);
     } finally {
       namesystem.writeUnlock();
     }
-    return computeReplicationWorkForBlocks(blocksToReplicate);
+
+    int scheduledWork = 0;
+    for (int priority = 0; priority < blocksToReplicate.size(); priority++) {
+      for (Block block : blocksToReplicate.get(priority)) {
+        scheduledWork += computeReplicationWorkForBlock(block, priority);
+      }
+    }
+    return scheduledWork;
   }
 
   /** Replicate a set of blocks
@@ -1167,8 +1174,7 @@ public class BlockManager {
    * @param blocksToReplicate blocks to be replicated, for each priority
    * @return the number of blocks scheduled for replication
    */
-  @VisibleForTesting
-  int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) {
+  private int computeReplicationWorkForBlockInternal(Block blk, int priority1) throws PersistanceException {
     int requiredReplication, numEffectiveReplicas;
     List<DatanodeDescriptor> containingNodes, liveReplicaNodes;
     DatanodeDescriptor srcNode;
@@ -1181,15 +1187,15 @@ public class BlockManager {
     namesystem.writeLock();
     try {
       synchronized (neededReplications) {
-        for (int priority = 0; priority < blocksToReplicate.size(); priority++) {
-          for (Block block : blocksToReplicate.get(priority)) {
+//        for (int priority = 0; priority < blocksToReplicate.size(); priority++) {
+//          for (Block block : blocksToReplicate.get(priority)) {
             // block should belong to a file
-            bc = blocksMap.getBlockCollection(block);
+            bc = blocksMap.getBlockCollection(blk);
             // abandoned block or block reopened for append
             if(bc == null || bc instanceof MutableBlockCollection) {
-              neededReplications.remove(block, priority); // remove from neededReplications
-              neededReplications.decrementReplicationIndex(priority);
-              continue;
+              neededReplications.remove(blk, priority1); // remove from neededReplications
+              neededReplications.decrementReplicationIndex(priority1);
+              return scheduledWork;
             }
 
             requiredReplication = bc.getBlockReplication();
@@ -1199,26 +1205,26 @@ public class BlockManager {
             liveReplicaNodes = new ArrayList<DatanodeDescriptor>();
             NumberReplicas numReplicas = new NumberReplicas();
             srcNode = chooseSourceDatanode(
-                block, containingNodes, liveReplicaNodes, numReplicas,
-                priority);
+                blk, containingNodes, liveReplicaNodes, numReplicas,
+                priority1);
             if(srcNode == null) { // block can not be replicated from any node
-              LOG.debug("Block " + block + " cannot be repl from any node");
-              continue;
+              LOG.debug("Block " + blk + " cannot be repl from any node");
+              return scheduledWork;
             }
 
             assert liveReplicaNodes.size() == numReplicas.liveReplicas();
             // do not schedule more if enough replicas is already pending
             numEffectiveReplicas = numReplicas.liveReplicas() +
-                                    pendingReplications.getNumReplicas(block);
+                                    pendingReplications.getNumReplicas(blk);
       
             if (numEffectiveReplicas >= requiredReplication) {
-              if ( (pendingReplications.getNumReplicas(block) > 0) ||
-                   (blockHasEnoughRacks(block)) ) {
-                neededReplications.remove(block, priority); // remove from neededReplications
-                neededReplications.decrementReplicationIndex(priority);
-                blockLog.info("BLOCK* Removing " + block
+              if ( (pendingReplications.getNumReplicas(blk) > 0) ||
+                   (blockHasEnoughRacks(blk)) ) {
+                neededReplications.remove(blk, priority1); // remove from neededReplications
+                neededReplications.decrementReplicationIndex(priority1);
+                blockLog.info("BLOCK* Removing " + blk
                     + " from neededReplications as it has enough replicas");
-                continue;
+                return scheduledWork;
               }
             }
 
@@ -1228,12 +1234,12 @@ public class BlockManager {
             } else {
               additionalReplRequired = 1; // Needed on a new rack
             }
-            work.add(new ReplicationWork(block, bc, srcNode,
+            work.add(new ReplicationWork(blk, bc, srcNode,
                 containingNodes, liveReplicaNodes, additionalReplRequired,
-                priority));
+                priority1));
           }
-        }
-      }
+//        }
+//      }
     } finally {
       namesystem.writeUnlock();
     }
@@ -3466,6 +3472,48 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
     };
     removeBlockHandler.setParams(node).handle();
+  }
+  
+  @VisibleForTesting
+  int computeReplicationWorkForBlock(final Block b, final int priority) throws IOException {
+    TransactionalRequestHandler computeReplicationWorkHandler = new TransactionalRequestHandler(OperationType.COMPUTE_REPLICATION_WORK_FOR_BLOCK) {
+      private long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, b.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addPendingBlock(LockType.READ).
+                addUnderReplicatedBlock(LockType.WRITE).
+                addReplicaUc(LockType.READ);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return computeReplicationWorkForBlock(b, priority);
+      }
+    };
+    return (Integer) computeReplicationWorkHandler.handle();
+  }
+  
+  int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws IOException{
+    int scheduledWork = 0;
+    for (int priority = 0; priority < blocksToReplicate.size(); priority++) {
+      for (Block block : blocksToReplicate.get(priority)) {
+        scheduledWork += computeReplicationWorkForBlock(block, priority);
+      }
+    }
+    return scheduledWork;
   }
   //END_HOP_CODE
 }

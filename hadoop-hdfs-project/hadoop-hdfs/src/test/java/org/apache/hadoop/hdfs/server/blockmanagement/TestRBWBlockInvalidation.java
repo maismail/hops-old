@@ -36,6 +36,11 @@ import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.junit.Test;
 
 /**
@@ -43,9 +48,25 @@ import org.junit.Test;
  * and then the under replicated block gets replicated to the datanode.
  */
 public class TestRBWBlockInvalidation {
+ 
   private static NumberReplicas countReplicas(final FSNamesystem namesystem,
-      ExtendedBlock block) {
-    return namesystem.getBlockManager().countNodes(block.getLocalBlock());
+          final ExtendedBlock block) throws IOException {
+    return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ);
+        lm.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return namesystem.getBlockManager().countNodes(block.getLocalBlock());
+      }
+    }.handleWithReadLock(namesystem);
   }
 
   /**

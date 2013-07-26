@@ -219,6 +219,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /***************************************************
@@ -5706,21 +5707,23 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       for (int i = 0; i < skip && blkIterator.hasNext(); i++) {
         blkIterator.next();
       }
-
-      while (blkIterator.hasNext()) {
-        Block blk = blkIterator.next();
-        INode inode = (INodeFile) blockManager.getBlockCollection(blk);
-        skip++;
-        if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
-          String src = FSDirectory.getFullPathName(inode);
-          if (src.startsWith(path)){
-            corruptFiles.add(new CorruptFileBlockInfo(src, blk));
-            count++;
-            if (count >= DEFAULT_MAX_CORRUPT_FILEBLOCKS_RETURNED)
-              break;
-          }
-        }
-      }
+//HOP FIXME after persisting the corrupt replicas
+//HOP      while (blkIterator.hasNext()) {
+//        Block blk = blkIterator.next();
+//        INode inode = (INodeFile) blockManager.getBlockCollection(blk);
+//        skip++;
+//        if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
+//          String src = FSDirectory.getFullPathName(inode);
+//          if (src.startsWith(path)){
+//            corruptFiles.add(new CorruptFileBlockInfo(src, blk));
+//            count++;
+//            if (count >= DEFAULT_MAX_CORRUPT_FILEBLOCKS_RETURNED)
+//              break;
+//          }
+//        }
+//      }
+      EntityContext.log("LIST_CORRUPT_BLOCKS", EntityContext.CacheHitState.LOSS, "uncomment this part");
+      
       cookieTab[0] = String.valueOf(skip);
       LOG.info("list corrupt file blocks returned: " + count);
       return corruptFiles;
@@ -5926,7 +5929,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * 
    * @param key new delegation key.
    */
-  public void logUpdateMasterKey(DelegationKey key) {
+  public void logUpdateMasterKey(DelegationKey key) throws IOException {
     
     assert !isInSafeMode() :
       "this should never be called while in safemode, since we stop " +
@@ -6041,7 +6044,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override // NameNodeMXBean
-  public String getSafemode() {
+  public String getSafemode() throws IOException {
     if (!this.isInSafeMode())
       return "";
     return "Safe mode is ON." + this.getSafeModeTip();
@@ -6081,7 +6084,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override // NameNodeMXBean
-  public long getTotalBlocks() {
+  public long getTotalBlocks() throws IOException{
     return getBlocksTotal();
   }
 
