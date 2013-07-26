@@ -120,7 +120,8 @@ public class INodeFile extends INode implements BlockCollection {
     List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByInodeId, id);
     if (blocks != null) {
       Collections.sort(blocks, BlockInfo.Order.ByBlockIndex);
-      return (BlockInfo[]) blocks.toArray();
+      BlockInfo[] blks= new BlockInfo[blocks.size()];
+      return blocks.toArray(blks);
     } else {
       return BlockInfo.EMPTY_ARRAY;
     }

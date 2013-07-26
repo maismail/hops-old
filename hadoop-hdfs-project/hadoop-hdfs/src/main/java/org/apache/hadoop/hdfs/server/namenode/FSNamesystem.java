@@ -254,8 +254,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private HdfsFileStatus getAuditFileInfo(String path, boolean resolveSymlink)
       throws IOException, PersistanceException {
-    return (isAuditEnabled() && isExternalInvocation())
-        ? dir.getFileInfo(path, resolveSymlink) : null;
+//HOP FIXME    return (isAuditEnabled() && isExternalInvocation())
+//        ? dir.getFileInfo(path, resolveSymlink) : null;
+    return null;
   }
   
   private void logAuditEvent(boolean succeeded, String cmd, String src)
@@ -2862,7 +2863,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     Block b = new Block(HOPBlockIDGen.getUniqueBlockId(this), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
     nextGenerationStamp();
-    b.setGenerationStamp(getGenerationStamp());
+    b.setGenerationStampNoPersistance(getGenerationStamp());
     return b;
   }
 

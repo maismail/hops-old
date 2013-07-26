@@ -113,19 +113,19 @@ public class ReplicaUnderRecovery extends ReplicaInfo {
   }
 
   @Override  //org.apache.hadoop.hdfs.protocol.Block
-  public void setBlockId(long blockId) {
+  public void setBlockIdNoPersistance(long blockId) {
     super.setBlockIdNoPersistance(blockId);
     original.setBlockIdNoPersistance(blockId);
   }
 
   @Override //org.apache.hadoop.hdfs.protocol.Block
-  public void setGenerationStamp(long gs) {
+  public void setGenerationStampNoPersistance(long gs) {
     super.setGenerationStampNoPersistance(gs);
     original.setGenerationStampNoPersistance(gs);
   }
   
   @Override //org.apache.hadoop.hdfs.protocol.Block
-  public void setNumBytes(long numBytes) {
+  public void setNumBytesNoPersistance(long numBytes) {
     super.setNumBytesNoPersistance(numBytes);
     original.setNumBytesNoPersistance(numBytes);
   }

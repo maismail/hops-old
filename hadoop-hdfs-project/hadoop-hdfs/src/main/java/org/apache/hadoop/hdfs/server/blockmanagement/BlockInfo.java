@@ -330,4 +330,42 @@ public class BlockInfo extends Block {
     // Sufficient to rely on super's implementation
     return (this == obj) || super.equals(obj);
   }
+  //START_HOP_CODE
+  
+  public void setBlockId(long bid) throws PersistanceException {
+    setBlockIdNoPersistance(bid);
+    save();
+  }
+
+  public void setNumBytes(long len) throws PersistanceException {
+    setNumBytesNoPersistance(len);
+    save();
+  }
+
+  public void setGenerationStamp(long stamp) throws PersistanceException {
+    setGenerationStampNoPersistance(stamp);
+    save();
+  }
+
+  public void set(long blkid, long len, long genStamp) throws PersistanceException {
+    set(blkid, len, genStamp);
+    save();
+  }
+  
+  protected void save() throws PersistanceException {
+    save(this);
+  }
+
+  protected void save(BlockInfo blk) throws PersistanceException {
+    EntityManager.update(blk);
+  }
+
+  protected void remove() throws PersistanceException {
+    remove(this);
+  }
+
+  protected void remove(BlockInfo blk) throws PersistanceException {
+    EntityManager.remove(blk);
+  }
+  //END_HOP_CODE
 }

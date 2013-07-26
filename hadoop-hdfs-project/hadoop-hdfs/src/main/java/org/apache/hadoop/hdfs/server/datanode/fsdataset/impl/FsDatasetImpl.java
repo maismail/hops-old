@@ -1563,7 +1563,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       rur.unlinkBlock(1);
       truncateBlock(replicafile, rur.getMetaFile(), rur.getNumBytes(), newlength);
       // update RUR with the new length
-      rur.setNumBytes(newlength);
+      rur.setNumBytesNoPersistance(newlength);
    }
 
     // finalize the block
