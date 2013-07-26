@@ -129,7 +129,7 @@ class BlocksMap {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfo.class);
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.countAll();
       }
     };
@@ -146,7 +146,7 @@ class BlocksMap {
       public Object performTask() throws PersistanceException, IOException {
         //FIXME. Very inefficient way of block processing
         EntityContext.log(OperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
-        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfo.class);
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.findAllBlocks();
       }
     };
