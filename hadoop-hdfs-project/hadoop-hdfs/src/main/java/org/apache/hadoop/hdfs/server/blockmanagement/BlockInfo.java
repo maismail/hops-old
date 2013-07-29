@@ -348,7 +348,7 @@ public class BlockInfo extends Block {
   }
 
   public void set(long blkid, long len, long genStamp) throws PersistanceException {
-    set(blkid, len, genStamp);
+    setNoPersistance(blkid, len, genStamp);
     save();
   }
   
