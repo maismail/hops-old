@@ -127,4 +127,8 @@ public abstract class EntityContext<T> {
       throw new StorageCallPreventedException("Trying to access storage while it is disable in transaction, inconsistent transaction context statement. Msg "+msg);
     }
   }
+  
+  protected boolean isTxRunning(){
+    return storageCallPrevented;
+  }
 }

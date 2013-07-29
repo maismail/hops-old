@@ -75,6 +75,10 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
           log("find-replicaucs-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
           result = blockReplicasUCAll.get(blockId);
         } else {
+          if(isTxRunning())   // if Tx is running and we dont have the data in the cache then it means it was null 
+          {
+            return result;
+          }
           log("find-replicaucs-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
           result = dataAccess.findReplicaUnderConstructionByBlockId(blockId);
