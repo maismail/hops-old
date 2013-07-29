@@ -10,7 +10,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
@@ -155,16 +154,15 @@ public class INodeUtil {
   }
 
   public static long findINodeIdByBlock(long blockId) throws StorageException {
-//    LOG.info(String.format(
-//            "Read block with no transaction by bid=%d",
-//            blockId));
-//    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-//    BlockInfo bInfo = bda.findById(blockId);
-//    if (bInfo == null) {
-//      return INode.NON_EXISTING_ID;
-//    }
-//    return bInfo.getInodeId();
-      return 0L; //FIXME uncomment code above and delete this line. only for testing
+    LOG.info(String.format(
+            "Read block with no transaction by bid=%d",
+            blockId));
+    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+    BlockInfo bInfo = bda.findById(blockId);
+    if (bInfo == null) {
+      return INode.NON_EXISTING_ID;
+    }
+    return bInfo.getInodeId();
   }
 
   public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
