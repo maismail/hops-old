@@ -1021,35 +1021,46 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   @Override
   public void readLock() {
-    this.fsLock.readLock().lock();
+    if(isSystemLevelLockEnabled()){
+    this.fsLock.readLock().lock();}
   }
   @Override
   public void readUnlock() {
-    this.fsLock.readLock().unlock();
+    if(isSystemLevelLockEnabled()){
+    this.fsLock.readLock().unlock();}
   }
   @Override
   public void writeLock() {
-    this.fsLock.writeLock().lock();
+    if(isSystemLevelLockEnabled()){
+    this.fsLock.writeLock().lock();}
   }
   @Override
   public void writeLockInterruptibly() throws InterruptedException {
-    this.fsLock.writeLock().lockInterruptibly();
+    if(isSystemLevelLockEnabled()){
+    this.fsLock.writeLock().lockInterruptibly();}
   }
   @Override
   public void writeUnlock() {
-    this.fsLock.writeLock().unlock();
+    if(isSystemLevelLockEnabled()){
+    this.fsLock.writeLock().unlock();}
   }
   @Override
   public boolean hasWriteLock() {
-    return this.fsLock.isWriteLockedByCurrentThread();
+    if(isSystemLevelLockEnabled()){
+    return this.fsLock.isWriteLockedByCurrentThread();}
+    else { return true; }
   }
   @Override
   public boolean hasReadLock() {
-    return this.fsLock.getReadHoldCount() > 0;
+    if(isSystemLevelLockEnabled()){
+    return this.fsLock.getReadHoldCount() > 0;}
+    else {return true;}
   }
   @Override
   public boolean hasReadOrWriteLock() {
-    return hasReadLock() || hasWriteLock();
+    if(isSystemLevelLockEnabled()){
+    return hasReadLock() || hasWriteLock();}
+    else {return true;}
   }
 
   NamespaceInfo getNamespaceInfo() throws IOException {
