@@ -293,7 +293,7 @@ public class INodeDirectory extends INode {
     }
 
     if (node.getId() == NON_EXISTING_ID) {
-      node.setIdNoPersistance(DFSUtil.getRandom().nextLong());
+      node.setIdNoPersistance(Math.abs(DFSUtil.getRandom().nextLong()));
       EntityManager.add(node);
     }
 

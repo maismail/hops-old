@@ -365,7 +365,7 @@ public abstract class INode implements Comparable<byte[]> {
    * Set last modification time of inode.
    */
   public void setModificationTimeNoPersistance(long modtime) {
-    assert isDirectory();
+    //assert isDirectory();
     if (this.modificationTime <= modtime) {
       this.modificationTime = modtime;
     }

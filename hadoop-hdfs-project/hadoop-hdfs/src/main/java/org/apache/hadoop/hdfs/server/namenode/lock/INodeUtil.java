@@ -155,14 +155,11 @@ public class INodeUtil {
   }
 
   public static long findINodeIdByBlock(long blockId) throws StorageException {
-    LOG.info(String.format(
+    LOG.debug(String.format(
             "About to read block with no transaction by bid=%d",
             blockId));
     BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
     BlockInfo bInfo = bda.findById(blockId);
-    LOG.info(String.format(
-            "Read block with no transaction by bid=%d",
-            blockId));
     if (bInfo == null) {
       return INode.NON_EXISTING_ID;
     }

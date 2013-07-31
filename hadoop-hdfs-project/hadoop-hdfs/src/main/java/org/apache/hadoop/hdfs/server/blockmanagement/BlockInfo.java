@@ -103,6 +103,9 @@ public class BlockInfo extends Block {
     super(blk);
     if (blk instanceof BlockInfo) {
       this.bc = ((BlockInfo) blk).bc;
+      this.blockIndex = ((BlockInfo) blk).blockIndex;
+      this.timestamp = ((BlockInfo) blk).timestamp;
+      this.inodeId = ((BlockInfo) blk).inodeId;
     }
   }
   
@@ -117,6 +120,9 @@ public class BlockInfo extends Block {
   protected BlockInfo(BlockInfo from) {
     super(from);
     this.bc = from.bc;
+    this.blockIndex = from.blockIndex;
+    this.timestamp = from.timestamp;
+    this.inodeId = from.inodeId;
   }
   
   public BlockCollection getBlockCollection() throws PersistanceException {
