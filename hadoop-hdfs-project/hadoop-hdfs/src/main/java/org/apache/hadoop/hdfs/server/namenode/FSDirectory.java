@@ -594,7 +594,7 @@ public class FSDirectory implements Closeable {
     String srcChildName = null;
     try {
       // remove src
-      srcChild = removeChild(srcInodes, srcInodes.length-1);
+      srcChild = removeChildForRename(srcInodes, srcInodes.length-1);
       if (srcChild == null) {
         NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
             + "failed to rename " + src + " to " + dst
@@ -602,7 +602,7 @@ public class FSDirectory implements Closeable {
         return false;
       }
       srcChildName = srcChild.getLocalName();
-      srcChild.setLocalName(dstComponents[dstInodes.length-1]);
+      srcChild.setLocalNameNoPersistance(dstComponents[dstInodes.length-1]);
       
       // add src to the destination
       dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
@@ -623,7 +623,7 @@ public class FSDirectory implements Closeable {
     } finally {
       if (dstChild == null && srcChild != null) {
         // put it back
-        srcChild.setLocalName(srcChildName);
+        srcChild.setLocalNameNoPersistance(srcChildName);
         addChildNoQuotaCheck(srcInodes, srcInodes.length - 1, srcChild, 
             UNKNOWN_DISK_SPACE);
       }
@@ -742,7 +742,7 @@ public class FSDirectory implements Closeable {
 
     // Ensure dst has quota to accommodate rename
     verifyQuotaForRename(srcInodes, dstInodes);
-    INode removedSrc = removeChild(srcInodes, srcInodes.length - 1);
+    INode removedSrc = removeChildForRename(srcInodes, srcInodes.length - 1);
     if (removedSrc == null) {
       error = "Failed to rename " + src + " to " + dst
           + " because the source can not be removed";
@@ -760,7 +760,7 @@ public class FSDirectory implements Closeable {
       }
 
       INode dstChild = null;
-      removedSrc.setLocalName(dstComponents[dstInodes.length - 1]);
+      removedSrc.setLocalNameNoPersistance(dstComponents[dstInodes.length - 1]);
       // add src as dst to complete rename
       dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
           removedSrc, UNKNOWN_DISK_SPACE);
@@ -791,13 +791,13 @@ public class FSDirectory implements Closeable {
     } finally {
       if (removedSrc != null) {
         // Rename failed - restore src
-        removedSrc.setLocalName(srcChildName);
+        removedSrc.setLocalNameNoPersistance(srcChildName);
         addChildNoQuotaCheck(srcInodes, srcInodes.length - 1, removedSrc, 
             UNKNOWN_DISK_SPACE);
       }
       if (removedDst != null) {
         // Rename failed - restore dst
-        removedDst.setLocalName(dstChildName);
+        removedDst.setLocalNameNoPersistance(dstChildName);
         addChildNoQuotaCheck(dstInodes, dstInodes.length - 1, removedDst, 
             UNKNOWN_DISK_SPACE);
       }
@@ -1786,9 +1786,13 @@ public class FSDirectory implements Closeable {
    * Count of each ancestor with quota is also updated.
    * Return the removed node; null if the removal fails.
    */
-  private INode removeChild(INode[] pathComponents, int pos) throws PersistanceException {
-    INode removedNode = 
-      ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
+  private INode removeChild(INode[] pathComponents, int pos, boolean forRename) throws PersistanceException {
+    INode removedNode = null;
+    if(forRename){
+      removedNode = pathComponents[pos];
+    }else{
+      removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
+    }
     if (removedNode != null) {
       INode.DirCounts counts = new INode.DirCounts();
       if(isQuotaEnabled()){     //HOP
@@ -1798,6 +1802,14 @@ public class FSDirectory implements Closeable {
                   -counts.getNsCount(), -counts.getDsCount());
     }
     return removedNode;
+  }
+  
+  private INode removeChild(INode[] pathComponents, int pos) throws PersistanceException {
+     return removeChild(pathComponents, pos, false);
+  }
+   
+  private INode removeChildForRename(INode[] pathComponents, int pos) throws PersistanceException {
+    return removeChild(pathComponents, pos, true);
   }
   
   /**
