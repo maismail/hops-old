@@ -90,9 +90,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   BlockInfo convertToCompleteBlock() throws IOException, PersistanceException {
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "Trying to convert a COMPLETE block";
-    for(ReplicaUnderConstruction replica : getExpectedReplicas()){
-      remove(replica);
-    }
+    complete();
     return new BlockInfo(this);
   }
 
@@ -289,9 +287,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return this.primaryNodeIndex;
   }
 
-  //HOP: Mahmoud: i've added this method to encapsulate the removal of all expected replicas
-  //              once the block is completed in BlockManager.completeBlock
-  public void complete() throws PersistanceException {
+  private void complete() throws PersistanceException {
     for (ReplicaUnderConstruction rep : getExpectedReplicas()) {
       EntityManager.remove(rep);
     }

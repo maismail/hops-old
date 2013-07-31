@@ -545,6 +545,7 @@ public class BlockManager {
    */
   public boolean commitOrCompleteLastBlock(MutableBlockCollection bc, 
       Block commitBlock) throws IOException, PersistanceException {
+    
     if(commitBlock == null)
       return false; // not committing, this is a block allocation retry
     BlockInfo lastBlock = bc.getLastBlock();
@@ -554,8 +555,16 @@ public class BlockManager {
       return false; // already completed (e.g. by syncBlock)
     
     final boolean b = commitBlock((BlockInfoUnderConstruction)lastBlock, commitBlock);
+    LOG.debug("commitOrCompleteLastBlock. Commited Block "+lastBlock.getBlockId());
     if(countNodes(lastBlock).liveReplicas() >= minReplication)
+    {
       completeBlock(bc, bc.numBlocks()-1, false);
+      LOG.debug("commitOrCompleteLastBlock. Completed Block "+lastBlock.getBlockId());
+    }
+    else
+    {
+      LOG.debug("commitOrCompleteLastBlock. Completed FAILED. Block "+lastBlock.getBlockId());
+    }
     return b;
   }
 
