@@ -2946,9 +2946,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               tla.addLease(TransactionLockManager.LockType.WRITE);
               tla.addLeasePath(TransactionLockManager.LockType.WRITE);
               tla.addBlock(TransactionLockManager.LockType.WRITE);
-              //addReplica(TransactionLockManager.LockType.WRITE).
+              tla.addReplica(TransactionLockManager.LockType.WRITE);
               //addCorrupt(TransactionLockManager.LockType.WRITE).
-              //addReplicaUc(TransactionLockManager.LockType.WRITE).
+              tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
               //addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE).
               tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
@@ -3692,14 +3692,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       return;
     }
 
-    // Adjust disk space consumption if required
-    final long diff = fileINode.getPreferredBlockSize() - commitBlock.getNumBytes();    
-    if (diff > 0) {
-      try {
-        String path = leaseManager.findPath(fileINode);
-        dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
-      } catch (IOException e) {
-        LOG.warn("Unexpected exception while updating disk space.", e);
+    if (dir.isQuotaEnabled()) { //HOP
+      // Adjust disk space consumption if required
+      final long diff = fileINode.getPreferredBlockSize() - commitBlock.getNumBytes();
+      if (diff > 0) {
+        try {
+          String path = leaseManager.findPath(fileINode);
+          dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
+        } catch (IOException e) {
+          LOG.warn("Unexpected exception while updating disk space.", e);
+        }
       }
     }
   }
