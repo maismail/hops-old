@@ -29,6 +29,9 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /**
  * I-node for file being written.
@@ -122,9 +125,13 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   // use the modification time as the access time
   //
   INodeFile convertToInodeFile() throws PersistanceException {
-    assert allBlocksComplete() : "Can't finalize inode " + this
+//    assert allBlocksComplete() : "Can't finalize inode " + this
+//      + " since it contains non-complete blocks! Blocks are "
+//      + getBlocks();
+    if(! allBlocksComplete() ) 
+    throw new StorageException("Can't finalize inode " + this
       + " since it contains non-complete blocks! Blocks are "
-      + getBlocks();
+      + getBlocks());
     INodeFile obj = new INodeFile(this);
     obj.setAccessTime(getModificationTime());
     return obj;
@@ -137,6 +144,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   private boolean allBlocksComplete() throws PersistanceException {
     for (BlockInfo b : getBlocks()) {
       if (!b.isComplete()) {
+        EntityContext.log("", EntityContext.CacheHitState.LOSS, "Blok is not comple ", String.valueOf(b.getBlockId()));
         return false;
       }
     }
