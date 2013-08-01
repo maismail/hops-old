@@ -170,6 +170,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     newBlocks.remove(block.getBlockId());
     modifiedBlocks.remove(block.getBlockId());
     removedBlocks.put(block.getBlockId(), attachedBlock);
+    removeBlockFromInodeBlocks(block);
     log("removed-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId())});
   }
 
@@ -185,6 +186,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
     blocks.put(block.getBlockId(), block);
     modifiedBlocks.put(block.getBlockId(), block);
+    updateInodeBlocks(block);
     log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId())});
   }
 
@@ -205,5 +207,28 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
 
     return finalList;
+  }
+
+  private void updateInodeBlocks(BlockInfo newBlock/*new or updated block*/) {
+    List<BlockInfo> blockList = inodeBlocks.get(newBlock.getInodeId());
+
+    if (blockList != null) {
+      if (blockList.contains(newBlock)) {
+        BlockInfo oldBlock = blockList.remove(blockList.indexOf(newBlock));
+//        LOG.debug("xxxxxxxxx  blk_id "+newBlock.getBlockId()+" old state "+oldBlock.getBlockUCState()+" new state "+newBlock.getBlockUCState()+" inode id "+newBlock.getInodeId()+" blocks are "+(blockList.size()+1));
+        blockList.add(newBlock);
+      }      
+    }
+  }
+
+  private void removeBlockFromInodeBlocks(BlockInfo block) throws TransactionContextException {
+    List<BlockInfo> blockList = inodeBlocks.get(block.getInodeId());
+    if (blockList != null) {
+      if (blockList.contains(block)) {
+        blockList.remove(block);
+      } else {
+        throw new TransactionContextException("Trying to remove a block that does not exist");
+      }
+    }
   }
 }
