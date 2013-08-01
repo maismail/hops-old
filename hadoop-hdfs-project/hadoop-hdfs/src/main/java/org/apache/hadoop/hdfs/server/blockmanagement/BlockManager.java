@@ -3524,5 +3524,38 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     return scheduledWork;
   }
+  
+   public BlockInfo tryToCompleteBlock(final MutableBlockCollection bc,
+      final int blkIndex) throws IOException, PersistanceException {
+    
+    if(blkIndex < 0)
+      return null;
+    BlockInfo curBlock = bc.getBlocks()[blkIndex];
+    LOG.debug("tryToCompleteBlock. blkId = "+curBlock.getBlockId());
+    if(curBlock.isComplete())
+      return curBlock;
+    BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
+    int numNodes = ucBlock.numNodes();
+    if (numNodes < minReplication)
+      return null;
+    if(ucBlock.getBlockUCState() != BlockUCState.COMMITTED)
+      return null;
+    BlockInfo completeBlock = ucBlock.convertToCompleteBlock();
+    // replace penultimate block in file
+    bc.setBlock(blkIndex, completeBlock);
+    
+    // Since safe-mode only counts complete blocks, and we now have
+    // one more complete block, we need to adjust the total up, and
+    // also count it as safe, if we have at least the minimum replica
+    // count. (We may not have the minimum replica count yet if this is
+    // a "forced" completion when a file is getting closed by an
+    // OP_CLOSE edit on the standby).
+    namesystem.adjustSafeModeBlockTotals(0, 1);
+    namesystem.incrementSafeBlockCount(
+        Math.min(numNodes, minReplication));
+    
+    // replace block in the blocksMap
+    return blocksMap.replaceBlock(completeBlock);
+  }
   //END_HOP_CODE
 }

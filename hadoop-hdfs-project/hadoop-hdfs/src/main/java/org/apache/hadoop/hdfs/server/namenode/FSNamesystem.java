@@ -208,6 +208,7 @@ import java.util.SortedSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
@@ -2883,7 +2884,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * replicated.  If not, return false. If checkall is true, then check
    * all blocks, otherwise check only penultimate block.
    */
-  boolean checkFileProgress(INodeFile v, boolean checkall) throws PersistanceException {
+  boolean checkFileProgress(INodeFile v, boolean checkall) throws PersistanceException, IOException {
     readLock();
     try {
       if (checkall) {
@@ -2892,10 +2893,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         //
         for (BlockInfo block: v.getBlocks()) {
           if (!block.isComplete()) {
+            BlockInfo cBlock = blockManager.tryToCompleteBlock((MutableBlockCollection) v, block.getBlockIndex());
+            if(cBlock != null){
+              block = cBlock;
+            }
+            if (!block.isComplete()) {
             LOG.info("BLOCK* checkFileProgress: " + block
                 + " has not reached minimal replication "
                 + blockManager.minReplication);
             return false;
+            }
           }
         }
       } else {
@@ -2904,10 +2911,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         //
         BlockInfo b = v.getPenultimateBlock();
         if (b != null && !b.isComplete()) {
-          LOG.info("BLOCK* checkFileProgress: " + b
-              + " has not reached minimal replication "
-              + blockManager.minReplication);
-          return false;
+          blockManager.tryToCompleteBlock((MutableBlockCollection) v, b.getBlockIndex());
+          b = v.getPenultimateBlock();
+          if (!b.isComplete()) {
+            LOG.info("BLOCK* checkFileProgress: " + b
+                    + " has not reached minimal replication "
+                    + blockManager.minReplication);
+            return false;
+          }
+
         }
       }
       return true;
