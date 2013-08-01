@@ -83,6 +83,8 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                     retry = true;
                 } catch (IOException ex) {
                     exception = ex;
+                    rollback = true;
+                    retry = false;
                 } finally {
                     try {
                         if (!rollback) {
