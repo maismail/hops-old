@@ -87,7 +87,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * length) has not been committed by the client or it does not have at least a
    * minimal number of replicas reported from data-nodes.
    */
-  BlockInfo convertToCompleteBlock() throws IOException, PersistanceException {
+  BlockInfo convertToCompleteBlock() throws  PersistanceException {
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "Trying to convert a COMPLETE block";
     complete();
@@ -219,9 +219,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
 
   @Override
   public String toString() {
-    final StringBuilder b = new StringBuilder(100);
-    appendStringTo(b);
-    return b.toString();
+    return "BlkInfoUnderConstruction FIXME "+super.toString();
   }
 
   @Override
@@ -229,11 +227,12 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     super.appendStringTo(sb);
     appendUCParts(sb);
   }
+  
 
   private void appendUCParts(StringBuilder sb) {
-    sb.append("{blockUCState=").append(blockUCState)
-            .append(", primaryNodeIndex=").append(primaryNodeIndex)
-            .append(", replicas=[");
+//    sb.append("{blockUCState=").append(blockUCState)
+//            .append(", primaryNodeIndex=").append(primaryNodeIndex)
+//            .append(", replicas=[");
     //HOP: FIXME:
     /*Iterator<ReplicaUnderConstruction> iter = replicas.iterator();
      if (iter.hasNext()) {
