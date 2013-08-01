@@ -65,6 +65,9 @@ public class BlockInfo extends Block {
     ByBlockIndex() {
       @Override
       public int compare(BlockInfo o1, BlockInfo o2) {
+        if(o1.getBlockIndex() == o2.getBlockIndex()){
+          throw new IllegalStateException("A file cannot have 2 blocks with the same index");
+        }
         if (o1.getBlockIndex() < o2.getBlockIndex()) {
           return -1;
         } else {
@@ -75,6 +78,9 @@ public class BlockInfo extends Block {
     ByGenerationStamp() {
       @Override
       public int compare(BlockInfo o1, BlockInfo o2) {
+        if(o1.getGenerationStamp() == o2.getGenerationStamp()){
+          throw new IllegalStateException("A file cannot have 2 blocks with the same generation stamp");
+        }
         if (o1.getGenerationStamp() < o2.getGenerationStamp()) {
           return -1;
         } else {
@@ -336,6 +342,11 @@ public class BlockInfo extends Block {
     // Sufficient to rely on super's implementation
     return (this == obj) || super.equals(obj);
   }
+  
+  @Override
+  public String toString(){
+   return "ID = "+getBlockId()+"  State = "+getBlockUCState();
+  }
   //START_HOP_CODE
   
   public void setBlockId(long bid) throws PersistanceException {
@@ -374,4 +385,6 @@ public class BlockInfo extends Block {
     EntityManager.remove(blk);
   }
   //END_HOP_CODE
+
+
 }
