@@ -142,10 +142,12 @@ public class BlockInfo extends Block {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());      
-    } else {
-      setINodeIdNoPersistance(-1);
-      remove();
-    }
+    } 
+//  we removed the block removal from inside INodeFile to BlocksMap 
+//    else {
+//      setINodeIdNoPersistance(-1);
+//      remove();
+//    }
   }
 
   /**

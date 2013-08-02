@@ -163,8 +163,8 @@ public class INodeFile extends INode implements BlockCollection {
     BlockInfo[] blocks = getBlocks();
     if(blocks != null && v != null) {
       for (BlockInfo blk : blocks) {
-        v.add(blk);
         blk.setBlockCollection(null);
+        v.add(blk);
       }
     }
     setBlocks(null);
