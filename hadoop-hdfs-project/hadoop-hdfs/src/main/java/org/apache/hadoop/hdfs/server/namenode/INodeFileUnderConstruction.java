@@ -159,8 +159,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
     if (!blocks[size_1].equals(oldblock)) {
       throw new IOException("Trying to delete non-last block " + oldblock);
     }
-
-    removeBlock((BlockInfo) oldblock);  
+    
+    removeBlock(blocks[blocks.length-1]);  
   }
 
   /**
@@ -199,17 +199,17 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   }
  
   //START_HOP_CODE
-    public void removeBlock(BlockInfo block) throws PersistanceException {
+  public void removeBlock(BlockInfo block) throws PersistanceException {
     BlockInfo[] blks = getBlocks();
     int index = block.getBlockIndex();
-    
+
     block.setBlockCollection(null);
-    
+
     if (index != blks.length) {
-      for (int i = index+1; i < blks.length; i++) {
-        blks[i].setBlockIndex(i-1);
+      for (int i = index + 1; i < blks.length; i++) {
+        blks[i].setBlockIndex(i - 1);
       }
     }
   }
-  //END_HOP_CODE
+   //END_HOP_CODE
 }
