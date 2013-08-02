@@ -156,9 +156,9 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
 
   @Override
   public void remove(BlockInfo block) throws PersistanceException {
-    if (block.getBlockId() == 0l) {
-      throw new TransactionContextException("Unassigned-Id block passed to be removed");
-    }
+//    if (block.getBlockId() == 0l) {
+//      throw new TransactionContextException("Unassigned-Id block passed to be removed");
+//    }
 
     BlockInfo attachedBlock = blocks.get(block.getBlockId());
 
