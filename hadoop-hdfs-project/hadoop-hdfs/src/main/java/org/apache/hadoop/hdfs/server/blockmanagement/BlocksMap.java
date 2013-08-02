@@ -68,8 +68,8 @@ class BlocksMap {
   void removeBlock(Block block) throws PersistanceException {
     BlockInfo blockInfo = getStoredBlock(block);
     if (blockInfo == null)
-      return;    
-    blockInfo.setBlockCollection(null);
+      return;  
+    blockInfo.remove();
     blockInfo.removeAllReplicas();
   }
   
