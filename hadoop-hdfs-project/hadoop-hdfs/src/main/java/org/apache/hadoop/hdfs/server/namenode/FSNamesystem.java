@@ -2448,7 +2448,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
                     blockSize = pendingFile.getPreferredBlockSize();
                     //clientNode = pendingFile.getClientNode(); HOP
-                    clientNode = getBlockManager().getDatanodeManager().getDatanode(pendingFile.getClientNode());
+                    clientNode = pendingFile.getClientNode() == null ? null : getBlockManager().getDatanodeManager().getDatanode(pendingFile.getClientNode());
                     replication = pendingFile.getBlockReplication();
                 } finally {
                     readUnlock();
