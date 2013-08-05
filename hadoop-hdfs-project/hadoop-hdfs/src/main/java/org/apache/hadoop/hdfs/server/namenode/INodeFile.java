@@ -172,7 +172,7 @@ public class INodeFile extends INode implements BlockCollection {
   }
   
   @Override
-  public String getName() {
+  public String getName() throws PersistanceException {
     // Get the full path name of this inode.
     return getFullPathName();
   }

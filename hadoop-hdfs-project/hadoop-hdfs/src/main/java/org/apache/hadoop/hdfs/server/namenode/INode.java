@@ -323,16 +323,21 @@ public abstract class INode implements Comparable<byte[]> {
     this.name = name;
   }
 
-  public String getFullPathName(){
+  public String getFullPathName() throws PersistanceException{
     // Get the full path name of this inode.
     return FSDirectory.getFullPathName(this);
   }
 
   @Override
   public String toString() {
+      try {
     return "\"" + getFullPathName() + "\":"
-            + getUserName() + ":" + getGroupName() + ":"
-            + (isDirectory() ? "d" : "-") + getFsPermission();
+    + getUserName() + ":" + getGroupName() + ":"
+    + (isDirectory()? "d": "-") + getFsPermission();
+      } catch (PersistanceException ex) {
+          Logger.getLogger(INode.class.getName()).log(Level.SEVERE, null, ex);
+      }
+      return null;
   }
 
   /**
@@ -608,7 +613,7 @@ public abstract class INode implements Comparable<byte[]> {
     return true;
   }
   
-  public String getAbsolutePathName(){
+  public String getAbsolutePathName() throws PersistanceException {
     // Get the full path name of this inode.
     return FSDirectory.getAbsolutePathName(this);
   }

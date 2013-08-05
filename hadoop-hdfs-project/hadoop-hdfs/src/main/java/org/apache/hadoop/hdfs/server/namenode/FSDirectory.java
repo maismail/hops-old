@@ -1436,10 +1436,10 @@ public class FSDirectory implements Closeable {
   }
 
   /** Return the full path name of the specified inode */
-  static String getFullPathName(INode inode) {
+  static String getFullPathName(INode inode) throws PersistanceException {
     // calculate the depth of this inode from root
     int depth = 0;
-    for (INode i = inode; i != null; i = i.parent) {
+    for (INode i = inode; i != null; i = i.getParent()) {
       depth++;
     }
     INode[] inodes = new INode[depth];
@@ -1452,7 +1452,7 @@ public class FSDirectory implements Closeable {
         return null;
       }
       inodes[depth-i-1] = inode;
-      inode = inode.parent;
+      inode = inode.getParent();
     }
     return getFullPathName(inodes, depth-1);
   }
@@ -2271,7 +2271,7 @@ public class FSDirectory implements Closeable {
     addRootINode.handle();
   }
    
-  static String getAbsolutePathName(INode inode) {
+  static String getAbsolutePathName(INode inode) throws PersistanceException {
     String path = getFullPathName(inode);
     if (!path.equals(Path.SEPARATOR)) {
       path = Path.SEPARATOR + path;
