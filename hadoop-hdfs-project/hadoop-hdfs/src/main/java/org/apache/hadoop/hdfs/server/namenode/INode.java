@@ -323,21 +323,16 @@ public abstract class INode implements Comparable<byte[]> {
     this.name = name;
   }
 
-  public String getFullPathName() throws PersistanceException{
+  public String getFullPathName(){
     // Get the full path name of this inode.
     return FSDirectory.getFullPathName(this);
   }
 
   @Override
   public String toString() {
-      try {
     return "\"" + getFullPathName() + "\":"
-    + getUserName() + ":" + getGroupName() + ":"
-    + (isDirectory()? "d": "-") + getFsPermission();
-      } catch (PersistanceException ex) {
-          Logger.getLogger(INode.class.getName()).log(Level.SEVERE, null, ex);
-      }
-      return null;
+            + getUserName() + ":" + getGroupName() + ":"
+            + (isDirectory() ? "d" : "-") + getFsPermission();
   }
 
   /**
@@ -613,6 +608,11 @@ public abstract class INode implements Comparable<byte[]> {
     return true;
   }
   
+  public String getAbsolutePathName(){
+    // Get the full path name of this inode.
+    return FSDirectory.getAbsolutePathName(this);
+  }
+
   protected void save() throws PersistanceException {
     save(this);
   }
@@ -628,6 +628,5 @@ public abstract class INode implements Comparable<byte[]> {
   protected void remove(INode node) throws PersistanceException {
     EntityManager.remove(node);
   }
-
   //END_HOP_CODE:
 }

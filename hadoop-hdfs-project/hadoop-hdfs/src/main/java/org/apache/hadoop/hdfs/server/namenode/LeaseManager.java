@@ -247,16 +247,18 @@ public class LeaseManager {
     Lease lease = getLease(pendingFile.getClientName());
     if (lease != null) {
       String src = null;
-      try {
+      String pendingFilePath = pendingFile.getAbsolutePathName();
+//      try { // FIXME [M] is this solution correct?!
         for (LeasePath lpath : lease.getPaths()) {
-          if (fsnamesystem.dir.getINode(lpath.getPath()).getFullPathName().equals(pendingFile.getFullPathName())) {
+//          if (fsnamesystem.dir.getINode(lpath.getPath()).getFullPathName().equals(pendingFile.getFullPathName())) {
+          if(lpath.getPath().equals(pendingFilePath)){
             src = lpath.getPath();
             break;
           }
         }
-      } catch (UnresolvedLinkException e) {
-        throw new AssertionError("Lease files should reside on this FS");
-      }
+//      } catch (UnresolvedLinkException e) {
+//        throw new AssertionError("Lease files should reside on this FS");
+//      }
       if (src != null) {
         return src;
       }
