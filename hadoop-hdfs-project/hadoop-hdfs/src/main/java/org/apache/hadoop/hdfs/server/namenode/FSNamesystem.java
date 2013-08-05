@@ -5519,18 +5519,22 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      final  ExtendedBlock newBlock, final DatanodeID[] newNodes)
       throws IOException {
       TransactionalRequestHandler updatePipelineHanlder = new TransactionalRequestHandler(OperationType.UPDATE_PIPELINE) {
-          long inodeId;
+        LinkedList<INode> resolvedInodes = null;  
+        long inodeId;
           @Override
-          public void setUp() throws StorageException {
+          public void setUp() throws PersistanceException {
               inodeId = INodeUtil.findINodeIdByBlock(oldBlock.getBlockId());
+              resolvedInodes = INodeUtil.findPathINodesById(inodeId);
           }
 
           @Override
           public void acquireLock() throws PersistanceException, IOException {
-              TransactionLockManager lm = new TransactionLockManager();
-              lm.addINode(TransactionLockManager.INodeLockType.WRITE).
-                      addBlock(TransactionLockManager.LockType.WRITE, oldBlock.getBlockId()).
-                      addReplicaUc(TransactionLockManager.LockType.READ);
+              TransactionLockManager lm = new TransactionLockManager(resolvedInodes);
+              lm.addINode(INodeResolveType.FROM_CHILD_TO_ROOT, INodeLockType.WRITE).
+                      addBlock(LockType.WRITE, oldBlock.getBlockId()).
+                      addReplicaUc(LockType.READ).
+                      addLease(LockType.READ).
+                      addLeasePath(LockType.READ);
               lm.acquireByBlock(inodeId);
           }
 
