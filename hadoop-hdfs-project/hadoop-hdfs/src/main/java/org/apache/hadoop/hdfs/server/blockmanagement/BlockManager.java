@@ -3509,7 +3509,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        return computeReplicationWorkForBlock(b, priority);
+        return computeReplicationWorkForBlockInternal(b, priority);
       }
     };
     return (Integer) computeReplicationWorkHandler.handle();
