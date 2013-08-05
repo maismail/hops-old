@@ -18,7 +18,9 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -97,7 +99,14 @@ class BlocksMap {
   Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) throws PersistanceException {
     if(storedBlock == null)
       return null;
-   return Arrays.asList(storedBlock.getDatanodes(datanodeManager)).iterator();
+   DatanodeDescriptor[] desc = storedBlock.getDatanodes(datanodeManager);
+   if(desc == null){
+     List<DatanodeDescriptor> empty_datanode_list = Collections.unmodifiableList(new ArrayList<DatanodeDescriptor>());
+     return empty_datanode_list.iterator();
+   }
+   else{
+   return Arrays.asList(desc).iterator();
+   }
   }
 
   /** counts number of containing nodes. Better than using iterator. */

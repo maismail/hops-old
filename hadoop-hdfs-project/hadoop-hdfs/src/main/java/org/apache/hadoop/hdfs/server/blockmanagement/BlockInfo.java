@@ -312,13 +312,17 @@ public class BlockInfo extends Block {
     save();
   }
   
-  protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends Replica> replicas){
+  protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends Replica> replicas) {
     int numLocations = replicas.size();
-    DatanodeDescriptor[] locations = new DatanodeDescriptor[numLocations];
+    List<DatanodeDescriptor> list = new ArrayList<DatanodeDescriptor>();
     for (int i = 0; i < numLocations; i++) {
-      locations[i] = datanodeMgr.getDatanode(replicas.get(i).getStorageId());
+      DatanodeDescriptor desc = datanodeMgr.getDatanode(replicas.get(i).getStorageId());
+      if (desc != null) {
+        list.add(desc);
+      }
     }
-    return locations;
+    DatanodeDescriptor[] locations = new DatanodeDescriptor[list.size()];
+    return list.toArray(locations);
   }
     
   protected void add(IndexedReplica replica) throws PersistanceException {
