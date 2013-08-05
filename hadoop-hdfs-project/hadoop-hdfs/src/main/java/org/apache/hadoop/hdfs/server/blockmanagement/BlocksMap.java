@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -131,11 +132,7 @@ class BlocksMap {
   }
 
   int size() throws IOException {
-    TransactionalRequestHandler getAllBlocksSizeHander = new TransactionalRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
-      @Override
-      public void acquireLock() throws PersistanceException, IOException {
-      }
-
+    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
@@ -146,11 +143,7 @@ class BlocksMap {
   }
 
   Iterable<BlockInfo> getBlocks() throws IOException {
-    TransactionalRequestHandler getAllBlocksHander = new TransactionalRequestHandler(OperationType.GET_ALL_BLOCKS) {
-      @Override
-      public void acquireLock() throws PersistanceException, IOException {
-      }
-
+    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         //FIXME. Very inefficient way of block processing
