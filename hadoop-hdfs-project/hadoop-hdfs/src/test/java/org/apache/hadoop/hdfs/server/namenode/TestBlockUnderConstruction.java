@@ -38,7 +38,13 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.INodeResolveType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -81,57 +87,74 @@ public class TestBlockUnderConstruction {
     }
   }
 
-  private void verifyFileBlocks(String file,
-                                boolean isFileOpen) throws IOException, PersistanceException {
-    FSNamesystem ns = cluster.getNamesystem();
-    final INodeFile inode = INodeFile.valueOf(ns.dir.getINode(file), file);
-    assertTrue("File " + inode.toString() +
-        " isUnderConstruction = " + inode.isUnderConstruction() +
-        " expected to be " + isFileOpen,
-        inode.isUnderConstruction() == isFileOpen);
-    BlockInfo[] blocks = inode.getBlocks();
-    assertTrue("File does not have blocks: " + inode.toString(),
-        blocks != null && blocks.length > 0);
-    
-    int idx = 0;
-    BlockInfo curBlock;
-    // all blocks but the last two should be regular blocks
-    for(; idx < blocks.length - 2; idx++) {
-      curBlock = blocks[idx];
-      assertTrue("Block is not complete: " + curBlock,
-          curBlock.isComplete());
-      assertTrue("Block is not in BlocksMap: " + curBlock,
-          ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
-    }
+  private void verifyFileBlocks(final String file,
+                                final boolean isFileOpen) throws IOException{
+    TransactionalRequestHandler verifyFileBlocksHandler = new TransactionalRequestHandler(OperationType.VERIFY_FILE_BLOCKS) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(INodeResolveType.ONLY_PATH,
+                INodeLockType.READ,
+                new String[]{file});
+        lm.addBlock(LockType.READ);
+        lm.acquire();
+      }
+      
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        FSNamesystem ns = cluster.getNamesystem();
+        final INodeFile inode = INodeFile.valueOf(ns.dir.getINode(file), file);
+        assertTrue("File " + inode.toString()
+                + " isUnderConstruction = " + inode.isUnderConstruction()
+                + " expected to be " + isFileOpen,
+                inode.isUnderConstruction() == isFileOpen);
+        BlockInfo[] blocks = inode.getBlocks();
+        assertTrue("File does not have blocks: " + inode.toString(),
+                blocks != null && blocks.length > 0);
 
-    // the penultimate block is either complete or
-    // committed if the file is not closed
-    if(idx > 0) {
-      curBlock = blocks[idx-1]; // penultimate block
-      assertTrue("Block " + curBlock +
-          " isUnderConstruction = " + inode.isUnderConstruction() +
-          " expected to be " + isFileOpen,
-          (isFileOpen && curBlock.isComplete()) ||
-          (!isFileOpen && !curBlock.isComplete() == 
-            (curBlock.getBlockUCState() ==
-              BlockUCState.COMMITTED)));
-      assertTrue("Block is not in BlocksMap: " + curBlock,
-          ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
-    }
+        int idx = 0;
+        BlockInfo curBlock;
+        // all blocks but the last two should be regular blocks
+        for (; idx < blocks.length - 2; idx++) {
+          curBlock = blocks[idx];
+          assertTrue("Block is not complete: " + curBlock,
+                  curBlock.isComplete());
+          assertTrue("Block is not in BlocksMap: " + curBlock,
+                  ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+        }
 
-    // The last block is complete if the file is closed.
-    // If the file is open, the last block may be complete or not. 
-    curBlock = blocks[idx]; // last block
-    if (!isFileOpen) {
-      assertTrue("Block " + curBlock + ", isFileOpen = " + isFileOpen,
-          curBlock.isComplete());
-    }
-    assertTrue("Block is not in BlocksMap: " + curBlock,
-        ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+        // the penultimate block is either complete or
+        // committed if the file is not closed
+        if (idx > 0) {
+          curBlock = blocks[idx - 1]; // penultimate block
+          assertTrue("Block " + curBlock
+                  + " isUnderConstruction = " + inode.isUnderConstruction()
+                  + " expected to be " + isFileOpen,
+                  (isFileOpen && curBlock.isComplete())
+                  || (!isFileOpen && !curBlock.isComplete()
+                  == (curBlock.getBlockUCState()
+                  == BlockUCState.COMMITTED)));
+          assertTrue("Block is not in BlocksMap: " + curBlock,
+                  ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+        }
+
+        // The last block is complete if the file is closed.
+        // If the file is open, the last block may be complete or not. 
+        curBlock = blocks[idx]; // last block
+        if (!isFileOpen) {
+          assertTrue("Block " + curBlock + ", isFileOpen = " + isFileOpen,
+                  curBlock.isComplete());
+        }
+        assertTrue("Block is not in BlocksMap: " + curBlock,
+                ns.getBlockManager().getStoredBlock(curBlock) == curBlock);
+        return null;
+      }
+    };
+    verifyFileBlocksHandler.handle();
   }
 
   @Test
-  public void testBlockCreation() throws IOException, PersistanceException {
+  public void testBlockCreation() throws IOException {
     Path file1 = new Path(BASE_DIR, "file1.dat");
     FSDataOutputStream out = TestFileCreation.createFile(hdfs, file1, 3);
 
