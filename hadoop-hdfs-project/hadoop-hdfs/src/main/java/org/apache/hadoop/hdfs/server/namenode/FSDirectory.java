@@ -2270,14 +2270,5 @@ public class FSDirectory implements Closeable {
     };
     addRootINode.handle();
   }
-   
-  static String getAbsolutePathName(INode inode) throws PersistanceException {
-    String path = getFullPathName(inode);
-    if (!path.equals(Path.SEPARATOR)) {
-      path = Path.SEPARATOR + path;
-    }
-    return path;
-  }
-  
   //END_HOP_CODE
 }

@@ -5600,9 +5600,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     }
     blockinfo.setExpectedLocations(descriptors);
-
-    String src = leaseManager.findPath(pendingFile);
-    dir.persistBlocks(src, pendingFile);
+//    FIXME[M] do we need this code?!
+//    String src = leaseManager.findPath(pendingFile);
+//    dir.persistBlocks(src, pendingFile);
   }
 
   // rename was successful. If any part of the renamed subtree had

@@ -612,11 +612,6 @@ public abstract class INode implements Comparable<byte[]> {
     //FIXME:
     return true;
   }
-  
-  public String getAbsolutePathName() throws PersistanceException {
-    // Get the full path name of this inode.
-    return FSDirectory.getAbsolutePathName(this);
-  }
 
   protected void save() throws PersistanceException {
     save(this);
