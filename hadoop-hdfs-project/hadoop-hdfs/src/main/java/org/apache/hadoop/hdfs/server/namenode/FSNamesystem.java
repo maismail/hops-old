@@ -3313,29 +3313,29 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-    HdfsFileStatus stat = null;
-    FSPermissionChecker pc = getPermissionChecker();
-    readLock();
-    try {
-      checkOperation(OperationCategory.READ);
-
-      if (!DFSUtil.isValidName(src)) {
-        throw new InvalidPathException("Invalid file name: " + src);
+        HdfsFileStatus stat = null;
+        FSPermissionChecker pc = getPermissionChecker();
+        readLock();
+        try {
+          checkOperation(OperationCategory.READ);
+          
+          if (isPermissionEnabled) {
+            checkTraverse(pc, src);
+          }
+          stat = dir.getFileInfo(src, resolveLink);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "getfileinfo", src);
+          throw e;
+        } finally {
+          readUnlock();
+        }
+        logAuditEvent(true, "getfileinfo", src);
+        return stat;
       }
-      if (isPermissionEnabled) {
-        checkTraverse(pc, src);
-      }
-      stat = dir.getFileInfo(src, resolveLink);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "getfileinfo", src);
-      throw e;
-    } finally {
-      readUnlock();
-    }
-    logAuditEvent(true, "getfileinfo", src);
-    return stat;
-  }
     };
+    if (!DFSUtil.isValidName(src)) {
+      throw new InvalidPathException("Invalid file name: " + src);
+    }
     return (HdfsFileStatus) getFileInfoHandler.handleWithReadLock(this);
   }
 
