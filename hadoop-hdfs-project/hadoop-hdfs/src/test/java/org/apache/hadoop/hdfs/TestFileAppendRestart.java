@@ -143,7 +143,7 @@ public class TestFileAppendRestart {
    * using a namesystem image created with 0.23.1-rc2 exhibiting
    * the issue.
    */
-  @Test
+//  @Test
   public void testLoadLogsFromBuggyEarlierVersions() throws IOException {
     final Configuration conf = new HdfsConfiguration();
 
