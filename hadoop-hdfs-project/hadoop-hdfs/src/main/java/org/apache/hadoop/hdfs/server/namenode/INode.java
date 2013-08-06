@@ -346,6 +346,9 @@ public abstract class INode implements Comparable<byte[]> {
    */
   INodeDirectory getParent() throws PersistanceException{
     //START_HOP_CODE
+    if(isRoot()){
+      return null;
+    }
     if(parent == null){
         parent = (INodeDirectory) EntityManager.find(INode.Finder.ByPKey, getParentId());
     }
