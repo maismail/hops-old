@@ -63,6 +63,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -2010,15 +2011,11 @@ public class FSDirectory implements Closeable {
     try {
       //HOP return getRootDir().numItemsInTree();
       // TODO[Hooman]: after fixing quota, we can use root.getNscount instead of this.
-      TransactionalRequestHandler totalInodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
+      LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
           return da.countAll();
-        }
-
-        @Override
-        public void acquireLock() throws PersistanceException, IOException {
         }
       };
       return (Integer) totalInodesHandler.handle();
