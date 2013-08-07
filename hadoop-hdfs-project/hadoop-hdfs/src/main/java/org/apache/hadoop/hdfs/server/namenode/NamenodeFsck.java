@@ -265,7 +265,7 @@ public class NamenodeFsck {
   }
   
   @VisibleForTesting
-  void check(String parent, HdfsFileStatus file, Result res) throws IOException, PersistanceException {
+  void check(String parent, HdfsFileStatus file, Result res) throws IOException {
     String path = file.getFullName(parent);
     boolean isOpen = false;
 

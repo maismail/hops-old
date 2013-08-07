@@ -1337,7 +1337,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        LocatedBlocks blocks = getBlockLocations(src, offset, length, true, true,
+        LocatedBlocks blocks = getBlockLocationsInternal(src, offset, length, true, true,
                 true);
         if (blocks != null) {
           blockManager.getDatanodeManager().sortLocatedBlocks(
@@ -1362,7 +1362,36 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#getBlockLocations(String, long, long)
    * @throws FileNotFoundException, UnresolvedLinkException, IOException
    */
-  LocatedBlocks getBlockLocations(String src, long offset, long length,
+  LocatedBlocks getBlockLocations(final String src, final long offset, final long length,
+      final boolean doAccessTime, final boolean needBlockToken, final boolean checkSafeMode)
+      throws FileNotFoundException, UnresolvedLinkException, IOException {
+    TransactionalRequestHandler getBlockLocationsHandler = new TransactionalRequestHandler(OperationType.GET_BLOCK_LOCATIONS) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.READ, new String[]{src});
+        lm.addBlock(LockType.READ).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addReplicaUc(LockType.READ);
+        lm.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return getBlockLocationsInternal(src, offset, length, doAccessTime, needBlockToken, checkSafeMode);
+      }
+    };
+    return (LocatedBlocks) getBlockLocationsHandler.handle();
+  }
+  
+  /**
+   * Get block locations within the specified range.
+   * @see ClientProtocol#getBlockLocations(String, long, long)
+   * @throws FileNotFoundException, UnresolvedLinkException, IOException
+   */
+  LocatedBlocks getBlockLocationsInternal(String src, long offset, long length,
       boolean doAccessTime, boolean needBlockToken, boolean checkSafeMode)
       throws FileNotFoundException, UnresolvedLinkException, IOException, PersistanceException {
     FSPermissionChecker pc = getPermissionChecker();

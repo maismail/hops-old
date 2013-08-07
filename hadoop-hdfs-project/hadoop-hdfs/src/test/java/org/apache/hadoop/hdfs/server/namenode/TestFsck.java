@@ -809,7 +809,7 @@ public class TestFsck {
    * @throws IOException
    */
   @Test
-  public void testFsckMissingReplicas() throws IOException, PersistanceException {
+  public void testFsckMissingReplicas() throws IOException {
     // Desired replication factor
     // Set this higher than NUM_REPLICAS so it's under-replicated
     final short REPL_FACTOR = 2;
