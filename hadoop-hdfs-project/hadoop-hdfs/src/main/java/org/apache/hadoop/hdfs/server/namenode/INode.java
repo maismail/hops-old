@@ -605,7 +605,7 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
   void setModificationTimeForce(long modtime) throws PersistanceException {
-    setModificationTimeNoPersistance(modtime);
+    setModificationTimeForceNoPersistance(modtime);
     save();
   }
   
