@@ -70,7 +70,8 @@ public enum ClusterjConnector implements StorageConnector<Session> {
     Session session = obtainSession();
     if(session.currentTransaction().isActive())
     {
-      throw new StorageException("Can not start Tx inside another Tx");
+      LOG.debug("Can not start Tx inside another Tx");
+      System.exit(0);
     }
     session.currentTransaction().begin();
   }
