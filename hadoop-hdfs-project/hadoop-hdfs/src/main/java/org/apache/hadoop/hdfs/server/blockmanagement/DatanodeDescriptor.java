@@ -29,9 +29,8 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
@@ -360,15 +359,11 @@ public class DatanodeDescriptor extends DatanodeInfo {
   }
   
   public List<BlockInfo> getAllMachineBlocks() throws IOException {
-    TransactionalRequestHandler findBlocksHandler = new TransactionalRequestHandler(OperationType.GET_ALL_MACHINE_BLOCKS) {
+    LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(OperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return da.findByStorageId(getStorageID());
-      }
-
-      @Override
-      public void acquireLock() throws PersistanceException, IOException {
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();

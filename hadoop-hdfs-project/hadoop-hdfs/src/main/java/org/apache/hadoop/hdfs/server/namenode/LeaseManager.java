@@ -44,6 +44,7 @@ import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -126,17 +127,12 @@ public class LeaseManager {
 
   /** @return the number of leases currently in the system */
   public int countLease() throws IOException {
-    //HOP: FIXME: use context
-     return (Integer) new TransactionalRequestHandler(OperationType.COUNT_LEASE) {
+     return (Integer) new LightWeightRequestHandler(OperationType.COUNT_LEASE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.countAll();
       }
-
-       @Override
-       public void acquireLock() throws PersistanceException, IOException {
-       }
     }.handle();
   }
 
@@ -413,18 +409,12 @@ public class LeaseManager {
       }
     };
     
-    //HOP: FIXME: use context
-    TransactionalRequestHandler findExpiredLeaseHandler = new TransactionalRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
-
+    LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         long expiredTime = now() - hardLimit;
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.findByTimeLimit(expiredTime);
-      }
-
-      @Override
-      public void acquireLock() throws PersistanceException, IOException {
       }
     };
     

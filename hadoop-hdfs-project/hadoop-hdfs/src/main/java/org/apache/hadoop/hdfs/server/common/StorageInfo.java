@@ -31,9 +31,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -125,17 +123,12 @@ public class StorageInfo {
   }
   
   //START_HOP_CODE
-  //HOP FIXME use context
   public static StorageInfo getStorageInfoFromDB() throws IOException {
-    TransactionalRequestHandler getStorageInfoHandler = new TransactionalRequestHandler(OperationType.GET_STORAGE_INFO) {
+    LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
-      }
-
-      @Override
-      public void acquireLock() throws PersistanceException, IOException {
       }
     };
     return (StorageInfo) getStorageInfoHandler.handle();
