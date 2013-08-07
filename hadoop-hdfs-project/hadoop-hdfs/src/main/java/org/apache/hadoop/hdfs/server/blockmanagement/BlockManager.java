@@ -3052,7 +3052,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        final Block block = it.next();
+        final Block block = (Block) getParams()[0];
         BlockCollection bc = blocksMap.getBlockCollection(block);
 
         if (bc != null) {
