@@ -66,8 +66,12 @@ public enum ClusterjConnector implements StorageConnector<Session> {
    * begin a transaction.
    */
   @Override
-  public void beginTransaction() {
+  public void beginTransaction() throws StorageException {
     Session session = obtainSession();
+    if(session.currentTransaction().isActive())
+    {
+      throw new StorageException("Can not start Tx inside another Tx");
+    }
     session.currentTransaction().begin();
   }
 
