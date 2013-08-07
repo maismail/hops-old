@@ -114,7 +114,8 @@ public abstract class BlockPlacementPolicy {
                                     List<DatanodeDescriptor> chosenNodes,
                                     HashMap<Node, Node> excludedNodes,
                                     long blocksize) throws PersistanceException {
-    return chooseTarget(srcBC.getName(), numOfReplicas, writer,
+    //HOP: [M] srcPath is not used 
+    return chooseTarget(/*srcBC.getName()*/null, numOfReplicas, writer,
                         chosenNodes, false, excludedNodes, blocksize);
   }
 
