@@ -29,7 +29,7 @@ import org.apache.hadoop.util.IdGenerator;
 @InterfaceAudience.Private
 public class RandomBlockIdGenerator implements IdGenerator {
   private final BlockManager blockManager;
-
+  private static long id = 0;
   RandomBlockIdGenerator(FSNamesystem namesystem) {
     this.blockManager = namesystem.getBlockManager();
   }
@@ -41,7 +41,8 @@ public class RandomBlockIdGenerator implements IdGenerator {
 //      b.setBlockIdNoPersistance(DFSUtil.getRandom().nextLong());
 //    }
 //    return b.getBlockId();
-    return DFSUtil.getRandom().nextLong();
+    //return DFSUtil.getRandom().nextLong();
+    return id++;
   }
 
   /**
