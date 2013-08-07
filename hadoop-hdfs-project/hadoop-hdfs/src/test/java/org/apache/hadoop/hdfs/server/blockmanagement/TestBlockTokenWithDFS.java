@@ -546,14 +546,15 @@ public class TestBlockTokenWithDFS {
       }
     }
   }
-
-  /**
-   * Integration testing of access token, involving NN, DN, and Balancer
-   */
-  @Test
-  public void testEnd2End() throws Exception {
-    Configuration conf = new Configuration();
-    conf.setBoolean(DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, true);
-    new TestBalancer().integrationTest(conf);
-  }
+  
+//HOP: NamenodeProtocol is not supported
+//  /**
+//   * Integration testing of access token, involving NN, DN, and Balancer
+//   */
+//  @Test
+//  public void testEnd2End() throws Exception {
+//    Configuration conf = new Configuration();
+//    conf.setBoolean(DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, true);
+//    new TestBalancer().integrationTest(conf);
+//  }
 }
