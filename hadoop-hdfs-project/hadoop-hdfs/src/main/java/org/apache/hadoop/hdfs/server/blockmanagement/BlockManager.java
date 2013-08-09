@@ -2035,7 +2035,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * block. This is called from FSEditLogLoader whenever a block's state
    * in the namespace has changed or a new block has been created.
    */
-  public void processQueuedMessagesForBlock(Block b) throws IOException, PersistanceException {
+  public void processQueuedMessagesForBlock(Block b) throws IOException {
     Queue<ReportedBlockInfo> queue = pendingDNMessages.takeBlockQueue(b);
     if (queue == null) {
       // Nothing to re-process
@@ -2045,13 +2045,45 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
   
   private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
-      throws IOException, PersistanceException {
+      throws IOException {
+    TransactionalRequestHandler processReportHandler = new TransactionalRequestHandler(OperationType.PROCESS_QUEUED_REPORT) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        inodeId = INodeUtil.findINodeIdByBlock(rbi.getBlock().getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, rbi.getBlock().getBlockId()).
+                addInvalidatedBlock(LockType.WRITE).
+                addReplica(LockType.WRITE).
+                addExcess(LockType.WRITE);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        processAndHandleReportedBlock(
+                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+
+        return null;
+      }
+    };
+    
+      
     for (ReportedBlockInfo rbi : rbis) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Processing previouly queued message " + rbi);
       }
-      processAndHandleReportedBlock(
-          rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+      processReportHandler.setParams(rbi);
+      processReportHandler.handle(namesystem);
     }
   }
   
@@ -2061,7 +2093,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * we are the definitive master node and thus should be up-to-date
    * with the namespace information.
    */
-  public void processAllPendingDNMessages() throws IOException, PersistanceException {
+  public void processAllPendingDNMessages() throws IOException {
     assert !shouldPostponeBlocksFromFuture :
       "processAllPendingDNMessages() should be called after disabling " +
       "block postponement.";

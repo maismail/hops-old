@@ -762,21 +762,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //        // May need to recover
 //        editLog.recoverUnclosedStreams();
 //        
-//        LOG.info("Catching up to latest edits from old active before " +
-//            "taking over writer role in edits logs");
+        LOG.info("Catching up to latest edits from old active before " +
+            "taking over writer role in edits logs");
 //        editLogTailer.catchupDuringFailover();
-//        
-//        blockManager.setPostponeBlocksFromFuture(false);
-//        blockManager.getDatanodeManager().markAllDatanodesStale();
-//        blockManager.clearQueues();
-//        blockManager.processAllPendingDNMessages();
-//        
-//        if (!isInSafeMode() ||
-//            (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
-//          LOG.info("Reprocessing replication and invalidation queues");
-//          blockManager.processMisReplicatedBlocks();
-//        }
-//        
+        
+        blockManager.setPostponeBlocksFromFuture(false);
+        blockManager.getDatanodeManager().markAllDatanodesStale();
+        blockManager.clearQueues();
+        blockManager.processAllPendingDNMessages();
+        
+        if (!isInSafeMode() ||
+            (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
+          LOG.info("Reprocessing replication and invalidation queues");
+          blockManager.processMisReplicatedBlocks();
+        }
+        
 //        if (LOG.isDebugEnabled()) {
 //          LOG.debug("NameNode metadata after re-processing " +
 //              "replication and invalidation queues during failover:\n" +
