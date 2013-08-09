@@ -724,6 +724,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       assert safeMode != null &&
         !safeMode.isPopulatingReplQueues();
       setBlockTotal();
+      performPendingSafeModeOperation();
       blockManager.activate(conf);
     } finally {
       writeUnlock();
