@@ -147,7 +147,7 @@ public class NameNodeAdapter {
         Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
         return l == null ? null : l.getHolder();
       }
-    }.handle();
+    }.handle(null);
   }
 
   /**
@@ -173,7 +173,7 @@ public class NameNodeAdapter {
         return (Object)l.getLastUpdate();
       }
     };
-         return (Long)leaseRenewalTimeHandler.handle();
+         return (Long)leaseRenewalTimeHandler.handle(null);
   }
 
   /**

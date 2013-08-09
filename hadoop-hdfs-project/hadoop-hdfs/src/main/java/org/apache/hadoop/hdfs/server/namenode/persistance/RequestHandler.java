@@ -107,9 +107,9 @@ public abstract class RequestHandler {
     this.opType = opType;
   }
 
-  public Object handle() throws IOException {
-    return run(false, false, null);
-  }
+//  public Object handle() throws IOException {
+//    return run(false, false, null);
+//  }
 
   public Object handle(Namesystem namesystem) throws IOException {
     return run(false, false, namesystem);

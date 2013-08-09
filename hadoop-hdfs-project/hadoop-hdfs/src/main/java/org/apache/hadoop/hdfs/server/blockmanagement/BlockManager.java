@@ -1698,7 +1698,7 @@ public class BlockManager {
     };
      for (Iterator<Block> it = postponedMisreplicatedBlocks.iterator(); it.hasNext();) {
       rescanPostponedMisreplicatedBlocksHandler.setParams(it);
-      rescanPostponedMisreplicatedBlocksHandler.handle();
+      rescanPostponedMisreplicatedBlocksHandler.handle(namesystem);
     }
   }
 
@@ -1746,7 +1746,7 @@ public class BlockManager {
     // collect blocks that have not been reported
     for (Block b : allMachineBlocks) {
       afterReportHandler.setParams(b);
-      afterReportHandler.handle();
+      afterReportHandler.handle(namesystem);
     }
 
   }
@@ -1852,7 +1852,7 @@ public class BlockManager {
        Block iblk = itBR.next();
       ReplicaState reportedState = itBR.getCurrentReplicaState();
       processFirstBlockReportHandler.setParams(iblk, reportedState);
-      processFirstBlockReportHandler.handle();
+      processFirstBlockReportHandler.handle(namesystem);
     }
   }
 
@@ -1906,7 +1906,7 @@ public class BlockManager {
     while(itBR.hasNext()) {
       Block iblk = itBR.next();
       ReplicaState iState = itBR.getCurrentReplicaState();
-      processReportHandler.setParams(iblk, iState).handle();
+      processReportHandler.setParams(iblk, iState).handle(namesystem);
     }
   }
 
@@ -2433,7 +2433,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
     for (BlockInfo block : blocksMap.getBlocks()) {
       processMisReplicatedBlocksHandler.setParams(block);
-      processMisReplicatedBlocksHandler.handle();
+      processMisReplicatedBlocksHandler.handle(namesystem);
     }
 
     LOG.info("Total number of blocks            = " + blocksMap.size());
@@ -2863,7 +2863,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       for (ReceivedDeletedBlockInfo rdbi : blockInfos) {
         processIncrementalBlockReportHandler.setParams(rdbi);
-        processIncrementalBlockReportHandler.handle();
+        processIncrementalBlockReportHandler.handle(namesystem);
       }
     } finally {
       namesystem.writeUnlock();
@@ -3008,7 +3008,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
 
     while (it.hasNext()) {
-      processBlockHandler.setParams(it.next()).handle();
+      processBlockHandler.setParams(it.next()).handle(namesystem);
 
     }
     LOG.info("Invalidated " + numOverReplicated[0] + " over-replicated blocks on "
@@ -3093,7 +3093,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
     while (it.hasNext()) {
       checkReplicationHandler.setParams(it.next());
-      checkReplicationHandler.handle();
+      checkReplicationHandler.handle(namesystem);
     }
     srcNode.decommissioningStatus.set(underReplicatedBlocks[0],
             decommissionOnlyReplicas[0],
@@ -3480,7 +3480,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return null;
       }
     };
-    removeBlockHandler.setParams(node).handle();
+    removeBlockHandler.setParams(node).handle(namesystem);
   }
   
   @VisibleForTesting
@@ -3512,7 +3512,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return computeReplicationWorkForBlockInternal(b, priority);
       }
     };
-    return (Integer) computeReplicationWorkHandler.handle();
+    return (Integer) computeReplicationWorkHandler.handle(namesystem);
   }
   
   int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws IOException{

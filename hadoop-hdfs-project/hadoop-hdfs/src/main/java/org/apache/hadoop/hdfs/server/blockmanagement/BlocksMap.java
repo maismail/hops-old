@@ -139,7 +139,7 @@ class BlocksMap {
         return bida.countAll();
       }
     };
-    return (Integer) getAllBlocksSizeHander.handle();
+    return (Integer) getAllBlocksSizeHander.handle(null);
   }
 
   Iterable<BlockInfo> getBlocks() throws IOException {
@@ -152,7 +152,7 @@ class BlocksMap {
         return bida.findAllBlocks();
       }
     };
-    return (List<BlockInfo>) getAllBlocksHander.handle();
+    return (List<BlockInfo>) getAllBlocksHander.handle(null);
   }
   
   /** Get the capacity of the HashMap that stores blocks */

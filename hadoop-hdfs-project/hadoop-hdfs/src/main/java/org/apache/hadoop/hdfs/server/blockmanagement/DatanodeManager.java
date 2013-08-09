@@ -1208,7 +1208,7 @@ public class DatanodeManager {
         return b.getExpectedLocations(datanodeManager);
       }
     };
-    return (DatanodeDescriptor[]) handler.setParams(b).handle();
+    return (DatanodeDescriptor[]) handler.setParams(b).handle(namesystem);
 
   }
   //END_HOP_CODE

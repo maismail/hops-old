@@ -150,7 +150,7 @@ public class TestBlockUnderConstruction {
         return null;
       }
     };
-    verifyFileBlocksHandler.handle();
+    verifyFileBlocksHandler.handle(null);
   }
 
   @Test

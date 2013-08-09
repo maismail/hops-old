@@ -69,7 +69,7 @@ public class TestLease {
         return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()
         ).getLeaseByPath(src.toString()) != null;
       }
-    }.handle();
+    }.handle(null);
   }
 
 

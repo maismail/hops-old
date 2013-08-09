@@ -46,7 +46,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                 long oldTime = 0;
                 try {
                     // Defines a context for every operation to track them in the logs easily.
-                    if (namesystem != null) {
+                    if (namesystem != null && namesystem instanceof FSNamesystem) {
                         NDC.push("NN (" + namesystem.getNamenodeId() + ") " + opType.name());
                     } else {
                         NDC.push(opType.name());
@@ -108,6 +108,9 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                             }
                         } finally {
                             NDC.pop();
+                            if (namesystem != null && namesystem instanceof FSNamesystem) {
+                              ((FSNamesystem)namesystem).performPendingSafeModeOperation();
+                            }
                         }
                     }
                 }

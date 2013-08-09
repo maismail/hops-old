@@ -2018,7 +2018,7 @@ public class FSDirectory implements Closeable {
           return da.countAll();
         }
       };
-      return (Integer) totalInodesHandler.handle();
+      return (Integer) totalInodesHandler.handle(null);
     } finally {
       readUnlock();
     }
@@ -2265,7 +2265,7 @@ public class FSDirectory implements Closeable {
        public void acquireLock() throws PersistanceException, IOException {
        }
     };
-    addRootINode.handle();
+    addRootINode.handle(null);
   }
   //END_HOP_CODE
 }
