@@ -336,6 +336,7 @@ public class TestBlockReport {
         new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
     cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
     printStats();
+    Thread.sleep(10000); //HOP: wait for the replication monitor to catch up
     assertEquals("Wrong number of PendingReplication Blocks",
       0, cluster.getNamesystem().getUnderReplicatedBlocks());
   }
