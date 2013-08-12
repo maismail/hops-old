@@ -153,17 +153,17 @@ public class BlockInfo extends Block {
   /**
    * Count the number of data-nodes the block belongs to.
    */
-  public int numNodes() throws PersistanceException {
-    return getReplicas().size();
+  public int numNodes(DatanodeManager datanodeMgr) throws PersistanceException {
+    return getReplicas(datanodeMgr).size();
   }
 
   public DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr) throws PersistanceException{
-    List<IndexedReplica> replicas = getReplicas();
+    List<IndexedReplica> replicas = getReplicas(datanodeMgr);
     return getDatanodes(datanodeMgr, replicas);
   }
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
-  List<IndexedReplica> getReplicas() throws PersistanceException {
+  List<IndexedReplica> getReplicasNoCheck() throws PersistanceException {
     List<IndexedReplica> replicas = (List<IndexedReplica>) EntityManager.findList(IndexedReplica.Finder.ByBlockId, getBlockId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
@@ -173,17 +173,26 @@ public class BlockInfo extends Block {
     return replicas;
   }
 
+    //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
+  List<IndexedReplica> getReplicas(DatanodeManager datanodeMgr) throws PersistanceException {
+    List<IndexedReplica> replicas = getReplicasNoCheck();
+    getDatanodes(datanodeMgr, replicas);
+    Collections.sort(replicas, IndexedReplica.Order.ByIndex);
+    return replicas; 
+  }
+
+  
   /**
    * Adds new replica for this block.
    */
   IndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
-    IndexedReplica replica = new IndexedReplica(getBlockId(), dn.getStorageID(), getReplicas().size());
+    IndexedReplica replica = new IndexedReplica(getBlockId(), dn.getStorageID(),/*FIXME [M]*/ getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
 
   public void removeAllReplicas() throws PersistanceException {
-    for (IndexedReplica replica : getReplicas()) {
+    for (IndexedReplica replica : getReplicasNoCheck()) {
       remove(replica);
     }
   }
@@ -194,7 +203,7 @@ public class BlockInfo extends Block {
    * @return
    */
   IndexedReplica removeReplica(DatanodeDescriptor dn) throws PersistanceException {
-    List<IndexedReplica> replicas = getReplicas();
+    List<IndexedReplica> replicas = getReplicasNoCheck();
     IndexedReplica replica = null;
     int index = -1;
     for (int i = 0; i < replicas.size(); i++) {
@@ -218,7 +227,7 @@ public class BlockInfo extends Block {
   }
   
   int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
-    List<IndexedReplica> replicas = getReplicas();
+    List<IndexedReplica> replicas = getReplicasNoCheck();
     for (int i = 0; i < replicas.size(); i++) {
       if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
         return i;
@@ -228,7 +237,7 @@ public class BlockInfo extends Block {
   }
 
   boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
-    for (IndexedReplica replica : getReplicas()) {
+    for (IndexedReplica replica : getReplicasNoCheck()) {
       if (replica.getStorageId().equals(dn.getStorageID())) {
         return true;
       }
@@ -319,6 +328,8 @@ public class BlockInfo extends Block {
       DatanodeDescriptor desc = datanodeMgr.getDatanode(replicas.get(i).getStorageId());
       if (desc != null) {
         list.add(desc);
+      }else{
+        replicas.remove(i);
       }
     }
     DatanodeDescriptor[] locations = new DatanodeDescriptor[list.size()];

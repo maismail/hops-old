@@ -3253,7 +3253,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         BlockInfo bi = blockManager.getStoredBlock(b);
         if (bi.isComplete()) {
           numRemovedComplete++;
-          if (bi.numNodes() >= blockManager.minReplication) {
+          if (bi.numNodes(blockManager.getDatanodeManager()) >= blockManager.minReplication) {
             numRemovedSafe++;
           }
         }

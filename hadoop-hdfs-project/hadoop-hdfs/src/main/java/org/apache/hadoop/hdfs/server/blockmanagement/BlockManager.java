@@ -583,7 +583,7 @@ public class BlockManager {
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
-    int numNodes = ucBlock.numNodes();
+    int numNodes = ucBlock.numNodes(datanodeManager);
     if (!force && numNodes < minReplication)
       throw new IOException("Cannot complete block: " +
           "block does not satisfy minimal replication requirement.");
@@ -3139,7 +3139,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
   public DatanodeDescriptor[] getNodes(BlockInfo block) throws PersistanceException {
     DatanodeDescriptor[] nodes =
-      new DatanodeDescriptor[block.numNodes()];
+      new DatanodeDescriptor[block.numNodes(datanodeManager)];
     Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
     for (int i = 0; it != null && it.hasNext(); i++) {
       nodes[i] = it.next();
@@ -3567,7 +3567,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
-    int numNodes = ucBlock.numNodes();
+    int numNodes = ucBlock.numNodes(datanodeManager);
     if (numNodes < minReplication)
       return null;
     if(ucBlock.getBlockUCState() != BlockUCState.COMMITTED)
