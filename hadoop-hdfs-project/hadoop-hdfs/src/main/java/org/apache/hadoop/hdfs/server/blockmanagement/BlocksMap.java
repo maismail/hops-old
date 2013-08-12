@@ -42,6 +42,8 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory
 class BlocksMap {
 
   private final DatanodeManager datanodeManager;
+  private final static List<DatanodeDescriptor> empty_datanode_list = Collections.unmodifiableList(new ArrayList<DatanodeDescriptor>());
+  
   BlocksMap(DatanodeManager datanodeManager) {
     this.datanodeManager = datanodeManager;
   }
@@ -98,22 +100,21 @@ class BlocksMap {
    * returns Iterator that iterates through the nodes the block belongs to.
    */
   Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) throws PersistanceException {
-    if(storedBlock == null)
+    if (storedBlock == null) {
       return null;
-   DatanodeDescriptor[] desc = storedBlock.getDatanodes(datanodeManager);
-   if(desc == null){
-     List<DatanodeDescriptor> empty_datanode_list = Collections.unmodifiableList(new ArrayList<DatanodeDescriptor>());
-     return empty_datanode_list.iterator();
-   }
-   else{
-   return Arrays.asList(desc).iterator();
-   }
+    }
+    DatanodeDescriptor[] desc = storedBlock.getDatanodes(datanodeManager);
+    if (desc == null) {
+      return empty_datanode_list.iterator();
+    } else {
+      return Arrays.asList(desc).iterator();
+    }
   }
 
   /** counts number of containing nodes. Better than using iterator. */
   int numNodes(Block b) throws PersistanceException {
     BlockInfo info = getStoredBlock(b);
-    return info == null ? 0 : info.numNodes();
+    return info == null ? 0 : info.numNodes(datanodeManager);
   }
 
   /**
@@ -139,7 +140,7 @@ class BlocksMap {
         return bida.countAll();
       }
     };
-    return (Integer) getAllBlocksSizeHander.handle();
+    return (Integer) getAllBlocksSizeHander.handle(null);
   }
 
   Iterable<BlockInfo> getBlocks() throws IOException {
@@ -152,7 +153,7 @@ class BlocksMap {
         return bida.findAllBlocks();
       }
     };
-    return (List<BlockInfo>) getAllBlocksHander.handle();
+    return (List<BlockInfo>) getAllBlocksHander.handle(null);
   }
   
   /** Get the capacity of the HashMap that stores blocks */

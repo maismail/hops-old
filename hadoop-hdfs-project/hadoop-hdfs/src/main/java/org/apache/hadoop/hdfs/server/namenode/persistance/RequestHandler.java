@@ -32,7 +32,7 @@ public abstract class RequestHandler {
     BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT, RESCAN_MISREPLICATED_BLOCKS, 
     PROCESS_MIS_REPLICATED_BLOCKS, GET_ALL_MACHINE_BLOCKS, REMOVE_STORED_BLOCK,
     CHECK_REPLICATION_IN_PROGRESS, PROCESS_OVER_REPLICATED_BLOCKS_ON_RECOMMISSION, GET_ALL_BLOCKS, GET_ALL_BLOCKS_SIZE,
-    REPLICATION_MONITOR, COMPUTE_REPLICATION_WORK_FOR_BLOCK,
+    REPLICATION_MONITOR, COMPUTE_REPLICATION_WORK_FOR_BLOCK, PROCESS_QUEUED_REPORT,
     // DatanodeManager
     REMOVE_DATANODE, REFRESH_NODES,
     //DecommisionManager
@@ -107,9 +107,9 @@ public abstract class RequestHandler {
     this.opType = opType;
   }
 
-  public Object handle() throws IOException {
-    return run(false, false, null);
-  }
+//  public Object handle() throws IOException {
+//    return run(false, false, null);
+//  }
 
   public Object handle(Namesystem namesystem) throws IOException {
     return run(false, false, namesystem);

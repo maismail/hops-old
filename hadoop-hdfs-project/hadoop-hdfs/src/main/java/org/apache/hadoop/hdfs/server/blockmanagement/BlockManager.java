@@ -583,7 +583,7 @@ public class BlockManager {
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
-    int numNodes = ucBlock.numNodes();
+    int numNodes = ucBlock.numNodes(datanodeManager);
     if (!force && numNodes < minReplication)
       throw new IOException("Cannot complete block: " +
           "block does not satisfy minimal replication requirement.");
@@ -1698,7 +1698,7 @@ public class BlockManager {
     };
      for (Iterator<Block> it = postponedMisreplicatedBlocks.iterator(); it.hasNext();) {
       rescanPostponedMisreplicatedBlocksHandler.setParams(it);
-      rescanPostponedMisreplicatedBlocksHandler.handle();
+      rescanPostponedMisreplicatedBlocksHandler.handle(namesystem);
     }
   }
 
@@ -1746,7 +1746,7 @@ public class BlockManager {
     // collect blocks that have not been reported
     for (Block b : allMachineBlocks) {
       afterReportHandler.setParams(b);
-      afterReportHandler.handle();
+      afterReportHandler.handle(namesystem);
     }
 
   }
@@ -1852,7 +1852,7 @@ public class BlockManager {
        Block iblk = itBR.next();
       ReplicaState reportedState = itBR.getCurrentReplicaState();
       processFirstBlockReportHandler.setParams(iblk, reportedState);
-      processFirstBlockReportHandler.handle();
+      processFirstBlockReportHandler.handle(namesystem);
     }
   }
 
@@ -1906,7 +1906,7 @@ public class BlockManager {
     while(itBR.hasNext()) {
       Block iblk = itBR.next();
       ReplicaState iState = itBR.getCurrentReplicaState();
-      processReportHandler.setParams(iblk, iState).handle();
+      processReportHandler.setParams(iblk, iState).handle(namesystem);
     }
   }
 
@@ -2035,7 +2035,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * block. This is called from FSEditLogLoader whenever a block's state
    * in the namespace has changed or a new block has been created.
    */
-  public void processQueuedMessagesForBlock(Block b) throws IOException, PersistanceException {
+  public void processQueuedMessagesForBlock(Block b) throws IOException {
     Queue<ReportedBlockInfo> queue = pendingDNMessages.takeBlockQueue(b);
     if (queue == null) {
       // Nothing to re-process
@@ -2045,13 +2045,45 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
   
   private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
-      throws IOException, PersistanceException {
+      throws IOException {
+    TransactionalRequestHandler processReportHandler = new TransactionalRequestHandler(OperationType.PROCESS_QUEUED_REPORT) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        inodeId = INodeUtil.findINodeIdByBlock(rbi.getBlock().getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, rbi.getBlock().getBlockId()).
+                addInvalidatedBlock(LockType.WRITE).
+                addReplica(LockType.WRITE).
+                addExcess(LockType.WRITE);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+        processAndHandleReportedBlock(
+                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+
+        return null;
+      }
+    };
+    
+      
     for (ReportedBlockInfo rbi : rbis) {
       if (LOG.isDebugEnabled()) {
         LOG.debug("Processing previouly queued message " + rbi);
       }
-      processAndHandleReportedBlock(
-          rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+      processReportHandler.setParams(rbi);
+      processReportHandler.handle(namesystem);
     }
   }
   
@@ -2061,7 +2093,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * we are the definitive master node and thus should be up-to-date
    * with the namespace information.
    */
-  public void processAllPendingDNMessages() throws IOException, PersistanceException {
+  public void processAllPendingDNMessages() throws IOException {
     assert !shouldPostponeBlocksFromFuture :
       "processAllPendingDNMessages() should be called after disabling " +
       "block postponement.";
@@ -2433,7 +2465,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
     for (BlockInfo block : blocksMap.getBlocks()) {
       processMisReplicatedBlocksHandler.setParams(block);
-      processMisReplicatedBlocksHandler.handle();
+      processMisReplicatedBlocksHandler.handle(namesystem);
     }
 
     LOG.info("Total number of blocks            = " + blocksMap.size());
@@ -2863,7 +2895,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       for (ReceivedDeletedBlockInfo rdbi : blockInfos) {
         processIncrementalBlockReportHandler.setParams(rdbi);
-        processIncrementalBlockReportHandler.handle();
+        processIncrementalBlockReportHandler.handle(namesystem);
       }
     } finally {
       namesystem.writeUnlock();
@@ -3008,7 +3040,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
 
     while (it.hasNext()) {
-      processBlockHandler.setParams(it.next()).handle();
+      processBlockHandler.setParams(it.next()).handle(namesystem);
 
     }
     LOG.info("Invalidated " + numOverReplicated[0] + " over-replicated blocks on "
@@ -3093,7 +3125,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
     while (it.hasNext()) {
       checkReplicationHandler.setParams(it.next());
-      checkReplicationHandler.handle();
+      checkReplicationHandler.handle(namesystem);
     }
     srcNode.decommissioningStatus.set(underReplicatedBlocks[0],
             decommissionOnlyReplicas[0],
@@ -3107,7 +3139,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
   public DatanodeDescriptor[] getNodes(BlockInfo block) throws PersistanceException {
     DatanodeDescriptor[] nodes =
-      new DatanodeDescriptor[block.numNodes()];
+      new DatanodeDescriptor[block.numNodes(datanodeManager)];
     Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
     for (int i = 0; it != null && it.hasNext(); i++) {
       nodes[i] = it.next();
@@ -3480,7 +3512,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return null;
       }
     };
-    removeBlockHandler.setParams(node).handle();
+    removeBlockHandler.setParams(node).handle(namesystem);
   }
   
   @VisibleForTesting
@@ -3512,7 +3544,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return computeReplicationWorkForBlockInternal(b, priority);
       }
     };
-    return (Integer) computeReplicationWorkHandler.handle();
+    return (Integer) computeReplicationWorkHandler.handle(namesystem);
   }
   
   int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws IOException{
@@ -3535,7 +3567,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if(curBlock.isComplete())
       return curBlock;
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction)curBlock;
-    int numNodes = ucBlock.numNodes();
+    int numNodes = ucBlock.numNodes(datanodeManager);
     if (numNodes < minReplication)
       return null;
     if(ucBlock.getBlockUCState() != BlockUCState.COMMITTED)

@@ -131,7 +131,7 @@ public class StorageInfo {
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
       }
     };
-    return (StorageInfo) getStorageInfoHandler.handle();
+    return (StorageInfo) getStorageInfoHandler.handle(null);
   }
 
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
@@ -155,7 +155,7 @@ public class StorageInfo {
       public void acquireLock() throws PersistanceException, IOException {
       }
     };
-    formatHandler.handle();
+    formatHandler.handle(null);
   }
   
   public String getBlockPoolId()

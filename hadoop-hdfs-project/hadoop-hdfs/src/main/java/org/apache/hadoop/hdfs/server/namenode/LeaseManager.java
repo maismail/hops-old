@@ -110,7 +110,7 @@ public class LeaseManager {
         return da.findAll();
       }
     };
-    return new TreeSet<Lease>((Collection<? extends Lease>) getSortedLeasesHandler.handle());
+    return new TreeSet<Lease>((Collection<? extends Lease>) getSortedLeasesHandler.handle(fsnamesystem));
   }
 
   /** @return the lease containing src */
@@ -133,7 +133,7 @@ public class LeaseManager {
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.countAll();
       }
-    }.handle();
+    }.handle(fsnamesystem);
   }
 
   /** This method is never called in the stateless implementation 
@@ -368,11 +368,11 @@ public class LeaseManager {
             /*if (!fsnamesystem.isInSafeMode()) {
               needSync = checkLeases();
             }*/
-            if (!(Boolean) isInSafeModeHandler.handle()) {
-               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle();
+            if (!(Boolean) isInSafeModeHandler.handle(fsnamesystem)) {
+               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle(fsnamesystem);
                if (sortedLeases != null) {
                  for (Lease expiredLease : sortedLeases) {
-                   expiredLeaseHandler.setParams(expiredLease.getHolder()).handle();
+                   expiredLeaseHandler.setParams(expiredLease.getHolder()).handle(fsnamesystem);
                  }
                }
              }
