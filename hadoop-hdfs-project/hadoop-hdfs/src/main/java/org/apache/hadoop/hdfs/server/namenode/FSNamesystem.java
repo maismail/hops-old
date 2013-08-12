@@ -1384,7 +1384,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         return getBlockLocationsInternal(src, offset, length, doAccessTime, needBlockToken, checkSafeMode);
       }
     };
-    return (LocatedBlocks) getBlockLocationsHandler.handle();
+    return (LocatedBlocks) getBlockLocationsHandler.handle(this);
   }
   
   /**
