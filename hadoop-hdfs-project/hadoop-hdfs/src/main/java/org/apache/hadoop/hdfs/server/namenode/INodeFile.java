@@ -143,8 +143,9 @@ public class INodeFile extends INode implements BlockCollection {
    * add a block to the block list
    */
   void addBlock(BlockInfo newblock) throws PersistanceException {
-    BlockInfo[] blks = getBlocks();
-    newblock.setBlockIndex(blks.length);
+    //BlockInfo[] blks = getBlocks();
+    BlockInfo maxBlk = findMaxBlk();
+    newblock.setBlockIndex(maxBlk.getBlockIndex()+1);
   }
 
   /** Set the block of the file at the given index. */
@@ -284,6 +285,12 @@ public class INodeFile extends INode implements BlockCollection {
     INodeFileUnderConstruction ucfile = new INodeFileUnderConstruction(this, clientName, clientMachine, clientNode);
     save(ucfile);
     return ucfile;
+  }
+  
+  public BlockInfo findMaxBlk() throws PersistanceException
+  {
+    BlockInfo maxBlk = (BlockInfo)EntityManager.find(BlockInfo.Finder.MAX_BLK_INDX, this.getId());
+    return maxBlk;
   }
   //END_HOP_CODE
 }

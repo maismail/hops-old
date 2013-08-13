@@ -99,6 +99,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id)});
         }
         return result;
+      case MAX_BLK_INDX:
+        //returning the block with max index
+        final long inodeID = (Long) params[0];
+        return findMaxBlk(inodeID);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -230,5 +234,38 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         throw new TransactionContextException("Trying to remove a block that does not exist");
       }
     }
+  }
+  
+  private BlockInfo findMaxBlk(final long inodeID) {
+    // find the max block in the following lists
+    // inodeBlocks
+    // modified list
+    // new list
+    BlockInfo maxBlk = null;
+    List<BlockInfo> blockList = inodeBlocks.get(inodeID);
+
+    for (int i = 0; i < blockList.size(); i++) {
+      if (maxBlk == null || maxBlk.getBlockIndex() < blockList.get(i).getBlockIndex()) {
+        maxBlk = blockList.get(i);
+      }
+    }
+
+    Collection<BlockInfo> mBlks = modifiedBlocks.values();
+    for (BlockInfo blk : mBlks) {
+      if (maxBlk == null || (blk.getInodeId() == inodeID && blk.getBlockIndex() > maxBlk.getBlockIndex())) {
+        maxBlk = blk;
+      }
+    }
+
+
+    Collection<BlockInfo> nBlks = this.newBlocks.values();
+    for (BlockInfo blk : nBlks) {
+      if (maxBlk == null || (blk.getInodeId() == inodeID && blk.getBlockIndex() > maxBlk.getBlockIndex())) {
+        maxBlk = blk;
+      }
+    }
+
+
+    return maxBlk;
   }
 }

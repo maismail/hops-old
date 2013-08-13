@@ -52,7 +52,7 @@ public class BlockInfo extends Block {
   
   public static enum Finder implements FinderType<BlockInfo> {
     
-    ById, ByInodeId, All, ByStorageId;
+    ById, ByInodeId, All, ByStorageId, MAX_BLK_INDX;
     
     @Override
     public Class getType() {
@@ -66,7 +66,8 @@ public class BlockInfo extends Block {
       @Override
       public int compare(BlockInfo o1, BlockInfo o2) {
         if(o1.getBlockIndex() == o2.getBlockIndex()){
-          throw new IllegalStateException("A file cannot have 2 blocks with the same index");
+          throw new IllegalStateException("A file cannot have 2 blocks with the same index. index = "
+                  +o1.getBlockIndex()+" blk1_id = "+o1.getBlockId()+" blk2_id = "+o2.getBlockId());
         }
         if (o1.getBlockIndex() < o2.getBlockIndex()) {
           return -1;
