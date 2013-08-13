@@ -43,6 +43,10 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.junit.Test;
 
@@ -68,7 +72,7 @@ public class TestOverReplicatedBlocks {
       DFSTestUtil.waitReplication(fs, fileName, (short)3);
       
       // corrupt the block on datanode 0
-      ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, fileName);
+      final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, fileName);
       assertTrue(TestDatanodeBlockScanner.corruptReplica(block, 0));
       DataNodeProperties dnProps = cluster.stopDataNode(0);
       // remove block scanner log to trigger block scanning
@@ -110,10 +114,27 @@ public class TestOverReplicatedBlocks {
 
           // decrease the replication factor to 1; 
           NameNodeAdapter.setReplication(namesystem, fileName.toString(), (short)1);
+          
+          new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+            @Override
+            public void acquireLock() throws PersistanceException, IOException {
+              TransactionLockManager lm = new TransactionLockManager();
+              lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+                      addReplica(TransactionLockManager.LockType.READ).
+                      addExcess(TransactionLockManager.LockType.READ).
+                      addCorrupt(TransactionLockManager.LockType.READ);
+              lm.acquire();
+            }
 
-          // corrupt one won't be chosen to be excess one
-          // without 4910 the number of live replicas would be 0: block gets lost
-          assertEquals(1, bm.countNodes(block.getLocalBlock()).liveReplicas());
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+              // corrupt one won't be chosen to be excess one
+              // without 4910 the number of live replicas would be 0: block gets lost
+              assertEquals(1, bm.countNodes(block.getLocalBlock()).liveReplicas());
+              return null;
+            }
+          }.handleWithWriteLock(namesystem);
+         
         }
       } finally {
         namesystem.writeUnlock();
@@ -199,7 +220,7 @@ public class TestOverReplicatedBlocks {
    * replication for a partial block.
    */
   @Test
-  public void testInvalidateOverReplicatedBlock() throws Exception {
+  public void testInvalidateOverReplicatedBlock() throws IOException {
     Configuration conf = new HdfsConfiguration();
     MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(3)
         .build();
@@ -213,9 +234,27 @@ public class TestOverReplicatedBlocks {
       out.hsync();
       fs.setReplication(p, (short) 1);
       out.close();
-      ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, p);
-      assertEquals("Expected only one live replica for the block", 1, bm
-          .countNodes(block.getLocalBlock()).liveReplicas());
+      final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, p);
+      
+      new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+        @Override
+        public void acquireLock() throws PersistanceException, IOException {
+          TransactionLockManager lm = new TransactionLockManager();
+          lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+                  addReplica(TransactionLockManager.LockType.READ).
+                  addExcess(TransactionLockManager.LockType.READ).
+                  addCorrupt(TransactionLockManager.LockType.READ);
+          lm.acquire();
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          assertEquals("Expected only one live replica for the block", 1, bm
+                  .countNodes(block.getLocalBlock()).liveReplicas());
+          return null;
+        }
+      }.handleWithWriteLock(namesystem);
+       
     } finally {
       cluster.shutdown();
     }
