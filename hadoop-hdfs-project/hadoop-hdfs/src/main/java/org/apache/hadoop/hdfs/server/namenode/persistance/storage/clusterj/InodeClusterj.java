@@ -62,15 +62,15 @@ public class InodeClusterj extends InodeDataAccess {
 
     // marker for InodeDirectory
     @Column(name = IS_DIR)
-    boolean getIsDir();
+    int getIsDir();
 
-    void setIsDir(boolean isDir);
+    void setIsDir(int isDir);
 
     // marker for InodeDirectoryWithQuota
     @Column(name = IS_DIR_WITH_QUOTA)
-    boolean getIsDirWithQuota();
+    int getIsDirWithQuota();
 
-    void setIsDirWithQuota(boolean isDirWithQuota);
+    void setIsDirWithQuota(int isDirWithQuota);
 
     // Inode
     @Column(name = MODIFICATION_TIME)
@@ -116,9 +116,9 @@ public class InodeClusterj extends InodeDataAccess {
 
     //  marker for InodeFileUnderConstruction
     @Column(name = IS_UNDER_CONSTRUCTION)
-    boolean getIsUnderConstruction();
+    int getIsUnderConstruction();
 
-    void setIsUnderConstruction(boolean isUnderConstruction);
+    void setIsUnderConstruction(int isUnderConstruction);
 
     // InodeFileUnderConstruction
     @Column(name = CLIENT_NAME)
@@ -139,9 +139,9 @@ public class InodeClusterj extends InodeDataAccess {
 
     //  marker for InodeFile
     @Column(name = IS_CLOSED_FILE)
-    boolean getIsClosedFile();
+    int getIsClosedFile();
 
-    void setIsClosedFile(boolean isClosedFile);
+    void setIsClosedFile(int isClosedFile);
 
     // InodeFile
     @Column(name = HEADER)
@@ -288,8 +288,8 @@ public class InodeClusterj extends InodeDataAccess {
 
     INode inode = null;
 
-    if (persistable.getIsDir()) {
-      if (persistable.getIsDirWithQuota()) {
+    if (persistable.getIsDir()==1) {
+      if (persistable.getIsDirWithQuota()==1) {
         inode = new INodeDirectoryWithQuota(persistable.getName(), ps, persistable.getNSQuota(), persistable.getDSQuota());
       } else {
         String iname = (persistable.getName().length() == 0) ? INodeDirectory.ROOT_NAME : persistable.getName();
@@ -304,7 +304,7 @@ public class InodeClusterj extends InodeDataAccess {
       inode = new INodeSymlink(persistable.getSymlink(), persistable.getModificationTime(),
               persistable.getATime(), ps);
     } else {
-      if(persistable.getIsUnderConstruction()){
+      if(persistable.getIsUnderConstruction() == 1){
         DatanodeID dnID = (persistable.getClientNode() == null || 
                 persistable.getClientNode().isEmpty()) ? null : new DatanodeID(persistable.getClientNode());
         
@@ -353,22 +353,22 @@ public class InodeClusterj extends InodeDataAccess {
     persistable.setDSQuota(inode.getDsQuota());
 
     if (inode instanceof INodeDirectory) {
-      persistable.setIsUnderConstruction(false);
-      persistable.setIsDirWithQuota(false);
-      persistable.setIsDir(true);
+      persistable.setIsUnderConstruction(0);
+      persistable.setIsDirWithQuota(0);
+      persistable.setIsDir(1);
       //HOP: Mahmoud: FIXME: just comment the counting stuff until we find a better solution for quota
       //persistable.setNSCount(((INodeDirectory) inode).numItemsInTree());
       //persistable.setDSCount(((INodeDirectory) inode).diskspaceConsumed());
     }
     if (inode instanceof INodeDirectoryWithQuota) {
-      persistable.setIsDir(true); //why was it false earlier?	    	
-      persistable.setIsUnderConstruction(false);
-      persistable.setIsDirWithQuota(true);
+      persistable.setIsDir(1); //why was it false earlier?	    	
+      persistable.setIsUnderConstruction(0);
+      persistable.setIsDirWithQuota(1);
     }
     if (inode instanceof INodeFile) {
-      persistable.setIsDir(false);
-      persistable.setIsUnderConstruction(inode.isUnderConstruction());
-      persistable.setIsDirWithQuota(false);
+      persistable.setIsDir(0);
+      persistable.setIsUnderConstruction(inode.isUnderConstruction()?1:0);
+      persistable.setIsDirWithQuota(0);
       persistable.setHeader(((INodeFile)inode).getHeader());
       if (inode instanceof INodeFileUnderConstruction) {
         persistable.setClientName(((INodeFileUnderConstruction) inode).getClientName());
