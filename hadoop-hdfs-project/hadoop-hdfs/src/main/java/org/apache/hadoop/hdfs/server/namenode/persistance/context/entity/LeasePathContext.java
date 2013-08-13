@@ -176,7 +176,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
 
   @Override
   public void removeAll() throws PersistanceException {
-    throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
+    dataAccess.removeAll();
   }
 
   @Override

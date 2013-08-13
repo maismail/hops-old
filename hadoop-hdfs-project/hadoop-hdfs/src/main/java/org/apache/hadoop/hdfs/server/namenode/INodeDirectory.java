@@ -292,13 +292,13 @@ public class INodeDirectory extends INode {
       return null;
     }
 
-    if (node.getId() == NON_EXISTING_ID) {
+    if (!node.exists()) {
       node.setIdNoPersistance(Math.abs(DFSUtil.getRandom().nextLong()));
+      node.setParentNoPersistance(this);
       EntityManager.add(node);
+    } else {
+      node.setParent(this);
     }
-
-    node.setParent(this);
-
     // update modification time of the parent directory
     if (setModTime) {
       setModificationTime(node.getModificationTime());

@@ -98,7 +98,7 @@ public abstract class INode implements Comparable<byte[]> {
   
     //START_HOP_CODE
   protected long id = NON_EXISTING_ID;
-  protected long parentId;
+  protected long parentId = NON_EXISTING_ID;
   // FIXME [H]: min value can be chosen as the inode id. Change this.
   public static final long NON_EXISTING_ID = Long.MIN_VALUE;
   //END_HOP_CODE
@@ -545,11 +545,15 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
   public void setParent(INodeDirectory p) throws PersistanceException {
-    this.parent = p;
-    this.parentId = p.getId();
+    setParentNoPersistance(p);
     save();
   }
 
+  public void setParentNoPersistance(INodeDirectory p) {
+    this.parent = p;
+    this.parentId = p.getId();
+  }
+  
   public void setParentIdNoPersistance(long pid) {
     this.parentId = pid;
   }

@@ -8,6 +8,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
+import static org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess.TABLE_NAME;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
@@ -118,6 +119,18 @@ public class LeasePathDerby extends LeasePathDataAccess {
     }
   }
 
+  @Override
+  public void removeAll() throws StorageException {
+    String deleteAll = String.format("delete * from %s ", TABLE_NAME);
+    Connection conn = connector.obtainSession();
+    try {
+      PreparedStatement dlt = conn.prepareStatement(deleteAll);
+      dlt.executeBatch();
+    } catch (SQLException ex) {
+      handleSQLException(ex);
+    }
+  }
+    
   private Collection<LeasePath> createList(ResultSet rSet) throws SQLException {
     TreeSet<LeasePath> finalList = new TreeSet<LeasePath>();
 

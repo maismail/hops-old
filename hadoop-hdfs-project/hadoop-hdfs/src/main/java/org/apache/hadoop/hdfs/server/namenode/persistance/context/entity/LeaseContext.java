@@ -180,7 +180,7 @@ public class LeaseContext extends EntityContext<Lease> {
 
   @Override
   public void removeAll() throws PersistanceException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    dataAccess.removeAll();
   }
 
   @Override

@@ -125,6 +125,16 @@ public class LeasePathClusterj extends LeasePathDataAccess {
     }
   }
 
+  @Override
+  public void removeAll() throws StorageException {
+    try {
+      Session session = connector.obtainSession();
+      session.deletePersistentAll(LeasePathsDTO.class);
+    } catch (Exception e) {
+      throw new StorageException(e);
+    }
+  }
+    
   private List<LeasePath> createList(Collection<LeasePathsDTO> dtos) {
     List<LeasePath> list = new ArrayList<LeasePath>();
     for (LeasePathsDTO leasePathsDTO : dtos) {

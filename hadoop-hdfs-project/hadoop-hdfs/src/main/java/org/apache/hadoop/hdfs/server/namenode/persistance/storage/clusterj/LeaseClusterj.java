@@ -160,6 +160,16 @@ public class LeaseClusterj extends LeaseDataAccess {
     return finalSet;
   }
 
+  @Override
+  public void removeAll() throws StorageException {
+    try {
+      Session session = connector.obtainSession();
+      session.deletePersistentAll(LeaseDTO.class);
+    } catch (Exception e) {
+      throw new StorageException(e);
+    }
+  }
+    
   private Lease createLease(LeaseDTO lTable) {
     return new Lease(lTable.getHolder(), lTable.getHolderId(), lTable.getLastUpdate());
   }
