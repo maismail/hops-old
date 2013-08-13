@@ -2244,28 +2244,22 @@ public class FSDirectory implements Closeable {
   
   //add root inode if its not there
    public void createRootInode(final FSNamesystem ns, final boolean overwrite) throws IOException{
-     //HOP: FIXME: use context
-     TransactionalRequestHandler addRootINode = new TransactionalRequestHandler(RequestHandler.OperationType.SET_ROOT) {
-      @Override
-      public Object performTask() throws PersistanceException {
-        InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
-        INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID); 
-        if (rootInode == null || overwrite == true) 
-        {
-          INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
-          List<INode> newINodes = new ArrayList();
-          newINodes.add(newRootINode);
-          da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
-          LOG.info("Added new root inode");
-      }
-        return null;
-    }
-
+     LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
        @Override
-       public void acquireLock() throws PersistanceException, IOException {
+       public Object performTask() throws PersistanceException {
+         InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
+         if (rootInode == null || overwrite == true) {
+           INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
+           List<INode> newINodes = new ArrayList();
+           newINodes.add(newRootINode);
+           da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
+           LOG.info("Added new root inode");
+         }
+         return null;
        }
-    };
-    addRootINode.handle(null);
+     };
+     addRootINode.handle(null);
   }
   //END_HOP_CODE
 }

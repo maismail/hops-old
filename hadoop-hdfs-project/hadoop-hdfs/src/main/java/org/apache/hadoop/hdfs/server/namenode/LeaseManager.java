@@ -49,6 +49,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -191,11 +192,17 @@ public class LeaseManager {
     }
   }
 
-  //HOP: FIXME: Add our implementaion
-  void removeAllLeases() {
-    //sortedLeases.clear();
-    //sortedLeasesByPath.clear();
-    //leases.clear();
+  void removeAllLeases() throws IOException {
+    new LightWeightRequestHandler(OperationType.REMOVE_ALL_LEASES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+        LeasePathDataAccess lpda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
+        lda.removeAll();
+        lpda.removeAll();
+        return null;
+      }
+    }.handle(fsnamesystem);
   }
 
   /**

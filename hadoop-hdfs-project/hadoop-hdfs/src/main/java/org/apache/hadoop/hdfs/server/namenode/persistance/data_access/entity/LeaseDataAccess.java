@@ -26,4 +26,6 @@ public abstract class LeaseDataAccess extends EntityDataAccess{
   public abstract Lease findByHolderId(int holderId) throws StorageException;
 
   public abstract void prepare(Collection<Lease> removed, Collection<Lease> newLeases, Collection<Lease> modified) throws StorageException;
+  
+  public abstract void removeAll() throws StorageException;
 }
