@@ -1594,7 +1594,7 @@ public class FSDirectory implements Closeable {
   throws QuotaExceededException, UnresolvedLinkException, PersistanceException {
     byte[][] components = INode.getPathComponents(src);
     byte[] path = components[components.length-1];
-    child.setLocalName(path);
+    child.setLocalNameNoPersistance(path);
     cacheName(child);
     INode[] inodes = new INode[components.length];
     writeLock();
