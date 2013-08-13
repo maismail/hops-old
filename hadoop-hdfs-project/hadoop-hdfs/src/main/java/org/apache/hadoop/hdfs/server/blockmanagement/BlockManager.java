@@ -3522,7 +3522,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+
+        if (b instanceof BlockInfo) {
+          inodeId = ((BlockInfo) b).getInodeId();
+        } else {
+          inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        }
       }
 
       @Override
@@ -3544,6 +3549,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return computeReplicationWorkForBlockInternal(b, priority);
       }
     };
+    
     return (Integer) computeReplicationWorkHandler.handle(namesystem);
   }
   
