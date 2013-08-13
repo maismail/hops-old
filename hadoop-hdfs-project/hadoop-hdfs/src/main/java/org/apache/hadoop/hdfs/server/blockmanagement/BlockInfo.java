@@ -325,7 +325,7 @@ public class BlockInfo extends Block {
   protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends Replica> replicas) {
     int numLocations = replicas.size();
     List<DatanodeDescriptor> list = new ArrayList<DatanodeDescriptor>();
-    for (int i = 0; i < numLocations; i++) {
+    for (int i = numLocations-1; i >= 0 ; i--) {
       DatanodeDescriptor desc = datanodeMgr.getDatanode(replicas.get(i).getStorageId());
       if (desc != null) {
         list.add(desc);
