@@ -435,7 +435,7 @@ public class TestBlockReport {
    * @throws IOException in case of an error
    */
   @Test
-  public void blockReport_08() throws IOException {
+  public void blockReport_08() throws IOException, InterruptedException {
     final String METHOD_NAME = GenericTestUtils.getMethodName();
     Path filePath = new Path("/" + METHOD_NAME + ".dat");
     final int DN_N1 = DN_N0 + 1;
@@ -463,9 +463,10 @@ public class TestBlockReport {
           new DatanodeStorage(dnR.getStorageID()),
           new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
       cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
-      printStats();
+      
       assertEquals("Wrong number of PendingReplication blocks",
         blocks.size(), cluster.getNamesystem().getPendingReplicationBlocks());
+      printStats();
 
       try {
         bc.join();
@@ -511,10 +512,10 @@ public class TestBlockReport {
           new DatanodeStorage(dnR.getStorageID()),
           new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
       cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
-      printStats();
+      
       assertEquals("Wrong number of PendingReplication blocks",
         2, cluster.getNamesystem().getPendingReplicationBlocks());
-      
+      printStats();
       try {
         bc.join();
       } catch (InterruptedException e) {}
