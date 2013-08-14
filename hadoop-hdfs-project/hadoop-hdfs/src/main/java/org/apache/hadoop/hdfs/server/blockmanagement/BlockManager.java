@@ -78,6 +78,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
@@ -2830,8 +2832,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public void setUp() throws StorageException {
+        
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         inodeId = INodeUtil.findINodeIdByBlock(rdbi.getBlock().getBlockId());
+        if(inodeId == INodeFile.NON_EXISTING_ID)
+        {
+          LOG.error("Invalid State. deleted blk is not recognized. bid="+rdbi.getBlock().getBlockId());
+          throw new IllegalStateException("Invalid State. deleted blk is not recognized. bid="+rdbi.getBlock().getBlockId());
+        }
       }
 
       @Override
