@@ -5767,7 +5767,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @throws AccessControlException
    * @throws IOException
    */
-  Collection<CorruptFileBlockInfo> listCorruptFileBlocks(String path,
+  Collection<CorruptFileBlockInfo> listCorruptFileBlocks(final String path,
 	String[] cookieTab) throws IOException {
     checkSuperuserPrivilege();
     readLock();
@@ -5778,37 +5778,70 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                               "replication queues have not been initialized.");
       }
       // print a limited # of corrupt files per call
-      int count = 0;
-      ArrayList<CorruptFileBlockInfo> corruptFiles = new ArrayList<CorruptFileBlockInfo>();
+      final int[] count = {0};
+      final ArrayList<CorruptFileBlockInfo> corruptFiles = new ArrayList<CorruptFileBlockInfo>();
 
       final Iterator<Block> blkIterator = blockManager.getCorruptReplicaBlockIterator();
 
       if (cookieTab == null) {
         cookieTab = new String[] { null };
       }
-      int skip = getIntCookie(cookieTab[0]);
-      for (int i = 0; i < skip && blkIterator.hasNext(); i++) {
+      final int[] skip = {getIntCookie(cookieTab[0])};
+      for (int i = 0; i < skip[0] && blkIterator.hasNext(); i++) {
         blkIterator.next();
       }
-//HOP FIXME after persisting the corrupt replicas
-//HOP      while (blkIterator.hasNext()) {
-//        Block blk = blkIterator.next();
-//        INode inode = (INodeFile) blockManager.getBlockCollection(blk);
-//        skip++;
-//        if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
-//          String src = FSDirectory.getFullPathName(inode);
-//          if (src.startsWith(path)){
-//            corruptFiles.add(new CorruptFileBlockInfo(src, blk));
-//            count++;
-//            if (count >= DEFAULT_MAX_CORRUPT_FILEBLOCKS_RETURNED)
-//              break;
-//          }
-//        }
-//      }
-      EntityContext.log("LIST_CORRUPT_BLOCKS", EntityContext.CacheHitState.LOSS, "uncomment this part");
       
-      cookieTab[0] = String.valueOf(skip);
-      LOG.info("list corrupt file blocks returned: " + count);
+      TransactionalRequestHandler listCorruptFileBlocksHandler = new TransactionalRequestHandler(OperationType.LIST_CORRUPT_FILE_BLOCKS) {
+        private LinkedList<INode> resolvedInodes = null;
+        private long inodeId;
+
+        @Override
+        public void setUp() throws PersistanceException {
+          Block blk = (Block) getParams()[0];
+          inodeId = INodeUtil.findINodeIdByBlock(blk.getBlockId());
+          resolvedInodes = INodeUtil.findPathINodesById(inodeId);
+        }
+
+        @Override
+        public void acquireLock() throws PersistanceException, IOException {
+          Block blk = (Block) getParams()[0];
+          TransactionLockManager tlm = new TransactionLockManager(resolvedInodes);
+          tlm.addINode(INodeResolveType.FROM_CHILD_TO_ROOT, INodeLockType.READ_COMMITED).
+                  addBlock(LockType.READ_COMMITTED, blk.getBlockId()).
+                  addReplica(LockType.READ_COMMITTED).
+                  addCorrupt(LockType.READ_COMMITTED).
+                  addExcess(LockType.READ_COMMITTED)
+                  .acquireByBlock(inodeId);
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          Block blk = (Block) getParams()[0];
+          INode inode = (INodeFile) blockManager.getBlockCollection(blk);
+          skip[0]++;
+          if (inode != null && blockManager.countNodes(blk).liveReplicas() == 0) {
+            String src = FSDirectory.getFullPathName(inode);
+            if (src.startsWith(path)) {
+              corruptFiles.add(new CorruptFileBlockInfo(src, blk));
+              count[0]++;
+            }
+          }
+          return null;
+        }
+      };
+
+      while (blkIterator.hasNext()) {
+        Block blk = blkIterator.next();
+        listCorruptFileBlocksHandler.setParams(blk);
+        listCorruptFileBlocksHandler.handleWithReadLock(this);
+        if (count[0] >= DEFAULT_MAX_CORRUPT_FILEBLOCKS_RETURNED) {
+          break;
+        }
+      }
+      EntityContext.log("LIST_CORRUPT_BLOCKS", EntityContext.CacheHitState.LOSS, "uncomment this part");
+
+      cookieTab[0] = String.valueOf(skip[0]);
+      LOG.info("list corrupt file blocks returned: " + count[0]);
       return corruptFiles;
     } finally {
       readUnlock();
