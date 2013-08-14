@@ -154,6 +154,11 @@ public class TransactionLockManager {
       for (Block b : blockResults) {
         TransactionLockAcquirer.acquireLockList(lock, finder, b.getBlockId());
       }
+    } else // if blockResults is null then we can safely brin null in to cache
+    {
+      if (blockParam != null) {
+        TransactionLockAcquirer.acquireLockList(lock, finder, blockParam/*id*/);
+      }
     }
   }
 
@@ -480,7 +485,8 @@ public class TransactionLockManager {
    */
   private void acquireBlockRelatedLocksNormal() throws PersistanceException {
 
-    if (blockResults != null && !blockResults.isEmpty()) {
+//HOP if (blockResults != null && !blockResults.isEmpty()) //[S] commented this to bring null in to the cache for invalid/deleted blocks
+//    {
       if (replicaLock != null) {
         acquireReplicasLock(replicaLock, IndexedReplica.Finder.ByBlockId);
       }
@@ -508,7 +514,7 @@ public class TransactionLockManager {
 //      if (pbLock != null) {
 //        acquireBlockRelatedLock(pbLock, PendingBlockInfo.Finder.ByPKey);
 //      }
-    }
+//    }
 
 //    if (blockKeyLock != null) {
 //      if (blockKeyIds != null) {
@@ -658,9 +664,10 @@ public class TransactionLockManager {
       }
       i++;
     }
-    if (i == blockResults.size()) {
-      return; // The state of the inode->blocks is inconsistent, retry.
-    }
+//    if (i == blockResults.size()) {  // [s] commented this out so that we bring null in the cache
+//      LOG.debug("The state of the inode->blocks is inconsistent, retry.");
+//      return; // The state of the inode->blocks is inconsistent, retry.
+//    }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
     acquireLeaseAndLpathLockNormal();
