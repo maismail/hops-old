@@ -1504,20 +1504,13 @@ public class BlockManager {
    * If there were any replication requests that timed out, reap them
    * and put them back into the neededReplication queue
    */
-  private void processPendingReplications() throws PersistanceException {
+  private void processPendingReplications() throws IOException{
     Block[] timedOutItems = pendingReplications.getTimedOutBlocks();
     if (timedOutItems != null) {
       namesystem.writeLock();
       try {
         for (int i = 0; i < timedOutItems.length; i++) {
-          NumberReplicas num = countNodes(timedOutItems[i]);
-          if (isNeededReplication(timedOutItems[i], getReplication(timedOutItems[i]),
-                                 num.liveReplicas())) {
-            neededReplications.add(timedOutItems[i],
-                                   num.liveReplicas(),
-                                   num.decommissionedReplicas(),
-                                   getReplication(timedOutItems[i]));
-          }
+          processTimedOutPendingBlock(timedOutItems[0]);
         }
       } finally {
         namesystem.writeUnlock();
@@ -3602,6 +3595,47 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     
     // replace block in the blocksMap
     return blocksMap.replaceBlock(completeBlock);
+  }
+   
+  private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
+    new TransactionalRequestHandler(OperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
+      long inodeId;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(timedOutItem.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, timedOutItem.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addPendingBlock(LockType.READ).
+                addUnderReplicatedBlock(LockType.WRITE);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+//        PendingBlockInfo pendingBlock = EntityManager.find(PendingBlockInfo.Finder.ByPKey, p.getBlockId());
+//        if (pendingBlock != null && PendingReplicationBlocks.isTimedOut(pendingBlock)) {
+//          Block timedOutItem = EntityManager.find(BlockInfo.Finder.ById, p.getBlockId());
+          NumberReplicas num = countNodes(timedOutItem);
+          if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
+                                 num.liveReplicas())) {
+            neededReplications.add(timedOutItem,
+                                   num.liveReplicas(),
+                                   num.decommissionedReplicas(),
+                                   getReplication(timedOutItem));
+          }
+//        }
+        return null;
+      }
+    }.handle(namesystem);
   }
   //END_HOP_CODE
 }
