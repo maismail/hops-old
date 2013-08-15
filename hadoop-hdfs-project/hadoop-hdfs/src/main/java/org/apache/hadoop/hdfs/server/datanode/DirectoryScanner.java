@@ -573,10 +573,6 @@ public class DirectoryScanner implements Runnable {
         blkFiles.remove(i);
       }
 
-      if (blkFiles.size() > 0) {
-        throw new IllegalStateException("All blocks should have been processed");
-      }
-
       for (int i = metaFiles.size() - 1; i >= 0; i--) {
         File metaFile = metaFiles.get(i);
         long blockId = Block.getBlockId(metaFile.getName());
