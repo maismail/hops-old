@@ -2825,13 +2825,17 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public void setUp() throws StorageException {
-        
+
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(rdbi.getBlock().getBlockId());
-        if(inodeId == INodeFile.NON_EXISTING_ID)
-        {
-          LOG.error("Invalid State. deleted blk is not recognized. bid="+rdbi.getBlock().getBlockId());
-          throw new IllegalStateException("Invalid State. deleted blk is not recognized. bid="+rdbi.getBlock().getBlockId());
+        if (rdbi.getBlock() instanceof BlockInfo) {
+          inodeId = ((BlockInfo) rdbi.getBlock()).getInodeId();
+        } else {
+          inodeId = INodeUtil.findINodeIdByBlock(rdbi.getBlock().getBlockId());
+        }
+        if (inodeId == INodeFile.NON_EXISTING_ID) {
+          LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
+          throw new IllegalStateException("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
+//          System.exit(0);
         }
       }
 
