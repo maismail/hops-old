@@ -66,7 +66,7 @@ public class TestWebHdfsWithMultipleNameNodes {
   public static void setupTest() {
     setLogLevel();
     try {
-      setupCluster(4, 3);
+      setupCluster(4, 3); 
     } catch(Exception e) {
       throw new RuntimeException(e);
     }
@@ -116,18 +116,22 @@ public class TestWebHdfsWithMultipleNameNodes {
     return strings;
   }
 
+  //NDB is shared
+  //this test write a file (same file name) to four NN. in ourcase only one inode
+  //with same name can be stored. changed the test to store files with different file names
+  //
   @Test
   public void testRedirect() throws Exception {
     final String dir = "/testRedirect/";
     final String filename = "file";
-    final Path p = new Path(dir, filename);
+//    final Path p = new Path(dir, filename);
 
     final String[] writeStrings = createStrings("write to webhdfs ", "write"); 
     final String[] appendStrings = createStrings("append to webhdfs ", "append"); 
     
     //test create: create a file for each namenode
     for(int i = 0; i < webhdfs.length; i++) {
-      final FSDataOutputStream out = webhdfs[i].create(p);
+      final FSDataOutputStream out = webhdfs[i].create(new Path(dir, filename+i));
       out.write(writeStrings[i].getBytes());
       out.close();
     }
@@ -135,12 +139,12 @@ public class TestWebHdfsWithMultipleNameNodes {
     for(int i = 0; i < webhdfs.length; i++) {
       //check file length
       final long expected = writeStrings[i].length();
-      Assert.assertEquals(expected, webhdfs[i].getFileStatus(p).getLen());
+      Assert.assertEquals(expected, webhdfs[i].getFileStatus(new Path(dir, filename+i)).getLen());
     }
 
     //test read: check file content for each namenode
     for(int i = 0; i < webhdfs.length; i++) {
-      final FSDataInputStream in = webhdfs[i].open(p);
+      final FSDataInputStream in = webhdfs[i].open(new Path(dir, filename+i));
       for(int c, j = 0; (c = in.read()) != -1; j++) {
         Assert.assertEquals(writeStrings[i].charAt(j), c);
       }
@@ -149,7 +153,7 @@ public class TestWebHdfsWithMultipleNameNodes {
 
     //test append: append to the file for each namenode
     for(int i = 0; i < webhdfs.length; i++) {
-      final FSDataOutputStream out = webhdfs[i].append(p);
+      final FSDataOutputStream out = webhdfs[i].append(new Path(dir, filename+i));
       out.write(appendStrings[i].getBytes());
       out.close();
     }
@@ -157,13 +161,13 @@ public class TestWebHdfsWithMultipleNameNodes {
     for(int i = 0; i < webhdfs.length; i++) {
       //check file length
       final long expected = writeStrings[i].length() + appendStrings[i].length();
-      Assert.assertEquals(expected, webhdfs[i].getFileStatus(p).getLen());
+      Assert.assertEquals(expected, webhdfs[i].getFileStatus(new Path(dir, filename+i)).getLen());
     }
 
     //test read: check file content for each namenode
     for(int i = 0; i < webhdfs.length; i++) {
       final StringBuilder b = new StringBuilder(); 
-      final FSDataInputStream in = webhdfs[i].open(p);
+      final FSDataInputStream in = webhdfs[i].open(new Path(dir, filename+i));
       for(int c; (c = in.read()) != -1; ) {
         b.append((char)c);
       }
