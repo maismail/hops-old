@@ -53,4 +53,9 @@ public class IndexedReplica extends Replica {
   public String toString() {
     return "sid " + storageId + " bid: " + blockId + " index: " + index;
   }
+
+  @Override
+  public boolean equals(Object obj) {
+    return super.equals(obj); //To change body of generated methods, choose Tools | Templates.
+  }
 }

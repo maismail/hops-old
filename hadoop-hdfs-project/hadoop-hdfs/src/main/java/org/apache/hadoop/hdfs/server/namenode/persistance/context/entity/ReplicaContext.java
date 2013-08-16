@@ -38,6 +38,7 @@ public class ReplicaContext extends EntityContext<IndexedReplica> {
     }
 
     newReplicas.put(replica, replica);
+    blockReplicas.get(replica.getBlockId()).add(replica);
     log("added-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
       "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
@@ -116,6 +117,9 @@ public class ReplicaContext extends EntityContext<IndexedReplica> {
     }
 
     modifiedReplicas.put(replica, replica);
+    List<IndexedReplica> list = blockReplicas.get(replica.getBlockId());
+    list.remove(replica);
+    list.add(replica);
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
       "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
