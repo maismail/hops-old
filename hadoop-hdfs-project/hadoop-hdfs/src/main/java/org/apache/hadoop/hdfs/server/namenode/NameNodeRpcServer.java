@@ -326,21 +326,19 @@ class NameNodeRpcServer implements NamenodeProtocols {
   @Override // NamenodeProtocol
   public BlocksWithLocations getBlocks(DatanodeInfo datanode, long size)
   throws IOException {
-//HOP    if(size <= 0) {
-//      throw new IllegalArgumentException(
-//        "Unexpected not positive size: "+size);
-//    }
-//    namesystem.checkOperation(OperationCategory.READ);
-//    namesystem.checkSuperuserPrivilege();
-//    return namesystem.getBlockManager().getBlocks(datanode, size); 
-    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
+    if(size <= 0) {
+      throw new IllegalArgumentException(
+        "Unexpected not positive size: "+size);
+    }
+    namesystem.checkOperation(OperationCategory.READ);
+    namesystem.checkSuperuserPrivilege();
+    return namesystem.getBlockManager().getBlocks(datanode, size); 
   }
 
   @Override // NamenodeProtocol
   public ExportedBlockKeys getBlockKeys() throws IOException {
-//    namesystem.checkSuperuserPrivilege();
-//    return namesystem.getBlockManager().getBlockKeys();
-    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
+    namesystem.checkSuperuserPrivilege();
+    return namesystem.getBlockManager().getBlockKeys();
   }
 
   @Override // NamenodeProtocol

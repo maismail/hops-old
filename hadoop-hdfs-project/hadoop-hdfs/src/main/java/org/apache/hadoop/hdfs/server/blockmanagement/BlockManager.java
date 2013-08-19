@@ -887,65 +887,65 @@ public class BlockManager {
                             minReplication);
   }
 
-//HOP  /**                                                                        // used in the namenode protocol
-//   * return a list of blocks & their locations on <code>datanode</code> whose
-//   * total size is <code>size</code>
-//   * 
-//   * @param datanode on which blocks are located
-//   * @param size total size of blocks
-//   */
-//  public BlocksWithLocations getBlocks(DatanodeID datanode, long size           // used in the namenode protocol
-//      ) throws IOException, PersistanceException {
-//    namesystem.readLock();
-//    try {
-//      namesystem.checkSuperuserPrivilege();
-//      return getBlocksWithLocations(datanode, size);  
-//    } finally {
-//      namesystem.readUnlock();
-//    }
-//  }
-//
-//  /** Get all blocks with location information from a datanode. */
-//  private BlocksWithLocations getBlocksWithLocations(final DatanodeID datanode,
-//      final long size) throws UnregisteredNodeException, PersistanceException, IOException {
-//    final DatanodeDescriptor node = getDatanodeManager().getDatanode(datanode);
-//    if (node == null) {
-//      blockLog.warn("BLOCK* getBlocks: "
-//          + "Asking for blocks from an unrecorded node " + datanode);
-//      throw new HadoopIllegalArgumentException(
-//          "Datanode " + datanode + " not found.");
-//    }
-//
-//    int numBlocks = node.numBlocks();
-//    if(numBlocks == 0) {
-//      return new BlocksWithLocations(new BlockWithLocations[0]);
-//    }
-//    Iterator<BlockInfo> iter = node.getBlockIterator();
-//    int startBlock = DFSUtil.getRandom().nextInt(numBlocks); // starting from a random block
-//    // skip blocks
-//    for(int i=0; i<startBlock; i++) {
-//      iter.next();
-//    }
-//    List<BlockWithLocations> results = new ArrayList<BlockWithLocations>();
-//    long totalSize = 0;
-//    BlockInfo curBlock;
-//    while(totalSize<size && iter.hasNext()) {
-//      curBlock = iter.next();
-//      if(!curBlock.isComplete())  continue;
-//      totalSize += addBlock(curBlock, results);
-//    }
-//    if(totalSize<size) {
-//      iter = node.getBlockIterator(); // start from the beginning
-//      for(int i=0; i<startBlock&&totalSize<size; i++) {
-//        curBlock = iter.next();
-//        if(!curBlock.isComplete())  continue;
-//        totalSize += addBlock(curBlock, results);
-//      }
-//    }
-//
-//    return new BlocksWithLocations(
-//        results.toArray(new BlockWithLocations[results.size()]));
-//  }
+  /**                                                                        // used in the namenode protocol
+   * return a list of blocks & their locations on <code>datanode</code> whose
+   * total size is <code>size</code>
+   * 
+   * @param datanode on which blocks are located
+   * @param size total size of blocks
+   */
+  public BlocksWithLocations getBlocks(DatanodeID datanode, long size           // used in the namenode protocol
+      ) throws IOException {
+    namesystem.readLock();
+    try {
+      namesystem.checkSuperuserPrivilege();
+      return getBlocksWithLocations(datanode, size);  
+    } finally {
+      namesystem.readUnlock();
+    }
+  }
+
+  /** Get all blocks with location information from a datanode. */
+  private BlocksWithLocations getBlocksWithLocations(final DatanodeID datanode,
+      final long size) throws UnregisteredNodeException, IOException {
+    final DatanodeDescriptor node = getDatanodeManager().getDatanode(datanode);
+    if (node == null) {
+      blockLog.warn("BLOCK* getBlocks: "
+          + "Asking for blocks from an unrecorded node " + datanode);
+      throw new HadoopIllegalArgumentException(
+          "Datanode " + datanode + " not found.");
+    }
+
+    int numBlocks = node.numBlocks();
+    if(numBlocks == 0) {
+      return new BlocksWithLocations(new BlockWithLocations[0]);
+    }
+    Iterator<BlockInfo> iter = node.getBlockIterator();
+    int startBlock = DFSUtil.getRandom().nextInt(numBlocks); // starting from a random block
+    // skip blocks
+    for(int i=0; i<startBlock; i++) {
+      iter.next();
+    }
+    List<BlockWithLocations> results = new ArrayList<BlockWithLocations>();
+    long totalSize = 0;
+    BlockInfo curBlock;
+    while(totalSize<size && iter.hasNext()) {
+      curBlock = iter.next();
+      if(!curBlock.isComplete())  continue;
+      totalSize += addBlock(curBlock, results);
+    }
+    if(totalSize<size) {
+      iter = node.getBlockIterator(); // start from the beginning
+      for(int i=0; i<startBlock&&totalSize<size; i++) {
+        curBlock = iter.next();
+        if(!curBlock.isComplete())  continue;
+        totalSize += addBlock(curBlock, results);
+      }
+    }
+
+    return new BlocksWithLocations(
+        results.toArray(new BlockWithLocations[results.size()]));
+  }
 
    
   /** Remove the blocks associated to the given datanode. */
@@ -2761,8 +2761,33 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * Get all valid locations of the block & add the block to results
    * return the length of the added block; 0 if the block is not added
    */
-  private long addBlock(Block block, List<BlockWithLocations> results) throws PersistanceException {
-    final List<String> machineSet = getValidLocations(block);
+  private long addBlock(final Block block, List<BlockWithLocations> results) throws IOException{
+    
+    final List<String> machineSet = new ArrayList<String>();
+    
+    new TransactionalRequestHandler(OperationType.GET_VALID_BLK_LOCS) {
+      long inodeId;
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.READ).
+                addBlock(LockType.READ, block.getBlockId()).
+                addReplica(LockType.READ);
+        lm.acquireByBlock(inodeId);
+      }
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        final List<String> ms = getValidLocations(block);
+        machineSet.addAll(ms);
+        return null;
+      }
+    }.handle(namesystem);
+    
     if(machineSet.size() == 0) {
       return 0;
     } else {

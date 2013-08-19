@@ -172,98 +172,97 @@ public class TestGetBlocks {
       cluster.shutdown();
     }
   }
-//HOP: NamenodeProtocol is not supported
-//  /** test getBlocks */
-//  @Test
-//  public void testGetBlocks() throws Exception {
-//    final Configuration CONF = new HdfsConfiguration();
-//
-//    final short REPLICATION_FACTOR = (short) 2;
-//    final int DEFAULT_BLOCK_SIZE = 1024;
-//    final Random r = new Random();
-//
-//    CONF.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, DEFAULT_BLOCK_SIZE);
-//    MiniDFSCluster cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(
-//        REPLICATION_FACTOR).build();
-//    try {
-//      cluster.waitActive();
-//
-//      // create a file with two blocks
-//      FileSystem fs = cluster.getFileSystem();
-//      FSDataOutputStream out = fs.create(new Path("/tmp.txt"),
-//          REPLICATION_FACTOR);
-//      byte[] data = new byte[1024];
-//      long fileLen = 2 * DEFAULT_BLOCK_SIZE;
-//      long bytesToWrite = fileLen;
-//      while (bytesToWrite > 0) {
-//        r.nextBytes(data);
-//        int bytesToWriteNext = (1024 < bytesToWrite) ? 1024
-//            : (int) bytesToWrite;
-//        out.write(data, 0, bytesToWriteNext);
-//        bytesToWrite -= bytesToWriteNext;
-//      }
-//      out.close();
-//
-//      // get blocks & data nodes
-//      List<LocatedBlock> locatedBlocks;
-//      DatanodeInfo[] dataNodes = null;
-//      boolean notWritten;
-//      do {
-//        final DFSClient dfsclient = new DFSClient(NameNode.getAddress(CONF),
-//            CONF);
-//        locatedBlocks = dfsclient.getNamenode()
-//            .getBlockLocations("/tmp.txt", 0, fileLen).getLocatedBlocks();
-//        assertEquals(2, locatedBlocks.size());
-//        notWritten = false;
-//        for (int i = 0; i < 2; i++) {
-//          dataNodes = locatedBlocks.get(i).getLocations();
-//          if (dataNodes.length != REPLICATION_FACTOR) {
-//            notWritten = true;
-//            try {
-//              Thread.sleep(10);
-//            } catch (InterruptedException e) {
-//            }
-//            break;
-//          }
-//        }
-//      } while (notWritten);
-//
-//      // get RPC client to namenode
-//      InetSocketAddress addr = new InetSocketAddress("localhost",
-//          cluster.getNameNodePort());
-//      NamenodeProtocol namenode = NameNodeProxies.createProxy(CONF,
-//          NameNode.getUri(addr), NamenodeProtocol.class).getProxy();
-//
-//      // get blocks of size fileLen from dataNodes[0]
-//      BlockWithLocations[] locs;
-//      locs = namenode.getBlocks(dataNodes[0], fileLen).getBlocks();
-//      assertEquals(locs.length, 2);
-//      assertEquals(locs[0].getStorageIDs().length, 2);
-//      assertEquals(locs[1].getStorageIDs().length, 2);
-//
-//      // get blocks of size BlockSize from dataNodes[0]
-//      locs = namenode.getBlocks(dataNodes[0], DEFAULT_BLOCK_SIZE).getBlocks();
-//      assertEquals(locs.length, 1);
-//      assertEquals(locs[0].getStorageIDs().length, 2);
-//
-//      // get blocks of size 1 from dataNodes[0]
-//      locs = namenode.getBlocks(dataNodes[0], 1).getBlocks();
-//      assertEquals(locs.length, 1);
-//      assertEquals(locs[0].getStorageIDs().length, 2);
-//
-//      // get blocks of size 0 from dataNodes[0]
-//      getBlocksWithException(namenode, dataNodes[0], 0);
-//
-//      // get blocks of size -1 from dataNodes[0]
-//      getBlocksWithException(namenode, dataNodes[0], -1);
-//
-//      // get blocks of size BlockSize from a non-existent datanode
-//      DatanodeInfo info = DFSTestUtil.getDatanodeInfo("1.2.3.4");
-//      getBlocksWithException(namenode, info, 2);
-//    } finally {
-//      cluster.shutdown();
-//    }
-//  }
+  /** test getBlocks */
+  @Test
+  public void testGetBlocks() throws Exception {
+    final Configuration CONF = new HdfsConfiguration();
+
+    final short REPLICATION_FACTOR = (short) 2;
+    final int DEFAULT_BLOCK_SIZE = 1024;
+    final Random r = new Random();
+
+    CONF.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, DEFAULT_BLOCK_SIZE);
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(
+        REPLICATION_FACTOR).build();
+    try {
+      cluster.waitActive();
+
+      // create a file with two blocks
+      FileSystem fs = cluster.getFileSystem();
+      FSDataOutputStream out = fs.create(new Path("/tmp.txt"),
+          REPLICATION_FACTOR);
+      byte[] data = new byte[1024];
+      long fileLen = 2 * DEFAULT_BLOCK_SIZE;
+      long bytesToWrite = fileLen;
+      while (bytesToWrite > 0) {
+        r.nextBytes(data);
+        int bytesToWriteNext = (1024 < bytesToWrite) ? 1024
+            : (int) bytesToWrite;
+        out.write(data, 0, bytesToWriteNext);
+        bytesToWrite -= bytesToWriteNext;
+      }
+      out.close();
+
+      // get blocks & data nodes
+      List<LocatedBlock> locatedBlocks;
+      DatanodeInfo[] dataNodes = null;
+      boolean notWritten;
+      do {
+        final DFSClient dfsclient = new DFSClient(NameNode.getAddress(CONF),
+            CONF);
+        locatedBlocks = dfsclient.getNamenode()
+            .getBlockLocations("/tmp.txt", 0, fileLen).getLocatedBlocks();
+        assertEquals(2, locatedBlocks.size());
+        notWritten = false;
+        for (int i = 0; i < 2; i++) {
+          dataNodes = locatedBlocks.get(i).getLocations();
+          if (dataNodes.length != REPLICATION_FACTOR) {
+            notWritten = true;
+            try {
+              Thread.sleep(10);
+            } catch (InterruptedException e) {
+            }
+            break;
+          }
+        }
+      } while (notWritten);
+
+      // get RPC client to namenode
+      InetSocketAddress addr = new InetSocketAddress("localhost",
+          cluster.getNameNodePort());
+      NamenodeProtocol namenode = NameNodeProxies.createProxy(CONF,
+          NameNode.getUri(addr), NamenodeProtocol.class).getProxy();
+
+      // get blocks of size fileLen from dataNodes[0]
+      BlockWithLocations[] locs;
+      locs = namenode.getBlocks(dataNodes[0], fileLen).getBlocks();
+      assertEquals(locs.length, 2);
+      assertEquals(locs[0].getStorageIDs().length, 2);
+      assertEquals(locs[1].getStorageIDs().length, 2);
+
+      // get blocks of size BlockSize from dataNodes[0]
+      locs = namenode.getBlocks(dataNodes[0], DEFAULT_BLOCK_SIZE).getBlocks();
+      assertEquals(locs.length, 1);
+      assertEquals(locs[0].getStorageIDs().length, 2);
+
+      // get blocks of size 1 from dataNodes[0]
+      locs = namenode.getBlocks(dataNodes[0], 1).getBlocks();
+      assertEquals(locs.length, 1);
+      assertEquals(locs[0].getStorageIDs().length, 2);
+
+      // get blocks of size 0 from dataNodes[0]
+      getBlocksWithException(namenode, dataNodes[0], 0);
+
+      // get blocks of size -1 from dataNodes[0]
+      getBlocksWithException(namenode, dataNodes[0], -1);
+
+      // get blocks of size BlockSize from a non-existent datanode
+      DatanodeInfo info = DFSTestUtil.getDatanodeInfo("1.2.3.4");
+      getBlocksWithException(namenode, info, 2);
+    } finally {
+      cluster.shutdown();
+    }
+  }
 
   private void getBlocksWithException(NamenodeProtocol namenode,
       DatanodeInfo datanode, long size) throws IOException {
