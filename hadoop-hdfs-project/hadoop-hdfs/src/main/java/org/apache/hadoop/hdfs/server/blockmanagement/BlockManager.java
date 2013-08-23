@@ -86,6 +86,7 @@ import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockTy
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionLockAcquireFailure;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
@@ -1961,7 +1962,7 @@ public class BlockManager {
        blockLog.info("BLOCK* processReport: "
           + block + " on " + dn + " size " + block.getNumBytes()
           + " does not belong to any file");
-      addToInvalidates(block, dn);
+      addToInvalidates(new Block(block), dn);
       return null;
     }
     BlockUCState ucState = storedBlock.getBlockUCState();
@@ -2859,8 +2860,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         }
         if (inodeId == INodeFile.NON_EXISTING_ID) {
           LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
-          throw new IllegalStateException("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
-//          System.exit(0);
+          throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
+          // dont throw the exception. the cached is changed in a way that
+          // it will bring in null values a the block will not be processed by the 
+          // process perfom task because of the null values
+          // if we throw the exception then the tx fails and rollback.
         }
       }
 

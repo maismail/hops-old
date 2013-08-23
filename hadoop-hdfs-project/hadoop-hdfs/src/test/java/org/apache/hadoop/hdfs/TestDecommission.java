@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -128,6 +130,20 @@ public class TestDecommission {
     rand.nextBytes(buffer);
     stm.write(buffer);
     stm.close();
+    
+    //START_HOP_CODE      // Added this delay as the minimum replication is set to 1
+                          // some times it  happens as we manage to create a file 
+                          // and the data node that is going to be decommissioned
+                          // does not yet have the replica ( its in flight )
+                          // if you decommission before it has the replica then
+                          // the replication manager will not know about it and this test 
+                          // fails
+    try {
+      Thread.sleep(5000);
+    } catch (InterruptedException ex) {
+      Logger.getLogger(TestDecommission.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    //END_HOP_CODE
     LOG.info("Created file " + name + " with " + repl + " replicas.");
   }
 
