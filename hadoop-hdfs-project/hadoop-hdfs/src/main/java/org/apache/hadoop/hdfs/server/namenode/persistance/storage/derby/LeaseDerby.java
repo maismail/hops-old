@@ -10,6 +10,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
+import static org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess.HOLDER;
+import static org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess.TABLE_NAME;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /**
@@ -146,6 +148,18 @@ public class LeaseDerby extends LeaseDataAccess {
     }
   }
 
+  @Override
+  public void removeAll() throws StorageException {
+    String deleteAll = String.format("delete * from %s ", TABLE_NAME);
+    Connection conn = connector.obtainSession();
+    try {
+      PreparedStatement dlt = conn.prepareStatement(deleteAll);
+      dlt.executeBatch();
+    } catch (SQLException ex) {
+      handleSQLException(ex);
+    }
+  }
+    
   private Collection<Lease> convert(ResultSet rSet) throws SQLException {
     SortedSet<Lease> lSet = new TreeSet<Lease>();
     while (rSet.next()) {
@@ -155,4 +169,6 @@ public class LeaseDerby extends LeaseDataAccess {
     }
     return lSet;
   }
+
+
 }

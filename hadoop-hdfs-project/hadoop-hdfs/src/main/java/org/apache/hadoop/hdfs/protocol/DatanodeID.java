@@ -37,6 +37,7 @@ import org.apache.hadoop.classification.InterfaceStability;
 public class DatanodeID implements Comparable<DatanodeID> {
   public static final DatanodeID[] EMPTY_ARRAY = {};
 
+  //HOP: name field removed [HDFS-3144]
   private String ipAddr;     // IP address
   private String hostName;   // hostname claimed by datanode
   private String peerHostName; // hostname from the actual connection
@@ -72,6 +73,17 @@ public class DatanodeID implements Comparable<DatanodeID> {
     this.xferPort = xferPort;
     this.infoPort = infoPort;
     this.ipcPort = ipcPort;
+  }
+  
+  //HOP: Mahmoud: 
+  public DatanodeID(String nodeName){
+    String[] ns = nodeName.split(":");
+    this.ipAddr = ns[0];
+    this.xferPort = Integer.parseInt(ns[1]);
+    this.hostName = "";
+    this.storageID = "";
+    this.infoPort = -1;
+    this.ipcPort = -1;
   }
   
   public void setIpAddr(String ipAddr) {

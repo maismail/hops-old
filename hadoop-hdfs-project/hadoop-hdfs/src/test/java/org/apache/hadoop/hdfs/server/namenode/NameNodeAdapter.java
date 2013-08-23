@@ -90,7 +90,7 @@ public class NameNodeAdapter {
     namenode.getNamesystem().enterSafeMode(resourcesLow);
   }
   
-  public static void leaveSafeMode(NameNode namenode) {
+  public static void leaveSafeMode(NameNode namenode) throws IOException {
     namenode.getNamesystem().leaveSafeMode();
   }
   
@@ -113,7 +113,7 @@ public class NameNodeAdapter {
   }
 
   public static HeartbeatResponse sendHeartBeat(DatanodeRegistration nodeReg,
-      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException {
+      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException, PersistanceException {
     return namesystem.handleHeartbeat(nodeReg, dd.getCapacity(), 
         dd.getDfsUsed(), dd.getRemaining(), dd.getBlockPoolUsed(), 0, 0, 0);
   }
@@ -147,7 +147,7 @@ public class NameNodeAdapter {
         Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
         return l == null ? null : l.getHolder();
       }
-    }.handle();
+    }.handle(null);
   }
 
   /**
@@ -173,7 +173,7 @@ public class NameNodeAdapter {
         return (Object)l.getLastUpdate();
       }
     };
-         return (Long)leaseRenewalTimeHandler.handle();
+         return (Long)leaseRenewalTimeHandler.handle(null);
   }
 
   /**

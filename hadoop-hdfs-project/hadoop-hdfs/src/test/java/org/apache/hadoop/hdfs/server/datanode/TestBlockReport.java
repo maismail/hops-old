@@ -143,7 +143,7 @@ public class TestBlockReport {
         LOG.debug("Setting new length");
       }
       tempLen = rand.nextInt(BLOCK_SIZE);
-      b.set(b.getBlockId(), tempLen, b.getGenerationStamp());
+      b.setNoPersistance(b.getBlockId(), tempLen, b.getGenerationStamp());
       if(LOG.isDebugEnabled()) {
         LOG.debug("Block " + b.getBlockName() + " after\t " + "Size " +
             b.getNumBytes());
@@ -269,7 +269,7 @@ public class TestBlockReport {
       prepareForRide(filePath, METHOD_NAME, FILE_SIZE);
 
     // The block with modified GS won't be found. Has to be deleted
-    blocks.get(0).setGenerationStamp(rand.nextLong());
+    blocks.get(0).setGenerationStampNoPersistance(rand.nextLong());
     // This new block is unknown to NN and will be mark for deletion.
     blocks.add(new Block());
     
@@ -336,6 +336,7 @@ public class TestBlockReport {
         new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
     cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
     printStats();
+    Thread.sleep(10000); //HOP: wait for the replication monitor to catch up
     assertEquals("Wrong number of PendingReplication Blocks",
       0, cluster.getNamesystem().getUnderReplicatedBlocks());
   }
@@ -434,7 +435,7 @@ public class TestBlockReport {
    * @throws IOException in case of an error
    */
   @Test
-  public void blockReport_08() throws IOException {
+  public void blockReport_08() throws IOException, InterruptedException {
     final String METHOD_NAME = GenericTestUtils.getMethodName();
     Path filePath = new Path("/" + METHOD_NAME + ".dat");
     final int DN_N1 = DN_N0 + 1;
@@ -462,9 +463,10 @@ public class TestBlockReport {
           new DatanodeStorage(dnR.getStorageID()),
           new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
       cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
-      printStats();
+      
       assertEquals("Wrong number of PendingReplication blocks",
         blocks.size(), cluster.getNamesystem().getPendingReplicationBlocks());
+      printStats();
 
       try {
         bc.join();
@@ -510,10 +512,10 @@ public class TestBlockReport {
           new DatanodeStorage(dnR.getStorageID()),
           new BlockListAsLongs(blocks, null).getBlockListAsLongs()) };
       cluster.getNameNodeRpc().blockReport(dnR, poolId, report);
-      printStats();
+      
       assertEquals("Wrong number of PendingReplication blocks",
         2, cluster.getNamesystem().getPendingReplicationBlocks());
-      
+      printStats();
       try {
         bc.join();
       } catch (InterruptedException e) {}
@@ -706,7 +708,7 @@ public class TestBlockReport {
         fileSize).getLocatedBlocks(), null);
   }
 
-  private void printStats() {
+  private void printStats() throws IOException {
     BlockManagerTestUtil.updateState(cluster.getNamesystem().getBlockManager());
     if(LOG.isDebugEnabled()) {
       LOG.debug("Missing " + cluster.getNamesystem().getMissingBlocksCount());
@@ -793,7 +795,7 @@ public class TestBlockReport {
     long newLen = oldLen - rand.nextLong();
     assertTrue("Old and new length shouldn't be the same",
       block.getNumBytes() != newLen);
-    block.setNumBytes(newLen);
+    block.setNumBytesNoPersistance(newLen);
     if(LOG.isDebugEnabled()) {
       LOG.debug("Length of " + block.getBlockName() +
           " is changed to " + newLen + " from " + oldLen);
@@ -809,7 +811,7 @@ public class TestBlockReport {
     long newGS = oldGS - rand.nextLong();
     assertTrue("Old and new GS shouldn't be the same",
       block.getGenerationStamp() != newGS);
-    block.setGenerationStamp(newGS);
+    block.setGenerationStampNoPersistance(newGS);
     if(LOG.isDebugEnabled()) {
       LOG.debug("Generation stamp of " + block.getBlockName() +
           " is changed to " + block.getGenerationStamp() + " from " + oldGS);

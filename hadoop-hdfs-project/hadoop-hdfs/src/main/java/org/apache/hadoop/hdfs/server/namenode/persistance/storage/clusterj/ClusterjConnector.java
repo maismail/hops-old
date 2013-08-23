@@ -66,8 +66,13 @@ public enum ClusterjConnector implements StorageConnector<Session> {
    * begin a transaction.
    */
   @Override
-  public void beginTransaction() {
+  public void beginTransaction() throws StorageException {
     Session session = obtainSession();
+    if(session.currentTransaction().isActive())
+    {
+      LOG.debug("Can not start Tx inside another Tx");
+      System.exit(0);
+    }
     session.currentTransaction().begin();
   }
 
@@ -108,12 +113,12 @@ public enum ClusterjConnector implements StorageConnector<Session> {
     session.setLockMode(LockMode.READ_COMMITTED);
     try {
       tx.begin();
-//HOP FIXME      session.deletePersistentAll(InodeClusterj.InodeDTO.class);
-//HOP FIXME      session.deletePersistentAll(BlockInfoClusterj.BlockInfoDTO.class);
+      session.deletePersistentAll(InodeClusterj.InodeDTO.class);
+      session.deletePersistentAll(BlockInfoClusterj.BlockInfoDTO.class);
       session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
       session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-//HOP FIXME      session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-//HOP FIXME      session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+      session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+      session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
 //HOP FIXME      session.deletePersistentAll(InvalidatedBlockClusterj.InvalidateBlocksDTO.class);
 //HOP FIXME      session.deletePersistentAll(ExcessReplicaClusterj.ExcessReplicaDTO.class);
 //HOP FIXME      session.deletePersistentAll(PendingBlockClusterj.PendingBlockDTO.class);

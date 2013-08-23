@@ -32,7 +32,7 @@ public class ReplicaRecoveryInfo extends Block {
   private ReplicaState originalState;
 
   public ReplicaRecoveryInfo(long blockId, long diskLen, long gs, ReplicaState rState) {
-    set(blockId, diskLen, gs);
+    setNoPersistance(blockId, diskLen, gs);
     originalState = rState;
   }
 

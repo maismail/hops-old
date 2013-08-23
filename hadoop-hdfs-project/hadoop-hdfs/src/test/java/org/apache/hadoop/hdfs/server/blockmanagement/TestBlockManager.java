@@ -49,6 +49,13 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 public class TestBlockManager {
   private List<DatanodeDescriptor> nodes;
@@ -91,7 +98,7 @@ public class TestBlockManager {
     rackB = nodes.subList(3, 6);
   }
   
-  private void addNodes(Iterable<DatanodeDescriptor> nodesToAdd) {
+  private void addNodes(Iterable<DatanodeDescriptor> nodesToAdd) throws IOException {
     NetworkTopology cluster = bm.getDatanodeManager().getNetworkTopology();
     // construct network topology
     for (DatanodeDescriptor dn : nodesToAdd) {
@@ -103,7 +110,7 @@ public class TestBlockManager {
     }
   }
 
-  private void removeNode(DatanodeDescriptor deadNode) {
+  private void removeNode(DatanodeDescriptor deadNode) throws IOException {
     NetworkTopology cluster = bm.getDatanodeManager().getNetworkTopology();
     cluster.remove(deadNode);
     bm.removeBlocksAssociatedTo(deadNode);
@@ -122,7 +129,7 @@ public class TestBlockManager {
     }
   }
   
-  private void doBasicTest(int testIndex) {
+  private void doBasicTest(int testIndex) throws IOException {
     List<DatanodeDescriptor> origNodes = getNodes(0, 1);
     BlockInfo blockInfo = addBlockOnNodes((long)testIndex, origNodes);
 
@@ -304,7 +311,7 @@ public class TestBlockManager {
     }
   }
 
-  private void doTestSufficientlyReplBlocksUsesNewRack(int testIndex) {
+  private void doTestSufficientlyReplBlocksUsesNewRack(int testIndex) throws IOException {
     // Originally on only nodes in rack A.
     List<DatanodeDescriptor> origNodes = rackA;
     BlockInfo blockInfo = addBlockOnNodes((long)testIndex, origNodes);
@@ -350,21 +357,64 @@ public class TestBlockManager {
    * Tell the block manager that replication is completed for the given
    * pipeline.
    */
-  private void fulfillPipeline(BlockInfo blockInfo,
+  private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
+    TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.FULFILL_PIPELINE) {
+      long inodeId;
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(blockInfo.getBlockId());
+      }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                addBlock(LockType.WRITE, blockInfo.getBlockId()).
+                addReplica(LockType.WRITE).
+                addExcess(LockType.WRITE).
+                addCorrupt(LockType.WRITE).
+                addUnderReplicatedBlock(LockType.WRITE).
+                addPendingBlock(LockType.WRITE).
+                addReplicaUc(LockType.WRITE).
+                addInvalidatedBlock(LockType.READ);
+        lm.acquireByBlock(inodeId);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        DatanodeDescriptor dnd = (DatanodeDescriptor) getParams()[0];
+        bm.addBlock(dnd, blockInfo, null);
+        return null;
+      }
+    };
+
     for (int i = 1; i < pipeline.length; i++) {
-      bm.addBlock(pipeline[i], blockInfo, null);
+      handler.setParams(pipeline[i]).handle(null);
     }
   }
 
-  private BlockInfo blockOnNodes(long blkId, List<DatanodeDescriptor> nodes) {
-    Block block = new Block(blkId);
-    BlockInfo blockInfo = new BlockInfo(block, 3);
+  private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
+    return (BlockInfo) new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
+       @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addBlock(LockType.READ, blkId).
+           addReplica(LockType.READ);
+        lm.acquire();
+      }
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Block block = new Block(blkId);
+        BlockInfo blockInfo = new BlockInfo(block);
 
-    for (DatanodeDescriptor dn : nodes) {
-      blockInfo.addNode(dn);
-    }
-    return blockInfo;
+        for (DatanodeDescriptor dn : nodes) {
+          //blockInfo.addNode(dn);
+          dn.addBlock(blockInfo);
+        }
+        return blockInfo;
+      }
+    }.handle(null);
   }
 
   private List<DatanodeDescriptor> getNodes(int ... indexes) {
@@ -383,16 +433,29 @@ public class TestBlockManager {
     return nodes;
   }
   
-  private BlockInfo addBlockOnNodes(long blockId, List<DatanodeDescriptor> nodes) {
-    BlockCollection bc = Mockito.mock(BlockCollection.class);
+  private BlockInfo addBlockOnNodes(final long blockId, List<DatanodeDescriptor> nodes) throws IOException {
+    final BlockCollection bc = Mockito.mock(BlockCollection.class);
     Mockito.doReturn((short)3).when(bc).getBlockReplication();
-    BlockInfo blockInfo = blockOnNodes(blockId, nodes);
-
-    bm.blocksMap.addBlockCollection(blockInfo, bc);
+    final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
+    
+    new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
+       @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager lm = new TransactionLockManager();
+        lm.addBlock(LockType.WRITE, blockId);
+        lm.acquire();
+      }
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+          bm.blocksMap.addBlockCollection(blockInfo, bc);
+         return null;
+      }
+    }.handle(null);
+    
     return blockInfo;
   }
 
-  private DatanodeDescriptor[] scheduleSingleReplication(Block block) {
+  private DatanodeDescriptor[] scheduleSingleReplication(Block block) throws IOException {
     // list for priority 1
     List<Block> list_p1 = new ArrayList<Block>();
     list_p1.add(block);

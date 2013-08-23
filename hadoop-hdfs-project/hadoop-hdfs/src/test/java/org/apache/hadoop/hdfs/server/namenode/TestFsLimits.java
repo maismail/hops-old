@@ -36,6 +36,7 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -68,7 +69,7 @@ public class TestFsLimits {
     
     @Override
     public <T extends INode> void verifyFsLimits(INode[] pathComponents,
-        int pos, T child) throws FSLimitException {
+        int pos, T child) throws FSLimitException, PersistanceException {
       super.verifyFsLimits(pathComponents, pos, child);
     }
   }

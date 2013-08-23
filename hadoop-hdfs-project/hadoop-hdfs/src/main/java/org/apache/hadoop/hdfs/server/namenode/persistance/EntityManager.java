@@ -2,8 +2,6 @@ package org.apache.hadoop.hdfs.server.namenode.persistance;
 
 import java.util.Collection;
 import java.util.Map;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;

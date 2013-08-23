@@ -31,15 +31,6 @@ public abstract class InodeDataAccess extends EntityDataAccess {
   public static final String NSCOUNT = "nscount";
   public static final String DSCOUNT = "dscount";
   public static final String SYMLINK = "symlink";
-  /**
-   * Number of bits for Block size
-   */
-  static final short BLOCKBITS = 48;
-  /**
-   * Header mask 64-bit representation Format: [16 bits for replication][48 bits
-   * for PreferredBlockSize]
-   */
-  static final long HEADERMASK = 0xffffL << BLOCKBITS;
 
   public abstract INode findInodeById(long inodeId) throws StorageException;
 
@@ -57,29 +48,4 @@ public abstract class InodeDataAccess extends EntityDataAccess {
    * @throws StorageException 
    */
   public abstract int countAll() throws StorageException;
-
-  protected short getReplication(long header) {
-    return (short) ((header & HEADERMASK) >> BLOCKBITS);
-  }
-
-  protected long getHeader(short replication, long preferredBlockSize) {
-    long header = 0;
-
-    if (replication <= 0) {
-      throw new IllegalArgumentException("Unexpected value for the replication");
-    }
-
-    if ((preferredBlockSize < 0) || (preferredBlockSize > ~HEADERMASK)) {
-      throw new IllegalArgumentException("Unexpected value for the block size");
-    }
-
-    header = (header & HEADERMASK) | (preferredBlockSize & ~HEADERMASK);
-    header = ((long) replication << BLOCKBITS) | (header & ~HEADERMASK);
-
-    return header;
-  }
-
-  protected long getPreferredBlockSize(long header) {
-    return header & ~HEADERMASK;
-  }
 }

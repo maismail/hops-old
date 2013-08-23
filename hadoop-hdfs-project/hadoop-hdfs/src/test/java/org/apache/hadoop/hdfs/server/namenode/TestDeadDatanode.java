@@ -130,7 +130,9 @@ public class TestDeadDatanode {
     // Ensure blockReport from dead datanode is rejected with IOException
     StorageBlockReport[] report = { new StorageBlockReport(
         new DatanodeStorage(reg.getStorageID()),
-        new long[] { 0L, 0L, 0L }) };
+        new long[] { 0L, 0L, 0L, 0L, 0L}) };    //problem is with the check in the logging fucntion in BlockListAsLongs. 
+                                                //This problem also occurs in the master branch. After looking in to the code
+                                                //we need to send array of length 5. enable debug log level to get the error in the master branch 
     try {
       dnp.blockReport(reg, poolId, report);
       fail("Expected IOException is not thrown");

@@ -12,6 +12,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
@@ -33,47 +34,47 @@ public class INodeUtil {
 
   private final static Log LOG = LogFactory.getLog(INodeUtil.class);
 
-//  // This code is based on FSDirectory code for resolving the path.
-//  public static boolean getNextChild(
-//          INode[] curInode,
-//          byte[][] components,
-//          int[] count,
-//          LinkedList<INode> resolvedInodes,
-//          boolean resolveLink,
-//          boolean transactional) throws UnresolvedPathException, PersistanceException {
-//
-//    boolean lastComp = (count[0] == components.length - 1);
-//    if (curInode[0].isLink() && (!lastComp || (lastComp && resolveLink))) {
-//      final String symPath = constructPath(components, 0, components.length);
-//      final String preceding = constructPath(components, 0, count[0]);
-//      final String remainder =
-//              constructPath(components, count[0] + 1, components.length);
-//      final String link = DFSUtil.bytes2String(components[count[0]]);
-//      final String target = ((INodeSymlink) curInode[0]).getLinkValue();
-//      if (NameNode.stateChangeLog.isDebugEnabled()) {
-//        NameNode.stateChangeLog.debug("UnresolvedPathException "
-//                + " path: " + symPath + " preceding: " + preceding
-//                + " count: " + count + " link: " + link + " target: " + target
-//                + " remainder: " + remainder);
-//      }
-//      throw new UnresolvedPathException(symPath, preceding, remainder, target);
-//    }
-//
-//    if (lastComp || !curInode[0].isDirectory()) {
-//      return true;
-//    }
-//
-//    curInode[0] = getChildINode(
-//            components[count[0] + 1],
-//            curInode[0].getId(),
-//            transactional);
-//    if (curInode[0] != null) {
-//      resolvedInodes.add(curInode[0]);
-//    }
-//    count[0] = count[0] + 1;
-//
-//    return lastComp;
-//  }
+  // This code is based on FSDirectory code for resolving the path.
+  public static boolean getNextChild(
+          INode[] curInode,
+          byte[][] components,
+          int[] count,
+          LinkedList<INode> resolvedInodes,
+          boolean resolveLink,
+          boolean transactional) throws UnresolvedPathException, PersistanceException {
+
+    boolean lastComp = (count[0] == components.length - 1);
+    if (curInode[0].isSymlink() && (!lastComp || (lastComp && resolveLink))) {
+      final String symPath = constructPath(components, 0, components.length);
+      final String preceding = constructPath(components, 0, count[0]);
+      final String remainder =
+              constructPath(components, count[0] + 1, components.length);
+      final String link = DFSUtil.bytes2String(components[count[0]]);
+      final String target = ((INodeSymlink) curInode[0]).getLinkValue();
+      if (NameNode.stateChangeLog.isDebugEnabled()) {
+        NameNode.stateChangeLog.debug("UnresolvedPathException "
+                + " path: " + symPath + " preceding: " + preceding
+                + " count: " + count + " link: " + link + " target: " + target
+                + " remainder: " + remainder);
+      }
+      throw new UnresolvedPathException(symPath, preceding, remainder, target);
+    }
+
+    if (lastComp || !curInode[0].isDirectory()) {
+      return true;
+    }
+
+    curInode[0] = getChildINode(
+            components[count[0] + 1],
+            curInode[0].getId(),
+            transactional);
+    if (curInode[0] != null) {
+      resolvedInodes.add(curInode[0]);
+    }
+    count[0] = count[0] + 1;
+
+    return lastComp;
+  }
 
   public static String constructPath(byte[][] components, int start, int end) {
     StringBuilder buf = new StringBuilder();
@@ -86,20 +87,20 @@ public class INodeUtil {
     return buf.toString();
   }
 
-//  private static INode getChildINode(
-//          byte[] name,
-//          long parentId,
-//          boolean transactional)
-//          throws PersistanceException {
-//    String nameString = DFSUtil.bytes2String(name);
-//    if (transactional) {
-//      // TODO - Memcache success check - do primary key instead.
-//      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
-//      return EntityManager.find(INode.Finder.ByNameAndParentId, nameString, parentId);
-//    } else {
-//      return findINodeWithNoTransaction(nameString, parentId);
-//    }
-//  }
+  private static INode getChildINode(
+          byte[] name,
+          long parentId,
+          boolean transactional)
+          throws PersistanceException {
+    String nameString = DFSUtil.bytes2String(name);
+    if (transactional) {
+      // TODO - Memcache success check - do primary key instead.
+      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
+      return EntityManager.find(INode.Finder.ByNameAndParentId, nameString, parentId);
+    } else {
+      return findINodeWithNoTransaction(nameString, parentId);
+    }
+  }
 
   private static INode findINodeWithNoTransaction(
           String name,
@@ -117,67 +118,64 @@ public class INodeUtil {
           String path,
           boolean resolveLink)
           throws UnresolvedPathException, PersistanceException {
-//    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
-//
-//    if (path == null) {
-//      return resolvedInodes;
-//    }
-//
-//    byte[][] components = INode.getPathComponents(path);
-//    INode[] curNode = new INode[1];
-//
-//    int[] count = new int[]{0};
-//    boolean lastComp = (count[0] == components.length - 1);
-//    if (lastComp) // if root is the last directory, we should acquire the write lock over the root
-//    {
-//      resolvedInodes.add(readRoot());
-//      return resolvedInodes;
-//    } else {
-//      curNode[0] = readRoot();
-//    }
-//
-//    while (count[0] < components.length && curNode[0] != null) {
-//
-//      lastComp = INodeUtil.getNextChild(
-//              curNode,
-//              components,
-//              count,
-//              resolvedInodes,
-//              resolveLink,
-//              false);
-//      if (lastComp) {
-//        break;
-//      }
-//    }
-//
-//    return resolvedInodes;
-          return null;
+    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
+
+    if (path == null) {
+      return resolvedInodes;
+    }
+
+    byte[][] components = INode.getPathComponents(path);
+    INode[] curNode = new INode[1];
+
+    int[] count = new int[]{0};
+    boolean lastComp = (count[0] == components.length - 1);
+    if (lastComp) // if root is the last directory, we should acquire the write lock over the root
+    {
+      resolvedInodes.add(getRoot());
+      return resolvedInodes;
+    } else {
+      curNode[0] = getRoot();
+    }
+
+    while (count[0] < components.length && curNode[0] != null) {
+
+      lastComp = INodeUtil.getNextChild(
+              curNode,
+              components,
+              count,
+              resolvedInodes,
+              resolveLink,
+              false);
+      if (lastComp) {
+        break;
+      }
+    }
+
+    return resolvedInodes;  
   }
 
   public static long findINodeIdByBlock(long blockId) throws StorageException {
-//    LOG.info(String.format(
-//            "Read block with no transaction by bid=%d",
-//            blockId));
-//    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-//    BlockInfo bInfo = bda.findById(blockId);
-//    if (bInfo == null) {
-//      return INode.NON_EXISTING_ID;
-//    }
-//    return bInfo.getInodeId();
-      return 0L; //FIXME uncomment code above and delete this line. only for testing
+    LOG.debug(String.format(
+            "About to read block with no transaction by bid=%d",
+            blockId));
+    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+    BlockInfo bInfo = bda.findById(blockId);
+    if (bInfo == null) {
+      return INode.NON_EXISTING_ID;
+    }
+    return bInfo.getInodeId();
   }
 
   public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
-//    LinkedList<INode> pathInodes = new LinkedList<INode>();
-//    if (inodeId != INode.NON_EXISTING_ID) {
-//      INode inode = readById(inodeId);
-//      if (inode == null) {
-//        return pathInodes;
-//      }
-//      readFromLeafToRoot(inode, pathInodes);
-//    }
-//    return pathInodes;
-      return null; //FIXME uncomment code above and delete this line. only for testing
+    LinkedList<INode> pathInodes = new LinkedList<INode>();
+    if (inodeId != INode.NON_EXISTING_ID) {
+      INode inode = readById(inodeId);
+      if (inode == null) {
+        return pathInodes;
+      }
+      readFromLeafToRoot(inode, pathInodes);
+    }
+    return pathInodes;
   }
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
@@ -195,8 +193,8 @@ public class INodeUtil {
     return sortedPaths;
   }
 
-  private static INode readRoot() throws StorageException {
-    return readById(FSDirectory.ROOT_ID);
+  private static INode getRoot() throws StorageException {
+    return readById(INodeDirectory.ROOT_ID);
   }
 
   private static INode readById(long id) throws StorageException {
@@ -207,14 +205,14 @@ public class INodeUtil {
     return da.findInodeById(id);
   }
 
-//  private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
-//    if (inode.getParentId() == -1) {
-//      list.add(inode);
-//      return;
-//    }
-//
-//    readFromLeafToRoot(readById(inode.getParentId()), list);
-//    INode i = readById(inode.getId());
-//    list.add(i);
-//  }
+  private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
+    if (inode.getParentId() == -1) {
+      list.add(inode);
+      return;
+    }
+
+    readFromLeafToRoot(readById(inode.getParentId()), list);
+    INode i = readById(inode.getId());
+    list.add(i);
+  }
 }

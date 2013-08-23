@@ -23,4 +23,6 @@ public abstract class LeasePathDataAccess extends EntityDataAccess {
   public abstract LeasePath findByPKey(String path) throws StorageException;
 
   public abstract void prepare(Collection<LeasePath> removed, Collection<LeasePath> newed, Collection<LeasePath> modified) throws StorageException;
+  
+  public abstract void removeAll() throws StorageException;
 }

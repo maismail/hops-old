@@ -172,7 +172,6 @@ public class TestGetBlocks {
       cluster.shutdown();
     }
   }
-
   /** test getBlocks */
   @Test
   public void testGetBlocks() throws Exception {

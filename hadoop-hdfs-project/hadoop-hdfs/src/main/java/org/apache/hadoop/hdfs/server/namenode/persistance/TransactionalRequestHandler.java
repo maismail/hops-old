@@ -4,6 +4,7 @@ import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionLockAcquireFailure;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.log4j.NDC;
 
@@ -46,7 +47,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                 long oldTime = 0;
                 try {
                     // Defines a context for every operation to track them in the logs easily.
-                    if (namesystem != null) {
+                    if (namesystem != null && namesystem instanceof FSNamesystem) {
                         NDC.push("NN (" + namesystem.getNamenodeId() + ") " + opType.name());
                     } else {
                         NDC.push(opType.name());
@@ -72,6 +73,11 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                     log.error("Could not perfortm task", ex);
                     rollback = true;
                     retry = false;
+                } catch(TransactionLockAcquireFailure ex){
+                  //Failed to acquire locks. aborting the tx
+                  log.error("Failed to acquire the locks. Abort "+ex);
+                  rollback = true;
+                  retry = false;  // no need to retry as it will fail again
                 } catch (PersistanceException ex) {
                     log.error("Tx FAILED. total tx time "+
                             (System.currentTimeMillis() - txStartTime)+
@@ -108,6 +114,9 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                             }
                         } finally {
                             NDC.pop();
+                            if (namesystem != null && namesystem instanceof FSNamesystem) {
+                              ((FSNamesystem)namesystem).performPendingSafeModeOperation();
+                            }
                         }
                     }
                 }

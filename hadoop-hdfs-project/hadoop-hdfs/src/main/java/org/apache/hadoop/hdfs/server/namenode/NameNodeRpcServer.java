@@ -345,40 +345,45 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public void errorReport(NamenodeRegistration registration,
                           int errorCode, 
                           String msg) throws IOException {
-    namesystem.checkOperation(OperationCategory.UNCHECKED);
-    namesystem.checkSuperuserPrivilege();
-    verifyRequest(registration);
-    LOG.info("Error report from " + registration + ": " + msg);
-    if (errorCode == FATAL) {
-      namesystem.releaseBackupNode(registration);
-    }
+//    namesystem.checkOperation(OperationCategory.UNCHECKED);
+//    namesystem.checkSuperuserPrivilege();
+//    verifyRequest(registration);
+//    LOG.info("Error report from " + registration + ": " + msg);
+//    if (errorCode == FATAL) {
+//      namesystem.releaseBackupNode(registration);
+//  }
+    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
+    
   }
 
   @Override // NamenodeProtocol
   public NamenodeRegistration register(NamenodeRegistration registration)
   throws IOException {
-    namesystem.checkSuperuserPrivilege();
-    verifyLayoutVersion(registration.getVersion());
-    NamenodeRegistration myRegistration = nn.setRegistration();
-    namesystem.registerBackupNode(registration, myRegistration);
-    return myRegistration;
+//    namesystem.checkSuperuserPrivilege();
+//    verifyLayoutVersion(registration.getVersion());
+//    NamenodeRegistration myRegistration = nn.setRegistration();
+//    namesystem.registerBackupNode(registration, myRegistration);
+//    return myRegistration;
+    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
   }
 
   @Override // NamenodeProtocol
   public NamenodeCommand startCheckpoint(NamenodeRegistration registration)
   throws IOException {
-    namesystem.checkSuperuserPrivilege();
-    verifyRequest(registration);
-    if(!nn.isRole(NamenodeRole.NAMENODE))
-      throw new IOException("Only an ACTIVE node can invoke startCheckpoint.");
-    return namesystem.startCheckpoint(registration, nn.setRegistration());
+//    namesystem.checkSuperuserPrivilege();
+//    verifyRequest(registration);
+//    if(!nn.isRole(NamenodeRole.NAMENODE))
+//      throw new IOException("Only an ACTIVE node can invoke startCheckpoint.");
+//    return namesystem.startCheckpoint(registration, nn.setRegistration());
+    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
   }
 
   @Override // NamenodeProtocol
   public void endCheckpoint(NamenodeRegistration registration,
                             CheckpointSignature sig) throws IOException {
-    namesystem.checkSuperuserPrivilege();
-    namesystem.endCheckpoint(registration, sig);
+//    namesystem.checkSuperuserPrivilege();
+//    namesystem.endCheckpoint(registration, sig);
+    throw new UnsupportedOperationException("NamenodeProtocol is not supported");
   }
 
   @Override // ClientProtocol
@@ -1043,7 +1048,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override // HAServiceProtocol
   public synchronized HAServiceStatus getServiceStatus() 
-      throws AccessControlException, ServiceFailedException {
+      throws AccessControlException, ServiceFailedException, IOException {
     return nn.getServiceStatus();
   }
 

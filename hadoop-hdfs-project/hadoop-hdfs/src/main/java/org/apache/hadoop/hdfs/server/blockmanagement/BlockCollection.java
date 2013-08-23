@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.ContentSummary;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /** 
  * This interface is used by the block manager to expose a
@@ -31,22 +32,22 @@ public interface BlockCollection {
   /**
    * Get the last block of the collection.
    */
-  public BlockInfo getLastBlock() throws IOException;
+  public BlockInfo getLastBlock() throws IOException, PersistanceException;
 
   /** 
    * Get content summary.
    */
-  public ContentSummary computeContentSummary();
+  public ContentSummary computeContentSummary() throws PersistanceException;
 
   /**
    * @return the number of blocks
    */ 
-  public int numBlocks();
+  public int numBlocks() throws PersistanceException;
 
   /**
    * Get the blocks.
    */
-  public BlockInfo[] getBlocks();
+  public BlockInfo[] getBlocks() throws PersistanceException;
 
   /**
    * Get preferred block size for the collection 
@@ -63,5 +64,10 @@ public interface BlockCollection {
   /**
    * Get the name of the collection.
    */
-  public String getName();
+  public String getName() throws PersistanceException;
+  
+  /** HOP:
+   * Get the Id of associated INode
+   */
+  public long getId();
 }

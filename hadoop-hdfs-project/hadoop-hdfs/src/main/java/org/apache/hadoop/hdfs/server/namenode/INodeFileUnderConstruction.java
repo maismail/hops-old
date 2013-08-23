@@ -18,22 +18,26 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /**
  * I-node for file being written.
  */
 @InterfaceAudience.Private
-class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollection {
+public class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollection {
   /** Cast INode to INodeFileUnderConstruction. */
   public static INodeFileUnderConstruction valueOf(INode inode, String path
       ) throws IOException {
@@ -46,23 +50,23 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
 
   private  String clientName;         // lease holder
   private final String clientMachine;
-  private final DatanodeDescriptor clientNode; // if client is a cluster node too.
+  private final DatanodeID clientNode; // if client is a cluster node too.
   
-  INodeFileUnderConstruction(PermissionStatus permissions,
+  public INodeFileUnderConstruction(PermissionStatus permissions,
                              short replication,
                              long preferredBlockSize,
                              long modTime,
                              String clientName,
                              String clientMachine,
-                             DatanodeDescriptor clientNode) {
-    super(permissions.applyUMask(UMASK), BlockInfo.EMPTY_ARRAY, replication,
+                             DatanodeID clientNode) {
+    super(permissions.applyUMask(UMASK), null, replication,
         modTime, modTime, preferredBlockSize);
     this.clientName = clientName;
     this.clientMachine = clientMachine;
     this.clientNode = clientNode;
   }
 
-  INodeFileUnderConstruction(byte[] name,
+  public INodeFileUnderConstruction(byte[] name,
                              short blockReplication,
                              long modificationTime,
                              long preferredBlockSize,
@@ -70,28 +74,41 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
                              PermissionStatus perm,
                              String clientName,
                              String clientMachine,
-                             DatanodeDescriptor clientNode) {
+                             DatanodeID clientNode) {
     super(perm, blocks, blockReplication, modificationTime, modificationTime,
           preferredBlockSize);
-    setLocalName(name);
+    setLocalNameNoPersistance(name);
+    this.clientName = clientName;
+    this.clientMachine = clientMachine;
+    this.clientNode = clientNode;
+    throw new UnsupportedOperationException("HOP: This constructor should not be used"); // The only reason it is here that it is called in some FSImage Classes that are not deleted. 
+  }
+
+   //HOP: used instead of INodeFile.convertToUnderConstruction
+  protected INodeFileUnderConstruction(INodeFile file,
+                             String clientName,
+                             String clientMachine,
+                             DatanodeID clientNode) throws PersistanceException {
+    super(file);
     this.clientName = clientName;
     this.clientMachine = clientMachine;
     this.clientNode = clientNode;
   }
-
-  String getClientName() {
+  
+  public String getClientName() {
     return clientName;
   }
 
-  void setClientName(String clientName) {
+  void setClientName(String clientName) throws PersistanceException {
     this.clientName = clientName;
+    save();
   }
 
-  String getClientMachine() {
+  public String getClientMachine() {
     return clientMachine;
   }
 
-  DatanodeDescriptor getClientNode() {
+  public DatanodeID getClientNode() {
     return clientNode;
   }
 
@@ -107,16 +124,12 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
   // converts a INodeFileUnderConstruction into a INodeFile
   // use the modification time as the access time
   //
-  INodeFile convertToInodeFile() {
+  INodeFile convertToInodeFile() throws PersistanceException {
     assert allBlocksComplete() : "Can't finalize inode " + this
       + " since it contains non-complete blocks! Blocks are "
-      + Arrays.asList(getBlocks());
-    INodeFile obj = new INodeFile(getPermissionStatus(),
-                                  getBlocks(),
-                                  getBlockReplication(),
-                                  getModificationTime(),
-                                  getModificationTime(),
-                                  getPreferredBlockSize());
+      + getBlocks();
+    INodeFile obj = new INodeFile(this);
+    obj.setAccessTime(getModificationTime());
     return obj;
     
   }
@@ -124,7 +137,7 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
   /**
    * @return true if all of the blocks in this file are marked as completed.
    */
-  private boolean allBlocksComplete() {
+  private boolean allBlocksComplete() throws PersistanceException {
     for (BlockInfo b : getBlocks()) {
       if (!b.isComplete()) {
         return false;
@@ -137,7 +150,7 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
    * Remove a block from the block list. This block should be
    * the last one on the list.
    */
-  void removeLastBlock(Block oldblock) throws IOException {
+  void removeLastBlock(Block oldblock) throws IOException, PersistanceException {
     final BlockInfo[] blocks = getBlocks();
     if (blocks == null) {
       throw new IOException("Trying to delete non-existant block " + oldblock);
@@ -146,11 +159,8 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
     if (!blocks[size_1].equals(oldblock)) {
       throw new IOException("Trying to delete non-last block " + oldblock);
     }
-
-    //copy to a new list
-    BlockInfo[] newlist = new BlockInfo[size_1];
-    System.arraycopy(blocks, 0, newlist, 0, size_1);
-    setBlocks(newlist);
+    
+    removeBlock(blocks[blocks.length-1]);  
   }
 
   /**
@@ -159,7 +169,7 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
    */
   @Override
   public BlockInfoUnderConstruction setLastBlock(BlockInfo lastBlock,
-      DatanodeDescriptor[] targets) throws IOException {
+      DatanodeDescriptor[] targets) throws IOException, PersistanceException {
     if (numBlocks() == 0) {
       throw new IOException("Failed to set last block: File is empty.");
     }
@@ -178,7 +188,7 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
    *          The length of the last block reported from client
    * @throws IOException
    */
-  void updateLengthOfLastBlock(long lastBlockLength) throws IOException {
+  void updateLengthOfLastBlock(long lastBlockLength) throws IOException, PersistanceException {
     BlockInfo lastBlock = this.getLastBlock();
     assert (lastBlock != null) : "The last block for path "
         + this.getFullPathName() + " is null when updating its length";
@@ -187,5 +197,19 @@ class INodeFileUnderConstruction extends INodeFile implements MutableBlockCollec
         + " is not a BlockInfoUnderConstruction when updating its length";
     lastBlock.setNumBytes(lastBlockLength);
   }
-  
+ 
+  //START_HOP_CODE
+  public void removeBlock(BlockInfo block) throws PersistanceException {
+    BlockInfo[] blks = getBlocks();
+    int index = block.getBlockIndex();
+
+    block.setBlockCollection(null);
+
+    if (index != blks.length) {
+      for (int i = index + 1; i < blks.length; i++) {
+        blks[i].setBlockIndex(i - 1);
+      }
+    }
+  }
+   //END_HOP_CODE
 }

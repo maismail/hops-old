@@ -394,7 +394,7 @@ public class DirectoryScanner implements Runnable {
         }
         LOG.info(statsRecord.toString());
       } //end for
-    } //end synchronized
+    } //end synchronizedz
   }
 
   /**
@@ -509,41 +509,92 @@ public class DirectoryScanner implements Runnable {
         return report;
       }
       Arrays.sort(files);
+      
       /*
        * Assumption: In the sorted list of files block file appears immediately
        * before block metadata file. This is true for the current naming
        * convention for block file blk_<blockid> and meta file
        * blk_<blockid>_<genstamp>.meta
        */
+//HOP      for (int i = 0; i < files.length; i++) {
+//        if (files[i].isDirectory()) {
+//          compileReport(vol, files[i], report);
+//          continue;
+//        }
+//        if (!Block.isBlockFilename(files[i])) {
+//          if (isBlockMetaFile("blk_", files[i].getName())) {
+//            long blockId = Block.getBlockId(files[i].getName());
+//            report.add(new ScanInfo(blockId, null, files[i], vol));
+//          }
+//          continue;
+//        }
+//        File blockFile = files[i];
+//        long blockId = Block.filename2id(blockFile.getName());
+//        File metaFile = null;
+//
+//        // Skip all the files that start with block name until
+//        // getting to the metafile for the block
+//        while (i + 1 < files.length && files[i + 1].isFile()
+//            && files[i + 1].getName().startsWith(blockFile.getName())) {
+//          i++;
+//          if (isBlockMetaFile(blockFile.getName(), files[i].getName())) {
+//            metaFile = files[i];
+//            break;
+//          }
+//        }  
+//        report.add(new ScanInfo(blockId, blockFile, metaFile, vol));
+//      }
+      
+      //START_HOP_CODE
+      List<File> blkFiles = new ArrayList();
+      List<File> metaFiles = new ArrayList();
+      List<File> subDirs = new ArrayList();
       for (int i = 0; i < files.length; i++) {
-        if (files[i].isDirectory()) {
-          compileReport(vol, files[i], report);
-          continue;
-        }
-        if (!Block.isBlockFilename(files[i])) {
+        if (!files[i].isDirectory()) {
           if (isBlockMetaFile("blk_", files[i].getName())) {
-            long blockId = Block.getBlockId(files[i].getName());
-            report.add(new ScanInfo(blockId, null, files[i], vol));
+            metaFiles.add(files[i]);
+          } else if (Block.isBlockFilename(files[i])) {
+            blkFiles.add(files[i]);
           }
-          continue;
+        } else {
+          subDirs.add(files[i]);
         }
-        File blockFile = files[i];
-        long blockId = Block.filename2id(blockFile.getName());
-        File metaFile = null;
-
-        // Skip all the files that start with block name until
-        // getting to the metafile for the block
-        while (i + 1 < files.length && files[i + 1].isFile()
-            && files[i + 1].getName().startsWith(blockFile.getName())) {
-          i++;
-          if (isBlockMetaFile(blockFile.getName(), files[i].getName())) {
-            metaFile = files[i];
-            break;
-          }
-        }
-        report.add(new ScanInfo(blockId, blockFile, metaFile, vol));
       }
+
+      for (File subDir : subDirs) {
+        compileReport(vol, subDir, report);
+      }
+
+      for (int i = blkFiles.size() - 1; i >= 0; i--) {
+        File blkFile = blkFiles.get(i);
+        long blockId = Block.filename2id(blkFile.getName());
+        File metaFile = popMetaFile(blkFile, metaFiles);
+        report.add(new ScanInfo(blockId, blkFile, metaFile, vol));
+        blkFiles.remove(i);
+      }
+
+      for (int i = metaFiles.size() - 1; i >= 0; i--) {
+        File metaFile = metaFiles.get(i);
+        long blockId = Block.getBlockId(metaFile.getName());
+        report.add(new ScanInfo(blockId, null, metaFile, vol));
+      }
+      //END_HOP_CODE
       return report;
     }
   }
+  
+  //START_HOP_CODE
+  private static File popMetaFile(final File blkFile, final List<File> metaFiles)
+  {
+    for(File metaFile: metaFiles)
+    {
+      if(isBlockMetaFile(blkFile.getName()+"_", metaFile.getName()))
+      {
+        metaFiles.remove(metaFile);
+        return metaFile;
+      }
+    }
+    return null;
+  }
+  //END_HOP_CODE
 }

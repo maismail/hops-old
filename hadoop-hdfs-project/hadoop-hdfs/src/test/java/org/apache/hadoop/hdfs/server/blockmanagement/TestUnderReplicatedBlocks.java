@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.conf.Configuration;
@@ -27,6 +28,12 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
+import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.junit.Test;
 
 public class TestUnderReplicatedBlocks {
@@ -46,10 +53,33 @@ public class TestUnderReplicatedBlocks {
       // remove one replica from the blocksMap so block becomes under-replicated
       // but the block does not get put into the under-replicated blocks queue
       final BlockManager bm = cluster.getNamesystem().getBlockManager();
-      ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
-      DatanodeDescriptor dn = bm.blocksMap.nodeIterator(b.getLocalBlock()).next();
-      bm.addToInvalidates(b.getLocalBlock(), dn);
-      bm.blocksMap.removeNode(b.getLocalBlock(), dn);
+      final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
+      
+      new TransactionalRequestHandler(OperationType.SET_REPLICA_INCREAMENT) {
+        long inodeId;
+
+        @Override
+        public void setUp() throws StorageException {
+          inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        }
+
+        @Override
+        public void acquireLock() throws PersistanceException, IOException {
+          TransactionLockManager lm = new TransactionLockManager();
+          lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+                  addBlock(TransactionLockManager.LockType.WRITE, b.getBlockId()).
+                  addReplica(TransactionLockManager.LockType.WRITE).
+                  acquireByBlock(inodeId);
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          DatanodeDescriptor dn = bm.blocksMap.nodeIterator(b.getLocalBlock()).next();
+          bm.addToInvalidates(b.getLocalBlock(), dn);
+          bm.blocksMap.removeNode(b.getLocalBlock(), dn);
+          return null;
+        }
+      }.handle(null);
       
       // increment this file's replication factor
       FsShell shell = new FsShell(conf);

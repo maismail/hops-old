@@ -690,7 +690,7 @@ public class NameNode {
   /**
    * Is the cluster currently in safe mode?
    */
-  public boolean isInSafeMode() {
+  public boolean isInSafeMode() throws IOException {
     return namesystem.isInSafeMode();
   }
     
@@ -1319,7 +1319,7 @@ public class NameNode {
   }
 
   synchronized HAServiceStatus getServiceStatus()
-      throws ServiceFailedException, AccessControlException {
+      throws ServiceFailedException, AccessControlException, IOException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
       throw new ServiceFailedException("HA for namenode is not enabled");

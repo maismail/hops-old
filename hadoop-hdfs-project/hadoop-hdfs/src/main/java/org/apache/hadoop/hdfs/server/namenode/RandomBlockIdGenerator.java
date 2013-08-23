@@ -29,24 +29,26 @@ import org.apache.hadoop.util.IdGenerator;
 @InterfaceAudience.Private
 public class RandomBlockIdGenerator implements IdGenerator {
   private final BlockManager blockManager;
-
+  private static long id = 0;
   RandomBlockIdGenerator(FSNamesystem namesystem) {
     this.blockManager = namesystem.getBlockManager();
   }
 
   @Override // NumberGenerator
   public long nextValue() {
-    Block b = new Block(DFSUtil.getRandom().nextLong(), 0, 0); 
-    while(isValidBlock(b)) {
-      b.setBlockId(DFSUtil.getRandom().nextLong());
-    }
-    return b.getBlockId();
+//HOP FIXME    Block b = new Block(DFSUtil.getRandom().nextLong(), 0, 0); 
+//    while(isValidBlock(b)) {
+//      b.setBlockIdNoPersistance(DFSUtil.getRandom().nextLong());
+//    }
+//    return b.getBlockId();
+    //return DFSUtil.getRandom().nextLong();
+    return id++;
   }
 
   /**
    * Returns whether the given block is one pointed-to by a file.
    */
-  private boolean isValidBlock(Block b) {
-    return (blockManager.getBlockCollection(b) != null);
-  }
+//  private boolean isValidBlock(Block b) {
+//    return (blockManager.getBlockCollection(b) != null);
+//  }
 }

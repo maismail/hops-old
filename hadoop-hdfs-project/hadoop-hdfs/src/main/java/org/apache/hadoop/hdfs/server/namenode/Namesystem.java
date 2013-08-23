@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.util.RwLock;
 import org.apache.hadoop.security.AccessControlException;
@@ -37,7 +38,7 @@ public interface Namesystem extends RwLock, SafeMode {
 
   public boolean isGenStampInFuture(long generationStamp);
 
-  public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal);
+  public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal) throws IOException;
   
   //START_HOP_CODE
   /** Is it a Leader  */

@@ -660,7 +660,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       long newGS) throws IOException { 
     long oldGS = replicaInfo.getGenerationStamp();
     File oldmeta = replicaInfo.getMetaFile();
-    replicaInfo.setGenerationStamp(newGS);
+    replicaInfo.setGenerationStampNoPersistance(newGS);
     File newmeta = replicaInfo.getMetaFile();
 
     // rename meta file to new GS
@@ -670,7 +670,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
     try {
       NativeIO.renameTo(oldmeta, newmeta);
     } catch (IOException e) {
-      replicaInfo.setGenerationStamp(oldGS); // restore old GS
+      replicaInfo.setGenerationStampNoPersistance(oldGS); // restore old GS
       throw new IOException("Block " + replicaInfo + " reopen failed. " +
                             " Unable to move meta file  " + oldmeta +
                             " to " + newmeta, e);
@@ -1350,7 +1350,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
 
         LOG.warn("Updating generation stamp for block " + blockId
             + " from " + memBlockInfo.getGenerationStamp() + " to " + diskGS);
-        memBlockInfo.setGenerationStamp(diskGS);
+        memBlockInfo.setGenerationStampNoPersistance(diskGS);
       }
 
       // Compare generation stamp
@@ -1375,7 +1375,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
           LOG.warn("Updating generation stamp for block " + blockId
               + " from " + memBlockInfo.getGenerationStamp() + " to " + gs);
 
-          memBlockInfo.setGenerationStamp(gs);
+          memBlockInfo.setGenerationStampNoPersistance(gs);
         }
       }
 
@@ -1385,7 +1385,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
         corruptBlock = new Block(memBlockInfo);
         LOG.warn("Updating size of block " + blockId + " from "
             + memBlockInfo.getNumBytes() + " to " + memFile.length());
-        memBlockInfo.setNumBytes(memFile.length());
+        memBlockInfo.setNumBytesNoPersistance(memFile.length());
       }
     }
 
@@ -1563,7 +1563,7 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
       rur.unlinkBlock(1);
       truncateBlock(replicafile, rur.getMetaFile(), rur.getNumBytes(), newlength);
       // update RUR with the new length
-      rur.setNumBytes(newlength);
+      rur.setNumBytesNoPersistance(newlength);
    }
 
     // finalize the block

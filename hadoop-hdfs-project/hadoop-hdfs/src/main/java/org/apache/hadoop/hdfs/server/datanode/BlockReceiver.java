@@ -447,7 +447,7 @@ class BlockReceiver implements Closeable {
     long firstByteInBlock = offsetInBlock;
     offsetInBlock += len;
     if (replicaInfo.getNumBytes() < offsetInBlock) {
-      replicaInfo.setNumBytes(offsetInBlock);
+      replicaInfo.setNumBytesNoPersistance(offsetInBlock);
     }
     
     // put in queue for pending acks, unless sync was requested

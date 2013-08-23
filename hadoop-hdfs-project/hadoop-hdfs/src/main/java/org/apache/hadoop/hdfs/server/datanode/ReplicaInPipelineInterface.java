@@ -30,7 +30,7 @@ public interface ReplicaInPipelineInterface extends Replica {
    * Set the number of bytes received
    * @param bytesReceived number of bytes received
    */
-  void setNumBytes(long bytesReceived);
+  void setNumBytesNoPersistance(long bytesReceived);
   
   /**
    * Get the number of bytes acked

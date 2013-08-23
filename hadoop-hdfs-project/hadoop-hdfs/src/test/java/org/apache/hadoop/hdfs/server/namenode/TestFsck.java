@@ -80,6 +80,7 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * A JUnit test for doing fsck
@@ -679,7 +680,7 @@ public class TestFsck {
       DFSTestUtil.waitReplication(fs, filePath, (short)1);
       
       // intentionally corrupt NN data structure
-      INodeFile node = (INodeFile)cluster.getNamesystem().dir.rootDir.getNode(
+      INodeFile node = (INodeFile)cluster.getNamesystem().dir.getRootDir().getNode(
           fileName, true);
       final BlockInfo[] blocks = node.getBlocks(); 
       assertEquals(blocks.length, 1);

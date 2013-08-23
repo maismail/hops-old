@@ -31,6 +31,10 @@ import org.apache.hadoop.util.Daemon;
 import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 
 public class BlockManagerTestUtil {
   public static void setNodeReplicationLimit(final BlockManager blockManager,
@@ -61,13 +65,30 @@ public class BlockManagerTestUtil {
    * @return a tuple of the replica state (number racks, number live
    * replicas, and number needed replicas) for the given block.
    */
-  public static int[] getReplicaInfo(final FSNamesystem namesystem, final Block b) {
+  public static int[] getReplicaInfo(final FSNamesystem namesystem, final Block b) throws IOException {
     final BlockManager bm = namesystem.getBlockManager();
     namesystem.readLock();
     try {
-      return new int[]{getNumberOfRacks(bm, b),
-          bm.countNodes(b).liveReplicas(),
-          bm.neededReplications.contains(b) ? 1 : 0};
+      return (int[]) new TransactionalRequestHandler(OperationType.TEST) {
+        @Override
+        public void acquireLock() throws PersistanceException, IOException {
+          TransactionLockManager tlm = new TransactionLockManager();
+          tlm.addBlock(TransactionLockManager.LockType.READ, b.getBlockId()).
+                  addReplica(TransactionLockManager.LockType.READ).
+                  addCorrupt(TransactionLockManager.LockType.READ).
+                  addExcess(TransactionLockManager.LockType.READ).
+                  addUnderReplicatedBlock(TransactionLockManager.LockType.READ).
+                  acquire();
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          return new int[]{getNumberOfRacks(bm, b),
+            bm.countNodes(b).liveReplicas(),
+            bm.neededReplications.contains(b) ? 1 : 0};
+
+        }
+      }.handleWithReadLock(namesystem);
     } finally {
       namesystem.readUnlock();
     }
@@ -79,7 +100,7 @@ public class BlockManagerTestUtil {
    * are also ignored
    */
   private static int getNumberOfRacks(final BlockManager blockManager,
-      final Block b) {
+      final Block b) throws PersistanceException {
     final Set<String> rackSet = new HashSet<String>(0);
     final Collection<DatanodeDescriptor> corruptNodes = 
        getCorruptReplicas(blockManager).getNodes(b);
@@ -127,7 +148,7 @@ public class BlockManagerTestUtil {
     return blockManager.computeDatanodeWork();
   }
   
-  public static int computeInvalidationWork(BlockManager bm) {
+  public static int computeInvalidationWork(BlockManager bm) throws IOException {
     return bm.computeInvalidateWork(Integer.MAX_VALUE);
   }
   
@@ -143,7 +164,7 @@ public class BlockManagerTestUtil {
    * {@link DFSConfigKeys.DFS_NAMENODE_REPLICATION_MAX_STREAMS_KEY} to
    * a high value to ensure that all work is calculated.
    */
-  public static int computeAllPendingWork(BlockManager bm) {
+  public static int computeAllPendingWork(BlockManager bm) throws IOException {
     int work = computeInvalidationWork(bm);
     work += bm.computeReplicationWork(Integer.MAX_VALUE);
     return work;
@@ -155,7 +176,7 @@ public class BlockManagerTestUtil {
    * @param nn the NameNode to manipulate
    * @param dnName the name of the DataNode
    */
-  public static void noticeDeadDatanode(NameNode nn, String dnName) {
+  public static void noticeDeadDatanode(NameNode nn, String dnName) throws IOException {
     FSNamesystem namesystem = nn.getNamesystem();
     namesystem.writeLock();
     try {
@@ -196,7 +217,7 @@ public class BlockManagerTestUtil {
    * Call heartbeat check function of HeartbeatManager
    * @param bm the BlockManager to manipulate
    */
-  public static void checkHeartbeat(BlockManager bm) {
+  public static void checkHeartbeat(BlockManager bm) throws IOException {
     bm.getDatanodeManager().getHeartbeatManager().heartbeatCheck();
   }
 }

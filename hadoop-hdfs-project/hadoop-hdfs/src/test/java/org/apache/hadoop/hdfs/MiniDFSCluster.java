@@ -965,7 +965,7 @@ public class MiniDFSCluster {
   /**
    * wait for the given namenode to get out of safemode.
    */
-  public void waitNameNodeUp(int nnIndex) {
+  public void waitNameNodeUp(int nnIndex) throws IOException {
     while (!isNameNodeUp(nnIndex)) {
       try {
         LOG.warn("Waiting for namenode at " + nnIndex + " to start...");
@@ -1709,7 +1709,7 @@ public class MiniDFSCluster {
    * Returns true if the NameNode is running and is out of Safe Mode
    * or if waiting for safe mode is disabled.
    */
-  public boolean isNameNodeUp(int nnIndex) {
+  public boolean isNameNodeUp(int nnIndex) throws IOException {
     NameNode nameNode = nameNodes[nnIndex].nameNode;
     if (nameNode == null) {
       return false;
@@ -1727,7 +1727,7 @@ public class MiniDFSCluster {
   /**
    * Returns true if all the NameNodes are running and is out of Safe Mode.
    */
-  public boolean isClusterUp() {
+  public boolean isClusterUp() throws IOException {
     for (int index = 0; index < nameNodes.length; index++) {
       if (!isNameNodeUp(index)) {
         return false;

@@ -25,9 +25,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedMap;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.commons.logging.Log;
@@ -41,8 +39,6 @@ import org.apache.hadoop.util.Daemon;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
@@ -53,6 +49,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -102,8 +99,19 @@ public class LeaseManager {
     return EntityManager.find(Lease.Finder.ByPKey, holder);
   }
   
-  SortedSet<Lease> getSortedLeases() throws PersistanceException {
-    return new TreeSet<Lease>(EntityManager.findList(Lease.Finder.All));
+  SortedSet<Lease> getSortedLeases() throws IOException {
+    TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(OperationType.GET_SORTED_LEASES) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+        return da.findAll();
+      }
+    };
+    return new TreeSet<Lease>((Collection<? extends Lease>) getSortedLeasesHandler.handle(fsnamesystem));
   }
 
   /** @return the lease containing src */
@@ -126,7 +134,7 @@ public class LeaseManager {
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.countAll();
       }
-    }.handle();
+    }.handle(fsnamesystem);
   }
 
   /** This method is never called in the stateless implementation 
@@ -184,11 +192,17 @@ public class LeaseManager {
     }
   }
 
-  //HOP: FIXME: Add our implementaion
-  void removeAllLeases() {
-    //sortedLeases.clear();
-    //sortedLeasesByPath.clear();
-    //leases.clear();
+  void removeAllLeases() throws IOException {
+    new LightWeightRequestHandler(OperationType.REMOVE_ALL_LEASES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+        LeasePathDataAccess lpda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
+        lda.removeAll();
+        lpda.removeAll();
+        return null;
+      }
+    }.handle(fsnamesystem);
   }
 
   /**
@@ -236,7 +250,7 @@ public class LeaseManager {
     Lease lease = getLease(pendingFile.getClientName());
     if (lease != null) {
       String src = null;
-      try {
+      try { 
         for (LeasePath lpath : lease.getPaths()) {
           if (fsnamesystem.dir.getINode(lpath.getPath()).getFullPathName().equals(pendingFile.getFullPathName())) {
             src = lpath.getPath();
@@ -361,11 +375,11 @@ public class LeaseManager {
             /*if (!fsnamesystem.isInSafeMode()) {
               needSync = checkLeases();
             }*/
-            if (!(Boolean) isInSafeModeHandler.handle()) {
-               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle();
+            if (!(Boolean) isInSafeModeHandler.handle(fsnamesystem)) {
+               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle(fsnamesystem);
                if (sortedLeases != null) {
                  for (Lease expiredLease : sortedLeases) {
-                   expiredLeaseHandler.setParams(expiredLease.getHolder()).handle();
+                   expiredLeaseHandler.setParams(expiredLease.getHolder()).handle(fsnamesystem);
                  }
                }
              }
@@ -403,7 +417,6 @@ public class LeaseManager {
     };
     
     LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
-
       @Override
       public Object performTask() throws PersistanceException, IOException {
         long expiredTime = now() - hardLimit;
@@ -428,17 +441,17 @@ public class LeaseManager {
       public void acquireLock() throws PersistanceException, IOException {
             String holder = (String) getParams()[0];
             TransactionLockManager tlm = new TransactionLockManager();
-//FIXME            tlm.addINode(TransactionLockManager.INodeLockType.WRITE);
-//FIXME            tlm.addBlock(TransactionLockManager.LockType.WRITE);
+            tlm.addINode(TransactionLockManager.INodeLockType.WRITE);
+            tlm.addBlock(TransactionLockManager.LockType.WRITE);
             tlm.addLease(TransactionLockManager.LockType.WRITE, holder);
             tlm.addNameNodeLease(LockType.WRITE);
             tlm.addLeasePath(TransactionLockManager.LockType.WRITE);
-//FIXME            tlm.addReplica(TransactionLockManager.LockType.READ);
-//FIXME            tlm.addCorrupt(TransactionLockManager.LockType.READ);
-//FIXME            tlm.addExcess(TransactionLockManager.LockType.READ);
-//FIXME            tlm.addReplicaUc(TransactionLockManager.LockType.READ);
-//FIXME            tlm.addUnderReplicatedBlock(LockType.READ);
-//FIXME            tlm.addGenerationStamp(LockType.WRITE);
+            tlm.addReplica(TransactionLockManager.LockType.READ);
+            tlm.addCorrupt(TransactionLockManager.LockType.READ);
+            tlm.addExcess(TransactionLockManager.LockType.READ);
+            tlm.addReplicaUc(TransactionLockManager.LockType.READ);
+            tlm.addUnderReplicatedBlock(LockType.READ);
+            tlm.addGenerationStamp(LockType.WRITE);
             tlm.acquireByLease(leasePaths);
         }
       

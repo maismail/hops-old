@@ -21,11 +21,13 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  * Directory INode class that has a quota restriction
  */
-class INodeDirectoryWithQuota extends INodeDirectory {
+public class INodeDirectoryWithQuota extends INodeDirectory {
   private long nsQuota; /// NameSpace quota
   private long nsCount;
   private long dsQuota; /// disk space quota
@@ -38,7 +40,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @param other The other inode from which all other properties are copied
    */
   INodeDirectoryWithQuota(long nsQuota, long dsQuota,
-      INodeDirectory other) {
+      INodeDirectory other) throws PersistanceException {
     super(other);
     INode.DirCounts counts = new INode.DirCounts();
     other.spaceConsumedInTree(counts);
@@ -57,7 +59,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
   }
   
   /** constructor with no quota verification */
-  INodeDirectoryWithQuota(String name, PermissionStatus permissions,
+  public INodeDirectoryWithQuota(String name, PermissionStatus permissions,
       long nsQuota, long dsQuota) {
     super(name, permissions);
     this.nsQuota = nsQuota;
@@ -69,7 +71,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @return this directory's namespace quota
    */
   @Override
-  long getNsQuota() {
+  public long getNsQuota() {
     return nsQuota;
   }
   
@@ -77,7 +79,7 @@ class INodeDirectoryWithQuota extends INodeDirectory {
    * @return this directory's diskspace quota
    */
   @Override
-  long getDsQuota() {
+  public long getDsQuota() {
     return dsQuota;
   }
   
@@ -159,4 +161,18 @@ class INodeDirectoryWithQuota extends INodeDirectory {
       }
     }
   }
+ 
+  //START_HOP_CODE
+  public static INodeDirectoryWithQuota createRootDir(PermissionStatus permissions,
+          long nsQuota, long dsQuota) {
+    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(ROOT_NAME, permissions, nsQuota, dsQuota);
+    newRootINode.setIdNoPersistance(ROOT_ID);
+    newRootINode.setParentIdNoPersistance(ROOT_PARENT_ID);
+    return newRootINode;
+  }
+
+  public static INodeDirectoryWithQuota getRootDir() throws PersistanceException {
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByNameAndParentId, ROOT_NAME, ROOT_PARENT_ID);
+  }
+  //END_HOP_CODE
 }

@@ -75,6 +75,11 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -354,7 +359,7 @@ public class DatanodeManager {
    * Remove a datanode descriptor.
    * @param nodeInfo datanode descriptor.
    */
-  private void removeDatanode(DatanodeDescriptor nodeInfo) {
+  private void removeDatanode(DatanodeDescriptor nodeInfo) throws IOException {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     blockManager.removeBlocksAssociatedTo(nodeInfo);
@@ -371,7 +376,7 @@ public class DatanodeManager {
    * @throws UnregisteredNodeException 
    */
   public void removeDatanode(final DatanodeID node
-      ) throws UnregisteredNodeException {
+      ) throws UnregisteredNodeException, IOException {
     namesystem.writeLock();
     try {
       final DatanodeDescriptor descriptor = getDatanode(node);
@@ -387,7 +392,7 @@ public class DatanodeManager {
   }
 
   /** Remove a dead datanode. */
-  void removeDeadDatanode(final DatanodeID nodeID) {
+  void removeDeadDatanode(final DatanodeID nodeID) throws IOException {
       synchronized(datanodeMap) {
         DatanodeDescriptor d;
         try {
@@ -410,7 +415,7 @@ public class DatanodeManager {
   }
 
   /** Add a datanode. */
-  void addDatanode(final DatanodeDescriptor node) {
+  void addDatanode(final DatanodeDescriptor node) throws IOException {
     // To keep host2DatanodeMap consistent with datanodeMap,
     // remove  from host2DatanodeMap the datanodeDescriptor removed
     // from datanodeMap before adding node to host2DatanodeMap.
@@ -542,7 +547,7 @@ public class DatanodeManager {
   /**
    * Decommission the node if it is in exclude list.
    */
-  private void checkDecommissioning(DatanodeDescriptor nodeReg) { 
+  private void checkDecommissioning(DatanodeDescriptor nodeReg) throws IOException { 
     // If the registered node is in exclude list, then decommission it
     if (inExcludedHostsList(nodeReg)) {
       startDecommission(nodeReg);
@@ -553,7 +558,7 @@ public class DatanodeManager {
    * Change, if appropriate, the admin state of a datanode to 
    * decommission completed. Return true if decommission is complete.
    */
-  boolean checkDecommissionState(DatanodeDescriptor node) {
+  boolean checkDecommissionState(DatanodeDescriptor node) throws IOException {
     // Check to see if all blocks in this decommissioned
     // node has reached their target replication factor.
     if (node.isDecommissionInProgress()) {
@@ -566,7 +571,7 @@ public class DatanodeManager {
   }
 
   /** Start decommissioning the specified datanode. */
-  private void startDecommission(DatanodeDescriptor node) {
+  private void startDecommission(DatanodeDescriptor node) throws IOException {
     if (!node.isDecommissionInProgress() && !node.isDecommissioned()) {
       LOG.info("Start Decommissioning " + node + " with " + 
           node.numBlocks() +  " blocks");
@@ -579,7 +584,7 @@ public class DatanodeManager {
   }
 
   /** Stop decommissioning the specified datanodes. */
-  void stopDecommission(DatanodeDescriptor node) {
+  void stopDecommission(DatanodeDescriptor node) throws IOException {
     if (node.isDecommissionInProgress() || node.isDecommissioned()) {
       LOG.info("Stop Decommissioning " + node);
       heartbeatManager.stopDecommission(node);
@@ -618,7 +623,7 @@ public class DatanodeManager {
    *    denied because the datanode does not match includes/excludes
    */
   public void registerDatanode(DatanodeRegistration nodeReg)
-      throws DisallowedDatanodeException {
+      throws DisallowedDatanodeException, IOException {
     InetAddress dnAddress = Server.getRemoteIp();
     if (dnAddress != null) {
       // Mostly called inside an RPC, update ip and peer hostname
@@ -755,7 +760,7 @@ public class DatanodeManager {
    * 3. Added to exclude --> start decommission.
    * 4. Removed from exclude --> stop decommission.
    */
-  private void refreshDatanodes() {
+  private void refreshDatanodes() throws IOException {
     for(DatanodeDescriptor node : datanodeMap.values()) {
       // Check if not include.
       if (!inHostsList(node)) {
@@ -910,7 +915,7 @@ public class DatanodeManager {
    * @param node DN which caused cluster to become multi-rack. Used for logging.
    */
   @VisibleForTesting
-  void checkIfClusterIsNowMultiRack(DatanodeDescriptor node) {
+  void checkIfClusterIsNowMultiRack(DatanodeDescriptor node) throws IOException {
     if (!hasClusterEverBeenMultiRack && networktopology.getNumOfRacks() > 1) {
       String message = "DN " + node + " joining cluster has expanded a formerly " +
           "single-rack cluster to be multi-rack. ";
@@ -1099,7 +1104,7 @@ public class DatanodeManager {
               blocks.length);
           for (BlockInfoUnderConstruction b : blocks) {
             brCommand.add(new RecoveringBlock(
-                new ExtendedBlock(blockPoolId, b), b.getExpectedLocations(), b
+                new ExtendedBlock(blockPoolId, b), getDataNodeDescriptorsTx(b), b
                     .getBlockRecoveryId()));
           }
           return new DatanodeCommand[] { brCommand };
@@ -1186,4 +1191,25 @@ public class DatanodeManager {
   public String toString() {
     return getClass().getSimpleName() + ": " + host2DatanodeMap;
   }
+  
+  //START_HOP_CODE
+  DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
+    final DatanodeManager datanodeManager = this;
+    TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.HANDLE_HEARTBEAT) {
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
+        TransactionLockAcquirer.acquireLockList(LockType.READ_COMMITTED, ReplicaUnderConstruction.Finder.ByBlockId, b.getBlockId());
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
+        return b.getExpectedLocations(datanodeManager);
+      }
+    };
+    return (DatanodeDescriptor[]) handler.setParams(b).handle(namesystem);
+
+  }
+  //END_HOP_CODE
 }

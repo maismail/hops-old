@@ -17,11 +17,22 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.util.GSet;
-import org.apache.hadoop.hdfs.util.LightWeightGSet;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
  * This class maintains the map from a block to its metadata.
@@ -29,90 +40,29 @@ import org.apache.hadoop.hdfs.util.LightWeightGSet;
  * the datanodes that store the block.
  */
 class BlocksMap {
-  private static class NodeIterator implements Iterator<DatanodeDescriptor> {
-    private BlockInfo blockInfo;
-    private int nextIdx = 0;
-      
-    NodeIterator(BlockInfo blkInfo) {
-      this.blockInfo = blkInfo;
-    }
 
-    @Override
-    public boolean hasNext() {
-      return blockInfo != null && nextIdx < blockInfo.getCapacity()
-              && blockInfo.getDatanode(nextIdx) != null;
-    }
-
-    @Override
-    public DatanodeDescriptor next() {
-      return blockInfo.getDatanode(nextIdx++);
-    }
-
-    @Override
-    public void remove()  {
-      throw new UnsupportedOperationException("Sorry. can't remove.");
-    }
-  }
-
-  /** Constant {@link LightWeightGSet} capacity. */
-  private final int capacity;
+  private final DatanodeManager datanodeManager;
+  private final static List<DatanodeDescriptor> empty_datanode_list = Collections.unmodifiableList(new ArrayList<DatanodeDescriptor>());
   
-  private GSet<Block, BlockInfo> blocks;
-
-  BlocksMap(final float loadFactor) {
-    this.capacity = computeCapacity();
-    this.blocks = new LightWeightGSet<Block, BlockInfo>(capacity);
-  }
-
-  /**
-   * Let t = 2% of max memory.
-   * Let e = round(log_2 t).
-   * Then, we choose capacity = 2^e/(size of reference),
-   * unless it is outside the close interval [1, 2^30].
-   */
-  private static int computeCapacity() {
-    //VM detection
-    //See http://java.sun.com/docs/hotspot/HotSpotFAQ.html#64bit_detection
-    final String vmBit = System.getProperty("sun.arch.data.model");
-
-    //2% of max memory
-    final double twoPC = Runtime.getRuntime().maxMemory()/50.0;
-
-    //compute capacity
-    final int e1 = (int)(Math.log(twoPC)/Math.log(2.0) + 0.5);
-    final int e2 = e1 - ("32".equals(vmBit)? 2: 3);
-    final int exponent = e2 < 0? 0: e2 > 30? 30: e2;
-    final int c = 1 << exponent;
-
-    if (LightWeightGSet.LOG.isDebugEnabled()) {
-      LightWeightGSet.LOG.debug("VM type       = " + vmBit + "-bit");
-      LightWeightGSet.LOG.debug("2% max memory = " + twoPC/(1 << 20) + " MB");
-      LightWeightGSet.LOG.debug("capacity      = 2^" + exponent
-          + " = " + c + " entries");
-    }
-    return c;
+  BlocksMap(DatanodeManager datanodeManager) {
+    this.datanodeManager = datanodeManager;
   }
 
   void close() {
     // Empty blocks once GSet#clear is implemented (HDFS-3940)
   }
 
-  BlockCollection getBlockCollection(Block b) {
-    BlockInfo info = blocks.get(b);
+  BlockCollection getBlockCollection(Block b) throws PersistanceException {
+    BlockInfo info = getStoredBlock(b);
     return (info != null) ? info.getBlockCollection() : null;
   }
 
   /**
    * Add block b belonging to the specified block collection to the map.
    */
-  BlockInfo addBlockCollection(BlockInfo b, BlockCollection bc) {
-    BlockInfo info = blocks.get(b);
-    if (info != b) {
-      info = b;
-      blocks.put(info);
-    }
-    info.setBlockCollection(bc);
-    return info;
+  BlockInfo addBlockCollection(BlockInfo b, BlockCollection bc) throws PersistanceException {
+    b.setBlockCollection(bc);
+    return b;
   }
 
   /**
@@ -120,43 +70,51 @@ class BlocksMap {
    * remove it from all data-node lists it belongs to;
    * and remove all data-node locations associated with the block.
    */
-  void removeBlock(Block block) {
-    BlockInfo blockInfo = blocks.remove(block);
+  void removeBlock(Block block) throws PersistanceException {
+    BlockInfo blockInfo = getStoredBlock(block);
     if (blockInfo == null)
-      return;
-
-    blockInfo.setBlockCollection(null);
-    for(int idx = blockInfo.numNodes()-1; idx >= 0; idx--) {
-      DatanodeDescriptor dn = blockInfo.getDatanode(idx);
-      dn.removeBlock(blockInfo); // remove from the list and wipe the location
-    }
+      return;  
+    blockInfo.remove();
+    blockInfo.removeAllReplicas();
   }
   
   /** Returns the block object it it exists in the map. */
-  BlockInfo getStoredBlock(Block b) {
-    return blocks.get(b);
+  BlockInfo getStoredBlock(Block b) throws PersistanceException {
+    if (!(b instanceof BlockInfo)) {
+      return EntityManager.find(BlockInfo.Finder.ById, b.getBlockId());
+    }
+    return (BlockInfo)b;
   }
 
   /**
    * Searches for the block in the BlocksMap and 
    * returns Iterator that iterates through the nodes the block belongs to.
    */
-  Iterator<DatanodeDescriptor> nodeIterator(Block b) {
-    return nodeIterator(blocks.get(b));
+  Iterator<DatanodeDescriptor> nodeIterator(Block b) throws PersistanceException {
+    BlockInfo blockInfo = getStoredBlock(b);
+    return nodeIterator(blockInfo);
   }
 
   /**
    * For a block that has already been retrieved from the BlocksMap
    * returns Iterator that iterates through the nodes the block belongs to.
    */
-  Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) {
-    return new NodeIterator(storedBlock);
+  Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) throws PersistanceException {
+    if (storedBlock == null) {
+      return null;
+    }
+    DatanodeDescriptor[] desc = storedBlock.getDatanodes(datanodeManager);
+    if (desc == null) {
+      return empty_datanode_list.iterator();
+    } else {
+      return Arrays.asList(desc).iterator();
+    }
   }
 
   /** counts number of containing nodes. Better than using iterator. */
-  int numNodes(Block b) {
-    BlockInfo info = blocks.get(b);
-    return info == null ? 0 : info.numNodes();
+  int numNodes(Block b) throws PersistanceException {
+    BlockInfo info = getStoredBlock(b);
+    return info == null ? 0 : info.numNodes(datanodeManager);
   }
 
   /**
@@ -164,32 +122,44 @@ class BlocksMap {
    * Remove the block from the block map
    * only if it does not belong to any file and data-nodes.
    */
-  boolean removeNode(Block b, DatanodeDescriptor node) {
-    BlockInfo info = blocks.get(b);
+  boolean removeNode(Block b, DatanodeDescriptor node) throws PersistanceException {
+    BlockInfo info = getStoredBlock(b);
     if (info == null)
       return false;
 
     // remove block from the data-node list and the node from the block info
     boolean removed = node.removeBlock(info);
-
-    if (info.getDatanode(0) == null     // no datanodes left
-              && info.getBlockCollection() == null) {  // does not belong to a file
-      blocks.remove(b);  // remove block from the map
-    }
     return removed;
   }
 
-  int size() {
-    return blocks.size();
+  int size() throws IOException {
+    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        return bida.countAll();
+      }
+    };
+    return (Integer) getAllBlocksSizeHander.handle(null);
   }
 
-  Iterable<BlockInfo> getBlocks() {
-    return blocks;
+  Iterable<BlockInfo> getBlocks() throws IOException {
+    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        //FIXME. Very inefficient way of block processing
+        EntityContext.log(OperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        return bida.findAllBlocks();
+      }
+    };
+    return (List<BlockInfo>) getAllBlocksHander.handle(null);
   }
   
   /** Get the capacity of the HashMap that stores blocks */
-  int getCapacity() {
-    return capacity;
+  int getCapacity(){
+    EntityContext.log("GET_CAPACITY", EntityContext.CacheHitState.LOSS, "FIXME. CAPACITY OF MEMORY IS 1");
+    return 1;
   }
 
   /**
@@ -199,15 +169,7 @@ class BlocksMap {
    * @return new block
    */
   BlockInfo replaceBlock(BlockInfo newBlock) {
-    BlockInfo currentBlock = blocks.get(newBlock);
-    assert currentBlock != null : "the block if not in blocksMap";
-    // replace block in data-node lists
-    for(int idx = currentBlock.numNodes()-1; idx >= 0; idx--) {
-      DatanodeDescriptor dn = currentBlock.getDatanode(idx);
-      dn.replaceBlock(currentBlock, newBlock);
-    }
-    // replace block in the map itself
-    blocks.put(newBlock);
+    //HOP: [M] doesn't make sense in our case, beacause the new block will have the same id as the old one
     return newBlock;
   }
 }

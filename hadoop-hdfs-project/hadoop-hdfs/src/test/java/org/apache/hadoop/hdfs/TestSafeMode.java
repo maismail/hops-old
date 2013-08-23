@@ -159,7 +159,19 @@ public class TestSafeMode {
    * Test that the NN initializes its under-replicated blocks queue
    * before it is ready to exit safemode (HDFS-1476)
    */
-  //HOP: this test fails because of namenode restart. namenode metadata is not yet persisted
+  //HOP: This test fails because we no longer have global lock
+  //Following lines of code are not working
+  //nn.getNamesystem().writeLock();
+  //nn.getNamesystem().writeUnlock(); 
+  //
+  //What is happening is that after restart the datanode sends the block report
+  //system level lock is acquired. untill the report processing is finishe the system
+  //level not is not relased. 
+  //
+  // in our case these line return immediately and the consequent function return 
+  // wrong values
+  
+  
   @Test(timeout=45000)
   public void testInitializeReplQueuesEarly() throws Exception {
     // Spray the blocks around the cluster when we add DNs instead of

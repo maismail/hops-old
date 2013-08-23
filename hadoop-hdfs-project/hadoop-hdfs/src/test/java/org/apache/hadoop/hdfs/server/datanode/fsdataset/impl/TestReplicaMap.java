@@ -55,12 +55,12 @@ public class TestReplicaMap {
     
     // Test 3: Lookup failure - generation stamp mismatch 
     Block b = new Block(block);
-    b.setGenerationStamp(0);
+    b.setGenerationStampNoPersistance(0);
     assertNull(map.get(bpid, b));
     
     // Test 4: Lookup failure - blockID mismatch
-    b.setGenerationStamp(block.getGenerationStamp());
-    b.setBlockId(0);
+    b.setGenerationStampNoPersistance(block.getGenerationStamp());
+    b.setBlockIdNoPersistance(0);
     assertNull(map.get(bpid, b));
     
     // Test 5: successful lookup based on block ID
@@ -89,12 +89,12 @@ public class TestReplicaMap {
     
     // Test 2: remove failure - generation stamp mismatch 
     Block b = new Block(block);
-    b.setGenerationStamp(0);
+    b.setGenerationStampNoPersistance(0);
     assertNull(map.remove(bpid, b));
     
     // Test 3: remove failure - blockID mismatch
-    b.setGenerationStamp(block.getGenerationStamp());
-    b.setBlockId(0);
+    b.setGenerationStampNoPersistance(block.getGenerationStamp());
+    b.setBlockIdNoPersistance(0);
     assertNull(map.remove(bpid, b));
     
     // Test 4: remove success

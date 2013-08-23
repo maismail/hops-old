@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 
@@ -62,7 +63,7 @@ public interface NameNodeMXBean {
    * @return the safemode status
    * 
    */
-  public String getSafemode();
+  public String getSafemode() throws IOException;
   
   /**
    * Checks if upgrade is finalized.
@@ -109,7 +110,7 @@ public interface NameNodeMXBean {
    * 
    * @return the total number of blocks of the cluster
    */
-  public long getTotalBlocks();
+  public long getTotalBlocks() throws IOException;
   
   /**
    * Gets the total number of files on the cluster

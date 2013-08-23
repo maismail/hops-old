@@ -31,11 +31,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-//import org.apache.hadoop.hdfs.server.namenode.NNStorage;
 import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.net.DNS;
@@ -132,13 +131,14 @@ public class StorageInfo {
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
       }
     };
-    return (StorageInfo) getStorageInfoHandler.handle();
+    return (StorageInfo) getStorageInfoHandler.handle(null);
   }
 
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
                                                                                        // FIXME [S] it can cause problems in the future when we try to run multiple NN
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
-    LightWeightRequestHandler formatHandler = new LightWeightRequestHandler(OperationType.ADD_STORAGE_INFO) {
+    // HOP FIXME use context
+    TransactionalRequestHandler formatHandler = new TransactionalRequestHandler(OperationType.ADD_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
@@ -150,8 +150,12 @@ public class StorageInfo {
         LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID+" CID:"+clusterId+" pbid:"+bpid);
         return null;
       }
+
+      @Override
+      public void acquireLock() throws PersistanceException, IOException {
+      }
     };
-    formatHandler.handle();
+    formatHandler.handle(null);
   }
   
   public String getBlockPoolId()
