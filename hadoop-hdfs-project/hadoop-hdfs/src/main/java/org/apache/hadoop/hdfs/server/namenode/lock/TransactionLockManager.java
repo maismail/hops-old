@@ -14,6 +14,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.GenerationStamp;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
@@ -559,9 +560,9 @@ public class TransactionLockManager {
       acquireReplicasLock(replicaLock, IndexedReplica.Finder.ByBlockId);
     }
 
-//      if (crLock != null) {
-//        acquireReplicasLock(crLock, CorruptReplica.Finder.ByBlockId);
-//      }
+    if (crLock != null) {
+      acquireReplicasLock(crLock, CorruptReplica.Finder.ByBlockId);
+    }
 
 //      if (erLock != null) {
 //        acquireReplicasLock(erLock, ExcessReplica.Finder.ByBlockId);
