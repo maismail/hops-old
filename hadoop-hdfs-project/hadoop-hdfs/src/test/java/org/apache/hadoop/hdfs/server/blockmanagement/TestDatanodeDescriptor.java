@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -24,8 +25,14 @@ import static org.junit.Assert.assertTrue;
 import java.util.ArrayList;
 
 import org.apache.hadoop.hdfs.DFSTestUtil;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.junit.Test;
 
 /**
@@ -55,27 +62,66 @@ public class TestDatanodeDescriptor {
   
   @Test
   public void testBlocksCounter() throws Exception {
+    StorageFactory.setConfiguration(new HdfsConfiguration());
+    StorageFactory.getConnector().formatStorage();
+    
     DatanodeDescriptor dd = DFSTestUtil.getLocalDatanodeDescriptor();
     assertEquals(0, dd.numBlocks());
     BlockInfo blk = new BlockInfo(new Block(1L));
     BlockInfo blk1 = new BlockInfo(new Block(2L));
     // add first block
-    assertTrue(dd.addBlock(blk));
+    assertTrue(addBlock(dd, blk));
     assertEquals(1, dd.numBlocks());
     // remove a non-existent block
-    assertFalse(dd.removeBlock(blk1));
+    assertFalse(removeBlock(dd, blk1));
     assertEquals(1, dd.numBlocks());
     // add an existent block
-    assertFalse(dd.addBlock(blk));
+    assertFalse(addBlock(dd, blk));
     assertEquals(1, dd.numBlocks());
     // add second block
-    assertTrue(dd.addBlock(blk1));
+    assertTrue(addBlock(dd, blk1));
     assertEquals(2, dd.numBlocks());
     // remove first block
-    assertTrue(dd.removeBlock(blk));
+    assertTrue(removeBlock(dd, blk));
     assertEquals(1, dd.numBlocks());
     // remove second block
-    assertTrue(dd.removeBlock(blk1));
+    assertTrue(removeBlock(dd, blk1));
     assertEquals(0, dd.numBlocks());    
+  }
+  
+    private boolean addBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
+     final TransactionLockManager tlm = new TransactionLockManager();   
+     return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        tlm.addBlock(TransactionLockManager.LockType.WRITE, blk.getBlockId());
+        tlm.addReplica(TransactionLockManager.LockType.WRITE);
+        tlm.acquire();
+        return tlm;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return dn.addBlock(blk);
+      }
+    }.handle(null);
+  }
+    
+    private boolean removeBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
+     final TransactionLockManager tlm = new TransactionLockManager();
+     return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        tlm.addBlock(TransactionLockManager.LockType.WRITE, blk.getBlockId());
+        tlm.addReplica(TransactionLockManager.LockType.WRITE);
+        tlm.acquire();
+        return tlm;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return dn.removeBlock(blk);
+      }
+    }.handle(null);
   }
 }
