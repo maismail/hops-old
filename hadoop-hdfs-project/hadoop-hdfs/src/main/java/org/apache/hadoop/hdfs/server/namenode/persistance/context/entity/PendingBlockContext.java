@@ -102,9 +102,10 @@
 //          aboutToAccessStorage();
 //          result = dataAccess.findByPKey(blockId);
 //          this.pendings.put(blockId, result);
-//        } else {
-//          throw new IllegalStateException("Illegal Cache State");
-//        }
+//        } 
+//        //else {
+//        //  throw new IllegalStateException("Illegal Cache State");
+//        //}
 //        return result;
 //    }
 //

@@ -377,6 +377,10 @@ public class InodeClusterj extends InodeDataAccess {
       }
     }
     if (inode instanceof INodeSymlink) {
+      persistable.setIsDir(0);
+      persistable.setIsUnderConstruction(0);
+      persistable.setIsDirWithQuota(0);
+      
       String linkValue = DFSUtil.bytes2String(((INodeSymlink) inode).getSymlink());
       persistable.setSymlink(linkValue);
     }
