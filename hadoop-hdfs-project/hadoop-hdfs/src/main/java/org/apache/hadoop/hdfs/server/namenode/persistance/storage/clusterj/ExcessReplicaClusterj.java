@@ -109,6 +109,16 @@
 //    }
 //  }
 //
+//  @Override
+//  public void removeAll() throws StorageException {
+//     try {
+//      Session session = connector.obtainSession();
+//      session.deletePersistentAll(ExcessReplicaDTO.class);
+//    } catch (Exception e) {
+//      throw new StorageException(e);
+//    }
+//  }
+//  
 //  private List<ExcessReplica> createList(List<ExcessReplicaDTO> list) {
 //    List<ExcessReplica> result = new ArrayList<ExcessReplica>();
 //    for (ExcessReplicaDTO item : list) {

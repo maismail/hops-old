@@ -21,6 +21,7 @@
 // */
 //public class InvalidatedBlockClusterj extends InvalidateBlockDataAccess {
 //
+//
 //  @PersistenceCapable(table = TABLE_NAME)
 //  public interface InvalidateBlocksDTO {
 //
@@ -120,16 +121,37 @@
 //      }
 //
 //      for (InvalidatedBlock invBlock : removed) {
-//        Object[] pk = new Object[2];
-//        pk[0] = invBlock.getBlockId();
-//        pk[1] = invBlock.getStorageId();
-//        session.deletePersistent(InvalidateBlocksDTO.class, pk);
+//        remove(invBlock);
+//      }
+//      
+//      if(!modified.isEmpty())
+//      {
+//        throw new UnsupportedOperationException("Not yet Implemented");
 //      }
 //    } catch (Exception e) {
 //      throw new StorageException(e);
 //    }
 //  }
 //
+//   @Override
+//  public void removeAll() throws StorageException {
+//     try {
+//      Session session = connector.obtainSession();
+//      session.deletePersistentAll(InvalidateBlocksDTO.class);
+//    } catch (Exception e) {
+//      throw new StorageException(e);
+//    }
+//  }
+//   
+//  @Override
+//  public void remove(InvalidatedBlock invBlock) {
+//    Session session = connector.obtainSession();
+//    Object[] pk = new Object[2];
+//    pk[0] = invBlock.getBlockId();
+//    pk[1] = invBlock.getStorageId();
+//    session.deletePersistent(InvalidateBlocksDTO.class, pk);
+//  }
+//   
 //  private List<InvalidatedBlock> createList(List<InvalidateBlocksDTO> dtoList) {
 //    List<InvalidatedBlock> list = new ArrayList<InvalidatedBlock>();
 //    for (InvalidateBlocksDTO dto : dtoList) {

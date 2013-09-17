@@ -23,4 +23,6 @@
 //  public abstract ExcessReplica findByPkey(Object[] params) throws StorageException;
 //  
 //  public abstract void prepare(Collection<ExcessReplica> removed, Collection<ExcessReplica> newed, Collection<ExcessReplica> modified) throws StorageException;
+//  
+//  public abstract void removeAll() throws StorageException;
 //}

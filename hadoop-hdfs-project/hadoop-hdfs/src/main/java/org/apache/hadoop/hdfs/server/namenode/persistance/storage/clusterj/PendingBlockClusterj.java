@@ -99,7 +99,7 @@
 //  }
 //
 //  @Override
-//  public List<PendingBlockInfo> findByTimeLimit(long timeLimit) throws StorageException {
+//  public List<PendingBlockInfo> findByTimeLimitLessThan(long timeLimit) throws StorageException {
 //    try {
 //      Session session = connector.obtainSession();
 //      QueryBuilder qb = session.getQueryBuilder();
@@ -117,6 +117,17 @@
 //    }
 //  }
 //
+//  @Override
+//  public void removeAll() throws StorageException {
+//     try {
+//      Session session = connector.obtainSession();
+//      session.deletePersistentAll(PendingBlockDTO.class);
+//    } catch (Exception e) {
+//      throw new StorageException(e);
+//    }
+//  }
+//
+//   
 //  private List<PendingBlockInfo> createList(Collection<PendingBlockDTO> dtos) {
 //    List<PendingBlockInfo> list = new ArrayList<PendingBlockInfo>();
 //    for (PendingBlockDTO dto : dtos) {

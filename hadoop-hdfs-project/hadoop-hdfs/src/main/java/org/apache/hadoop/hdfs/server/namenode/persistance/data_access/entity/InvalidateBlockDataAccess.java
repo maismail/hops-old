@@ -27,4 +27,8 @@
 //  public abstract InvalidatedBlock findInvBlockByPkey(Object[] params) throws StorageException;
 //
 //  public abstract void prepare(Collection<InvalidatedBlock> removed, Collection<InvalidatedBlock> newed, Collection<InvalidatedBlock> modified) throws StorageException;
+//  
+//  public abstract void removeAll() throws StorageException;
+//  
+//  public abstract void remove(InvalidatedBlock invBlk);
 //}

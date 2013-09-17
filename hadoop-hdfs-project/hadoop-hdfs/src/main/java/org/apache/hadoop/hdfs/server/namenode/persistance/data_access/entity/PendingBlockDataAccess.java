@@ -16,7 +16,7 @@
 //  public static final String TIME_STAMP = "time_stamp";
 //  public static final String NUM_REPLICAS_IN_PROGRESS = "num_replicas_in_progress";
 //
-//  public abstract List<PendingBlockInfo> findByTimeLimit(long timeLimit) throws StorageException;
+//  public abstract List<PendingBlockInfo> findByTimeLimitLessThan(long timeLimit) throws StorageException;
 //
 //  public abstract List<PendingBlockInfo> findAll() throws StorageException;
 //
@@ -31,4 +31,6 @@
 //  public abstract int countValidPendingBlocks(long timeLimit) throws StorageException;
 //
 //  public abstract void prepare(Collection<PendingBlockInfo> removed, Collection<PendingBlockInfo> newed, Collection<PendingBlockInfo> modified) throws StorageException;
+//  
+//  public abstract void removeAll() throws StorageException;
 //}
