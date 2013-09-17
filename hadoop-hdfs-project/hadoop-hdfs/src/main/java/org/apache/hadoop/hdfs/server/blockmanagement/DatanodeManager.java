@@ -1197,9 +1197,11 @@ public class DatanodeManager {
     final DatanodeManager datanodeManager = this;
     TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.HANDLE_HEARTBEAT) {
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
+        //FIXME [M] why not to use the TransactionLockManager
         TransactionLockAcquirer.acquireLockList(LockType.READ_COMMITTED, ReplicaUnderConstruction.Finder.ByBlockId, b.getBlockId());
+        return null;
       }
 
       @Override

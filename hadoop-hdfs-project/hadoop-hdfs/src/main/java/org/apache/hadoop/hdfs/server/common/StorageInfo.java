@@ -152,7 +152,8 @@ public class StorageInfo {
       }
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
+        return null;
       }
     };
     formatHandler.handle(null);

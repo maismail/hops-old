@@ -137,9 +137,10 @@ public class NameNodeAdapter {
 
     return (String) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tl = new TransactionLockManager();
         tl.acquireByLeasePath(path, TransactionLockManager.LockType.READ, TransactionLockManager.LockType.READ);
+        return tl;
       }
 
       @Override
@@ -158,9 +159,10 @@ public class NameNodeAdapter {
 
     TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tl = new TransactionLockManager();
         tl.acquireByLeasePath(path, TransactionLockManager.LockType.READ, TransactionLockManager.LockType.READ);
+        return tl;
       }
 
       @Override

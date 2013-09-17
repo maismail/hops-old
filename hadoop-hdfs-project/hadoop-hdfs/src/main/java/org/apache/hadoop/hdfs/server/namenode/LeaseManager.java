@@ -102,7 +102,8 @@ public class LeaseManager {
   SortedSet<Lease> getSortedLeases() throws IOException {
     TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(OperationType.GET_SORTED_LEASES) {
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
+        return null;
       }
 
       @Override
@@ -411,8 +412,9 @@ public class LeaseManager {
       }
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
-        // TODO safemode 
+      public Object acquireLock() throws PersistanceException, IOException {
+        // TODO safemode
+        return null;
       }
     };
     
@@ -438,7 +440,7 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
             String holder = (String) getParams()[0];
             TransactionLockManager tlm = new TransactionLockManager();
             tlm.addINode(TransactionLockManager.INodeLockType.WRITE);
@@ -453,6 +455,7 @@ public class LeaseManager {
             tlm.addUnderReplicatedBlock(LockType.READ);
             tlm.addGenerationStamp(LockType.WRITE);
             tlm.acquireByLease(leasePaths);
+            return tlm;
         }
       
       @Override

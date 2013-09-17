@@ -56,12 +56,13 @@ public class TestLease {
     return (Boolean) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tl = new TransactionLockManager();
                 tl.acquireByLeasePath(
                 src.toString(),
                 TransactionLockManager.LockType.READ,
                 TransactionLockManager.LockType.WRITE);
+        return tl;
       }
 
       @Override

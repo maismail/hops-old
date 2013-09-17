@@ -91,13 +91,14 @@ public class TestBlockUnderConstruction {
                                 final boolean isFileOpen) throws IOException{
     TransactionalRequestHandler verifyFileBlocksHandler = new TransactionalRequestHandler(OperationType.VERIFY_FILE_BLOCKS) {
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(INodeResolveType.ONLY_PATH,
                 INodeLockType.READ,
                 new String[]{file});
         lm.addBlock(LockType.READ);
         lm.acquire();
+        return lm;
       }
       
       @Override
