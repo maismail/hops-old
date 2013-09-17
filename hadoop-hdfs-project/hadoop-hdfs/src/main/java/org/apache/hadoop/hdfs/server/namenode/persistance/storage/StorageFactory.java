@@ -21,7 +21,7 @@ public class StorageFactory {
 
   private static StorageConnector defaultStorage;
   private static BlockInfoDataAccess blockInfoDataAccess;
-//  private static CorruptReplicaDataAccess corruptReplicaDataAccess;
+  private static CorruptReplicaDataAccess corruptReplicaDataAccess;
 //  private static ExcessReplicaDataAccess excessReplicaDataAccess;
   private static InodeDataAccess inodeDataAccess;
 //  private static InvalidateBlockDataAccess invalidateBlockDataAccess;
@@ -39,7 +39,7 @@ public class StorageFactory {
 
   private static void initDataAccessMap() {
     dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
-//    dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
+    dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
 //    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
     dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
 //    dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
@@ -86,7 +86,7 @@ public class StorageFactory {
       MysqlServerConnector.INSTANCE.setConfiguration(conf);
       defaultStorage.setConfiguration(conf);
       blockInfoDataAccess = new BlockInfoClusterj();
-//      corruptReplicaDataAccess = new CorruptReplicaClusterj();
+      corruptReplicaDataAccess = new CorruptReplicaClusterj();
 //      excessReplicaDataAccess = new ExcessReplicaClusterj();
       inodeDataAccess = new InodeClusterj();
 //      invalidateBlockDataAccess = new InvalidatedBlockClusterj();
@@ -124,7 +124,7 @@ public class StorageFactory {
     entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
     entityContexts.put(INodeSymlink.class, inodeContext);
     entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
-//    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
+    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
 //    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
 //    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));

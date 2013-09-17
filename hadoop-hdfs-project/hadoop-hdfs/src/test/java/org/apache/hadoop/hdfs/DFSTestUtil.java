@@ -88,6 +88,10 @@ import org.apache.hadoop.util.VersionInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 
 /** Utilities for HDFS tests */
 public class DFSTestUtil {
@@ -340,12 +344,27 @@ public class DFSTestUtil {
    * Keep accessing the given file until the namenode reports that the
    * given block in the file contains the given number of corrupt replicas.
    */
-  public static void waitCorruptReplicas(FileSystem fs, FSNamesystem ns,
-      Path file, ExtendedBlock b, int corruptRepls)
+  public static void waitCorruptReplicas(FileSystem fs, final FSNamesystem ns,
+      Path file, final ExtendedBlock b, int corruptRepls)
       throws IOException, TimeoutException, InterruptedException {
     int count = 0;
     final int ATTEMPTS = 50;
-    int repls = ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
+    TransactionalRequestHandler corruptReplicasHandler = new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager tlm = new TransactionLockManager();
+        tlm.addBlock(TransactionLockManager.LockType.READ, b.getBlockId()).
+                addCorrupt(TransactionLockManager.LockType.READ).
+                acquire();
+        return tlm;
+      }
+      
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
+      }
+    };
+    int repls = (Integer) corruptReplicasHandler.handle(ns);
     while (repls != corruptRepls && count < ATTEMPTS) {
       try {
         IOUtils.copyBytes(fs.open(file), new IOUtils.NullOutputStream(),
@@ -354,7 +373,7 @@ public class DFSTestUtil {
         // Swallow exceptions
       }
       System.out.println("Waiting for "+corruptRepls+" corrupt replicas");
-      repls = ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
+      repls = (Integer) corruptReplicasHandler.handle(ns);
       count++;
       Thread.sleep(1000);
     }

@@ -172,7 +172,7 @@ public class BlockManager {
   final Daemon replicationThread = new Daemon(new ReplicationMonitor());
   
   /** Store blocks -> datanodedescriptor(s) map of corrupt replicas */
-  final CorruptReplicasMap corruptReplicas = new CorruptReplicasMap();
+  final CorruptReplicasMap corruptReplicas;
 
   /** Blocks to be invalidated. */
   private final InvalidateBlocks invalidateBlocks;
@@ -245,6 +245,7 @@ public class BlockManager {
       final Configuration conf) throws IOException {
     this.namesystem = namesystem;
     datanodeManager = new DatanodeManager(this, namesystem, conf);
+    corruptReplicas = new CorruptReplicasMap(datanodeManager);
     heartbeatManager = datanodeManager.getHeartbeatManager();
     invalidateBlocks = new InvalidateBlocks(datanodeManager);
 
@@ -1124,7 +1125,7 @@ public class BlockManager {
   }
   
   
-  void updateState() {
+  void updateState() throws IOException {
     pendingReplicationBlocksCount = pendingReplications.size();
     underReplicatedBlocksCount = neededReplications.size();
     corruptReplicaBlocksCount = corruptReplicas.size();
@@ -3359,7 +3360,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return blocksMap.nodeIterator(block);
   }
 
-  public int numCorruptReplicas(Block block) {
+  public int numCorruptReplicas(Block block) throws PersistanceException {
     return corruptReplicas.numCorruptReplicas(block);
   }
 
@@ -3393,7 +3394,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    *
    */
   public long[] getCorruptReplicaBlockIds(int numExpectedBlocks,
-                                   Long startingBlockId) {
+                                   Long startingBlockId) throws IOException {
     return corruptReplicas.getCorruptReplicaBlockIds(numExpectedBlocks,
                                                      startingBlockId);
   }

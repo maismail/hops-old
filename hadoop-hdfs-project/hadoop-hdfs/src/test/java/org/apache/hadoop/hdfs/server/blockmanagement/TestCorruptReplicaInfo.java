@@ -32,7 +32,13 @@ import java.util.Map;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSTestUtil;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.junit.Test;
 
 
@@ -66,9 +72,13 @@ public class TestCorruptReplicaInfo {
   
   @Test
   public void testCorruptReplicaInfo() throws IOException, 
-                                       InterruptedException {
+                                       InterruptedException,
+                                       StorageException {
     
-      CorruptReplicasMap crm = new CorruptReplicasMap();
+      StorageFactory.setConfiguration(new HdfsConfiguration());
+      StorageFactory.getConnector().formatStorage();
+      
+      CorruptReplicasMap crm = new CorruptReplicasMap(null);
       
       // Make sure initial values are returned correctly
       assertEquals("Number of corrupt blocks must initially be 0", 0, crm.size());
@@ -89,27 +99,29 @@ public class TestCorruptReplicaInfo {
       DatanodeDescriptor dn1 = DFSTestUtil.getLocalDatanodeDescriptor();
       DatanodeDescriptor dn2 = DFSTestUtil.getLocalDatanodeDescriptor();
       
-      crm.addToCorruptReplicasMap(getBlock(0), dn1, "TEST");
+   
+      
+      addToCorruptReplicasMap(crm, getBlock(0), dn1, "TEST");
       assertEquals("Number of corrupt blocks not returning correctly",
                    1, crm.size());
-      crm.addToCorruptReplicasMap(getBlock(1), dn1, "TEST");
+      addToCorruptReplicasMap(crm, getBlock(1), dn1, "TEST");
       assertEquals("Number of corrupt blocks not returning correctly",
                    2, crm.size());
       
-      crm.addToCorruptReplicasMap(getBlock(1), dn2, "TEST");
+      addToCorruptReplicasMap(crm, getBlock(1), dn2, "TEST");
       assertEquals("Number of corrupt blocks not returning correctly",
                    2, crm.size());
       
-      crm.removeFromCorruptReplicasMap(getBlock(1));
+      removeFromCorruptReplicasMap(crm, getBlock(1));
       assertEquals("Number of corrupt blocks not returning correctly",
                    1, crm.size());
       
-      crm.removeFromCorruptReplicasMap(getBlock(0));
+      removeFromCorruptReplicasMap(crm, getBlock(0));
       assertEquals("Number of corrupt blocks not returning correctly",
                    0, crm.size());
       
       for (Long block_id: block_ids) {
-        crm.addToCorruptReplicasMap(getBlock(block_id), dn1, "TEST");
+        addToCorruptReplicasMap(crm, getBlock(block_id), dn1, "TEST");
       }
             
       assertEquals("Number of corrupt blocks not returning correctly",
@@ -126,5 +138,35 @@ public class TestCorruptReplicaInfo {
                 Arrays.equals(new long[]{8,9,10,11,12,13,14,15,16,17},
                               crm.getCorruptReplicaBlockIds(10, 7L)));
       
+  }
+  
+  private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk, final DatanodeDescriptor dn, final String reason) throws IOException{
+     new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        return null;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        crm.addToCorruptReplicasMap(blk, dn, reason);
+        return null;
+      }
+    }.handle(null);
+  }
+  
+  private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk) throws IOException{
+     new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        return null;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        crm.removeFromCorruptReplicasMap(blk);
+        return null;
+      }
+    }.handle(null);
   }
 }

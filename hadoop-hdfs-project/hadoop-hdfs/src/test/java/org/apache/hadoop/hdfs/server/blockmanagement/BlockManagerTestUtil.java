@@ -57,7 +57,7 @@ public class BlockManagerTestUtil {
   /**
    * Refresh block queue counts on the name-node.
    */
-  public static void updateState(final BlockManager blockManager) {
+  public static void updateState(final BlockManager blockManager) throws IOException {
     blockManager.updateState();
   }
 
