@@ -134,7 +134,7 @@ public class BlockInfo extends Block {
   
   public BlockCollection getBlockCollection() throws PersistanceException {
     if (bc == null) {
-      setBlockCollection((BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId));
+      bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
     }
     return bc;
   }
