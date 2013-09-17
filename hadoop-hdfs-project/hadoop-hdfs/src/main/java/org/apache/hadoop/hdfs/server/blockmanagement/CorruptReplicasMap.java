@@ -17,12 +17,19 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.Server;
 
 import java.util.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.CorruptReplicaDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
  * Stores information about all corrupt blocks in the File System.
@@ -35,10 +42,12 @@ import java.util.*;
 
 @InterfaceAudience.Private
 public class CorruptReplicasMap{
-
-  private SortedMap<Block, Collection<DatanodeDescriptor>> corruptReplicasMap =
-    new TreeMap<Block, Collection<DatanodeDescriptor>>();
   
+  private final DatanodeManager datanodeMgr;
+  
+  public CorruptReplicasMap(DatanodeManager datanodeMgr){
+    this.datanodeMgr = datanodeMgr;
+  }
   /**
    * Mark the block belonging to datanode as corrupt.
    *
@@ -47,12 +56,8 @@ public class CorruptReplicasMap{
    * @param reason a textual reason (for logging purposes)
    */
   public void addToCorruptReplicasMap(Block blk, DatanodeDescriptor dn,
-      String reason) {
+      String reason) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
-    if (nodes == null) {
-      nodes = new TreeSet<DatanodeDescriptor>();
-      corruptReplicasMap.put(blk, nodes);
-    }
     
     String reasonText;
     if (reason != null) {
@@ -62,7 +67,7 @@ public class CorruptReplicasMap{
     }
     
     if (!nodes.contains(dn)) {
-      nodes.add(dn);
+      addCorruptReplicaToDB(new CorruptReplica(blk.getBlockId(), dn.getStorageID()));
       NameNode.blockStateChangeLog.info("BLOCK NameSystem.addToCorruptReplicasMap: "+
                                    blk.getBlockName() +
                                    " added as corrupt on " + dn +
@@ -83,9 +88,12 @@ public class CorruptReplicasMap{
    *
    * @param blk Block to be removed
    */
-  void removeFromCorruptReplicasMap(Block blk) {
-    if (corruptReplicasMap != null) {
-      corruptReplicasMap.remove(blk);
+  void removeFromCorruptReplicasMap(Block blk) throws PersistanceException {
+    Collection<CorruptReplica> corruptReplicas = getCorruptReplicas(blk);
+    if (corruptReplicas != null) {
+      for (CorruptReplica cr : corruptReplicas) {
+        removeCorruptReplicaFromDB(cr);
+      }
     }
   }
 
@@ -96,18 +104,18 @@ public class CorruptReplicasMap{
    * @return true if the removal is successful; 
              false if the replica is not in the map
    */ 
-  boolean removeFromCorruptReplicasMap(Block blk, DatanodeDescriptor datanode) {
-    Collection<DatanodeDescriptor> datanodes = corruptReplicasMap.get(blk);
-    if (datanodes==null)
+  boolean removeFromCorruptReplicasMap(Block blk, DatanodeDescriptor datanode) throws PersistanceException {  
+    Collection<DatanodeDescriptor> datanodes = getNodes(blk);
+    if (datanodes == null) {
       return false;
-    if (datanodes.remove(datanode)) { // remove the replicas
-      if (datanodes.isEmpty()) {
-        // remove the block if there is no more corrupted replicas
-        corruptReplicasMap.remove(blk);
-      }
-      return true;
     }
-    return false;
+
+    if (datanodes.contains(datanode)) {
+      removeCorruptReplicaFromDB(new CorruptReplica(blk.getBlockId(), datanode.getStorageID()));
+      return true;
+    } else {
+      return false;
+    }
   }
     
 
@@ -117,8 +125,16 @@ public class CorruptReplicasMap{
    * @param blk Block for which nodes are requested
    * @return collection of nodes. Null if does not exists
    */
-  Collection<DatanodeDescriptor> getNodes(Block blk) {
-    return corruptReplicasMap.get(blk);
+  Collection<DatanodeDescriptor> getNodes(Block blk) throws PersistanceException {
+    Collection<CorruptReplica> corruptReplicas = getCorruptReplicas(blk);
+    Collection<DatanodeDescriptor> dnds = new TreeSet<DatanodeDescriptor>();
+    if(corruptReplicas != null){
+      for(CorruptReplica cr : corruptReplicas){
+        DatanodeDescriptor dn = datanodeMgr.getDatanode(cr.getStorageId());
+        dnds.add(dn);
+      }
+    }
+    return dnds;
   }
 
   /**
@@ -128,18 +144,24 @@ public class CorruptReplicasMap{
    * @param node DatanodeDescriptor which holds the replica
    * @return true if replica is corrupt, false if does not exists in this map
    */
-  boolean isReplicaCorrupt(Block blk, DatanodeDescriptor node) {
+  boolean isReplicaCorrupt(Block blk, DatanodeDescriptor node) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return ((nodes != null) && (nodes.contains(node)));
   }
 
-  public int numCorruptReplicas(Block blk) {
+  public int numCorruptReplicas(Block blk) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return (nodes == null) ? 0 : nodes.size();
   }
   
-  public int size() {
-    return corruptReplicasMap.size();
+  public int size() throws IOException{
+    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_CORRUPT_REPLICAS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        CorruptReplicaDataAccess da = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
+        return da.countAllUniqueBlk();
+      }
+    }.handle(null);
   }
 
   /**
@@ -156,13 +178,25 @@ public class CorruptReplicasMap{
    * @return Up to numExpectedBlocks blocks from startingBlockId if it exists
    *
    */
+  //FIXME default behaviour was that the order of blocks in the map was according 
+  //to when they were added to the list. To do that we will need time stamp column
+  //the corrupt replicas table. right now the blocks are sorted by the ids. 
   long[] getCorruptReplicaBlockIds(int numExpectedBlocks,
-                                   Long startingBlockId) {
+                                   Long startingBlockId) throws IOException {
     if (numExpectedBlocks < 0 || numExpectedBlocks > 100) {
       return null;
     }
     
-    Iterator<Block> blockIt = corruptReplicasMap.keySet().iterator();
+    SortedSet<Long> sortedIds = new TreeSet<Long>();
+    
+    Collection<CorruptReplica> corruptReplicas = getAllCorruptReplicas();
+    if (corruptReplicas != null) {
+      for (CorruptReplica replica : corruptReplicas) {
+        sortedIds.add(replica.blockId);
+      }
+    }
+    
+    Iterator<Long> blockIt = sortedIds.iterator();
     
     // if the starting block id was specified, iterate over keys until
     // we find the matching block. If we find a matching block, break
@@ -170,8 +204,8 @@ public class CorruptReplicasMap{
     if (startingBlockId != null) {
       boolean isBlockFound = false;
       while (blockIt.hasNext()) {
-        Block b = blockIt.next();
-        if (b.getBlockId() == startingBlockId) {
+        Long bid = blockIt.next();
+        if (bid == startingBlockId) {
           isBlockFound = true;
           break; 
         }
@@ -186,7 +220,7 @@ public class CorruptReplicasMap{
 
     // append up to numExpectedBlocks blockIds to our list
     for(int i=0; i<numExpectedBlocks && blockIt.hasNext(); i++) {
-      corruptReplicaBlockIds.add(blockIt.next().getBlockId());
+      corruptReplicaBlockIds.add(blockIt.next());
     }
     
     long[] ret = new long[corruptReplicaBlockIds.size()];
@@ -196,4 +230,27 @@ public class CorruptReplicasMap{
     
     return ret;
   }  
+  
+  private Collection<CorruptReplica> getCorruptReplicas(Block blk) throws PersistanceException {
+    return EntityManager.findList(CorruptReplica.Finder.ByBlockId, blk.getBlockId());
+  }
+
+  private Collection<CorruptReplica> getAllCorruptReplicas() throws IOException {
+    return (Collection<CorruptReplica>) new LightWeightRequestHandler(OperationType.GET_ALL_CORRUPT_REPLICAS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        CorruptReplicaDataAccess crDa = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
+        return crDa.findAll();
+      }
+    }.handle(null);
+  }
+  
+  
+  private void addCorruptReplicaToDB(CorruptReplica cr) throws PersistanceException {
+    EntityManager.add(cr);
+  }
+
+  private void removeCorruptReplicaFromDB(CorruptReplica cr) throws PersistanceException {
+    EntityManager.remove(cr);
+  }
 }
