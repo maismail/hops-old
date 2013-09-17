@@ -1329,7 +1329,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.READ, new String[]{src});
+        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.WRITE, new String[]{src});
         lm.addBlock(LockType.READ).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
@@ -2350,7 +2350,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               TransactionLockManager tla = new TransactionLockManager();
               tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE,
                       false, new String[]{src});
-              tla.addBlock(TransactionLockManager.LockType.READ);
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.WRITE, holder);
               tla.addLeasePath(TransactionLockManager.LockType.WRITE);
               tla.addReplica(TransactionLockManager.LockType.READ);
@@ -3575,7 +3575,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
               tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
-              tla.addBlock(TransactionLockManager.LockType.READ);
+              tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.READ);
               tla.acquire();
               return tla;
@@ -5552,7 +5552,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(INodeLockType.READ).
-                addBlock(LockType.READ, block.getBlockId()).
+                addBlock(LockType.WRITE, block.getBlockId()).
                 addGenerationStamp(LockType.WRITE);
         lm.acquireByBlock(inodeId);
         return lm;
