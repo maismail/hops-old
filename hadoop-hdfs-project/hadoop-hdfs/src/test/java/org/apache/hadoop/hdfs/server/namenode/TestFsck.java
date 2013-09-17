@@ -80,7 +80,10 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 
 /**
  * A JUnit test for doing fsck
@@ -671,7 +674,7 @@ public class TestFsck {
       // bring up a one-node cluster
       Configuration conf = new HdfsConfiguration();
       cluster = new MiniDFSCluster.Builder(conf).build();
-      String fileName = "/test.txt";
+      final String fileName = "/test.txt";
       Path filePath = new Path(fileName);
       FileSystem fs = cluster.getFileSystem();
       
@@ -679,12 +682,29 @@ public class TestFsck {
       DFSTestUtil.createFile(fs, filePath, 1L, (short)1, 1L);
       DFSTestUtil.waitReplication(fs, filePath, (short)1);
       
-      // intentionally corrupt NN data structure
-      INodeFile node = (INodeFile)cluster.getNamesystem().dir.getRootDir().getNode(
-          fileName, true);
-      final BlockInfo[] blocks = node.getBlocks(); 
-      assertEquals(blocks.length, 1);
-      blocks[0].setNumBytes(-1L);  // set the block length to be negative
+      final MiniDFSCluster clusterFinal = cluster;
+        TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+            @Override
+            public Object acquireLock() throws PersistanceException, IOException {
+                TransactionLockManager tlm = new TransactionLockManager();
+                tlm.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{fileName});
+                tlm.addBlock(TransactionLockManager.LockType.WRITE);
+                tlm.acquire();
+                return tlm;
+            }
+
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+                // intentionally corrupt NN data structure
+                INodeFile node = (INodeFile) clusterFinal.getNamesystem().dir.getRootDir().getNode(
+                        fileName, true);
+                final BlockInfo[] blocks = node.getBlocks();
+                assertEquals(blocks.length, 1);
+                blocks[0].setNumBytes(-1L);  // set the block length to be negative
+                return null;
+            }
+        };
+      handler.handle(null);
       
       // run fsck and expect a failure with -1 as the error code
       String outStr = runFsck(conf, -1, true, fileName);
