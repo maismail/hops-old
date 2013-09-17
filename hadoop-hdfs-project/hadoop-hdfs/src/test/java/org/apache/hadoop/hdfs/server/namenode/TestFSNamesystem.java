@@ -29,6 +29,10 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.junit.Test;
 
 public class TestFSNamesystem {
@@ -58,10 +62,28 @@ public class TestFSNamesystem {
     DFSTestUtil.formatNameNode(conf);
     FSNamesystem fsn = FSNamesystem.loadFromDisk(conf);
     LeaseManager leaseMan = fsn.getLeaseManager();
-    leaseMan.addLease("client1", "importantFile");
+    addLease(leaseMan, "client1", "importantFile");
     assertEquals(1, leaseMan.countLease());
     fsn.clear();
     leaseMan = fsn.getLeaseManager();
     assertEquals(0, leaseMan.countLease());
+  }
+  
+  private void addLease(final LeaseManager leaseMan, final String holder, final String src) throws IOException{
+    new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public Object acquireLock() throws PersistanceException, IOException {
+        TransactionLockManager tlm = new TransactionLockManager();
+        tlm.addLease(TransactionLockManager.LockType.WRITE, holder);
+        tlm.acquire();
+        return tlm;
+      }
+      
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        leaseMan.addLease(holder, src);
+        return null;
+      }
+    }.handle(null);
   }
 }

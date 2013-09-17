@@ -14,6 +14,8 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageExcepti
 public class CountHelper {
 
   public static final String COUNT_QUERY = "select count(*) from %s";
+  public static final String COUNT_QUERY_UNIQUE = "select count(distinct %s) from %s";
+  
   private static MysqlServerConnector connector = MysqlServerConnector.INSTANCE;
 
   /**
@@ -30,7 +32,12 @@ public class CountHelper {
     String query = String.format(COUNT_QUERY, tableName);
     return count(query);
   }
-
+  
+  public static int countAllUnique(String tableName, String columnName) throws StorageException{
+    String query = String.format(COUNT_QUERY_UNIQUE, columnName, tableName);
+    return count(query);
+  }
+  
   private static int count(String query) throws StorageException {
     try {
       Connection conn = connector.obtainSession();

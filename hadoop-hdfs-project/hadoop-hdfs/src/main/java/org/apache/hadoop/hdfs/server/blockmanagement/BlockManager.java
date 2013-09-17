@@ -1512,7 +1512,7 @@ public class BlockManager {
       namesystem.writeLock();
       try {
         for (int i = 0; i < timedOutItems.length; i++) {
-          processTimedOutPendingBlock(timedOutItems[0]);
+          processTimedOutPendingBlock(timedOutItems[i]);
         }
       } finally {
         namesystem.writeUnlock();
@@ -2429,6 +2429,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
+                addCorrupt(LockType.WRITE).
+                addUnderReplicatedBlock(LockType.WRITE).
                 addExcess(LockType.WRITE);
         lm.acquireByBlock(inodeId);
         return lm;
@@ -2882,9 +2884,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(TransactionLockManager.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, rdbi.getBlock().getBlockId()).
-                addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE);
+                addExcess(LockType.WRITE).
+                addCorrupt(LockType.WRITE).
+                addUnderReplicatedBlock(LockType.WRITE);
+        if (!rdbi.isDeletedBlock()) {
+          lm.addPendingBlock(LockType.WRITE).
+                  addReplicaUc(LockType.WRITE).
+                  addInvalidatedBlock(LockType.READ);
+        }
         lm.acquireByBlock(inodeId);
         return lm;
       }

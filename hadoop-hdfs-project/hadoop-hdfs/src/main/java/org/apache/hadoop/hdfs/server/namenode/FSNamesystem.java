@@ -1980,7 +1980,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
               tla.addGenerationStamp(TransactionLockManager.LockType.WRITE);
               tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
-              tla.acquire(); //FIXME this calls fake acquire function
+              tla.addPendingBlock(TransactionLockManager.LockType.WRITE);
+              tla.acquire();
               return tla;
           }
 
@@ -2359,6 +2360,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               tla.addReplicaUc(TransactionLockManager.LockType.READ);
               tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
               tla.addInvalidatedBlock(TransactionLockManager.LockType.WRITE);
+              tla.addPendingBlock(LockType.READ);
               tla.acquire();
               return tla;
           }
@@ -3178,6 +3180,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 tla.addCorrupt(TransactionLockManager.LockType.WRITE);
                 tla.addReplicaUc(TransactionLockManager.LockType.WRITE);
                 tla.addUnderReplicatedBlock(TransactionLockManager.LockType.WRITE);
+                tla.addPendingBlock(TransactionLockManager.LockType.WRITE);
                 tla.acquire();
                 return tla;
             }

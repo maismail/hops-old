@@ -149,12 +149,13 @@ public class TransactionLockManager {
     return lPaths;
   }
 
+
   private void acquireReplicasLock(LockType lock, FinderType finder) throws PersistanceException {
     if (blockResults != null && !blockResults.isEmpty()) {
       for (Block b : blockResults) {
         TransactionLockAcquirer.acquireLockList(lock, finder, b.getBlockId());
       }
-    } else // if blockResults is null then we can safely brin null in to cache
+    } else // if blockResults is null then we can safely bring null in to cache
     {
       if (blockParam != null) {
         TransactionLockAcquirer.acquireLockList(lock, finder, blockParam/*id*/);
@@ -167,6 +168,11 @@ public class TransactionLockManager {
       for (Block b : blockResults) {
         TransactionLockAcquirer.acquireLock(lock, finder, b.getBlockId());
       }
+    } else // if blockResults is null then we can safely bring null in to cache
+    {
+        if(blockParam != null){
+            TransactionLockAcquirer.acquireLock(lock, finder, blockParam/*id*/);
+        }
     }
   }
 
