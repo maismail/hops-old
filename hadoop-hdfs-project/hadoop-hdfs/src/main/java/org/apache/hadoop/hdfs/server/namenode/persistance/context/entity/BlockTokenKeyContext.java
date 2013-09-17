@@ -133,6 +133,7 @@
 //
 //  @Override
 //  public void prepare() throws StorageException {
+//    fix me lock upgrade check
 //    dataAccess.prepare(removedKeys.values(), newKeys.values(), modifiedKeys.values());
 //  }
 //

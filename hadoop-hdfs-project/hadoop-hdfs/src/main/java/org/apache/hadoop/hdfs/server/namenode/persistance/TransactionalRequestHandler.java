@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionLockAcquireFailure;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
@@ -13,7 +14,7 @@ import org.apache.log4j.NDC;
  * @author kamal hakimzadeh<kamal@sics.se>
  */
 public abstract class TransactionalRequestHandler extends RequestHandler {
-  
+    
     public TransactionalRequestHandler(OperationType opType) {
         super(opType);
     }
@@ -59,7 +60,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                     log.debug("tx started");
                     oldTime = System.currentTimeMillis();
                     if (rowLevelLock) {
-                        acquireLock();
+                        TransactionLockManager locks = (TransactionLockManager)acquireLock();
                         log.debug("all locks acquired  in " + (System.currentTimeMillis() - oldTime) + " msec");
                         oldTime = System.currentTimeMillis();
                         EntityManager.preventStorageCall();
@@ -92,7 +93,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                 } finally {
                     try {
                         if (!rollback) {
-                            EntityManager.commit();
+                            EntityManager.commit(locks);
                             log.debug("tx committed. commit took " + (System.currentTimeMillis() - oldTime) + " msec");
                             log.debug("Total time for tx is " + (System.currentTimeMillis() - txStartTime) + " msec");
                         }
@@ -134,7 +135,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
         return null;
     }
 
-    public abstract void acquireLock() throws PersistanceException, IOException;
+    public abstract Object acquireLock() throws PersistanceException, IOException;
 
     @Override
     public TransactionalRequestHandler setParams(Object... params) {

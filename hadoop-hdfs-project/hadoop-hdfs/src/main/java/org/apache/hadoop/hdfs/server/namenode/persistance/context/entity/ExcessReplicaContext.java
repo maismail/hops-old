@@ -2,11 +2,13 @@
 //
 //import java.util.*;
 //import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
+//import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.ExcessReplicaDataAccess;
+//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 //
 ///**
@@ -139,10 +141,20 @@
 //    throw new RuntimeException(UNSUPPORTED_FINDER);
 //  }
 //
-//  @Override
-//  public void prepare() throws StorageException {
-//    dataAccess.prepare(removedExReplica.values(), newExReplica.values(), null);
-//  }
+//    @Override
+//    public void prepare(TransactionLockManager tlm) throws StorageException {
+//        // if the list is not empty then check for the lock types
+//        // lock type is checked after when list lenght is checked 
+//        // because some times in the tx handler the acquire lock 
+//        // function is empty and in that case tlm will throw 
+//        // null pointer exceptions
+//
+//        if ((removedExReplica.values().size() != 0)
+//                && tlm.getErLock() != TransactionLockManager.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade block locks");
+//        }
+//        dataAccess.prepare(removedExReplica.values(), newExReplica.values(), null);
+//    }
 //
 //  @Override
 //  public void remove(ExcessReplica exReplica) throws PersistanceException {

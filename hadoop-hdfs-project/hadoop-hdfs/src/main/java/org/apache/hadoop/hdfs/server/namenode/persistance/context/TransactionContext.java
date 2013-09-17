@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -60,11 +61,11 @@ public class TransactionContext {
     }
   }
 
-  public void commit() throws StorageException {
+  public void commit(final TransactionLockManager tlm) throws StorageException {
     aboutToPerform();
 
     for (EntityContext context : contexts) {
-      context.prepare();
+      context.prepare(tlm);
     }
 
     resetContext();

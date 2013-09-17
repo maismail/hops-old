@@ -1013,7 +1013,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(TransactionLockManager.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blk.getBlockId()).
@@ -1023,6 +1023,7 @@ public class BlockManager {
                 addUnderReplicatedBlock(LockType.WRITE).
                 addReplicaUc(LockType.READ);
         lm.acquireByBlock(inodeId);
+        return lm;
       }
 
       @Override
@@ -1652,7 +1653,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(TransactionLockManager.INodeLockType.WRITE).
@@ -1661,6 +1662,7 @@ public class BlockManager {
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE);
         lm.acquireByBlock(inodeId);
+        return lm;
       }
 
       @Override
@@ -1719,7 +1721,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock() throws PersistanceException, IOException {
+      public Object acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(TransactionLockManager.INodeLockType.WRITE).
@@ -1729,6 +1731,7 @@ public class BlockManager {
                 addCorrupt(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE);
         lm.acquireByBlock(inodeId);
+        return lm;
       }
 
       @Override

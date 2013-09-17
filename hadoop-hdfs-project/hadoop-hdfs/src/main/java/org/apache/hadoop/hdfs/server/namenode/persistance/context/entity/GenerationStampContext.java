@@ -60,6 +60,7 @@
 //
 //  @Override
 //  public void prepare() throws StorageException {
+//   fix me lock upgrade check
 //    if (generationStamp != null) {
 //      da.prepare(generationStamp.getCounter());
 //    }

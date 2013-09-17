@@ -383,6 +383,70 @@ public class TransactionLockManager {
     return this;
   }
 
+  public INodeLockType getInodeLock() {
+    return inodeLock;
+  }
+
+  public INodeResolveType getInodeResolveType() {
+    return inodeResolveType;
+  }
+
+  public LockType getBlockLock() {
+    return blockLock;
+  }
+
+  public Long getBlockParam() {
+    return blockParam;
+  }
+
+  public LockType getLeaseLock() {
+    return leaseLock;
+  }
+
+  public LockType getLpLock() {
+    return lpLock;
+  }
+
+  public LockType getReplicaLock() {
+    return replicaLock;
+  }
+
+  public LockType getCrLock() {
+    return crLock;
+  }
+
+  public LockType getErLock() {
+    return erLock;
+  }
+
+  public LockType getRucLock() {
+    return rucLock;
+  }
+
+  public LockType getUrbLock() {
+    return urbLock;
+  }
+
+  public LockType getPbLock() {
+    return pbLock;
+  }
+
+  public LockType getInvLocks() {
+    return invLocks;
+  }
+
+  public LockType getGenerationStampLock() {
+    return generationStampLock;
+  }
+
+  public LockType getLeaderLock() {
+    return leaderLock;
+  }
+
+  public long[] getLeaderIds() {
+    return leaderIds;
+  }
+
   public void acquire() throws PersistanceException, UnresolvedPathException {
     // acuires lock in order
     if (inodeLock != null && inodeParam != null && inodeParam.length > 0) {
@@ -402,8 +466,6 @@ public class TransactionLockManager {
     acquireLeaderLock();
   }
 
-  
-  
   public void acquireForRename() throws PersistanceException, UnresolvedPathException {
     acquireForRename(false);
   }
@@ -487,9 +549,9 @@ public class TransactionLockManager {
 
 //HOP if (blockResults != null && !blockResults.isEmpty()) //[S] commented this to bring null in to the cache for invalid/deleted blocks
 //    {
-      if (replicaLock != null) {
-        acquireReplicasLock(replicaLock, IndexedReplica.Finder.ByBlockId);
-      }
+    if (replicaLock != null) {
+      acquireReplicasLock(replicaLock, IndexedReplica.Finder.ByBlockId);
+    }
 
 //      if (crLock != null) {
 //        acquireReplicasLock(crLock, CorruptReplica.Finder.ByBlockId);
@@ -499,9 +561,9 @@ public class TransactionLockManager {
 //        acquireReplicasLock(erLock, ExcessReplica.Finder.ByBlockId);
 //      }
 
-      if (rucLock != null) {
-        acquireReplicasLock(rucLock, ReplicaUnderConstruction.Finder.ByBlockId);
-      }
+    if (rucLock != null) {
+      acquireReplicasLock(rucLock, ReplicaUnderConstruction.Finder.ByBlockId);
+    }
 
 //      if (invLocks != null) {
 //        acquireReplicasLock(invLocks, InvalidatedBlock.Finder.ByBlockId);
@@ -704,7 +766,7 @@ public class TransactionLockManager {
       return;
     }
 
-    inodeResult = acquireInodeLocks(                       
+    inodeResult = acquireInodeLocks(
             INodeResolveType.ONLY_PATH,
             inodeLock,
             sortedPaths.toArray(new String[sortedPaths.size()]));
@@ -722,14 +784,13 @@ public class TransactionLockManager {
       return; // Lease does not exist anymore.
     }
     leaseResults.add(lease);
-    blockResults = acquireBlockLock(blockLock, null);      
+    blockResults = acquireBlockLock(blockLock, null);
 
     List<LeasePath> lpResults = acquireLeasePathsLock(lpLock);
     if (lpResults.size() > sortedPaths.size()) {
       return; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
 
-    acquireBlockRelatedLocksNormal();                       
+    acquireBlockRelatedLocksNormal();
   }
- 
 }

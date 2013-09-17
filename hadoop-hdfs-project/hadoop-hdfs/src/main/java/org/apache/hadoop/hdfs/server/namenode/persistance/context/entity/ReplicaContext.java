@@ -5,11 +5,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.ReplicaDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /**
@@ -58,10 +60,21 @@ public class ReplicaContext extends EntityContext<IndexedReplica> {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
-  @Override
-  public void prepare() throws StorageException {
-    dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
-  }
+    @Override
+    public void prepare(TransactionLockManager tlm) throws StorageException {
+        // if the list is not empty then check for the lock types
+        // lock type is checked after when list lenght is checked 
+        // because some times in the tx handler the acquire lock 
+        // function is empty and in that case tlm will throw 
+        // null pointer exceptions
+
+        if ((removedReplicas.values().size() != 0
+                || modifiedReplicas.values().size() != 0)
+                && tlm.getReplicaLock() != TransactionLockManager.LockType.WRITE) {
+            throw new LockUpgradeException("Trying to upgrade replica locks");
+        }
+        dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
+    }
 
   @Override
   public void remove(IndexedReplica replica) throws PersistanceException {

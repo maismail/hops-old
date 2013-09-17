@@ -4,10 +4,12 @@
 //import java.util.*;
 //import java.util.Map.Entry;
 //import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
+//import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
+//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 //
 ///**
@@ -31,7 +33,8 @@
 //  @Override
 //  public void add(UnderReplicatedBlock entity) throws PersistanceException {
 //    if (removedurBlocks.get(entity.getBlockId()) != null) {
-//      throw new TransactionContextException("Removed under replica passed to be persisted");
+////      throw new TransactionContextException("Removed under replica passed to be persisted");
+//        removedurBlocks.remove(entity.getBlockId());  
 //    }
 //
 //    addNewReplica(entity);
@@ -135,7 +138,18 @@
 //  }
 //
 //  @Override
-//  public void prepare() throws StorageException {
+//  public void prepare(TransactionLockManager tlm) throws StorageException {
+//    // if the list is not empty then check for the lock types
+//        // lock type is checked after when list lenght is checked 
+//        // because some times in the tx handler the acquire lock 
+//        // function is empty and in that case tlm will throw 
+//        // null pointer exceptions
+//
+//        if ((removedurBlocks.values().size() != 0
+//                || modifiedurBlocks.values().size() != 0)
+//                && tlm.getUrbLock()!= TransactionLockManager.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade under replicated locks");
+//        }
 //    dataAccess.prepare(removedurBlocks.values(), newurBlocks.values(), modifiedurBlocks.values());
 //  }
 //
@@ -145,7 +159,7 @@
 //    if (!urBlocks.containsKey(entity.getBlockId())) {
 //      throw new TransactionContextException("Unattached under replica [blk:" + entity.getBlockId() + ", level: " + entity.getLevel() + " ] passed to be removed");
 //    }
-//    urBlocks.remove(entity.getBlockId());
+//    urBlocks.put(entity.getBlockId(), null);
 //    newurBlocks.remove(entity.getBlockId());
 //    modifiedurBlocks.remove(entity.getBlockId());
 //    removedurBlocks.put(entity.getBlockId(), entity);

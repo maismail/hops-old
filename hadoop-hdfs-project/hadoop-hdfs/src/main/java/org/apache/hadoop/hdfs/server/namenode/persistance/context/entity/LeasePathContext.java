@@ -7,10 +7,12 @@ import java.util.TreeSet;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.StorageCallPreventedException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
 /**
@@ -149,10 +151,21 @@ public class LeasePathContext extends EntityContext<LeasePath> {
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
-  @Override
-  public void prepare() throws StorageException {
-    dataAccess.prepare(removedLPaths.values(), newLPaths.values(), modifiedLPaths.values());
-  }
+    @Override
+    public void prepare(TransactionLockManager tlm) throws StorageException {
+        // if the list is not empty then check for the lock types
+        // lock type is checked after when list lenght is checked 
+        // because some times in the tx handler the acquire lock 
+        // function is empty and in that case tlm will throw 
+        // null pointer exceptions
+
+        if ((removedLPaths.values().size() != 0
+                || modifiedLPaths.values().size() != 0)
+                && tlm.getLpLock()!= TransactionLockManager.LockType.WRITE) {
+            throw new LockUpgradeException("Trying to upgrade lease path locks");
+        }
+        dataAccess.prepare(removedLPaths.values(), newLPaths.values(), modifiedLPaths.values());
+    }
 
   @Override
   public void remove(LeasePath lPath) throws PersistanceException {

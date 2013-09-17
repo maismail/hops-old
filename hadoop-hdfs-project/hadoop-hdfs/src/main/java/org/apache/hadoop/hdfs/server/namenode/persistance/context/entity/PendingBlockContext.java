@@ -2,11 +2,13 @@
 //
 //import java.util.*;
 //import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+//import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.PendingBlockDataAccess;
+//import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 //import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 //
 ///**
@@ -63,7 +65,7 @@
 //        long timeLimit = (Long) params[0];
 //        log("find-pendings-by-timelimit", CacheHitState.NA, new String[]{"timelimit", Long.toString(timeLimit)});
 //        aboutToAccessStorage();
-//        return syncInstances(dataAccess.findByTimeLimit(timeLimit));
+//        return syncInstances(dataAccess.findByTimeLimitLessThan(timeLimit));
 //      case All:
 //        if (allPendingRead) {
 //          log("find-all-pendings", CacheHitState.HIT);
@@ -101,7 +103,7 @@
 //          result = dataAccess.findByPKey(blockId);
 //          this.pendings.put(blockId, result);
 //        } else {
-//          log("find-pending-by-pk-removed", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+//          throw new IllegalStateException("Illegal Cache State");
 //        }
 //        return result;
 //    }
@@ -109,16 +111,28 @@
 //    throw new RuntimeException(UNSUPPORTED_FINDER);
 //  }
 //
-//  @Override
-//  public void prepare() throws StorageException {
-//    dataAccess.prepare(removedPendings.values(), newPendings.values(), modifiedPendings.values());
-//  }
+//    @Override
+//    public void prepare(TransactionLockManager tlm) throws StorageException {
+//        // if the list is not empty then check for the lock types
+//        // lock type is checked after when list lenght is checked 
+//        // because some times in the tx handler the acquire lock 
+//        // function is empty and in that case tlm will throw 
+//        // null pointer exceptions
+//
+//        if ((removedPendings.values().size() != 0
+//                || modifiedPendings.values().size() != 0)
+//                && tlm.getPbLock()!= TransactionLockManager.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade pending block locks");
+//        }
+//        dataAccess.prepare(removedPendings.values(), newPendings.values(), modifiedPendings.values());
+//    }
 //
 //  @Override
 //  public void remove(PendingBlockInfo pendingBlock) throws PersistanceException {
-//    if (pendings.remove(pendingBlock.getBlockId()) == null) {
-//      throw new TransactionContextException("Unattached pending-block passed to be removed");
+//    if (!pendings.containsKey(pendingBlock.getBlockId())) {  
+//      throw new TransactionContextException("Unattached pending-block passed to be removed id "+pendingBlock.getBlockId());
 //    }
+//    pendings.remove(pendingBlock.getBlockId());
 //    newPendings.remove(pendingBlock.getBlockId());
 //    modifiedPendings.remove(pendingBlock.getBlockId());
 //    removedPendings.put(pendingBlock.getBlockId(), pendingBlock);

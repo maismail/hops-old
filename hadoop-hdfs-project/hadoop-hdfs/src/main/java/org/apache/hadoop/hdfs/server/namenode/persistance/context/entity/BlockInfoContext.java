@@ -2,12 +2,15 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.CountHelper;
 import org.apache.log4j.Logger;
@@ -154,9 +157,20 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public void prepare() throws StorageException {
-    dataAccess.prepare(removedBlocks.values(), newBlocks.values(), modifiedBlocks.values());
-  }
+    public void prepare(TransactionLockManager tlm) throws StorageException {
+        // if the list is not empty then check for the lock types
+        // lock type is checked after when list lenght is checked 
+        // because some times in the tx handler the acquire lock 
+        // function is empty and in that case tlm will throw 
+        // null pointer exceptions
+
+        if ((removedBlocks.values().size() != 0
+                || modifiedBlocks.values().size() != 0)
+                && tlm.getBlockLock() != LockType.WRITE) {
+            throw new LockUpgradeException("Trying to upgrade block locks");
+        }
+        dataAccess.prepare(removedBlocks.values(), newBlocks.values(), modifiedBlocks.values());
+    }
 
   @Override
   public void remove(BlockInfo block) throws PersistanceException {
