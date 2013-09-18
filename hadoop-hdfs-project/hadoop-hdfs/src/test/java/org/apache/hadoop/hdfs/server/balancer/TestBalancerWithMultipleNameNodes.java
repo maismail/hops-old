@@ -53,6 +53,12 @@ import org.junit.Test;
 /**
  * Test balancer with multiple NameNodes
  */
+
+//HOP
+// One of the problems with this test is that the two namenodes
+// have their own blockIDGenerators that are generating conflicting ids.
+// We will fix this test after we have a table in DB containing the max block id 
+
 public class TestBalancerWithMultipleNameNodes {
   static final Log LOG = Balancer.LOG;
   {
