@@ -80,10 +80,13 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
+import com.mysql.clusterj.Session;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;
 
 /**
  * A JUnit test for doing fsck
@@ -154,6 +157,56 @@ public class TestFsck {
       if (fs != null) {try{fs.close();} catch(Exception e){}}
       cluster.shutdown();
       
+//     safemode logic needs to be changed
+//         
+//     Regenerate the problem using test TestFsck.testFsck()
+//
+//      What the test expects
+//      When you restart the namenode, it forgets everything except the inode and
+//      blocks map. Every other map  i.e. esp the replica map is generated from
+//      the block reports.
+//      When the name node starts it starts in safemode and set the safe block
+//      count to number of blocks that are missing replicas i.e. blocks with zero replicas. in this
+//      case it is 20.
+//      when a block report is received from datanode following happens
+//       1) the block is added to replicas list
+//       2) and safe mode is asked to increment is safeBlock count 
+//          at this point the replication factor of the block is one (as its the first replica )
+//          safemode increments the safe block count
+//          later, in any other report from other data nodes,  if a replica 
+//                        for this block reported then
+//          the replciation count for the block will be two (or more). safe mode will be asked
+//          to increment the safe block count, but it wont as the replication factor
+//          is now 2. safe mode decides based on the replication fact which block
+//          is brand new and which is replica of already reported block
+//      
+//       But in our case all the information is already presisted. for block report
+//             our code returns only those replicas whose datanodes are registered
+//             with the datanode manager.
+//       later all the data nodes are registered ( first block report has not
+//       yet been processed ) the replication count will be returned 3 ( or more )
+//       and safe mode will treat the block as if has already been reported to it. in the end
+//             safeMode does not get a chance to increment the safeBlock count. and it 
+//             always remin in the safeMode
+//      
+//       FOLLOWING ARE SOME SOLUTIONS (BAD ONES)
+//       1) delete all the tables, except the inodes and blocks table, when the name node
+//          restarts ( issues with multiple NNs )
+//       2) make the processReport method synchronized. it will work for single NN solution 
+//                ( I guess)
+//       3) Somehow keep track of the blocks ids that are reported to the safe mode.
+//          if the block is not reported before then force the safemode to run the
+//          checkMode()
+//       4) best solution, come up with our own safeMode solution
+//      
+//       this is the fn in SafeMode class where the problem starts
+//       private synchronized void incrementSafeBlockCount(short replication) throws IOException {
+        
+        //Solution 1. shortcut deleting only one table.
+//      Session session = (Session)StorageFactory.getConnector().obtainSession();
+//      session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+//      session.flush();
+      
       // restart the cluster; bring up namenode but not the data nodes
       cluster = new MiniDFSCluster.Builder(conf).numDataNodes(0).format(false).build();
       outStr = runFsck(conf, 1, true, "/");
@@ -161,8 +214,10 @@ public class TestFsck {
       assertTrue(outStr.contains(NamenodeFsck.CORRUPT_STATUS));
       System.out.println(outStr);
       
+      FSNamesystem.LOG.debug("TestX Starting data nodes");
       // bring up data nodes & cleanup cluster
       cluster.startDataNodes(conf, 4, true, null, null);
+      FSNamesystem.LOG.debug("TestX, started Datanodes");
       cluster.waitActive();
       cluster.waitClusterUp();
       fs = cluster.getFileSystem();
