@@ -104,8 +104,15 @@ import org.apache.hadoop.util.ToolRunner;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.mysql.clusterj.Session;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeasePathClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaUnderConstructionClusterj;
 
 /**
  * This class creates a single-process DFS cluster for junit testing.
@@ -1423,7 +1430,7 @@ public class MiniDFSCluster {
   /**
    * Shutdown all the nodes in the cluster.
    */
-  public void shutdown() {
+  public void shutdown(){
     LOG.info("Shutting down the Mini HDFS Cluster");
     if (checkExitOnShutdown)  {
       if (ExitUtil.terminateCalled()) {
@@ -1443,6 +1450,19 @@ public class MiniDFSCluster {
         nameNode = null;
       }
     }
+    
+      //HOP_START_CODE
+      try {
+          Session session = (Session) StorageFactory.getConnector().obtainSession();
+          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+          session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+          session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+          session.flush();
+      } catch (StorageException e) {
+          LOG.error(e);
+      }
+      //HOP_END_CODE
   }
   
   /**
