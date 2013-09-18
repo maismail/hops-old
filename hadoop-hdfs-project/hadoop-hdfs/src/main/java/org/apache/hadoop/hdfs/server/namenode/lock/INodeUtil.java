@@ -1,9 +1,12 @@
 package org.apache.hadoop.hdfs.server.namenode.lock;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
@@ -18,7 +21,9 @@ import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
@@ -154,12 +159,24 @@ public class INodeUtil {
     return resolvedInodes;  
   }
 
-  public static long findINodeIdByBlock(long blockId) throws StorageException {
+  public static long findINodeIdByBlock(final long blockId) throws StorageException {
     LOG.debug(String.format(
             "About to read block with no transaction by bid=%d",
             blockId));
-    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-    BlockInfo bInfo = bda.findById(blockId);
+      LightWeightRequestHandler handler = new LightWeightRequestHandler(RequestHandler.OperationType.TEST) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+              BlockInfo bInfo = bda.findById(blockId);
+              return bInfo;
+          }
+      };
+    BlockInfo bInfo;
+      try {
+          bInfo = (BlockInfo)handler.handle(null);
+      } catch (IOException ex) {
+          throw new StorageException(ex.getMessage());
+      }
     if (bInfo == null) {
       return INode.NON_EXISTING_ID;
     }
