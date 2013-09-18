@@ -3,6 +3,9 @@ package org.apache.hadoop.hdfs.server.namenode.persistance;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.log4j.NDC;
 
 /**
@@ -37,6 +40,16 @@ public abstract class LightWeightRequestHandler extends RequestHandler {
         exception = null;
         try {
           NDC.push(opType.name()); // Defines a context for every operation to track them in the logs easily.
+          
+          //In a tx if the lock level is set to write, does 
+          //it mean that all the operations after seting the lock will use write lcok? 
+          //Light weight tx handler is sometimes called inside a bigger tx. 
+          //If in the outer tx lock level was set to some thing other than read-commited 
+          //then we will end up taking un necessary locks.
+          //To make sure that we done have this problem I explicitly set the locks to read-commited. 
+          StorageConnector connector = StorageFactory.getConnector();
+          connector.readCommitted();
+          
           return performTask();
         } catch (PersistanceException ex) {
           log.error("Could not perfortm task", ex);
