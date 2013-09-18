@@ -73,7 +73,7 @@ public class TestNodeCount {
       final Path FILE_PATH = new Path("/testfile");
       DFSTestUtil.createFile(fs, FILE_PATH, 1L, REPLICATION_FACTOR, 1L);
       DFSTestUtil.waitReplication(fs, FILE_PATH, REPLICATION_FACTOR);
-      ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
+      final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
 
       // keep a copy of all datanode descriptor
       final DatanodeDescriptor[] datanodes = hm.getDatanodes();
@@ -104,17 +104,35 @@ public class TestNodeCount {
       }
       
       // find out a non-excess node
-      final Iterator<DatanodeDescriptor> iter = bm.blocksMap
-          .nodeIterator(block.getLocalBlock());
-      DatanodeDescriptor nonExcessDN = null;
-      while (iter.hasNext()) {
-        DatanodeDescriptor dn = iter.next();
-        Collection<Block> blocks = bm.excessReplicateMap.get(dn.getStorageID());
-        if (blocks == null || !blocks.contains(block) ) {
-          nonExcessDN = dn;
-          break;
+      TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(OperationType.TEST_NODE_COUNT) {
+        @Override
+        public Object acquireLock() throws PersistanceException, IOException {
+          TransactionLockManager tlm = new TransactionLockManager();
+          tlm.addBlock(LockType.READ, block.getBlockId());
+          tlm.addReplica(LockType.READ);
+          tlm.addExcess(LockType.READ);
+          tlm.acquire();
+          return tlm;
         }
-      }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          final Iterator<DatanodeDescriptor> iter = bm.blocksMap.nodeIterator(block.getLocalBlock());
+          DatanodeDescriptor nonExcessDN = null;
+          while (iter.hasNext()) {
+            DatanodeDescriptor dn = iter.next();
+            Collection<Block> blocks = bm.excessReplicateMap.get(dn.getStorageID());
+            if (blocks == null || !blocks.contains(block.getLocalBlock())) {
+              nonExcessDN = dn;
+              break;
+            }
+          }
+          return nonExcessDN;
+        }
+      };
+      
+      DatanodeDescriptor nonExcessDN = (DatanodeDescriptor)getnonExcessDN.handle(namesystem);
+      
       assertTrue(nonExcessDN!=null);
       
       // bring down non excessive datanode
