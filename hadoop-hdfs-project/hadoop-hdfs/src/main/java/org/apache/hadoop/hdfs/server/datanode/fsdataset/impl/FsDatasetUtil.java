@@ -77,16 +77,19 @@ public class FsDatasetUtil {
    */
   static long getGenerationStampFromFile(File[] listdir, File blockFile) {
     String blockName = blockFile.getName();
-    for (int j = 0; j < listdir.length; j++) {
-      String path = listdir[j].getName();
-      if (!path.startsWith(blockName)) {
-        continue;
+      for (int j = 0; j < listdir.length; j++) {
+          String fileName = listdir[j].getName();
+          if (!fileName.startsWith(blockName)) {
+              continue;
+          }
+          if (blockFile == listdir[j]) {
+              continue;
+          }
+          String blkName = blockFile.getName();
+          if (fileName.startsWith(blkName + "_")) {
+              return Block.getGenerationStamp(listdir[j].getName());
+          }
       }
-      if (blockFile == listdir[j]) {
-        continue;
-      }
-      return Block.getGenerationStamp(listdir[j].getName());
-    }
     FsDatasetImpl.LOG.warn("Block " + blockFile + " does not have a metafile!");
     return GenerationStamp.GRANDFATHER_GENERATION_STAMP;
   }

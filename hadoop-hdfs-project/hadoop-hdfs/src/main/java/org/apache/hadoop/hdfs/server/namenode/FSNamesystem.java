@@ -4629,7 +4629,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check and trigger safe mode if needed. 
      */
     
-    private void checkMode() throws IOException {
+    private synchronized void checkMode() throws IOException {
       // Have to have write-lock since leaving safemode initializes
       // repl queues, which requires write lock
       assert hasWriteLock();
