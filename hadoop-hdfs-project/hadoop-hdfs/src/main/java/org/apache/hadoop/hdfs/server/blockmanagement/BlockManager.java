@@ -190,8 +190,7 @@ public class BlockManager {
    * Maps a StorageID to the set of blocks that are "extra" for this
    * DataNode. We'll eventually remove these extras.
    */
-  public final Map<String, LightWeightLinkedSet<Block>> excessReplicateMap =
-    new TreeMap<String, LightWeightLinkedSet<Block>>();
+  public final ExcessReplicasMap excessReplicateMap = new ExcessReplicasMap();
 
   /**
    * Store set of Blocks that need to be replicated 1 or more times.
@@ -1453,13 +1452,11 @@ public class BlockManager {
     Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(block);
     while(it.hasNext()) {
       DatanodeDescriptor node = it.next();
-      LightWeightLinkedSet<Block> excessBlocks =
-        excessReplicateMap.get(node.getStorageID());
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node)))
         corrupt++;
       else if (node.isDecommissionInProgress() || node.isDecommissioned())
         decommissioned++;
-      else if (excessBlocks != null && excessBlocks.contains(block)) {
+      else if (excessReplicateMap.contains(node.getStorageID(), block)) {
         excess++;
       } else {
         nodesContainingLiveReplicas.add(node);
@@ -1480,7 +1477,7 @@ public class BlockManager {
         continue;
       }
       // the block must not be scheduled for removal on srcNode
-      if(excessBlocks != null && excessBlocks.contains(block))
+      if(excessReplicateMap.contains(node.getStorageID(), block))
         continue;
       // never use already decommissioned nodes
       if(node.isDecommissioned())
@@ -2580,9 +2577,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         postponeBlock(block);
         return;
       }
-      LightWeightLinkedSet<Block> excessBlocks = excessReplicateMap.get(cur
-          .getStorageID());
-      if (excessBlocks == null || !excessBlocks.contains(block)) {
+      if (!excessReplicateMap.contains(cur.getStorageID(), block)) {
         if (!cur.isDecommissionInProgress() && !cur.isDecommissioned()) {
           // exclude corrupt replicas
           if (corruptNodes == null || !corruptNodes.contains(cur)) {
@@ -2696,14 +2691,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
   }
 
-  private void addToExcessReplicate(DatanodeInfo dn, Block block) {
+  private void addToExcessReplicate(DatanodeInfo dn, Block block) throws PersistanceException {
     assert namesystem.hasWriteLock();
-    LightWeightLinkedSet<Block> excessBlocks = excessReplicateMap.get(dn.getStorageID());
-    if (excessBlocks == null) {
-      excessBlocks = new LightWeightLinkedSet<Block>();
-      excessReplicateMap.put(dn.getStorageID(), excessBlocks);
-    }
-    if (excessBlocks.add(block)) {
+    if (excessReplicateMap.put(dn.getStorageID(), block)) {
       excessBlocksCount.incrementAndGet();
       if(blockLog.isDebugEnabled()) {
         blockLog.debug("BLOCK* addToExcessReplicate:"
@@ -2748,18 +2738,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       // We've removed a block from a node, so it's definitely no longer
       // in "excess" there.
       //
-      LightWeightLinkedSet<Block> excessBlocks = excessReplicateMap.get(node
-          .getStorageID());
-      if (excessBlocks != null) {
-        if (excessBlocks.remove(block)) {
-          excessBlocksCount.decrementAndGet();
-          if(blockLog.isDebugEnabled()) {
-            blockLog.debug("BLOCK* removeStoredBlock: "
-                + block + " is removed from excessBlocks");
-          }
-          if (excessBlocks.size() == 0) {
-            excessReplicateMap.remove(node.getStorageID());
-          }
+      if (excessReplicateMap.remove(node.getStorageID(), block)) {
+        excessBlocksCount.decrementAndGet();
+        if (blockLog.isDebugEnabled()) {
+          blockLog.debug("BLOCK* removeStoredBlock: "
+                  + block + " is removed from excessBlocks");
         }
       }
 
@@ -2980,9 +2963,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       } else if (node.isDecommissionInProgress() || node.isDecommissioned()) {
         decommissioned++;
       } else {
-        LightWeightLinkedSet<Block> blocksExcess = excessReplicateMap.get(node
-            .getStorageID());
-        if (blocksExcess != null && blocksExcess.contains(b)) {
+        if (excessReplicateMap.contains(node.getStorageID(), b)) {
           excess++;
         } else {
           live++;
@@ -3477,7 +3458,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * Clear all queues that hold decisions previously made by
    * this NameNode.
    */
-  public void clearQueues() {
+  public void clearQueues() throws IOException {
     neededReplications.clear();
     pendingReplications.clear();
     excessReplicateMap.clear();
