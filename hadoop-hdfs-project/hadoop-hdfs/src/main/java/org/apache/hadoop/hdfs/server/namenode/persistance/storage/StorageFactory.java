@@ -22,7 +22,7 @@ public class StorageFactory {
   private static StorageConnector defaultStorage;
   private static BlockInfoDataAccess blockInfoDataAccess;
   private static CorruptReplicaDataAccess corruptReplicaDataAccess;
-//  private static ExcessReplicaDataAccess excessReplicaDataAccess;
+  private static ExcessReplicaDataAccess excessReplicaDataAccess;
   private static InodeDataAccess inodeDataAccess;
 //  private static InvalidateBlockDataAccess invalidateBlockDataAccess;
   private static LeaseDataAccess leaseDataAccess;
@@ -40,7 +40,7 @@ public class StorageFactory {
   private static void initDataAccessMap() {
     dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
     dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
-//    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
+    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
     dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
 //    dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
     dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
@@ -87,7 +87,7 @@ public class StorageFactory {
       defaultStorage.setConfiguration(conf);
       blockInfoDataAccess = new BlockInfoClusterj();
       corruptReplicaDataAccess = new CorruptReplicaClusterj();
-//      excessReplicaDataAccess = new ExcessReplicaClusterj();
+      excessReplicaDataAccess = new ExcessReplicaClusterj();
       inodeDataAccess = new InodeClusterj();
 //      invalidateBlockDataAccess = new InvalidatedBlockClusterj();
       leaseDataAccess = new LeaseClusterj();
@@ -112,7 +112,7 @@ public class StorageFactory {
     entityContexts.put(BlockInfoUnderConstruction.class, bicj);
     entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
     entityContexts.put(IndexedReplica.class, new ReplicaContext(replicaDataAccess));
-//    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
+    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
 //    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
     entityContexts.put(Lease.class, new LeaseContext(leaseDataAccess));
     entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
