@@ -133,9 +133,11 @@ public class BlockInfo extends Block {
   }
   
   public BlockCollection getBlockCollection() throws PersistanceException {
-    if (bc == null) {
-      bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
-    }
+    //Every time get block collection is called, get it from DB
+    //Why? some times it happens that the inode is deleted and copy 
+    //of the block is lying around is some secondary data structure ( not block_info )
+    //if we call get block collection op of that copy then it should return null
+    setBlockCollection((BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId));
     return bc;
   }
   
