@@ -53,7 +53,7 @@ public class TestRBWBlockInvalidation {
           final ExtendedBlock block) throws IOException {
     return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                 addReplica(LockType.READ).

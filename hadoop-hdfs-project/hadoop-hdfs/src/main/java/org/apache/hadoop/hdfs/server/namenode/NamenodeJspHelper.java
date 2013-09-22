@@ -804,7 +804,7 @@ class NamenodeJspHelper {
           long inodeId;
 
           @Override
-          public Object acquireLock() throws PersistanceException, IOException {
+          public TransactionLocks acquireLocks() throws PersistanceException, IOException {
             TransactionLockManager lm = new TransactionLockManager();
             lm.addINode(TransactionLockTypes.INodeLockType.READ).
                     addBlock(TransactionLockTypes.LockType.READ, block.getBlockId());

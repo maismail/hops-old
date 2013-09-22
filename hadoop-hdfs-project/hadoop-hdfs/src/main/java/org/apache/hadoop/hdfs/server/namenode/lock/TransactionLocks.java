@@ -13,7 +13,7 @@ import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.*;
 
 /**
  *
- * @author Hooman <hooman@sics.se>
+ * @author salman <salman@sics.se> &&  Hooman <hooman@sics.se>
  */
 public class TransactionLocks {
 

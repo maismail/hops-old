@@ -742,7 +742,7 @@ public class TestFsck {
       final MiniDFSCluster clusterFinal = cluster;
         TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
             @Override
-            public Object acquireLock() throws PersistanceException, IOException {
+            public TransactionLocks acquireLock() throws PersistanceException, IOException {
                 TransactionLocks lks = new TransactionLocks();
                 lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{fileName});
                 lks.addBlock(TransactionLockTypes.LockType.WRITE);

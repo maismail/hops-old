@@ -152,7 +152,7 @@ public class StorageInfo {
       }
 
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         return null;
       }
     };

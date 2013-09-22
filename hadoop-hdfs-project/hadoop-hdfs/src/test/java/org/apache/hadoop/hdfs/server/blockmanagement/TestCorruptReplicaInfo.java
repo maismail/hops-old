@@ -143,7 +143,7 @@ public class TestCorruptReplicaInfo {
   private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk, final DatanodeDescriptor dn, final String reason) throws IOException{
      new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         return null;
       }
 
@@ -158,7 +158,7 @@ public class TestCorruptReplicaInfo {
   private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk) throws IOException{
      new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         return null;
       }
 

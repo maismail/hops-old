@@ -72,7 +72,7 @@ public class TestFSNamesystem {
   private void addLease(final LeaseManager leaseMan, final String holder, final String src) throws IOException{
     new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager tlm = new TransactionLockManager();
         tlm.addLease(TransactionLockTypes.LockType.WRITE, holder);
         tlm.acquire();

@@ -117,7 +117,7 @@ public class TestOverReplicatedBlocks {
           
           new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
             @Override
-            public Object acquireLock() throws PersistanceException, IOException {
+            public TransactionLocks acquireLocks() throws PersistanceException, IOException {
               TransactionLockManager lm = new TransactionLockManager();
               lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                       addReplica(TransactionLockTypes.LockType.READ).
@@ -239,7 +239,7 @@ public class TestOverReplicatedBlocks {
       
       new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
         @Override
-        public Object acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
           TransactionLockManager lm = new TransactionLockManager();
           lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                   addReplica(TransactionLockTypes.LockType.READ).

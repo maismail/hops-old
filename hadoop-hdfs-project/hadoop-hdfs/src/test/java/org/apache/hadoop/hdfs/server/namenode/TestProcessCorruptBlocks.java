@@ -261,7 +261,7 @@ public class TestProcessCorruptBlocks {
           final ExtendedBlock block) throws IOException {
     return (NumberReplicas) new TransactionalRequestHandler(RequestHandler.OperationType.COUNT_NODES) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                 addReplica(TransactionLockTypes.LockType.READ).

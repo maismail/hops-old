@@ -106,7 +106,7 @@ public class TestNodeCount {
       // find out a non-excess node
       TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(OperationType.TEST_NODE_COUNT) {
         @Override
-        public Object acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
           TransactionLockManager tlm = new TransactionLockManager();
           tlm.addBlock(LockType.READ, block.getBlockId());
           tlm.addReplica(LockType.READ);
@@ -197,7 +197,7 @@ public class TestNodeCount {
     try {
       return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
          @Override
-        public Object acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
           TransactionLockManager lm = new TransactionLockManager();
           lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                   addReplica(LockType.READ).

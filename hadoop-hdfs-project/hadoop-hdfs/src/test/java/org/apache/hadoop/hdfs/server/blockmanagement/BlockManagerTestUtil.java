@@ -71,7 +71,7 @@ public class BlockManagerTestUtil {
     try {
       return (int[]) new TransactionalRequestHandler(OperationType.TEST) {
         @Override
-        public Object acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
           TransactionLockManager tlm = new TransactionLockManager();
           tlm.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
                   addReplica(TransactionLockTypes.LockType.READ).

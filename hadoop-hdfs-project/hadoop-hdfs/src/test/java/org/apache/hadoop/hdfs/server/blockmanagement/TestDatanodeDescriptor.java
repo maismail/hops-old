@@ -93,7 +93,7 @@ public class TestDatanodeDescriptor {
      final TransactionLockManager tlm = new TransactionLockManager();   
      return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         tlm.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
         tlm.addReplica(TransactionLockTypes.LockType.WRITE);
         tlm.acquire();
@@ -111,7 +111,7 @@ public class TestDatanodeDescriptor {
      final TransactionLockManager tlm = new TransactionLockManager();
      return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         tlm.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
         tlm.addReplica(TransactionLockTypes.LockType.WRITE);
         tlm.acquire();

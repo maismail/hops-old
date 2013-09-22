@@ -367,7 +367,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blockInfo.getBlockId()).
@@ -398,7 +398,7 @@ public class TestBlockManager {
   private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
     return (BlockInfo) new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addBlock(LockType.READ, blkId).
            addReplica(LockType.READ);
@@ -442,7 +442,7 @@ public class TestBlockManager {
     
     new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addBlock(LockType.WRITE, blockId);
         lm.acquire();

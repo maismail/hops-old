@@ -91,7 +91,7 @@ public class TestBlockUnderConstruction {
                                 final boolean isFileOpen) throws IOException{
     TransactionalRequestHandler verifyFileBlocksHandler = new TransactionalRequestHandler(OperationType.VERIFY_FILE_BLOCKS) {
       @Override
-      public Object acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
         lm.addINode(INodeResolveType.PATH,
                 INodeLockType.READ,
