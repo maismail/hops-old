@@ -37,7 +37,9 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -53,14 +55,15 @@ public class TestRBWBlockInvalidation {
           final ExtendedBlock block) throws IOException {
     return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager lm = new TransactionLockManager();
-        lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks lks = new TransactionLocks();
+        lks.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ);
-        lm.acquire();
-        return lm;
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquire();
+        return lks;
       }
 
       @Override

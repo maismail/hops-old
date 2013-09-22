@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance;
 import java.util.Collection;
 import java.util.Map;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
@@ -39,7 +40,7 @@ public class EntityManager {
     context().preventStorageCall();
   }
 
-  public static void commit(TransactionLockManager tlm) throws StorageException {
+  public static void commit(TransactionLocks tlm) throws StorageException {
     context().commit(tlm);
   }
 

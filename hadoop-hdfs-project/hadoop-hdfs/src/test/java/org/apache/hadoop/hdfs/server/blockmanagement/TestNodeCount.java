@@ -35,7 +35,9 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -106,13 +108,14 @@ public class TestNodeCount {
       // find out a non-excess node
       TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(OperationType.TEST_NODE_COUNT) {
         @Override
-        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-          TransactionLockManager tlm = new TransactionLockManager();
-          tlm.addBlock(LockType.READ, block.getBlockId());
-          tlm.addReplica(LockType.READ);
-          tlm.addExcess(LockType.READ);
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          TransactionLocks  lks = new TransactionLocks();
+          lks.addBlock(LockType.READ, block.getBlockId());
+          lks.addReplica(LockType.READ);
+          lks.addExcess(LockType.READ);
+          TransactionLockManager tlm = new TransactionLockManager(lks);
           tlm.acquire();
-          return tlm;
+          return lks;
         }
 
         @Override
@@ -197,14 +200,15 @@ public class TestNodeCount {
     try {
       return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
          @Override
-        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-          TransactionLockManager lm = new TransactionLockManager();
-          lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          TransactionLocks lks = new TransactionLocks();
+          lks.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                   addReplica(LockType.READ).
                   addExcess(LockType.READ).
                   addCorrupt(LockType.READ);
-          lm.acquire();
-          return lm;
+          TransactionLockManager tlm = new TransactionLockManager(lks);
+          tlm.acquire();
+          return lks;
         }
          
         @Override

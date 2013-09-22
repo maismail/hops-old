@@ -42,7 +42,9 @@ import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -102,7 +104,7 @@ public class LeaseManager {
   SortedSet<Lease> getSortedLeases() throws IOException {
     TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(OperationType.GET_SORTED_LEASES) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -412,7 +414,7 @@ public class LeaseManager {
       }
 
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         // TODO safemode
         return null;
       }
@@ -440,22 +442,23 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
             String holder = (String) getParams()[0];
-            TransactionLockManager tlm = new TransactionLockManager();
-            tlm.addINode(TransactionLockTypes.INodeLockType.WRITE);
-            tlm.addBlock(TransactionLockTypes.LockType.WRITE);
-            tlm.addLease(TransactionLockTypes.LockType.WRITE, holder);
-            tlm.addNameNodeLease(LockType.WRITE);
-            tlm.addLeasePath(TransactionLockTypes.LockType.WRITE);
-            tlm.addReplica(TransactionLockTypes.LockType.READ);
-            tlm.addCorrupt(TransactionLockTypes.LockType.READ);
-            tlm.addExcess(TransactionLockTypes.LockType.READ);
-            tlm.addReplicaUc(TransactionLockTypes.LockType.READ);
-            tlm.addUnderReplicatedBlock(LockType.READ);
-            tlm.addGenerationStamp(LockType.WRITE);
+            TransactionLocks  lks = new TransactionLocks();
+            lks.addINode(TransactionLockTypes.INodeLockType.WRITE);
+            lks.addBlock(TransactionLockTypes.LockType.WRITE);
+            lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
+            lks.addNameNodeLease(LockType.WRITE);
+            lks.addLeasePath(TransactionLockTypes.LockType.WRITE);
+            lks.addReplica(TransactionLockTypes.LockType.READ);
+            lks.addCorrupt(TransactionLockTypes.LockType.READ);
+            lks.addExcess(TransactionLockTypes.LockType.READ);
+            lks.addReplicaUc(TransactionLockTypes.LockType.READ);
+            lks.addUnderReplicatedBlock(LockType.READ);
+            lks.addGenerationStamp(LockType.WRITE);
+            TransactionLockManager tlm = new TransactionLockManager(lks);
             tlm.acquireByLease(leasePaths);
-            return tlm;
+            return lks;
         }
       
       @Override

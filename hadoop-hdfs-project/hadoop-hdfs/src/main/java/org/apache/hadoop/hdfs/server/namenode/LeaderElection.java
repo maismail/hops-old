@@ -57,7 +57,7 @@ public class LeaderElection extends Thread {
 //
 //        @Override
 //        public void acquireLock() throws PersistanceException, IOException {
-//          TransactionLockManager tlm = new TransactionLockManager();
+//          TransactionLocks  lks = new TransactionLocks();
 //          tlm.addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED).
 //                  acquire();
 //        }
@@ -108,7 +108,7 @@ public class LeaderElection extends Thread {
 //
 //    @Override
 //    public void acquireLock() throws PersistanceException, IOException {
-//      TransactionLockManager tlm = new TransactionLockManager();
+//      TransactionLocks  lks = new TransactionLocks();
 //      tlm.addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED).
 //              acquire();
 //    }

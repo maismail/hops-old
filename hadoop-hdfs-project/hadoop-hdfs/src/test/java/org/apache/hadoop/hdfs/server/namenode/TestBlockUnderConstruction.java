@@ -42,6 +42,7 @@ import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -91,14 +92,15 @@ public class TestBlockUnderConstruction {
                                 final boolean isFileOpen) throws IOException{
     TransactionalRequestHandler verifyFileBlocksHandler = new TransactionalRequestHandler(OperationType.VERIFY_FILE_BLOCKS) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.PATH,
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks lks = new TransactionLocks();
+        lks.addINode(INodeResolveType.PATH,
                 INodeLockType.READ,
                 new String[]{file});
-        lm.addBlock(LockType.READ);
-        lm.acquire();
-        return lm;
+        lks.addBlock(LockType.READ);
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquire();
+        return lks;
       }
       
       @Override

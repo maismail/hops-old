@@ -32,6 +32,8 @@ import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -71,15 +73,16 @@ public class BlockManagerTestUtil {
     try {
       return (int[]) new TransactionalRequestHandler(OperationType.TEST) {
         @Override
-        public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-          TransactionLockManager tlm = new TransactionLockManager();
-          tlm.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          TransactionLocks  lks = new TransactionLocks();
+          lks.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
                   addReplica(TransactionLockTypes.LockType.READ).
                   addCorrupt(TransactionLockTypes.LockType.READ).
                   addExcess(TransactionLockTypes.LockType.READ).
-                  addUnderReplicatedBlock(TransactionLockTypes.LockType.READ).
-                  acquire();
-          return tlm;
+                  addUnderReplicatedBlock(TransactionLockTypes.LockType.READ);
+          TransactionLockManager tlm = new TransactionLockManager(lks);
+          tlm.acquire();
+          return lks;
         }
 
         @Override

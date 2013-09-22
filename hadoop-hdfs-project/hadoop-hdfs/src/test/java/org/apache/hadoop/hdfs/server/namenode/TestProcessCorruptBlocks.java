@@ -34,6 +34,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -261,14 +263,15 @@ public class TestProcessCorruptBlocks {
           final ExtendedBlock block) throws IOException {
     return (NumberReplicas) new TransactionalRequestHandler(RequestHandler.OperationType.COUNT_NODES) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager lm = new TransactionLockManager();
-        lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks lks = new TransactionLocks();
+        lks.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                 addReplica(TransactionLockTypes.LockType.READ).
                 addExcess(TransactionLockTypes.LockType.READ).
                 addCorrupt(TransactionLockTypes.LockType.READ);
-        lm.acquire();
-        return lm;
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquire();
+        return lks;
       }
 
       @Override

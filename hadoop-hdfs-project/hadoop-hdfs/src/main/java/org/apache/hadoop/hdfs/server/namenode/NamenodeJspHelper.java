@@ -67,6 +67,8 @@ import org.znerd.xmlenc.XMLOutputter;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -804,12 +806,13 @@ class NamenodeJspHelper {
           long inodeId;
 
           @Override
-          public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-            TransactionLockManager lm = new TransactionLockManager();
-            lm.addINode(TransactionLockTypes.INodeLockType.READ).
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            TransactionLocks lks = new TransactionLocks();
+            lks.addINode(TransactionLockTypes.INodeLockType.READ).
                     addBlock(TransactionLockTypes.LockType.READ, block.getBlockId());
-            lm.acquireByBlock(inodeId);
-            return lm;
+            TransactionLockManager tlm = new TransactionLockManager(lks);
+            tlm.acquireByBlock(inodeId);
+            return lks;
           }
 
           @Override

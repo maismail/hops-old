@@ -38,6 +38,8 @@ import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -56,13 +58,14 @@ public class TestLease {
     return (Boolean) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
 
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager tl = new TransactionLockManager();
-                tl.acquireByLeasePath(
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks  lks = new TransactionLocks();
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquireByLeasePath(
                 src.toString(),
                 TransactionLockTypes.LockType.READ,
                 TransactionLockTypes.LockType.WRITE);
-        return tl;
+        return lks;
       }
 
       @Override

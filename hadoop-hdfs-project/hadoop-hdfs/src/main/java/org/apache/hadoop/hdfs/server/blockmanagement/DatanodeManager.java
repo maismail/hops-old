@@ -77,6 +77,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -1197,7 +1198,7 @@ public class DatanodeManager {
     final DatanodeManager datanodeManager = this;
     TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.HANDLE_HEARTBEAT) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         //FIXME [M] why not to use the TransactionLockManager
         TransactionLockAcquirer.acquireLockList(LockType.READ_COMMITTED, ReplicaUnderConstruction.Finder.ByBlockId, b.getBlockId());

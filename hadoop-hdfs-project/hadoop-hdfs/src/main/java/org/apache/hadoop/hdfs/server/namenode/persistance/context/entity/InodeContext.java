@@ -5,6 +5,8 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
@@ -158,7 +160,7 @@ public class InodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void prepare(TransactionLockManager tlm) throws StorageException {
+  public void prepare(TransactionLocks lks) throws StorageException {
       // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 
@@ -167,8 +169,8 @@ public class InodeContext extends EntityContext<INode> {
 
         if ((removedInodes.values().size() != 0
                 || modifiedInodes.values().size() != 0)
-                && (tlm.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
-                &&  tlm.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
+                && (lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
+                &&  lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
             throw new LockUpgradeException("Trying to upgrade inode locks");
         }
     dataAccess.prepare(removedInodes.values(), newInodes.values(), modifiedInodes.values());

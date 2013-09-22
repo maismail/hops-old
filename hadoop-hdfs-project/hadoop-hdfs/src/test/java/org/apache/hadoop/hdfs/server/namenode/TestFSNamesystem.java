@@ -30,6 +30,8 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -72,11 +74,12 @@ public class TestFSNamesystem {
   private void addLease(final LeaseManager leaseMan, final String holder, final String src) throws IOException{
     new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager tlm = new TransactionLockManager();
-        tlm.addLease(TransactionLockTypes.LockType.WRITE, holder);
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks  lks = new TransactionLocks();
+        lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
+        TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquire();
-        return tlm;
+        return lks;
       }
       
       @Override

@@ -37,7 +37,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
         int tryCount = 0;
         IOException exception = null;
         long txStartTime = 0;
-        TransactionLockManager locks = null;
+        TransactionLocks locks = null;
 
         try {
             while (retry && tryCount < RETRY_COUNT) {
@@ -61,7 +61,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                     log.debug("tx started");
                     oldTime = System.currentTimeMillis();
                     if (rowLevelLock) {
-                        locks = (TransactionLockManager)acquireLock();
+                        locks = acquireLock();
                         log.debug("all locks acquired  in " + (System.currentTimeMillis() - oldTime) + " msec");
                         oldTime = System.currentTimeMillis();
                         EntityManager.preventStorageCall();

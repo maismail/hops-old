@@ -2,6 +2,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
 import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -56,7 +57,7 @@ public abstract class EntityContext<T> {
 
   public abstract Collection<T> findList(FinderType<T> finder, Object... params) throws PersistanceException;
 
-  public abstract void prepare(TransactionLockManager tlm) throws StorageException;
+  public abstract void prepare(TransactionLocks tlm) throws StorageException;
 
   public abstract void remove(T entity) throws PersistanceException;
 

@@ -38,6 +38,8 @@ import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -137,10 +139,11 @@ public class NameNodeAdapter {
 
     return (String) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager tl = new TransactionLockManager();
-        tl.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
-        return tl;
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks  lks = new TransactionLocks();
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
+        return lks;
       }
 
       @Override
@@ -159,10 +162,11 @@ public class NameNodeAdapter {
 
     TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        TransactionLockManager tl = new TransactionLockManager();
-        tl.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
-        return tl;
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks  lks = new TransactionLocks();
+        TransactionLockManager tlm = new TransactionLockManager(lks);
+        tlm.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
+        return lks;
       }
 
       @Override

@@ -25,6 +25,8 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.Leader;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaderDataAccess;
@@ -251,7 +253,7 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public void prepare(TransactionLockManager tlm) throws StorageException {
+  public void prepare(TransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 
@@ -260,7 +262,7 @@ public class LeaderContext extends EntityContext<Leader> {
 
         if ((removedLeaders.values().size() != 0
                 || modifiedLeaders.values().size() != 0)
-                && tlm.getLeaderLock()!= TransactionLockTypes.LockType.WRITE) {
+                && lks.getLeaderLock()!= TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade leader locks");
         }  
     dataAccess.prepare(removedLeaders.values(), newLeaders.values(), modifiedLeaders.values());

@@ -29,6 +29,8 @@ import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -90,14 +92,15 @@ public class TestDatanodeDescriptor {
   }
   
     private boolean addBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
-     final TransactionLockManager tlm = new TransactionLockManager();   
+     final TransactionLocks  lks = new TransactionLocks();   
      return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        tlm.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
-        tlm.addReplica(TransactionLockTypes.LockType.WRITE);
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        lks.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
+        lks.addReplica(TransactionLockTypes.LockType.WRITE);
+        TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquire();
-        return tlm;
+        return lks;
       }
 
       @Override
@@ -108,14 +111,15 @@ public class TestDatanodeDescriptor {
   }
     
     private boolean removeBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
-     final TransactionLockManager tlm = new TransactionLockManager();
+     final TransactionLocks  lks = new TransactionLocks();
      return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
-      public TransactionLocks acquireLocks() throws PersistanceException, IOException {
-        tlm.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
-        tlm.addReplica(TransactionLockTypes.LockType.WRITE);
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        lks.addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId());
+        lks.addReplica(TransactionLockTypes.LockType.WRITE);
+        TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquire();
-        return tlm;
+        return lks;
       }
 
       @Override

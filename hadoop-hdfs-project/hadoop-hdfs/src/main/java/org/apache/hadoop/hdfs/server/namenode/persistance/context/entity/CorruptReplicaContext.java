@@ -3,6 +3,8 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -153,7 +155,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
     @Override
-    public void prepare(TransactionLockManager tlm) throws StorageException {
+    public void prepare(TransactionLocks lks) throws StorageException {
         // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 
@@ -161,7 +163,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
         // null pointer exceptions
 
         if ((removedCorruptReplicas.values().size() != 0)
-                && tlm.getCrLock() != TransactionLockTypes.LockType.WRITE) {
+                && lks.getCrLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade corrupt replica locks");
         }
         dataAccess.prepare(removedCorruptReplicas.values(), newCorruptReplicas.values(), null);

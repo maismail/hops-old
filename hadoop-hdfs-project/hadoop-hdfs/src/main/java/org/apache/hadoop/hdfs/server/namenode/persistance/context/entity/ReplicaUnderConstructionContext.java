@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -98,7 +100,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
 
   @Override
-  public void prepare(TransactionLockManager tlm) throws StorageException {
+  public void prepare(TransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 
@@ -106,7 +108,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
         // null pointer exceptions
 
         if ((removedReplicasUc.values().size() != 0)
-                && tlm.getRucLock() != TransactionLockTypes.LockType.WRITE) {
+                && lks.getRucLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade replica under construction locks");
         }  
     dataAccess.prepare(removedReplicasUc.values(), newReplicasUc.values(), null);
