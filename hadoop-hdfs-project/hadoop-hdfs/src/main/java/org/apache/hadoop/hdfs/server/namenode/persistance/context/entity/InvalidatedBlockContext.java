@@ -177,7 +177,7 @@
 //        // null pointer exceptions
 //
 //        if ((removedInvBlocks.values().size() != 0)
-//                && tlm.getInvLocks()!= TransactionLockManager.LockType.WRITE) {
+//                && tlm.getInvLocks()!= TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade invalidated blocks locks");
 //        }  
 //    dataAccess.prepare(removedInvBlocks.values(), newInvBlocks.values(), new ArrayList<InvalidatedBlock>());

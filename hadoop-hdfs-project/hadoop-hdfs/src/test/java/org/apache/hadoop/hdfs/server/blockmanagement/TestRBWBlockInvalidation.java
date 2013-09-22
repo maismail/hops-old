@@ -37,7 +37,7 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -55,7 +55,7 @@ public class TestRBWBlockInvalidation {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
+        lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ);

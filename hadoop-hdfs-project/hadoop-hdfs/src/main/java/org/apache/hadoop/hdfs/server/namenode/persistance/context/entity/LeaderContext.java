@@ -260,7 +260,7 @@ public class LeaderContext extends EntityContext<Leader> {
 
         if ((removedLeaders.values().size() != 0
                 || modifiedLeaders.values().size() != 0)
-                && tlm.getLeaderLock()!= TransactionLockManager.LockType.WRITE) {
+                && tlm.getLeaderLock()!= TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade leader locks");
         }  
     dataAccess.prepare(removedLeaders.values(), newLeaders.values(), modifiedLeaders.values());

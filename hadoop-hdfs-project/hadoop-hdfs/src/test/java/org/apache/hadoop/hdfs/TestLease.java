@@ -60,8 +60,8 @@ public class TestLease {
         TransactionLockManager tl = new TransactionLockManager();
                 tl.acquireByLeasePath(
                 src.toString(),
-                TransactionLockManager.LockType.READ,
-                TransactionLockManager.LockType.WRITE);
+                TransactionLockTypes.LockType.READ,
+                TransactionLockTypes.LockType.WRITE);
         return tl;
       }
 

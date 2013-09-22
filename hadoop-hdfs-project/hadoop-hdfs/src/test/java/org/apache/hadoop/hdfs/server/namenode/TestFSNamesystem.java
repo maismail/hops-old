@@ -74,7 +74,7 @@ public class TestFSNamesystem {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tlm = new TransactionLockManager();
-        tlm.addLease(TransactionLockManager.LockType.WRITE, holder);
+        tlm.addLease(TransactionLockTypes.LockType.WRITE, holder);
         tlm.acquire();
         return tlm;
       }

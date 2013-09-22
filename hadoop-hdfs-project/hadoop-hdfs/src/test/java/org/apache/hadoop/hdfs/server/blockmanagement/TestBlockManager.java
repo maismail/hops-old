@@ -51,7 +51,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -369,7 +369,7 @@ public class TestBlockManager {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(TransactionLockManager.INodeLockType.WRITE).
+        lm.addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blockInfo.getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).

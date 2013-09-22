@@ -161,7 +161,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
         // null pointer exceptions
 
         if ((removedCorruptReplicas.values().size() != 0)
-                && tlm.getCrLock() != TransactionLockManager.LockType.WRITE) {
+                && tlm.getCrLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade corrupt replica locks");
         }
         dataAccess.prepare(removedCorruptReplicas.values(), newCorruptReplicas.values(), null);

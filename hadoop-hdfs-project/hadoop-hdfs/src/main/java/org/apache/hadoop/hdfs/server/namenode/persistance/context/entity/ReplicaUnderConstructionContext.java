@@ -106,7 +106,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
         // null pointer exceptions
 
         if ((removedReplicasUc.values().size() != 0)
-                && tlm.getRucLock() != TransactionLockManager.LockType.WRITE) {
+                && tlm.getRucLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade replica under construction locks");
         }  
     dataAccess.prepare(removedReplicasUc.values(), newReplicasUc.values(), null);

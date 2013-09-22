@@ -150,7 +150,7 @@
 //        // null pointer exceptions
 //
 //        if ((removedExReplica.values().size() != 0)
-//                && tlm.getErLock() != TransactionLockManager.LockType.WRITE) {
+//                && tlm.getErLock() != TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade block locks");
 //        }
 //        dataAccess.prepare(removedExReplica.values(), newExReplica.values(), null);

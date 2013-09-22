@@ -263,10 +263,10 @@ public class TestProcessCorruptBlocks {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addBlock(TransactionLockManager.LockType.READ, block.getBlockId()).
-                addReplica(TransactionLockManager.LockType.READ).
-                addExcess(TransactionLockManager.LockType.READ).
-                addCorrupt(TransactionLockManager.LockType.READ);
+        lm.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
+                addReplica(TransactionLockTypes.LockType.READ).
+                addExcess(TransactionLockTypes.LockType.READ).
+                addCorrupt(TransactionLockTypes.LockType.READ);
         lm.acquire();
         return lm;
       }

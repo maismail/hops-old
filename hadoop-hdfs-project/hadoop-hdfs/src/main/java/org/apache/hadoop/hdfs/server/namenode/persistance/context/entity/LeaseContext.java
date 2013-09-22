@@ -173,7 +173,7 @@ public class LeaseContext extends EntityContext<Lease> {
 
         if ((removedLeases.values().size() != 0
                 || modifiedLeases.values().size() != 0)
-                && tlm.getLeaseLock() != TransactionLockManager.LockType.WRITE) {
+                && tlm.getLeaseLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade lease locks");
         }
         dataAccess.prepare(removedLeases.values(), newLeases.values(), modifiedLeases.values());

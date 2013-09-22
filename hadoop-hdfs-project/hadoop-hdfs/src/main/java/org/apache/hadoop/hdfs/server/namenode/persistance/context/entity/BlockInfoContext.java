@@ -3,7 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;

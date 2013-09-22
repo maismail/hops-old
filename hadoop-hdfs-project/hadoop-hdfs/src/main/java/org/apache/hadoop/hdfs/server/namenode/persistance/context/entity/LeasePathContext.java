@@ -161,7 +161,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
 
         if ((removedLPaths.values().size() != 0
                 || modifiedLPaths.values().size() != 0)
-                && tlm.getLpLock()!= TransactionLockManager.LockType.WRITE) {
+                && tlm.getLpLock()!= TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade lease path locks");
         }
         dataAccess.prepare(removedLPaths.values(), newLPaths.values(), modifiedLPaths.values());

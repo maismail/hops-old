@@ -70,7 +70,7 @@ public class ReplicaContext extends EntityContext<IndexedReplica> {
 
         if ((removedReplicas.values().size() != 0
                 || modifiedReplicas.values().size() != 0)
-                && tlm.getReplicaLock() != TransactionLockManager.LockType.WRITE) {
+                && tlm.getReplicaLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade replica locks");
         }
         dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());

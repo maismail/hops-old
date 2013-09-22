@@ -147,7 +147,7 @@
 //
 //        if ((removedurBlocks.values().size() != 0
 //                || modifiedurBlocks.values().size() != 0)
-//                && tlm.getUrbLock()!= TransactionLockManager.LockType.WRITE) {
+//                && tlm.getUrbLock()!= TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade under replicated locks");
 //        }
 //    dataAccess.prepare(removedurBlocks.values(), newurBlocks.values(), modifiedurBlocks.values());

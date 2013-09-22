@@ -353,8 +353,8 @@ public class DFSTestUtil {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tlm = new TransactionLockManager();
-        tlm.addBlock(TransactionLockManager.LockType.READ, b.getBlockId()).
-                addCorrupt(TransactionLockManager.LockType.READ).
+        tlm.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
+                addCorrupt(TransactionLockTypes.LockType.READ).
                 acquire();
         return tlm;
       }

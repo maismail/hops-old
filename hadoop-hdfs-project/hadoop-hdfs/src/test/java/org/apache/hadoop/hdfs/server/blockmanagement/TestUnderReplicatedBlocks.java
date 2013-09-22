@@ -66,9 +66,9 @@ public class TestUnderReplicatedBlocks {
         @Override
         public Object acquireLock() throws PersistanceException, IOException {
           TransactionLockManager lm = new TransactionLockManager();
-          lm.addINode(TransactionLockManager.INodeLockType.WRITE).
-                  addBlock(TransactionLockManager.LockType.WRITE, b.getBlockId()).
-                  addReplica(TransactionLockManager.LockType.WRITE).
+          lm.addINode(TransactionLockTypes.INodeLockType.WRITE).
+                  addBlock(TransactionLockTypes.LockType.WRITE, b.getBlockId()).
+                  addReplica(TransactionLockTypes.LockType.WRITE).
                   acquireByBlock(inodeId);
           return lm;
         }

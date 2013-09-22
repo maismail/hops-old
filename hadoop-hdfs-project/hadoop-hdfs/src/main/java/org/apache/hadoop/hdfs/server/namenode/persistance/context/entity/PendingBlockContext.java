@@ -122,7 +122,7 @@
 //
 //        if ((removedPendings.values().size() != 0
 //                || modifiedPendings.values().size() != 0)
-//                && tlm.getPbLock()!= TransactionLockManager.LockType.WRITE) {
+//                && tlm.getPbLock()!= TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade pending block locks");
 //        }
 //        dataAccess.prepare(removedPendings.values(), newPendings.values(), modifiedPendings.values());

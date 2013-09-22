@@ -167,8 +167,8 @@ public class InodeContext extends EntityContext<INode> {
 
         if ((removedInodes.values().size() != 0
                 || modifiedInodes.values().size() != 0)
-                && (tlm.getInodeLock() != TransactionLockManager.INodeLockType.WRITE
-                &&  tlm.getInodeLock() != TransactionLockManager.INodeLockType.WRITE_ON_PARENT)) {
+                && (tlm.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
+                &&  tlm.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
             throw new LockUpgradeException("Trying to upgrade inode locks");
         }
     dataAccess.prepare(removedInodes.values(), newInodes.values(), modifiedInodes.values());

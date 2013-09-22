@@ -4,6 +4,7 @@ import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionLockAcquireFailure;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
@@ -135,7 +136,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
         return null;
     }
 
-    public abstract Object acquireLock() throws PersistanceException, IOException;
+    public abstract TransactionLocks acquireLock() throws PersistanceException, IOException;
 
     @Override
     public TransactionalRequestHandler setParams(Object... params) {
