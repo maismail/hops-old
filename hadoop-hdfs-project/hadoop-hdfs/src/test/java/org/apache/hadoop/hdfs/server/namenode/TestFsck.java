@@ -82,6 +82,7 @@ import org.junit.Test;
 import com.google.common.collect.Sets;
 import com.mysql.clusterj.Session;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
@@ -741,11 +742,12 @@ public class TestFsck {
         TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
             @Override
             public Object acquireLock() throws PersistanceException, IOException {
-                TransactionLockManager tlm = new TransactionLockManager();
-                tlm.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{fileName});
-                tlm.addBlock(TransactionLockManager.LockType.WRITE);
-                tlm.acquire();
-                return tlm;
+                TransactionLocks lks = new TransactionLocks();
+                lks.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{fileName});
+                lks.addBlock(TransactionLockManager.LockType.WRITE);
+                TransactionLockManager lks = new TransactionLockManager();
+                lks.acquire();
+                return lks;
             }
 
             @Override
