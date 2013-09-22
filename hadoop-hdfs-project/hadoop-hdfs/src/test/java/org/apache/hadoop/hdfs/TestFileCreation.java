@@ -1190,35 +1190,35 @@ public class TestFileCreation {
     FileSystem fs = cluster.getFileSystem();
     try {
 
-//      //
-//      // check that / exists
-//      //
-//      Path path = new Path("/");
-//      System.out.println("Path : \"" + path.toString() + "\"");
-//      System.out.println(fs.getFileStatus(path).isDirectory()); 
-//      assertTrue("/ should be a directory", 
-//                 fs.getFileStatus(path).isDirectory());
-//
-//      //
-//      // Create a directory inside /, then try to overwrite it
-//      //
-//      Path dir1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5");
-//      fs.mkdirs(dir1);
-//      System.out.println("createFile: Creating " + dir1.getName() + 
-//        " for overwrite of existing directory.");
-//      try {
-//        fs.create(dir1, true); // Create path, overwrite=true
-//        fs.close();
-//        assertTrue("Did not prevent directory from being overwritten.", false);
-//      } catch (IOException ie) {
-//        if (!ie.getMessage().contains("already exists as a directory."))
-//          throw ie;
-//      }
-//      
-//      
-//      // create a new file in home directory. Do not close it.
-//      //
-      Path file1 = new Path("/filestatus.dat");
+      //
+      // check that / exists
+      //
+      Path path = new Path("/");
+      System.out.println("Path : \"" + path.toString() + "\"");
+      System.out.println(fs.getFileStatus(path).isDirectory()); 
+      assertTrue("/ should be a directory", 
+                 fs.getFileStatus(path).isDirectory());
+
+      //
+      // Create a directory inside /, then try to overwrite it
+      //
+      Path dir1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5");
+      fs.mkdirs(dir1);
+      System.out.println("createFile: Creating " + dir1.getName() + 
+        " for overwrite of existing directory.");
+      try {
+        fs.create(dir1, true); // Create path, overwrite=true
+        fs.close();
+        assertTrue("Did not prevent directory from being overwritten.", false);
+      } catch (IOException ie) {
+        if (!ie.getMessage().contains("already exists as a directory."))
+          throw ie;
+      }
+      
+      
+      // create a new file in home directory. Do not close it.
+      //
+      Path file1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5/filestatus.dat");
       Path parent = file1.getParent();
       fs.mkdirs(parent);
       DistributedFileSystem dfs = (DistributedFileSystem)fs;

@@ -1211,7 +1211,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH,
+        lm.addINode(INodeResolveType.PATH,
                 INodeLockType.WRITE,
                 new String[]{src}).
                 addBlock(LockType.READ).
@@ -1266,7 +1266,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH,
+        lm.addINode(INodeResolveType.PATH,
                 INodeLockType.WRITE,
                 new String[]{src}).
                 addBlock(LockType.READ).
@@ -1329,7 +1329,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.WRITE, new String[]{src});
+        lm.addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src});
         lm.addBlock(LockType.READ).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
@@ -1373,7 +1373,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.READ, new String[]{src});
+        lm.addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src});
         lm.addBlock(LockType.READ).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
@@ -1508,7 +1508,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         System.arraycopy(srcs, 0, paths, 0, srcs.length);
         paths[srcs.length] = target;
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH, INodeLockType.WRITE_ON_PARENT, paths);
+        lm.addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, paths);
         lm.addBlock(LockType.WRITE);
         lm.acquire();
         return lm;
@@ -1686,7 +1686,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH,
+        lm.addINode(TransactionLockManager.INodeResolveType.PATH,
                 TransactionLockManager.INodeLockType.WRITE,
                 new String[]{src}).
                 addBlock(TransactionLockManager.LockType.READ).
@@ -1749,7 +1749,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tla = new TransactionLockManager(resolvedInodes);
         tla.addINode(
-                TransactionLockManager.INodeResolveType.ONLY_PATH_WITH_UNKNOWN_HEAD,
+                TransactionLockManager.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
                 TransactionLockManager.INodeLockType.WRITE,
                 resolveLink,
                 new String[]{link}).
@@ -1848,7 +1848,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tla = new TransactionLockManager();
-        tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH,
+        tla.addINode(TransactionLockManager.INodeResolveType.PATH,
                 TransactionLockManager.INodeLockType.WRITE_ON_PARENT,
                 new String[]{src}).
                 addBlock(TransactionLockManager.LockType.WRITE).
@@ -1969,7 +1969,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager(resolvedInodes);
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH_WITH_UNKNOWN_HEAD,
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
                       TransactionLockManager.INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src});
               tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.WRITE, holder);
@@ -2204,7 +2204,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-                tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH,
+                tla.addINode(TransactionLockManager.INodeResolveType.PATH,
                 TransactionLockManager.INodeLockType.WRITE,
                 new String[]{src});
                 tla.addBlock(TransactionLockManager.LockType.WRITE);
@@ -2349,7 +2349,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE,
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE,
                       false, new String[]{src});
               tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.WRITE, holder);
@@ -2452,7 +2452,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             @Override
             public Object acquireLock() throws PersistanceException, IOException {
                 TransactionLockManager tla = new TransactionLockManager();
-                tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
+                tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
                 tla.addBlock(TransactionLockManager.LockType.WRITE);
                 tla.addReplica(TransactionLockManager.LockType.READ);
                 tla.addLease(TransactionLockManager.LockType.READ);
@@ -2658,7 +2658,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
               tla.addLease(TransactionLockManager.LockType.READ, clientName);
               tla.acquire();
               return tla;
@@ -2720,7 +2720,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE_ON_PARENT, new String[]{src});
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE_ON_PARENT, new String[]{src});
               tla.addReplica(TransactionLockManager.LockType.WRITE);
               tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.READ);
@@ -2812,7 +2812,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE, new String[]{src});
               tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.WRITE, holder);
               tla.addLeasePath(TransactionLockManager.LockType.WRITE);
@@ -3354,7 +3354,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tla = new TransactionLockManager();
         tla.addINode(
-                TransactionLockManager.INodeResolveType.ONLY_PATH,
+                TransactionLockManager.INodeResolveType.PATH,
                 TransactionLockManager.INodeLockType.READ,
                 resolveLink,
                 new String[]{src});
@@ -3402,7 +3402,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tla = new TransactionLockManager(resolvedINodes);
         tla.addINode(
-                TransactionLockManager.INodeResolveType.ONLY_PATH_WITH_UNKNOWN_HEAD,
+                TransactionLockManager.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
                 TransactionLockManager.INodeLockType.WRITE,
                 resolvedLink,
                 new String[]{src}).
@@ -3537,7 +3537,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager tla = new TransactionLockManager();
-        tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH,
+        tla.addINode(TransactionLockManager.INodeResolveType.PATH,
                 TransactionLockManager.INodeLockType.WRITE,
                 new String[]{path}).
                 acquire();
@@ -3577,7 +3577,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager();
-              tla.addINode(TransactionLockManager.INodeResolveType.ONLY_PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.READ, new String[]{src});
               tla.addBlock(TransactionLockManager.LockType.WRITE);
               tla.addLease(TransactionLockManager.LockType.READ);
               tla.acquire();
@@ -3802,7 +3802,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override        
           public Object acquireLock() throws PersistanceException, IOException {
               TransactionLockManager tla = new TransactionLockManager(resolvedInodes);
-              tla.addINode(TransactionLockManager.INodeResolveType.FROM_CHILD_TO_ROOT, TransactionLockManager.INodeLockType.WRITE);
+              tla.addINode(TransactionLockManager.INodeResolveType.PATH, TransactionLockManager.INodeLockType.WRITE);
               tla.addBlock(TransactionLockManager.LockType.WRITE, lastblock.getBlockId());
               tla.addLease(TransactionLockManager.LockType.WRITE);
               tla.addLeasePath(TransactionLockManager.LockType.WRITE);
@@ -5838,7 +5838,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         public Object acquireLock() throws PersistanceException, IOException {
           Block blk = (Block) getParams()[0];
           TransactionLockManager tlm = new TransactionLockManager(resolvedInodes);
-          tlm.addINode(INodeResolveType.FROM_CHILD_TO_ROOT, INodeLockType.READ_COMMITED).
+          tlm.addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
                   addBlock(LockType.READ_COMMITTED, blk.getBlockId()).
                   addReplica(LockType.READ_COMMITTED).
                   addCorrupt(LockType.READ_COMMITTED).

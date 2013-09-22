@@ -40,6 +40,7 @@ public class INodeUtil {
   private final static Log LOG = LogFactory.getLog(INodeUtil.class);
 
   // This code is based on FSDirectory code for resolving the path.
+  //resolveLink indicates whether UnresolvedLinkException should
   public static boolean getNextChild(
           INode[] curInode,
           byte[][] components,
@@ -140,6 +141,7 @@ public class INodeUtil {
       return resolvedInodes;
     } else {
       curNode[0] = getRoot();
+      resolvedInodes.add(curNode[0]);
     }
 
     while (count[0] < components.length && curNode[0] != null) {

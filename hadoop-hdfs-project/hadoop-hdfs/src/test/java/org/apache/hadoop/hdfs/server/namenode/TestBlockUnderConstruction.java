@@ -93,7 +93,7 @@ public class TestBlockUnderConstruction {
       @Override
       public Object acquireLock() throws PersistanceException, IOException {
         TransactionLockManager lm = new TransactionLockManager();
-        lm.addINode(INodeResolveType.ONLY_PATH,
+        lm.addINode(INodeResolveType.PATH,
                 INodeLockType.READ,
                 new String[]{file});
         lm.addBlock(LockType.READ);
