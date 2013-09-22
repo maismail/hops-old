@@ -59,12 +59,12 @@ public class TransactionLockManager {
 
   
 
-  private List<Lease> acquireLeaseLock(String holder) throws PersistanceException {
+  private List<Lease> acquireLeaseLock() throws PersistanceException {
 
-    checkStringParam(holder);
+    checkStringParam(locks.getLeaseParam());
     SortedSet<String> holders = new TreeSet<String>();
-    if (holder != null) {
-      holders.add((String) holder);
+    if (locks.getLeaseParam() != null) {
+      holders.add((String) locks.getLeaseParam());
     }
 
     if (inodeResult != null) {
@@ -105,11 +105,11 @@ public class TransactionLockManager {
     }
   }
 
-  private List<LeasePath> acquireLeasePathsLock(LockType lock) throws PersistanceException {
+  private List<LeasePath> acquireLeasePathsLock() throws PersistanceException {
     List<LeasePath> lPaths = new LinkedList<LeasePath>();
     if (leaseResults != null) {
       for (Lease l : leaseResults) {
-        Collection<LeasePath> result = TransactionLockAcquirer.acquireLockList(lock, LeasePath.Finder.ByHolderId, l.getHolderID());
+        Collection<LeasePath> result = TransactionLockAcquirer.acquireLockList(locks.getLpLock(), LeasePath.Finder.ByHolderId, l.getHolderID());
         if (!l.getHolder().equals(HdfsServerConstants.NAMENODE_LEASE_HOLDER)) { // We don't need to keep the lps result for namenode-lease. 
           lPaths.addAll(result);
         }
@@ -299,11 +299,11 @@ public class TransactionLockManager {
 
   private void acquireLeaseAndLpathLockNormal() throws PersistanceException {
     if (locks.getLeaseLock() != null) {
-      leaseResults = acquireLeaseLock(locks.getLeaseParam());
+      leaseResults = acquireLeaseLock();
     }
 
     if (locks.getLpLock() != null) {
-      acquireLeasePathsLock(locks.getLpLock());
+      acquireLeasePathsLock();
     }
   }
 
@@ -511,10 +511,7 @@ public class TransactionLockManager {
       return;
     }
 
-    inodeResult = acquireInodeLocks(
-            INodeResolveType.PATH,
-            locks.getInodeLock(),
-            sortedPaths.toArray(new String[sortedPaths.size()]));
+    inodeResult = acquireInodeLocks(INodeResolveType.PATH, locks.getInodeLock(), sortedPaths.toArray(new String[sortedPaths.size()]));
 
     if (inodeResult.length == 0) {
       return; // TODO: something is wrong, it should retry again.
@@ -531,7 +528,7 @@ public class TransactionLockManager {
     leaseResults.add(lease);
     blockResults = acquireBlockLock(locks.getBlockLock(), null);
 
-    List<LeasePath> lpResults = acquireLeasePathsLock(locks.getLpLock());
+    List<LeasePath> lpResults = acquireLeasePathsLock();
     if (lpResults.size() > sortedPaths.size()) {
       return; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
