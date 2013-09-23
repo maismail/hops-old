@@ -325,8 +325,8 @@ public class TransactionLockManager {
       acquireReplicasLock(locks.getCrLock(), CorruptReplica.Finder.ByBlockId);
     }
 
-    if (erLock != null) {
-      acquireReplicasLock(erLock, ExcessReplica.Finder.ByBlockId);
+    if (locks.getErLock() != null) {
+      acquireReplicasLock(locks.getErLock(), ExcessReplica.Finder.ByBlockId);
     }
 
     if (locks.getRucLock() != null) {
