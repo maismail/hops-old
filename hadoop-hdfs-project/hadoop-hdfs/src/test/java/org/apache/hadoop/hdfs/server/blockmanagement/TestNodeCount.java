@@ -121,13 +121,12 @@ public class TestNodeCount {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           final Iterator<DatanodeDescriptor> iter = bm.blocksMap.nodeIterator(block.getLocalBlock());
+          Collection<String> excessDns = bm.excessReplicateMap.get(block.getLocalBlock());
           DatanodeDescriptor nonExcessDN = null;
           while (iter.hasNext()) {
             DatanodeDescriptor dn = iter.next();
-            Collection<Block> blocks = bm.excessReplicateMap.get(dn.getStorageID());
-            if (blocks == null || !blocks.contains(block.getLocalBlock())) {
+            if(!excessDns.contains(dn.getStorageID())){
               nonExcessDN = dn;
-              break;
             }
           }
           return nonExcessDN;
