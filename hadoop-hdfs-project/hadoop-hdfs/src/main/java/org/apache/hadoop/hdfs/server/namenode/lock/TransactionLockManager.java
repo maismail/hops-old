@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode.lock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
@@ -436,6 +437,10 @@ public class TransactionLockManager {
         }
       }
     }
+    
+    // sort the blocks. it is important as the ndb returns the blocks in random order and two
+    // txs trying to take locks on the blocks of a file will end up in dead lock 
+    Collections.sort(blocks, BlockInfo.Order.ByBlockId);
 
     return blocks;
   }
