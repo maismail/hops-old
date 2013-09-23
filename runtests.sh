@@ -1,15 +1,18 @@
 #!/bin/bash
 
 TestNames=$1
-MaxTime=5;
-AllTestsResults=AllTestsResults.txt
-rm -f $AllTestsResults
+MaxTime=60;
+TestResultsParent=results
+AllTestsResults=$TestResultsParent/AllTestsResults.txt
+FAILED_DIR=$TestResultsParent/fail_tests_reports
 
+rm -rf $TestResultsParent
+mkdir -p $FAILED_DIR
 
 for i in $(cat $TestNames); do
  UnitTestResult="/tmp/$i.HOP_Results"
  rm $UnitTestResult
- ./run_single_test.sh $i  $UnitTestResult &
+ ./run_single_test.sh $i  $UnitTestResult $FAILED_DIR &
 
  TimePassed=0;
  while [ $TimePassed -le $MaxTime ];
