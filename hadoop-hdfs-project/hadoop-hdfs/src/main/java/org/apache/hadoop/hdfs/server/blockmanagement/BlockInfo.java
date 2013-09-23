@@ -80,7 +80,7 @@ public class BlockInfo extends Block {
       @Override
       public int compare(BlockInfo o1, BlockInfo o2) {
         if(o1.getBlockId() == o2.getBlockId()){
-          throw new IllegalStateException("A file cannot have 2 blocks with the same id. id = "+o1.getBlockId());
+          return 0;
         }
         if (o1.getBlockId() < o2.getBlockId()) {
           return -1;
