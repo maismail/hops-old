@@ -5388,7 +5388,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Metric
-  public long getPendingDeletionBlocks() {
+  public long getPendingDeletionBlocks() throws IOException {
     return blockManager.getPendingDeletionBlocksCount();
   }
 

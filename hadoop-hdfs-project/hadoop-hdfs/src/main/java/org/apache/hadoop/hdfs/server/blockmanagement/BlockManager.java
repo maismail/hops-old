@@ -145,7 +145,7 @@ public class BlockManager {
     return scheduledReplicationBlocksCount;
   }
   /** Used by metrics */
-  public long getPendingDeletionBlocksCount() {
+  public long getPendingDeletionBlocksCount() throws IOException {
     return invalidateBlocks.numBlocks();
   }
   /** Used by metrics */
@@ -974,7 +974,7 @@ public class BlockManager {
    * Adds block to list of blocks which will be invalidated on specified
    * datanode and log the operation
    */
-  void addToInvalidates(final Block block, final DatanodeInfo datanode) {
+  void addToInvalidates(final Block block, final DatanodeInfo datanode) throws PersistanceException {
     invalidateBlocks.add(block, datanode, true);
   }
 
