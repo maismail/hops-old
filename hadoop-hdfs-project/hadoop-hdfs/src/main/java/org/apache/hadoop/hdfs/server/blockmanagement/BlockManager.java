@@ -2780,7 +2780,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         TransactionLocks lks = new TransactionLocks();
         lks.addINode(TransactionLockTypes.INodeLockType.READ).
                 addBlock(LockType.READ, block.getBlockId()).
-                addReplica(LockType.READ);
+                addReplica(LockType.READ).
+                addInvalidatedBlock(LockType.READ);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
@@ -3063,7 +3064,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
                 addPendingBlock(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addUnderReplicatedBlock(LockType.WRITE).
+                addInvalidatedBlock(LockType.WRITE);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
