@@ -3026,6 +3026,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               //addCorrupt(TransactionLockTypes.LockType.WRITE).
               lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
               //addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE).
+              lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
               TransactionLockManager tlm = new TransactionLockManager(lks);
               tlm.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
               return lks;
@@ -3200,6 +3201,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
                 lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
                 lks.addPendingBlock(TransactionLockTypes.LockType.WRITE);
+                lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
                 TransactionLockManager tlm = new TransactionLockManager(lks);
                 tlm.acquire();
                 return lks;
