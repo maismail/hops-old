@@ -1864,7 +1864,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addReplica(TransactionLockTypes.LockType.READ).
                 addExcess(TransactionLockTypes.LockType.READ).
                 addCorrupt(TransactionLockTypes.LockType.READ).
-                addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
+                addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE).
+                addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquire();
         return lks;
