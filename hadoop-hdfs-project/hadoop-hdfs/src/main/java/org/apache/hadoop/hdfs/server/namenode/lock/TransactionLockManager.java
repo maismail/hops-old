@@ -257,7 +257,7 @@ public class TransactionLockManager {
           INode existingInode = TransactionLockAcquirer.acquireINodeLockByNameAndParentId(
                   locks.getInodeLock(),
                   DFSUtil.bytes2String(srcComponents[srcComponents.length - 1]),
-                  dstINodes.getLast().getId());
+                  dstINodes.getLast().getId(), locks);
 //        inodeResult = new INode[inodeResult1.length + inodeResult2.length + 1];
 //        if (existingInode != null & !existingInode.isDirectory()) {
 //          inodeResult[inodeResult.length - 1] = existingInode;
@@ -395,7 +395,7 @@ public class TransactionLockManager {
           checkPathIsResolved();
           int resolvedSize = locks.getPreTxResolvedInodes().size();
           String existingPath = buildPath(fullPath, resolvedSize);
-          TransactionLockAcquirer.acquireInodeLockByResolvedPath(locks.getInodeLock(), locks.getPreTxResolvedInodes());
+          TransactionLockAcquirer.acquireInodeLockByResolvedPath(locks);
           INode baseDir = locks.getPreTxResolvedInodes().peekLast();
           LinkedList<INode> rest = TransactionLockAcquirer.acquireLockOnRestOfPath(locks.getInodeLock(), baseDir,
                   fullPath, existingPath, locks.isResolveLink());
@@ -463,7 +463,7 @@ public class TransactionLockManager {
         inode = takeLocksFromRootToLeaf(locks.getPreTxResolvedInodes(), locks.getInodeLock());
       }
     }else{
-        inode = TransactionLockAcquirer.acquireINodeLockById(locks.getInodeLock(), inodeId);
+        inode = TransactionLockAcquirer.acquireINodeLockById(locks.getInodeLock(), inodeId, locks);
     }
 
     if (inode != null) {
@@ -496,10 +496,10 @@ public class TransactionLockManager {
     for (int i = 0; i < inodes.size(); i++) {
       if (i == (inodes.size() - 1)) // take specified lock
       {
-        lockedLeafINode = TransactionLockAcquirer.acquireINodeLockById(inodeLock, inodes.get(i).getId());
+        lockedLeafINode = TransactionLockAcquirer.acquireINodeLockById(inodeLock, inodes.get(i).getId(),locks);
       } else // take read commited lock
       {
-        lockedLeafINode = TransactionLockAcquirer.acquireINodeLockById(INodeLockType.READ_COMMITED, inodes.get(i).getId());
+        lockedLeafINode = TransactionLockAcquirer.acquireINodeLockById(INodeLockType.READ_COMMITED, inodes.get(i).getId(),locks);
       }
 
       if (!lockedLeafINode.getLocalName().equals("")) {
