@@ -3,6 +3,7 @@ package org.apache.hadoop.hdfs.server.namenode.lock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
@@ -15,7 +16,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
-//import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
+import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.GenerationStamp;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
@@ -325,9 +326,9 @@ public class TransactionLockManager {
       acquireReplicasLock(locks.getCrLock(), CorruptReplica.Finder.ByBlockId);
     }
 
-//      if (erLock != null) {
-//        acquireReplicasLock(erLock, ExcessReplica.Finder.ByBlockId);
-//      }
+    if (locks.getErLock() != null) {
+      acquireReplicasLock(locks.getErLock(), ExcessReplica.Finder.ByBlockId);
+    }
 
     if (locks.getRucLock() != null) {
       acquireReplicasLock(locks.getRucLock(), ReplicaUnderConstruction.Finder.ByBlockId);
@@ -436,6 +437,10 @@ public class TransactionLockManager {
         }
       }
     }
+    
+    // sort the blocks. it is important as the ndb returns the blocks in random order and two
+    // txs trying to take locks on the blocks of a file will end up in dead lock 
+    Collections.sort(blocks, BlockInfo.Order.ByBlockId);
 
     return blocks;
   }

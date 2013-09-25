@@ -1452,16 +1452,7 @@ public class MiniDFSCluster {
     }
     
       //HOP_START_CODE
-      try {
-          Session session = (Session) StorageFactory.getConnector().obtainSession();
-          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-          session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-          session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-          session.flush();
-      } catch (StorageException e) {
-          LOG.error(e);
-      }
+      deleteReplicasTable();
       //HOP_END_CODE
   }
   
@@ -1516,6 +1507,7 @@ public class MiniDFSCluster {
   public synchronized void restartNameNode() throws IOException {
     checkSingleNameNode();
     restartNameNode(true);
+    
   }
   
   /**
@@ -1544,6 +1536,9 @@ public class MiniDFSCluster {
     String nnId = nameNodes[nnIndex].nnId;
     Configuration conf = nameNodes[nnIndex].conf;
     shutdownNameNode(nnIndex);
+    //HOP_START_CODE
+    deleteReplicasTable();
+    //HOP_END_CODE
     NameNode nn = NameNode.createNameNode(new String[] {}, conf);
     nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
     if (waitActive) {
@@ -2365,4 +2360,19 @@ public class MiniDFSCluster {
       writer.close();
     }
   }
+  
+  //HOP_START_CODE
+  private void deleteReplicasTable(){    
+      try {
+          Session session = (Session) StorageFactory.getConnector().obtainSession();
+          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+          session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+          session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+          session.flush();
+      } catch (StorageException e) {
+          LOG.error(e);
+      }  
+  }
+  //HOP_END_CODE      
 }

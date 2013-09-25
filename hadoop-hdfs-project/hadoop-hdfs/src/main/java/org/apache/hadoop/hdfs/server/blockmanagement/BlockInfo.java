@@ -76,6 +76,19 @@ public class BlockInfo extends Block {
         }
       }
     },
+    ByBlockId() {
+      @Override
+      public int compare(BlockInfo o1, BlockInfo o2) {
+        if(o1.getBlockId() == o2.getBlockId()){
+          return 0;
+        }
+        if (o1.getBlockId() < o2.getBlockId()) {
+          return -1;
+        } else {
+          return 1;
+        }
+      }
+    },
     ByGenerationStamp() {
       @Override
       public int compare(BlockInfo o1, BlockInfo o2) {
