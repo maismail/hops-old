@@ -5084,7 +5084,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         String holder = ((Lease) getParams()[0]).getHolder();
             TransactionLocks  lks = new TransactionLocks();
-            lks.addINode(TransactionLockTypes.INodeLockType.WRITE);
+            lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE);
             lks.addBlock(TransactionLockTypes.LockType.WRITE);
             lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
             lks.addNameNodeLease(LockType.WRITE);

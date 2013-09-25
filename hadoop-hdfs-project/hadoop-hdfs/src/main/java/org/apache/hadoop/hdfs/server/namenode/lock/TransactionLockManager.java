@@ -218,7 +218,7 @@ public class TransactionLockManager {
   public void acquire() throws PersistanceException, UnresolvedPathException {
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      inodeResult = acquireInodeLocks(locks.getInodeResolveType(), locks.getInodeLock(), locks.getInodeParam());
+      inodeResult = acquireInodeLocks(locks.getInodeParam());
     }
 
     if (locks.getBlockLock() != null) {
@@ -244,11 +244,11 @@ public class TransactionLockManager {
     String src = locks.getInodeParam()[0];
     String dst = locks.getInodeParam()[1];
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      INode[] inodeResult1 = acquireInodeLocks(locks.getInodeResolveType(), locks.getInodeLock(), src);
-      INode[] inodeResult2 = acquireInodeLocks(locks.getInodeResolveType(), locks.getInodeLock(), dst);
+      INode[] inodeResult1 = acquireInodeLocks(src);
+      INode[] inodeResult2 = acquireInodeLocks(dst);
       if (allowExistingDir) // In deprecated rename, it allows to move a dir to an existing destination.
       {
-        LinkedList<INode> dstINodes = TransactionLockAcquirer.acquireInodeLockByPath(locks.getInodeLock(), dst, locks.isResolveLink()); // reads from snapshot.
+        LinkedList<INode> dstINodes = TransactionLockAcquirer.acquireInodeLockByPath(locks, dst); // reads from snapshot.
         byte[][] dstComponents = INode.getPathComponents(dst);
         byte[][] srcComponents = INode.getPathComponents(src);
         if (dstINodes.size() == dstComponents.length - 1 && dstINodes.getLast().isDirectory()) {
@@ -364,9 +364,9 @@ public class TransactionLockManager {
 //    }
   }
 
-  private INode[] acquireInodeLocks(INodeResolveType resType, INodeLockType lock, String... params) throws UnresolvedPathException, PersistanceException {
+  private INode[] acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {
     INode[] inodes = new INode[params.length];
-    switch (resType) {
+    switch (locks.getInodeResolveType()) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
       case PATH_AND_ALL_CHILDREN_RECURESIVELY:
@@ -374,14 +374,14 @@ public class TransactionLockManager {
           // TODO - MemcacheD Lookup of path
           // On
           LinkedList<INode> resolvedInodes =
-                  TransactionLockAcquirer.acquireInodeLockByPath(lock, params[i], locks.isResolveLink());
+                  TransactionLockAcquirer.acquireInodeLockByPath(locks, params[i]);
           if (resolvedInodes.size() > 0) {
             inodes[i] = resolvedInodes.peekLast();
           }
         }
-        if (resType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
+        if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
           inodes = findImmediateChildren(inodes);
-        } else if (resType == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
+        } else if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
           inodes = findChildrenRecursively(inodes);
         }
         break;
@@ -392,26 +392,26 @@ public class TransactionLockManager {
           // TODO Test this in all different possible scenarios
           String fullPath = params[i];
           checkPathIsResolved();
-          int resolvedSize = locks.getResolvedInodes().size();
+          int resolvedSize = locks.getPreTxResolvedInodes().size();
           String existingPath = buildPath(fullPath, resolvedSize);
-          TransactionLockAcquirer.acquireInodeLockByResolvedPath(lock, locks.getResolvedInodes());
-          INode baseDir = locks.getResolvedInodes().peekLast();
-          LinkedList<INode> rest = TransactionLockAcquirer.acquireLockOnRestOfPath(lock, baseDir,
+          TransactionLockAcquirer.acquireInodeLockByResolvedPath(locks.getInodeLock(), locks.getPreTxResolvedInodes());
+          INode baseDir = locks.getPreTxResolvedInodes().peekLast();
+          LinkedList<INode> rest = TransactionLockAcquirer.acquireLockOnRestOfPath(locks.getInodeLock(), baseDir,
                   fullPath, existingPath, locks.isResolveLink());
-          locks.getResolvedInodes().addAll(rest);
-          inodes[i] = locks.getResolvedInodes().peekLast();
+          locks.getPreTxResolvedInodes().addAll(rest);
+          inodes[i] = locks.getPreTxResolvedInodes().peekLast();
         }
         break;
 
       default:
-        throw new IllegalArgumentException("Unknown type " + lock.name());
+        throw new IllegalArgumentException("Unknown type " + locks.getInodeLock().name());
     }
 
     return inodes;
   }
   
   private void checkPathIsResolved() throws INodeResolveException {
-    if (locks.getResolvedInodes() == null) {
+    if (locks.getPreTxResolvedInodes() == null) {
       throw new INodeResolveException(String.format(
               "Requires to have inode-id(s) in order to do this operation. "
               + "ResolvedInodes is null."));
@@ -454,8 +454,8 @@ public class TransactionLockManager {
     INode inode = null; 
     if (locks.getInodeResolveType() == INodeResolveType.PATH) {
       checkPathIsResolved();
-      if (!locks.getResolvedInodes().isEmpty()) {
-        inode = takeLocksFromRootToLeaf(locks.getResolvedInodes(), locks.getInodeLock());
+      if (!locks.getPreTxResolvedInodes().isEmpty()) {
+        inode = takeLocksFromRootToLeaf(locks.getPreTxResolvedInodes(), locks.getInodeLock());
       }
     }else{
         inode = TransactionLockAcquirer.acquireINodeLockById(locks.getInodeLock(), inodeId);
@@ -510,8 +510,8 @@ public class TransactionLockManager {
     if (locks.getLeaseParam() == null) {
       return;
     }
-
-    inodeResult = acquireInodeLocks(INodeResolveType.PATH, locks.getInodeLock(), sortedPaths.toArray(new String[sortedPaths.size()]));
+    
+    inodeResult = acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
     if (inodeResult.length == 0) {
       return; // TODO: something is wrong, it should retry again.
