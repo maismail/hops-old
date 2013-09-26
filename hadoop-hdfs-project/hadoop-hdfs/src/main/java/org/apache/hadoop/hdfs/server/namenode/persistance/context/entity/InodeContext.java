@@ -6,6 +6,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
@@ -167,12 +168,33 @@ public class InodeContext extends EntityContext<INode> {
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
 
-        if ((removedInodes.values().size() != 0
-                || modifiedInodes.values().size() != 0)
-                && (lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
-                &&  lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
-            throw new LockUpgradeException("Trying to upgrade inode locks");
+//        if ((removedInodes.values().size() != 0
+//                || modifiedInodes.values().size() != 0)
+//                && (lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
+//                &&  lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
+//            throw new LockUpgradeException("Trying to upgrade inode locks");
+//        }
+    if(removedInodes.values().size() != 0)
+    {
+        for(INode inode: removedInodes.values()){
+            INodeLockType lock = lks.getLockedINodeLockType(inode);
+            if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
+                throw new LockUpgradeException("Trying to remove inode id="+inode.getId()+" acquired lock was "+lock);
+            }
+                
         }
+    }
+    
+    if(modifiedInodes.values().size() != 0)
+    {
+        for(INode inode: modifiedInodes.values()){
+            INodeLockType lock = lks.getLockedINodeLockType(inode);
+            if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
+                throw new LockUpgradeException("Trying to update inode id="+inode.getId()+" acquired lock was "+lock);
+            }
+                
+        }
+    }
     dataAccess.prepare(removedInodes.values(), newInodes.values(), modifiedInodes.values());
   }
 
