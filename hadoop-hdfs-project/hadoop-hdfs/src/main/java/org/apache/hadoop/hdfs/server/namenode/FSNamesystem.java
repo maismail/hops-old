@@ -3016,7 +3016,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               TransactionLocks  lks = new TransactionLocks();
               lks.addINode(
                       TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                      TransactionLockTypes.INodeLockType.WRITE,
+                      TransactionLockTypes.INodeLockType.WRITE_ON_PARENT,
                       false,
                       new String[]{src, dst});
               lks.addLease(TransactionLockTypes.LockType.WRITE);
@@ -3189,7 +3189,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 TransactionLocks  lks = new TransactionLocks();
                 lks.addINode(
                         TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                        TransactionLockTypes.INodeLockType.WRITE,
+                        TransactionLockTypes.INodeLockType.WRITE_ON_PARENT,
                         false,
                         new String[]{src});
                 lks.addLease(TransactionLockTypes.LockType.WRITE);

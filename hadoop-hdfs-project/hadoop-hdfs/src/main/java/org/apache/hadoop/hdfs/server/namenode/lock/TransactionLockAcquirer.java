@@ -211,11 +211,8 @@ public class TransactionLockAcquirer {
     if (lastComp){ // if root is the last directory, we should acquire the write lock over the root
       acquireLockOnRoot(locks.getInodeLock(), locks);
       return;
-    } else {
-      acquireLockOnRoot(INodeLockType.READ_COMMITED, locks);
-    }
-    
-    count++;
+    } 
+
 
     while (count < palthLength ) {
       if (
