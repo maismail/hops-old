@@ -4215,7 +4215,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Metric({"MissingBlocks", "Number of missing blocks"})
-  public long getMissingBlocksCount() {
+  public long getMissingBlocksCount() throws IOException {
     // not locking
     return blockManager.getMissingBlocksCount();
   }
@@ -4257,7 +4257,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   /** @see ClientProtocol#getStats() */
-  long[] getStats() {
+  long[] getStats() throws IOException {
     final long[] stats = datanodeStatistics.getStats();
     stats[ClientProtocol.GET_STATS_UNDER_REPLICATED_IDX] = getUnderReplicatedBlocks();
     stats[ClientProtocol.GET_STATS_CORRUPT_BLOCKS_IDX] = getCorruptReplicaBlocks();
@@ -6285,7 +6285,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override // NameNodeMXBean
-  public long getNumberOfMissingBlocks() {
+  public long getNumberOfMissingBlocks() throws IOException{
     return getMissingBlocksCount();
   }
   

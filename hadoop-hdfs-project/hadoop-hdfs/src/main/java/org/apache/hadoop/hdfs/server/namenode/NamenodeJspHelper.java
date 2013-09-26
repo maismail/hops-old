@@ -156,7 +156,7 @@ class NamenodeJspHelper {
    * Generate warning text if there are corrupt files.
    * @return a warning if files are corrupt, otherwise return an empty string.
    */
-  static String getCorruptFilesWarning(FSNamesystem fsn) {
+  static String getCorruptFilesWarning(FSNamesystem fsn) throws IOException {
     long missingBlocks = fsn.getMissingBlocksCount();
     if (missingBlocks > 0) {
       StringBuilder result = new StringBuilder();

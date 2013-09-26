@@ -418,7 +418,7 @@ public class BlockManager {
   }
 
   /** Dump meta data to out. */
-  public void metaSave(PrintWriter out) throws PersistanceException {
+  public void metaSave(PrintWriter out) throws PersistanceException, IOException {
     assert namesystem.hasWriteLock();
     final List<DatanodeDescriptor> live = new ArrayList<DatanodeDescriptor>();
     final List<DatanodeDescriptor> dead = new ArrayList<DatanodeDescriptor>();
@@ -1134,7 +1134,7 @@ public class BlockManager {
   }
 
   /** Return number of under-replicated but not missing blocks */
-  public int getUnderReplicatedNotMissingBlocks() {
+  public int getUnderReplicatedNotMissingBlocks() throws IOException {
     return neededReplications.getUnderReplicatedBlockCount();
   }
   
@@ -1190,7 +1190,7 @@ public class BlockManager {
    * @param blocksToReplicate blocks to be replicated, for each priority
    * @return the number of blocks scheduled for replication
    */
-  private int computeReplicationWorkForBlockInternal(Block blk, int priority1) throws PersistanceException {
+  private int computeReplicationWorkForBlockInternal(Block blk, int priority1) throws PersistanceException, IOException {
     int requiredReplication, numEffectiveReplicas;
     List<DatanodeDescriptor> containingNodes, liveReplicaNodes;
     DatanodeDescriptor srcNode;
@@ -3338,7 +3338,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return current < expected || !blockHasEnoughRacks(b);
   }
   
-  public long getMissingBlocksCount() {
+  public long getMissingBlocksCount() throws IOException {
     // not locking
     return this.neededReplications.getCorruptBlockSize();
   }
@@ -3404,7 +3404,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   /** @return the size of UnderReplicatedBlocks */
-  public int numOfUnderReplicatedBlocks() {
+  public int numOfUnderReplicatedBlocks() throws IOException {
     return neededReplications.size();
   }
 
