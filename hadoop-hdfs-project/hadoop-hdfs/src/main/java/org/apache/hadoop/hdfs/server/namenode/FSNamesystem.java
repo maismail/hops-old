@@ -1864,7 +1864,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addReplica(TransactionLockTypes.LockType.READ).
                 addExcess(TransactionLockTypes.LockType.READ).
                 addCorrupt(TransactionLockTypes.LockType.READ).
-                addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
+                addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE).
+                addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquire();
         return lks;
@@ -1991,6 +1992,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               lks.addGenerationStamp(TransactionLockTypes.LockType.WRITE);
               lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
               lks.addPendingBlock(TransactionLockTypes.LockType.WRITE);
+              lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
               TransactionLockManager tlm = new TransactionLockManager(lks);
               tlm.acquire();
               return lks;
@@ -2837,6 +2839,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               lks.addExcess(TransactionLockTypes.LockType.READ);
               lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
               lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
+              lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
               TransactionLockManager tlm = new TransactionLockManager(lks);
               tlm.acquire();
               return lks;
@@ -3026,6 +3029,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               //addCorrupt(TransactionLockTypes.LockType.WRITE).
               lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
               //addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE).
+              lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
               TransactionLockManager tlm = new TransactionLockManager(lks);
               tlm.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
               return lks;
@@ -3116,6 +3120,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 lks.addCorrupt(TransactionLockTypes.LockType.WRITE);
                 lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
                 lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
+                lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
                 TransactionLockManager tlm = new TransactionLockManager(lks);
                 tlm.acquireForRename();
                 return lks;
@@ -3200,6 +3205,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
                 lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
                 lks.addPendingBlock(TransactionLockTypes.LockType.WRITE);
+                lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
                 TransactionLockManager tlm = new TransactionLockManager(lks);
                 tlm.acquire();
                 return lks;
@@ -5388,7 +5394,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Metric
-  public long getPendingDeletionBlocks() {
+  public long getPendingDeletionBlocks() throws IOException {
     return blockManager.getPendingDeletionBlocksCount();
   }
 

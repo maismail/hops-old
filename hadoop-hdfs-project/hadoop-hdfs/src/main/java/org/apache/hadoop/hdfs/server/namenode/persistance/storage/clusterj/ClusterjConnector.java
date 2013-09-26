@@ -119,7 +119,7 @@ public enum ClusterjConnector implements StorageConnector<Session> {
       session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
       session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
       session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-//HOP FIXME      session.deletePersistentAll(InvalidatedBlockClusterj.InvalidateBlocksDTO.class);
+      session.deletePersistentAll(InvalidatedBlockClusterj.InvalidateBlocksDTO.class);
       session.deletePersistentAll(ExcessReplicaClusterj.ExcessReplicaDTO.class);
 //HOP FIXME      session.deletePersistentAll(PendingBlockClusterj.PendingBlockDTO.class);
       session.deletePersistentAll(CorruptReplicaClusterj.CorruptReplicaDTO.class);

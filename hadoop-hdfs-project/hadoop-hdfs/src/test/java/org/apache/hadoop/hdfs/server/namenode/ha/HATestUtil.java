@@ -44,6 +44,8 @@ import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.base.Supplier;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.server.namenode.HOPTXnChkPtsIDs;
 
 /**
@@ -117,7 +119,12 @@ public abstract class HATestUtil {
       @Override
       public Boolean get() {
         LOG.info("Waiting for NN to issue block deletions to DNs");
-        return nn.getNamesystem().getBlockManager().getPendingDeletionBlocksCount() == 0;
+        try {
+          return nn.getNamesystem().getBlockManager().getPendingDeletionBlocksCount() == 0;
+        } catch (IOException ex) {
+          Logger.getLogger(HATestUtil.class.getName()).log(Level.SEVERE, null, ex);
+          return false;
+        }
       }
     }, 250, 10000);
   }

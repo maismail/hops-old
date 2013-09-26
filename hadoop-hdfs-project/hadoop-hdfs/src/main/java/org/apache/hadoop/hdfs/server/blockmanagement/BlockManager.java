@@ -145,7 +145,7 @@ public class BlockManager {
     return scheduledReplicationBlocksCount;
   }
   /** Used by metrics */
-  public long getPendingDeletionBlocksCount() {
+  public long getPendingDeletionBlocksCount() throws IOException {
     return invalidateBlocks.numBlocks();
   }
   /** Used by metrics */
@@ -974,7 +974,7 @@ public class BlockManager {
    * Adds block to list of blocks which will be invalidated on specified
    * datanode and log the operation
    */
-  void addToInvalidates(final Block block, final DatanodeInfo datanode) {
+  void addToInvalidates(final Block block, final DatanodeInfo datanode) throws PersistanceException {
     invalidateBlocks.add(block, datanode, true);
   }
 
@@ -2780,7 +2780,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         TransactionLocks lks = new TransactionLocks();
         lks.addINode(TransactionLockTypes.INodeLockType.READ).
                 addBlock(LockType.READ, block.getBlockId()).
-                addReplica(LockType.READ);
+                addReplica(LockType.READ).
+                addInvalidatedBlock(LockType.READ);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
@@ -3063,7 +3064,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
                 addPendingBlock(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addUnderReplicatedBlock(LockType.WRITE).
+                addInvalidatedBlock(LockType.WRITE);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;

@@ -19,7 +19,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.GenerationStamp;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
-//import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
+import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
 //import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 //import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
@@ -334,9 +334,9 @@ public class TransactionLockManager {
       acquireReplicasLock(locks.getRucLock(), ReplicaUnderConstruction.Finder.ByBlockId);
     }
 
-//      if (invLocks != null) {
-//        acquireReplicasLock(invLocks, InvalidatedBlock.Finder.ByBlockId);
-//      }
+    if (locks.getInvLocks() != null) {
+      acquireReplicasLock(locks.getInvLocks(), InvalidatedBlock.Finder.ByBlockId);
+    }
 
 //      if (urbLock != null) {
 //        acquireBlockRelatedLock(urbLock, UnderReplicatedBlock.Finder.ByBlockId);
