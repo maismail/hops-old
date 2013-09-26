@@ -70,7 +70,8 @@ public class TestUnderReplicatedBlocks {
           TransactionLocks lks = new TransactionLocks();
           lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
                   addBlock(TransactionLockTypes.LockType.WRITE, b.getBlockId()).
-                  addReplica(TransactionLockTypes.LockType.WRITE);
+                  addReplica(TransactionLockTypes.LockType.WRITE).
+                  addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
           TransactionLockManager tlm = new TransactionLockManager(lks);
           tlm.acquireByBlock(inodeId);
           return lks;

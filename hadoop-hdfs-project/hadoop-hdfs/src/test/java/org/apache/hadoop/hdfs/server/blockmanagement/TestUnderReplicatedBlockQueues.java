@@ -18,7 +18,18 @@
 
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
+import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,12 +41,15 @@ public class TestUnderReplicatedBlockQueues extends Assert {
    * @throws Throwable if something goes wrong
    */
   @Test
-  public void testBlockPriorities() throws Throwable {
+  public void testBlockPriorities() throws Throwable  {
+    StorageFactory.setConfiguration(new HdfsConfiguration());
+    StorageFactory.getConnector().formatStorage();
+    
     UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
-    Block block1 = new Block(1);
-    Block block2 = new Block(2);
-    Block block_very_under_replicated = new Block(3);
-    Block block_corrupt = new Block(4);
+    Block block1 = add(new Block(1));
+    Block block2 = add(new Block(2));
+    Block block_very_under_replicated = add(new Block(3));
+    Block block_corrupt = add(new Block(4));
 
     //add a block with a single entry
     assertAdded(queues, block1, 1, 0, 3);
@@ -44,7 +58,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
     assertEquals(1, queues.size());
     assertInLevel(queues, block1, UnderReplicatedBlocks.QUEUE_HIGHEST_PRIORITY);
     //repeated additions fail
-    assertFalse(queues.add(block1, 1, 0, 3));
+    assertFalse(add(queues, block1, 1, 0, 3));
 
     //add a second block with two replicas
     assertAdded(queues, block2, 2, 0, 3);
@@ -70,9 +84,9 @@ public class TestUnderReplicatedBlockQueues extends Assert {
                            Block block,
                            int curReplicas,
                            int decomissionedReplicas,
-                           int expectedReplicas) {
+                           int expectedReplicas) throws IOException {
     assertTrue("Failed to add " + block,
-               queues.add(block,
+               add(queues, block,
                           curReplicas,
                           decomissionedReplicas,
                           expectedReplicas));
@@ -99,5 +113,44 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       }
     }
     fail("Block " + block + " not found in level " + level);
+  }
+  
+  
+  private Block add(final Block block) throws IOException {
+    new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        return null;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EntityManager.add(new BlockInfo(block));
+        return null;
+      }
+    }.handle(null);
+    return block;
+  }
+
+  private boolean add(final UnderReplicatedBlocks queues, final Block block,
+          final int curReplicas,
+          final int decomissionedReplicas,
+          final int expectedReplicas) throws IOException {
+    return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks tl = new TransactionLocks();
+        tl.addBlock(LockType.READ_COMMITTED, block.getBlockId());
+        tl.addUnderReplicatedBlock(LockType.WRITE);
+        TransactionLockManager lm = new TransactionLockManager(tl);
+        lm.acquire();
+        return tl;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return queues.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
+      }
+    }.handle(null);
   }
 }
