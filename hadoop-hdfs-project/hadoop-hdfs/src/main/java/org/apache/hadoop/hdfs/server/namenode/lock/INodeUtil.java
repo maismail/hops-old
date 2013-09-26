@@ -78,7 +78,7 @@ public class INodeUtil {
       resolvedInodes.add(curInode[0]);
     }
     count[0] = count[0] + 1;
-
+    lastComp = (count[0] == components.length - 1);
     return lastComp;
   }
 
