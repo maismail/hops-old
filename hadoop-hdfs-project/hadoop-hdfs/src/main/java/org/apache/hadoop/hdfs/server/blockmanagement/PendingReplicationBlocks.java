@@ -17,18 +17,27 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import java.io.IOException;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.PrintWriter;
 import java.sql.Time;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.util.Daemon;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.PendingBlockDataAccess;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -43,44 +52,33 @@ import org.apache.hadoop.util.Daemon;
  ***************************************************/
 class PendingReplicationBlocks {
   private static final Log LOG = BlockManager.LOG;
-
-  private Map<Block, PendingBlockInfo> pendingReplications;
-  private ArrayList<Block> timedOutItems;
-  Daemon timerThread = null;
-  private volatile boolean fsRunning = true;
-
   //
   // It might take anywhere between 5 to 10 minutes before
   // a request is timed out.
   //
-  private long timeout = 5 * 60 * 1000;
-  private long defaultRecheckInterval = 5 * 60 * 1000;
+  private static long timeout = 5 * 60 * 1000;
 
   PendingReplicationBlocks(long timeoutPeriod) {
     if ( timeoutPeriod > 0 ) {
       this.timeout = timeoutPeriod;
     }
-    pendingReplications = new HashMap<Block, PendingBlockInfo>();
-    timedOutItems = new ArrayList<Block>();
   }
 
   void start() {
-    timerThread = new Daemon(new PendingReplicationMonitor());
-    timerThread.start();
+    
   }
 
   /**
    * Add a block to the list of pending Replications
    */
-  void increment(Block block, int numReplicas) {
-    synchronized (pendingReplications) {
-      PendingBlockInfo found = pendingReplications.get(block);
-      if (found == null) {
-        pendingReplications.put(block, new PendingBlockInfo(numReplicas));
-      } else {
-        found.incrementReplicas(numReplicas);
-        found.setTimeStamp();
-      }
+  void increment(Block block, int numReplicas) throws PersistanceException {
+    PendingBlockInfo found = getPendingBlock(block);
+    if (found == null) {
+      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(), now(), numReplicas));
+    } else {
+      found.incrementReplicas(numReplicas);
+      found.setTimeStamp(now());
+      updatePendingBlockInfo(found);
     }
   }
 
@@ -89,17 +87,17 @@ class PendingReplicationBlocks {
    * Decrement the number of pending replication requests
    * for this block.
    */
-  void decrement(Block block) {
-    synchronized (pendingReplications) {
-      PendingBlockInfo found = pendingReplications.get(block);
-      if (found != null) {
-        if(LOG.isDebugEnabled()) {
-          LOG.debug("Removing pending replication for " + block);
-        }
-        found.decrementReplicas();
-        if (found.getNumReplicas() <= 0) {
-          pendingReplications.remove(block);
-        }
+  void decrement(Block block) throws PersistanceException {
+    PendingBlockInfo found = getPendingBlock(block);
+    if (found != null && !isTimedout(found)) {
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Removing pending replication for " + block);
+      }
+      found.decrementReplicas();
+      if (found.getNumReplicas() <= 0) {
+        removePendingBlockInfo(found);
+      } else {
+        updatePendingBlockInfo(found);
       }
     }
   }
@@ -109,35 +107,44 @@ class PendingReplicationBlocks {
    * @param block The given block whose pending replication requests need to be
    *              removed
    */
-  void remove(Block block) {
-    synchronized (pendingReplications) {
-      pendingReplications.remove(block);
+  void remove(Block block) throws PersistanceException {
+    PendingBlockInfo found = getPendingBlock(block);
+    if (found != null) {
+      removePendingBlockInfo(found);
     }
   }
 
-  public void clear() {
-    synchronized (pendingReplications) {
-      pendingReplications.clear();
-      timedOutItems.clear();
-    }
+  public void clear() throws IOException {
+    new LightWeightRequestHandler(OperationType.DEL_ALL_PENDING_REPL_BLKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
+        da.removeAll();
+        return null;
+      }
+    }.handle(null);
   }
 
   /**
    * The total number of blocks that are undergoing replication
    */
-  int size() {
-    return pendingReplications.size();
+  int size() throws IOException {
+    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_ALL_VALID_PENDING_REPL_BLKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
+        return da.countValidPendingBlocks(getTimeLimit());
+      }
+    }.handle(null);
   } 
 
   /**
    * How many copies of this block is pending replication?
    */
-  int getNumReplicas(Block block) {
-    synchronized (pendingReplications) {
-      PendingBlockInfo found = pendingReplications.get(block);
-      if (found != null) {
-        return found.getNumReplicas();
-      }
+  int getNumReplicas(Block block) throws PersistanceException {
+    PendingBlockInfo found = getPendingBlock(block);
+    if (found != null && !isTimedout(found)) {
+      return found.getNumReplicas();
     }
     return 0;
   }
@@ -147,135 +154,123 @@ class PendingReplicationBlocks {
    * replication requests. Returns null if no blocks have
    * timed out.
    */
-  Block[] getTimedOutBlocks() {
-    synchronized (timedOutItems) {
-      if (timedOutItems.size() <= 0) {
-        return null;
-      }
-      Block[] blockList = timedOutItems.toArray(
-                                                new Block[timedOutItems.size()]);
-      timedOutItems.clear();
-      return blockList;
-    }
-  }
-
-  /**
-   * An object that contains information about a block that 
-   * is being replicated. It records the timestamp when the 
-   * system started replicating the most recent copy of this
-   * block. It also records the number of replication
-   * requests that are in progress.
-   */
-  static class PendingBlockInfo {
-    private long timeStamp;
-    private int numReplicasInProgress;
-
-    PendingBlockInfo(int numReplicas) {
-      this.timeStamp = now();
-      this.numReplicasInProgress = numReplicas;
-    }
-
-    long getTimeStamp() {
-      return timeStamp;
-    }
-
-    void setTimeStamp() {
-      timeStamp = now();
-    }
-
-    void incrementReplicas(int increment) {
-      numReplicasInProgress += increment;
-    }
-
-    void decrementReplicas() {
-      numReplicasInProgress--;
-      assert(numReplicasInProgress >= 0);
-    }
-
-    int getNumReplicas() {
-      return numReplicasInProgress;
-    }
-  }
-
-  /*
-   * A periodic thread that scans for blocks that never finished
-   * their replication request.
-   */
-  class PendingReplicationMonitor implements Runnable {
-    @Override
-    public void run() {
-      while (fsRunning) {
-        long period = Math.min(defaultRecheckInterval, timeout);
-        try {
-          pendingReplicationCheck();
-          Thread.sleep(period);
-        } catch (InterruptedException ie) {
-          if(LOG.isDebugEnabled()) {
-            LOG.debug("PendingReplicationMonitor thread is interrupted.", ie);
-          }
+  Block[] getTimedOutBlocks() throws IOException {
+    List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(OperationType.GET_TIMED_OUT_PENDING_BLKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        long timeLimit = getTimeLimit();
+        PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
+        List<PendingBlockInfo> timedoutPendings = (List<PendingBlockInfo>) da.findByTimeLimitLessThan(timeLimit);
+        if (timedoutPendings == null || timedoutPendings.size() <= 0) {
+          return null;
         }
+        List<PendingBlockInfo> EMPTY = Collections.unmodifiableList(new ArrayList<PendingBlockInfo>());
+        da.prepare(timedoutPendings, EMPTY, EMPTY); // remove
+        return timedoutPendings;
+      }
+    }.handle(null);
+    if (timedOutItems == null) {
+      return null;
+    }
+    List<Block> blockList = new ArrayList<Block>();
+    for (int i = 0; i < timedOutItems.size(); i++) {
+      Block blk = getBlock(timedOutItems.get(i));
+      if(blk != null){
+        blockList.add(blk);
       }
     }
-
-    /**
-     * Iterate through all items and detect timed-out items
-     */
-    void pendingReplicationCheck() {
-      synchronized (pendingReplications) {
-        Iterator<Map.Entry<Block, PendingBlockInfo>> iter =
-                                    pendingReplications.entrySet().iterator();
-        long now = now();
-        if(LOG.isDebugEnabled()) {
-          LOG.debug("PendingReplicationMonitor checking Q");
-        }
-        while (iter.hasNext()) {
-          Map.Entry<Block, PendingBlockInfo> entry = iter.next();
-          PendingBlockInfo pendingBlock = entry.getValue();
-          if (now > pendingBlock.getTimeStamp() + timeout) {
-            Block block = entry.getKey();
-            synchronized (timedOutItems) {
-              timedOutItems.add(block);
-            }
-            LOG.warn("PendingReplicationMonitor timed out " + block);
-            iter.remove();
-          }
-        }
-      }
-    }
+    Block[] blockArr = new Block[blockList.size()];
+    return blockList.toArray(blockArr);
   }
-
   /*
    * Shuts down the pending replication monitor thread.
    * Waits for the thread to exit.
    */
   void stop() {
-    fsRunning = false;
-    if(timerThread == null) return;
-    timerThread.interrupt();
-    try {
-      timerThread.join(3000);
-    } catch (InterruptedException ie) {
-    }
   }
 
   /**
    * Iterate through all items and print them.
    */
-  void metaSave(PrintWriter out) {
-    synchronized (pendingReplications) {
-      out.println("Metasave: Blocks being replicated: " +
-                  pendingReplications.size());
-      Iterator<Map.Entry<Block, PendingBlockInfo>> iter =
-                                  pendingReplications.entrySet().iterator();
-      while (iter.hasNext()) {
-        Map.Entry<Block, PendingBlockInfo> entry = iter.next();
-        PendingBlockInfo pendingBlock = entry.getValue();
-        Block block = entry.getKey();
-        out.println(block + 
-                    " StartTime: " + new Time(pendingBlock.timeStamp) +
-                    " NumReplicaInProgress: " + 
-                    pendingBlock.numReplicasInProgress);
+  void metaSave(PrintWriter out) throws PersistanceException {
+    List<PendingBlockInfo> pendingBlocks = getAllPendingBlocks();
+    if (pendingBlocks != null) {
+      out.println("Metasave: Blocks being replicated: "
+              + pendingBlocks.size());
+      for (PendingBlockInfo pendingBlock : pendingBlocks) {
+        if (!isTimedout(pendingBlock)) {
+          BlockInfo bInfo = getBlockInfo(pendingBlock);
+          out.println(bInfo
+                  + " StartTime: " + new Time(pendingBlock.getTimeStamp())
+                  + " NumReplicaInProgress: "
+                  + pendingBlock.getNumReplicas());
+        }
       }
     }
+  }
+  
+
+  private boolean isTimedout(PendingBlockInfo pendingBlock) {
+    if (getTimeLimit() > pendingBlock.getTimeStamp()) {
+      return true;
+    }
+    return false;
+  }
+
+  private static long getTimeLimit() {
+    return now() - timeout;
+  }
+
+  private PendingBlockInfo getPendingBlock(Block block) throws PersistanceException {
+    return EntityManager.find(PendingBlockInfo.Finder.ByPKey, block.getBlockId());
+  }
+
+  private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {
+    return (List<PendingBlockInfo>) EntityManager.findList(PendingBlockInfo.Finder.All);
+  }
+
+  private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws PersistanceException {
+    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId());
+  }
+
+  private void addPendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+    EntityManager.add(pbi);
+  }
+
+  private void updatePendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+    EntityManager.update(pbi);
+  }
+
+  private void removePendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+    EntityManager.remove(pbi);
+  }
+  
+  private Block getBlock(final PendingBlockInfo pbi) throws IOException {
+    return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException { 
+        TransactionLocks tl = new TransactionLocks();
+        tl.addBlock(LockType.READ_COMMITTED, pbi.getBlockId());
+        TransactionLockManager lm = new TransactionLockManager(tl); 
+        lm.acquire();
+        return tl;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId());
+        if (block == null) {
+          //this function is called from getTimedOutBlocks
+          //which has already deleted the timeout rows from the table
+            
+          // the block is not found then instead of returning null we have create 
+          // the block and return it. 
+          // Note: we dont have any information other than block id. infuture this
+          // can potentially cause problems
+          block = new Block(pbi.getBlockId());
+        }
+        return block;
+      }
+    }.handle(null);
   }
 }
