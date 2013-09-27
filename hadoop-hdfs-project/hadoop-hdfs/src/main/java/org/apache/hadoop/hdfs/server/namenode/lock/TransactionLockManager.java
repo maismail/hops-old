@@ -1,6 +1,5 @@
 package org.apache.hadoop.hdfs.server.namenode.lock;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -13,14 +12,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
-import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
 //import org.apache.hadoop.hdfs.server.blockmanagement.GenerationStamp;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
-//import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
@@ -32,7 +30,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.Leader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
@@ -342,9 +339,9 @@ public class TransactionLockManager {
       acquireBlockRelatedLock(locks.getUrbLock(), UnderReplicatedBlock.Finder.ByBlockId);
     }
 
-//      if (pbLock != null) {
-//        acquireBlockRelatedLock(pbLock, PendingBlockInfo.Finder.ByPKey);
-//      }
+    if (locks.getPbLock() != null) {
+      acquireBlockRelatedLock(locks.getPbLock(), PendingBlockInfo.Finder.ByPKey);
+    }
 //    }
 
 //    if (blockKeyLock != null) {

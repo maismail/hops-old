@@ -27,7 +27,7 @@ public class StorageFactory {
   private static InvalidateBlockDataAccess invalidateBlockDataAccess;
   private static LeaseDataAccess leaseDataAccess;
   private static LeasePathDataAccess leasePathDataAccess;
-//  private static PendingBlockDataAccess pendingBlockDataAccess;
+  private static PendingBlockDataAccess pendingBlockDataAccess;
   private static ReplicaDataAccess replicaDataAccess;
   private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
   private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
@@ -45,7 +45,7 @@ public class StorageFactory {
     dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
     dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
     dataAccessMap.put(leasePathDataAccess.getClass().getSuperclass(), leasePathDataAccess);
-//    dataAccessMap.put(pendingBlockDataAccess.getClass().getSuperclass(), pendingBlockDataAccess);
+    dataAccessMap.put(pendingBlockDataAccess.getClass().getSuperclass(), pendingBlockDataAccess);
     dataAccessMap.put(replicaDataAccess.getClass().getSuperclass(), replicaDataAccess);
     dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
     dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
@@ -92,7 +92,7 @@ public class StorageFactory {
       invalidateBlockDataAccess = new InvalidatedBlockClusterj();
       leaseDataAccess = new LeaseClusterj();
       leasePathDataAccess = new LeasePathClusterj();
-//      pendingBlockDataAccess = new PendingBlockClusterj();
+      pendingBlockDataAccess = new PendingBlockClusterj();
       replicaDataAccess = new ReplicaClusterj();
       replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
       underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
@@ -116,7 +116,7 @@ public class StorageFactory {
     entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
     entityContexts.put(Lease.class, new LeaseContext(leaseDataAccess));
     entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
-//    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
+    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
     InodeContext inodeContext = new InodeContext(inodeDataAccess);
     entityContexts.put(INode.class, inodeContext);
     entityContexts.put(INodeDirectory.class, inodeContext);
