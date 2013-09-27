@@ -14,8 +14,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_CONNECTOR_STRING_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_KEY;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_NAME;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_NAME_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_NUM_SESSION_FACTORIES;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
@@ -37,10 +37,10 @@ public enum ClusterjConnector implements StorageConnector<Session> {
     }
     NUM_SESSION_FACTORIES = conf.getInt(DFS_DB_NUM_SESSION_FACTORIES, DFSConfigKeys.DFS_DB_NUM_SESSION_FACTORIES_DEFAULT);
     LOG.info("Database connect string: " + conf.get(DFS_DB_CONNECTOR_STRING_KEY, DFS_DB_CONNECTOR_STRING_DEFAULT));
-    LOG.info("Database name: " + conf.get(DFS_DB_DATABASE_KEY, DFS_DB_DATABASE_DEFAULT));
+    LOG.info("Database name: " + conf.get(DFS_DB_DATABASE_NAME, DFS_DB_DATABASE_NAME_DEFAULT));
     Properties p = new Properties();
     p.setProperty("com.mysql.clusterj.connectstring", conf.get(DFS_DB_CONNECTOR_STRING_KEY, DFS_DB_CONNECTOR_STRING_DEFAULT));
-    p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_KEY, DFS_DB_DATABASE_DEFAULT));
+    p.setProperty("com.mysql.clusterj.database", conf.get(DFS_DB_DATABASE_NAME, DFS_DB_DATABASE_NAME_DEFAULT));
     p.setProperty("com.mysql.clusterj.connection.pool.size", String.valueOf(NUM_SESSION_FACTORIES));
     p.setProperty(Constants.PROPERTY_CLUSTER_MAX_TRANSACTIONS, "4");
     sessionFactory = ClusterJHelper.getSessionFactory(p);

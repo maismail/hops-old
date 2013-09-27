@@ -11,6 +11,8 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 //import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager.*;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
@@ -41,7 +43,7 @@ public class TransactionLockAcquirer {
     return false;
   }
 
-  public static <T> Collection<T> acquireLockList(TransactionLockTypes.LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
+  public static <T> Collection<T> acquireLockList(LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
     setLockMode(lock);
     if (param == null) {
       return EntityManager.findList(finder);
@@ -50,7 +52,7 @@ public class TransactionLockAcquirer {
     }
   }
 
-  public static <T> T acquireLock(TransactionLockTypes.LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
+  public static <T> T acquireLock(LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
     setLockMode(lock);
     if (param == null) {
       return null;
@@ -58,7 +60,7 @@ public class TransactionLockAcquirer {
     return EntityManager.find(finder, param);
   }
 
-  public static LinkedList<INode> acquireLockOnRestOfPath(TransactionLockTypes.INodeLockType lock, INode baseInode,
+  public static LinkedList<INode> acquireLockOnRestOfPath(INodeLockType lock, INode baseInode,
           String fullPath, String prefix, boolean resolveLink) throws PersistanceException, UnresolvedPathException {
     LinkedList<INode> resolved = new LinkedList<INode>();
     byte[][] fullComps = INode.getPathComponents(fullPath);
@@ -83,7 +85,7 @@ public class TransactionLockAcquirer {
     return resolved;
   }
 
-  public static LinkedList<INode> acquireInodeLockByPath(TransactionLockTypes.INodeLockType lock, String path, boolean resolveLink) throws UnresolvedPathException, PersistanceException {
+  public static LinkedList<INode> acquireInodeLockByPath(TransactionLocks locks,  String path) throws UnresolvedPathException, PersistanceException {
     LinkedList<INode> resolvedInodes = new LinkedList<INode>();
 
     if (path == null) {
@@ -97,25 +99,29 @@ public class TransactionLockAcquirer {
     boolean lastComp = (count[0] == components.length - 1);
     if (lastComp) // if root is the last directory, we should acquire the write lock over the root
     {
-      resolvedInodes.add(acquireLockOnRoot(lock));
+      resolvedInodes.add(acquireLockOnRoot(locks.getInodeLock(), locks));
       return resolvedInodes;
-    } else if ((count[0] == components.length - 2) && lock == TransactionLockTypes.INodeLockType.WRITE_ON_PARENT) // if Root is the parent
+    } else if ((count[0] == components.length - 2) && locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) // if Root is the parent
     {
-      curNode[0] = acquireLockOnRoot(lock);
+      curNode[0] = acquireLockOnRoot(locks.getInodeLock(),locks);
     } else {
-      curNode[0] = acquireLockOnRoot(TransactionLockTypes.INodeLockType.READ_COMMITED);
+      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITED,locks);
     }
 
     while (count[0] < components.length && curNode[0] != null) {
 
+      INodeLockType curInodeLock = null; 
       // TODO - memcached - primary key lookup for the row.
-      if (((lock == TransactionLockTypes.INodeLockType.WRITE || lock == TransactionLockTypes.INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
-              || (lock == TransactionLockTypes.INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
+      if (((locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
+              || (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
         EntityManager.writeLock(); // if the next p-component is the last one or is the parent (in case of write on parent), acquire the write lock
-      } else if (lock == TransactionLockTypes.INodeLockType.READ_COMMITED) {
+        curInodeLock = INodeLockType.WRITE;
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
         EntityManager.readCommited();
+        curInodeLock = INodeLockType.READ_COMMITED;
       } else {
         EntityManager.readLock();
+        curInodeLock = INodeLockType.READ;
       }
 
       lastComp = INodeUtil.getNextChild(
@@ -123,8 +129,10 @@ public class TransactionLockAcquirer {
               components,
               count,
               resolvedInodes,
-              resolveLink,
+              locks.isResolveLink(),
               true);
+      if(curNode[0] != null)
+      locks.addLockedINodes(curNode[0], curInodeLock);
       if (lastComp) {
         break;
       }
@@ -137,21 +145,26 @@ public class TransactionLockAcquirer {
 
   // TODO - use this method when there's a hit in memcached
   // Jude's verification function
-  public static INode acquireINodeLockById(TransactionLockTypes.INodeLockType lock, long id) throws PersistanceException {
+  public static INode acquireINodeLockById(INodeLockType lock, long id, TransactionLocks locks) throws PersistanceException {
     lockINode(lock);
-    return EntityManager.find(INode.Finder.ByPKey, id);
+    INode inode = EntityManager.find(INode.Finder.ByPKey, id);
+    locks.addLockedINodes(inode, lock);
+    return inode;
   }
 
   public static INode acquireINodeLockByNameAndParentId(
-          TransactionLockTypes.INodeLockType lock,
+          INodeLockType lock,
           String name,
-          long parentId)
+          long parentId,
+          TransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
-    return EntityManager.find(INode.Finder.ByNameAndParentId, name, parentId);
+    INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, name, parentId);
+    locks.addLockedINodes(inode, lock);
+    return inode;
   }
 
-  private static void lockINode(TransactionLockTypes.INodeLockType lock) {
+  private static void lockINode(INodeLockType lock) {
     switch (lock) {
       case WRITE:
       case WRITE_ON_PARENT:
@@ -166,15 +179,16 @@ public class TransactionLockAcquirer {
     }
   }
 
-  private static INode acquireLockOnRoot(TransactionLockTypes.INodeLockType lock) throws PersistanceException {
+  private static INode acquireLockOnRoot(INodeLockType lock, TransactionLocks locks) throws PersistanceException {
 
     lockINode(lock);
     INode inode = EntityManager.find(INode.Finder.ByPKey, 0L);
     LOG.debug("Acquired " + lock + " on the root node");
+    locks.addLockedINodes(inode, lock);
     return inode;
   }
 
-  private static void setLockMode(TransactionLockTypes.LockType mode) {
+  private static void setLockMode(LockType mode) {
     switch (mode) {
       case WRITE:
         EntityManager.writeLock();
@@ -189,34 +203,30 @@ public class TransactionLockAcquirer {
   }
   
    //if path is already resolved then take locks based on primarny keys
-   public static void acquireInodeLockByResolvedPath(TransactionLockTypes.INodeLockType lock, LinkedList<INode> resolvedInodes) throws PersistanceException {
-    
+   public static void acquireInodeLocksByPreTxResolvedIDs(TransactionLocks locks) throws PersistanceException {
+    LinkedList<INode> resolvedInodes = locks.getPreTxResolvedInodes();
     int palthLength = resolvedInodes.size();
     int count = 0;
     boolean lastComp = (count == palthLength - 1);
     
     if (lastComp){ // if root is the last directory, we should acquire the write lock over the root
-      acquireLockOnRoot(lock);
+      acquireLockOnRoot(locks.getInodeLock(), locks);
       return;
-    } else {
-      acquireLockOnRoot(TransactionLockTypes.INodeLockType.READ_COMMITED);
-    }
-    
-    count++;
+    } 
 
+    boolean canTakeParentLock = locks.isPreTxPathFullyResolved(); //if the path is not fully resolved then there is no point in taking strong lock on the penultimate inode
     while (count < palthLength ) {
       if (
               // take write lock on the element if needed
-              ((count == (palthLength -1)) && (lock == TransactionLockTypes.INodeLockType.WRITE || lock == TransactionLockTypes.INodeLockType.WRITE_ON_PARENT))
+              ((count == (palthLength -1)) && (locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT))
               ||
-              // take write lock on the penultimate element if the last element is not dir
-              ((count == (palthLength -2)) && (lock == TransactionLockTypes.INodeLockType.WRITE_ON_PARENT) && !resolvedInodes.get(count+1).isDirectory())
+              ((count == (palthLength -2)) && (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && canTakeParentLock)
           ){
-        acquireINodeLockById(TransactionLockTypes.INodeLockType.WRITE, resolvedInodes.get(count).getId());
-      } else if (lock == TransactionLockTypes.INodeLockType.READ_COMMITED) {
-        acquireINodeLockById(TransactionLockTypes.INodeLockType.READ_COMMITED, resolvedInodes.get(count).getId());
+        acquireINodeLockById(INodeLockType.WRITE, resolvedInodes.get(count).getId(), locks);
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
+        acquireINodeLockById(INodeLockType.READ_COMMITED, resolvedInodes.get(count).getId(),locks);
       } else {
-        acquireINodeLockById(TransactionLockTypes.INodeLockType.READ, resolvedInodes.get(count).getId());
+        acquireINodeLockById(INodeLockType.READ, resolvedInodes.get(count).getId(),locks);
       }
 
       lastComp = (count == (palthLength - 1));

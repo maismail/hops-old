@@ -445,7 +445,7 @@ public class LeaseManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
             String holder = (String) getParams()[0];
             TransactionLocks  lks = new TransactionLocks();
-            lks.addINode(TransactionLockTypes.INodeLockType.WRITE);
+            lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE);
             lks.addBlock(TransactionLockTypes.LockType.WRITE);
             lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
             lks.addNameNodeLease(LockType.WRITE);

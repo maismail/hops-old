@@ -1755,7 +1755,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     TransactionalRequestHandler createSymLinkHandler = new TransactionalRequestHandler(OperationType.CREATE_SYM_LINK) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks  lks = new TransactionLocks(resolvedInodes);
+        TransactionLocks  lks = new TransactionLocks(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
         lks.addINode(
                 TransactionLockTypes.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
                 TransactionLockTypes.INodeLockType.WRITE,
@@ -1776,11 +1776,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
         return null;
       }
-      private LinkedList<INode> resolvedInodes = null;
+      private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
+      private boolean[] isPreTxPathFullyResolved = new boolean[1];
 
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        resolvedInodes = INodeUtil.resolvePathWithNoTransaction(link, resolveLink);
+        INodeUtil.resolvePathWithNoTransaction(link, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
       }
     };
     createSymLinkHandler.handleWithWriteLock(this);
@@ -1975,11 +1976,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FileNotFoundException, ParentNotDirectoryException, IOException {
       final boolean resolveLink = false;
       TransactionalRequestHandler startFileHanlder = new TransactionalRequestHandler(OperationType.START_FILE) {
-          protected LinkedList<INode> resolvedInodes = null; // For the operations requires to have inodes before starting transactions.  
+          protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
+          protected boolean[] isPreTxPathFullyResolved = new boolean[1];
 
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
-              TransactionLocks  lks = new TransactionLocks(resolvedInodes);
+              TransactionLocks  lks = new TransactionLocks(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
               lks.addINode(TransactionLockTypes.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
                       TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src});
               lks.addBlock(TransactionLockTypes.LockType.WRITE);
@@ -2012,7 +2014,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void setUp() throws PersistanceException, IOException {
-              resolvedInodes = INodeUtil.resolvePathWithNoTransaction(src, resolveLink);
+              INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       startFileHanlder.handleWithWriteLock(this);
@@ -3019,7 +3021,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               TransactionLocks  lks = new TransactionLocks();
               lks.addINode(
                       TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                      TransactionLockTypes.INodeLockType.WRITE,
+                      TransactionLockTypes.INodeLockType.WRITE_ON_PARENT,
                       false,
                       new String[]{src, dst});
               lks.addLease(TransactionLockTypes.LockType.WRITE);
@@ -3112,7 +3114,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             public TransactionLocks acquireLock() throws PersistanceException, IOException {
                 TransactionLocks  lks = new TransactionLocks();
                 lks.addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                        TransactionLockTypes.INodeLockType.WRITE, false, new String[]{src, dst});
+                        TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst});
                 lks.addLease(TransactionLockTypes.LockType.WRITE);
                 lks.addLeasePath(TransactionLockTypes.LockType.WRITE);
                 lks.addBlock(TransactionLockTypes.LockType.WRITE);
@@ -3194,7 +3196,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 TransactionLocks  lks = new TransactionLocks();
                 lks.addINode(
                         TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                        TransactionLockTypes.INodeLockType.WRITE,
+                        TransactionLockTypes.INodeLockType.WRITE_ON_PARENT,
                         false,
                         new String[]{src});
                 lks.addLease(TransactionLockTypes.LockType.WRITE);
@@ -3427,10 +3429,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     TransactionalRequestHandler mkdirsHanlder = new TransactionalRequestHandler(OperationType.MKDIRS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks  lks = new TransactionLocks(resolvedINodes);
+        TransactionLocks  lks = new TransactionLocks(preTxResolvedINodes, preTxPathFullyResolved[0]);
         lks.addINode(
                 TransactionLockTypes.INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
-                TransactionLockTypes.INodeLockType.WRITE,
+                TransactionLockTypes.INodeLockType.WRITE_ON_PARENT,
                 resolvedLink,
                 new String[]{src});
         TransactionLockManager tlm = new TransactionLockManager(lks);
@@ -3447,11 +3449,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           throw e;
         }
       }
-      private LinkedList<INode> resolvedINodes = null;
+      private LinkedList<INode> preTxResolvedINodes = new LinkedList<INode>();
+      private boolean[] preTxPathFullyResolved = new boolean[1];
 
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        resolvedINodes = INodeUtil.resolvePathWithNoTransaction(src, resolvedLink);
+        INodeUtil.resolvePathWithNoTransaction(src, resolvedLink, preTxResolvedINodes, preTxPathFullyResolved);
       }
     };
     return (Boolean) mkdirsHanlder.handleWithWriteLock(this);
@@ -3828,11 +3831,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final String[] newtargetstorages)
       throws IOException, UnresolvedLinkException {
       TransactionalRequestHandler commitBlockSyncHanlder = new TransactionalRequestHandler(OperationType.COMMIT_BLOCK_SYNCHRONIZATION) {
-          private LinkedList<INode> resolvedInodes = null;
+          private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
+          private boolean[] isPreTxPathFullyResolved = new boolean[1];
           private long inodeId;
           @Override        
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
-              TransactionLocks  lks = new TransactionLocks(resolvedInodes);
+              TransactionLocks  lks = new TransactionLocks(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
               lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE);
               lks.addBlock(TransactionLockTypes.LockType.WRITE, lastblock.getBlockId());
               lks.addLease(TransactionLockTypes.LockType.WRITE);
@@ -3950,7 +3954,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public void setUp() throws PersistanceException {
               inodeId = INodeUtil.findINodeIdByBlock(lastblock.getBlockId());
-              resolvedInodes = INodeUtil.findPathINodesById(inodeId);
+              INodeUtil.findPathINodesById(inodeId, preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       commitBlockSyncHanlder.handleWithWriteLock(this);   
@@ -5090,7 +5094,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         String holder = ((Lease) getParams()[0]).getHolder();
             TransactionLocks  lks = new TransactionLocks();
-            lks.addINode(TransactionLockTypes.INodeLockType.WRITE);
+            lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE);
             lks.addBlock(TransactionLockTypes.LockType.WRITE);
             lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
             lks.addNameNodeLease(LockType.WRITE);
@@ -5861,20 +5865,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       
       TransactionalRequestHandler listCorruptFileBlocksHandler = new TransactionalRequestHandler(OperationType.LIST_CORRUPT_FILE_BLOCKS) {
-        private LinkedList<INode> resolvedInodes = null;
+        private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
+        private boolean[] isPreTxPathFullyResolved = new boolean[0];
         private long inodeId;
 
         @Override
         public void setUp() throws PersistanceException {
           Block blk = (Block) getParams()[0];
           inodeId = INodeUtil.findINodeIdByBlock(blk.getBlockId());
-          resolvedInodes = INodeUtil.findPathINodesById(inodeId);
+          INodeUtil.findPathINodesById(inodeId, preTxResolvedInodes, isPreTxPathFullyResolved);
         }
 
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           Block blk = (Block) getParams()[0];
-          TransactionLocks  lks = new TransactionLocks(resolvedInodes);
+          TransactionLocks  lks = new TransactionLocks(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           lks.addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
                   addBlock(LockType.READ_COMMITTED, blk.getBlockId()).
                   addReplica(LockType.READ_COMMITTED).

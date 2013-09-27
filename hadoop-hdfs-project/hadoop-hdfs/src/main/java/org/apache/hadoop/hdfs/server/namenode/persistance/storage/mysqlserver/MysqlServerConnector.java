@@ -24,7 +24,6 @@ public enum MysqlServerConnector implements StorageConnector<Connection> {
   private String user;
   private String password;
   private ThreadLocal<Connection> connectionPool = new ThreadLocal<Connection>();
-  public static final String DEFAULT_PASSWORD = "";
   public static final String DRIVER = "com.mysql.jdbc.Driver";
 
   private MysqlServerConnector() {
@@ -33,9 +32,12 @@ public enum MysqlServerConnector implements StorageConnector<Connection> {
 
   @Override
   public void setConfiguration(Configuration conf) {
-    this.protocol = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PROTOCOL_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_PROTOCOL_DEFAULT);
-    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_DEFAULT);
-    this.password = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PASSWORD_KEY, DEFAULT_PASSWORD);
+    String host = conf.get(DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY, DFSConfigKeys.DFS_DB_CONNECTOR_STRING_DEFAULT);
+    String database = conf.get(DFSConfigKeys.DFS_DB_DATABASE_NAME,DFSConfigKeys.DFS_DB_DATABASE_NAME_DEFAULT);
+    String port = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PORT, DFSConfigKeys.DFS_STORAGE_MYSQL_PORT_DEFAULT);
+    this.protocol = "jdbc:mysql://"+ host + ":"+port+"/" + database;
+    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_DEFAULT);
+    this.password = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_PASSWORD, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT);
     loadDriver();
   }
 
