@@ -51,7 +51,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -370,8 +370,8 @@ public class TestBlockManager {
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLocks tl = new TransactionLocks();
+        tl.addINode(INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blockInfo.getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
@@ -380,9 +380,9 @@ public class TestBlockManager {
                 addPendingBlock(LockType.WRITE).
                 addReplicaUc(LockType.WRITE).
                 addInvalidatedBlock(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        TransactionLockManager lm = new TransactionLockManager(tl);  
+        lm.acquireByBlock(inodeId);
+        return tl;
       }
 
       @Override
@@ -402,12 +402,12 @@ public class TestBlockManager {
     return (BlockInfo) new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addBlock(LockType.READ, blkId).
+        TransactionLocks tl = new TransactionLocks();
+        tl.addBlock(LockType.READ, blkId).
            addReplica(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquire();
-        return lks;
+        TransactionLockManager lm = new TransactionLockManager(tl);  
+        lm.acquire();
+        return tl;
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -443,15 +443,14 @@ public class TestBlockManager {
     final BlockCollection bc = Mockito.mock(BlockCollection.class);
     Mockito.doReturn((short)3).when(bc).getBlockReplication();
     final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
-    
     new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addBlock(LockType.WRITE, blockId);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquire();
-        return lks;
+        TransactionLocks tl = new TransactionLocks();
+        tl.addBlock(LockType.WRITE, blockId);
+        TransactionLockManager lm = new TransactionLockManager(tl);  
+        lm.acquire();
+        return tl;
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -463,36 +462,63 @@ public class TestBlockManager {
     return blockInfo;
   }
 
-  private DatanodeDescriptor[] scheduleSingleReplication(Block block) throws IOException {
-    // list for priority 1
-    List<Block> list_p1 = new ArrayList<Block>();
-    list_p1.add(block);
+  private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
+    return (DatanodeDescriptor[]) new TransactionalRequestHandler(OperationType.SCHEDULE_SINGLE_REPLICATION) {
+      long inodeId;
 
-    // list of lists for each priority
-    List<List<Block>> list_all = new ArrayList<List<Block>>();
-    list_all.add(new ArrayList<Block>()); // for priority 0
-    list_all.add(list_p1); // for priority 1
+      @Override
+      public void setUp() throws StorageException {
+        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+      }
 
-    assertEquals("Block not initially pending replication", 0,
-        bm.pendingReplications.getNumReplicas(block));
-    assertEquals(
-        "computeReplicationWork should indicate replication is needed", 1,
-        bm.computeReplicationWorkForBlocks(list_all));
-    assertTrue("replication is pending after work is computed",
-        bm.pendingReplications.getNumReplicas(block) > 0);
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks tl = new TransactionLocks();
+        tl.addINode(INodeLockType.WRITE).
+                addBlock(LockType.WRITE, block.getBlockId()).
+                addReplica(LockType.READ).
+                addExcess(LockType.READ).
+                addCorrupt(LockType.READ).
+                addPendingBlock(LockType.READ).
+                addUnderReplicatedBlock(LockType.WRITE);
+        TransactionLockManager lm = new TransactionLockManager(tl);  
+        lm.acquireByBlock(inodeId);
+        return tl;
+      }
 
-    LinkedListMultimap<DatanodeDescriptor, BlockTargetPair> repls = getAllPendingReplications();
-    assertEquals(1, repls.size());
-    Entry<DatanodeDescriptor, BlockTargetPair> repl =
-      repls.entries().iterator().next();
-        
-    DatanodeDescriptor[] targets = repl.getValue().targets;
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        // list for priority 1
+        List<Block> list_p1 = new ArrayList<Block>();
+        list_p1.add(block);
 
-    DatanodeDescriptor[] pipeline = new DatanodeDescriptor[1 + targets.length];
-    pipeline[0] = repl.getKey();
-    System.arraycopy(targets, 0, pipeline, 1, targets.length);
+        // list of lists for each priority
+        List<List<Block>> list_all = new ArrayList<List<Block>>();
+        list_all.add(new ArrayList<Block>()); // for priority 0
+        list_all.add(list_p1); // for priority 1
 
-    return pipeline;
+        assertEquals("Block not initially pending replication", 0,
+                bm.pendingReplications.getNumReplicas(block));
+        assertEquals(
+                "computeReplicationWork should indicate replication is needed", 1,
+                bm.computeReplicationWorkForBlocks(list_all));
+        assertTrue("replication is pending after work is computed",
+                bm.pendingReplications.getNumReplicas(block) > 0);
+
+        LinkedListMultimap<DatanodeDescriptor, BlockTargetPair> repls = getAllPendingReplications();
+        assertEquals(1, repls.size());
+        Entry<DatanodeDescriptor, BlockTargetPair> repl =
+                repls.entries().iterator().next();
+
+        DatanodeDescriptor[] targets = repl.getValue().targets;
+
+        DatanodeDescriptor[] pipeline = new DatanodeDescriptor[1 + targets.length];
+        pipeline[0] = repl.getKey();
+        System.arraycopy(targets, 0, pipeline, 1, targets.length);
+
+        return pipeline;
+      }
+    }.handle(fsn);
   }
 
   private LinkedListMultimap<DatanodeDescriptor, BlockTargetPair> getAllPendingReplications() {
