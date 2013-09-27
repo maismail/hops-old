@@ -35,16 +35,18 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
   public static final String DFS_STORAGE_DERBY_PROTOCOL_KEY = "dfs.storage.derby.protocol";
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
-  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud11.sics.se";
-  public static final String DFS_DB_DATABASE_KEY = "dfs.dbconnector.database";
-  public static final String DFS_DB_DATABASE_DEFAULT = "hop_salman";
+  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloudX.sics.se";
+  public static final String DFS_DB_DATABASE_NAME = "dfs.dbconnector.database";
+  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_X";
   public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
-  public static final String DFS_STORAGE_MYSQL_PROTOCOL_KEY = "dfs.storage.mysql.protocol";
-  public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
-  public static final String DFS_STORAGE_MYSQL_PASSWORD_KEY = "dfs.storage.mysql.password";
-  public static final String DFS_STORAGE_MYSQL_PROTOCOL_DEFAULT = "jdbc:mysql://"+ DFS_DB_CONNECTOR_STRING_DEFAULT + ":3306/" + DFS_DB_DATABASE_DEFAULT;
-  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hooman";
+  public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user.";
+  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
+  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.user.password";
+  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "";  
+  public static final String DFS_STORAGE_MYSQL_PORT = "dfs.storage.mysql.port";
+  public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3306"; //3308
+  
 
   public static final String DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
