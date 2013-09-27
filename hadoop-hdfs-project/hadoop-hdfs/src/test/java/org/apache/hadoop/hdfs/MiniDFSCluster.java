@@ -105,6 +105,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.mysql.clusterj.Session;
+import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
@@ -113,6 +114,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.Lease
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeasePathClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaUnderConstructionClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.UnderReplicatedBlockClusterj;
 
 /**
  * This class creates a single-process DFS cluster for junit testing.
@@ -2369,6 +2371,7 @@ public class MiniDFSCluster {
           session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
           session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
           session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+          session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
           session.flush();
       } catch (StorageException e) {
           LOG.error(e);

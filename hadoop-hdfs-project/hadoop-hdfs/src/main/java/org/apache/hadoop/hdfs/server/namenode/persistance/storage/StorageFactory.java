@@ -30,7 +30,7 @@ public class StorageFactory {
 //  private static PendingBlockDataAccess pendingBlockDataAccess;
   private static ReplicaDataAccess replicaDataAccess;
   private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
-//  private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
+  private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
 //  private static LeaderDataAccess leaderDataAccess;
 //  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
 //  private static GenerationStampDataAccess generationStampDataAccess;
@@ -48,7 +48,7 @@ public class StorageFactory {
 //    dataAccessMap.put(pendingBlockDataAccess.getClass().getSuperclass(), pendingBlockDataAccess);
     dataAccessMap.put(replicaDataAccess.getClass().getSuperclass(), replicaDataAccess);
     dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
-//    dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
+    dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
 //    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
 //    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
 //    dataAccessMap.put(generationStampDataAccess.getClass().getSuperclass(), generationStampDataAccess);
@@ -95,7 +95,7 @@ public class StorageFactory {
 //      pendingBlockDataAccess = new PendingBlockClusterj();
       replicaDataAccess = new ReplicaClusterj();
       replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
-//      underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
+      underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
 //      leaderDataAccess = new LeaderClusterj();
 //      generationStampDataAccess = new GenerationStampClusterj();
 //      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
@@ -125,7 +125,7 @@ public class StorageFactory {
     entityContexts.put(INodeSymlink.class, inodeContext);
     entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
     entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
-//    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
+    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
 //    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
 //    entityContexts.put(GenerationStamp.class, new GenerationStampContext(generationStampDataAccess));

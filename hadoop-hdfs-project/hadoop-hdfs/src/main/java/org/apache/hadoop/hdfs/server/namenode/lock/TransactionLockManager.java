@@ -22,7 +22,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
 //import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
-//import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
+import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -338,9 +338,9 @@ public class TransactionLockManager {
       acquireReplicasLock(locks.getInvLocks(), InvalidatedBlock.Finder.ByBlockId);
     }
 
-//      if (urbLock != null) {
-//        acquireBlockRelatedLock(urbLock, UnderReplicatedBlock.Finder.ByBlockId);
-//      }
+    if (locks.getUrbLock() != null) {
+      acquireBlockRelatedLock(locks.getUrbLock(), UnderReplicatedBlock.Finder.ByBlockId);
+    }
 
 //      if (pbLock != null) {
 //        acquireBlockRelatedLock(pbLock, PendingBlockInfo.Finder.ByPKey);

@@ -198,7 +198,7 @@ public class NameNodeAdapter {
   /**
    * Return the FSNamesystem stats
    */
-  public static long[] getStats(final FSNamesystem fsn) {
+  public static long[] getStats(final FSNamesystem fsn) throws IOException {
     return fsn.getStats();
   }
   
