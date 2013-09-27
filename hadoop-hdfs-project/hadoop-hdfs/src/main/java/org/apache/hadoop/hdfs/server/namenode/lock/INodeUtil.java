@@ -120,14 +120,16 @@ public class INodeUtil {
     return da.findInodeByNameAndParentId(name, parentId);
   }
 
-  public static LinkedList<INode> resolvePathWithNoTransaction(
+  public static void resolvePathWithNoTransaction(
           String path,
-          boolean resolveLink)
+          boolean resolveLink,
+          LinkedList<INode> preTxResolvedINodes,
+          boolean[] isPathFullyResolved
+          )
           throws UnresolvedPathException, PersistanceException {
-    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
 
     if (path == null) {
-      return resolvedInodes;
+      isPathFullyResolved[0] = false;
     }
 
     byte[][] components = INode.getPathComponents(path);
@@ -137,11 +139,11 @@ public class INodeUtil {
     boolean lastComp = (count[0] == components.length - 1);
     if (lastComp) // if root is the last directory, we should acquire the write lock over the root
     {
-      resolvedInodes.add(getRoot());
-      return resolvedInodes;
+      preTxResolvedINodes.add(getRoot());
+      isPathFullyResolved[0] = true;
     } else {
       curNode[0] = getRoot();
-      resolvedInodes.add(curNode[0]);
+      preTxResolvedINodes.add(curNode[0]);
     }
 
     while (count[0] < components.length && curNode[0] != null) {
@@ -150,15 +152,18 @@ public class INodeUtil {
               curNode,
               components,
               count,
-              resolvedInodes,
+              preTxResolvedINodes,
               resolveLink,
               false);
       if (lastComp) {
         break;
       }
     }
-
-    return resolvedInodes;  
+      if (preTxResolvedINodes.size() != components.length) {
+          isPathFullyResolved[0] = false;
+      } else {
+          isPathFullyResolved[0] = true;
+      }
   }
 
   public static long findINodeIdByBlock(final long blockId) throws StorageException {
@@ -185,16 +190,16 @@ public class INodeUtil {
     return bInfo.getInodeId();
   }
 
-  public static LinkedList<INode> findPathINodesById(long inodeId) throws PersistanceException {
-    LinkedList<INode> pathInodes = new LinkedList<INode>();
+  public static void findPathINodesById(long inodeId,LinkedList<INode> preTxResolvedINodes,boolean[] isPreTxPathFullyResolved) throws PersistanceException {
+        
     if (inodeId != INode.NON_EXISTING_ID) {
       INode inode = readById(inodeId);
       if (inode == null) {
-        return pathInodes;
+        isPreTxPathFullyResolved[0] = false;
       }
-      readFromLeafToRoot(inode, pathInodes);
+      readFromLeafToRoot(inode, preTxResolvedINodes);
     }
-    return pathInodes;
+    isPreTxPathFullyResolved[0] = true;
   }
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {

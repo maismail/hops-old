@@ -395,7 +395,7 @@ public class TransactionLockManager {
           checkPathIsResolved();
           int resolvedSize = locks.getPreTxResolvedInodes().size();
           String existingPath = buildPath(fullPath, resolvedSize);
-          TransactionLockAcquirer.acquireInodeLockByResolvedPath(locks);
+          TransactionLockAcquirer.acquireInodeLocksByPreTxResolvedIDs(locks);
           INode baseDir = locks.getPreTxResolvedInodes().peekLast();
           LinkedList<INode> rest = TransactionLockAcquirer.acquireLockOnRestOfPath(locks.getInodeLock(), baseDir,
                   fullPath, existingPath, locks.isResolveLink());

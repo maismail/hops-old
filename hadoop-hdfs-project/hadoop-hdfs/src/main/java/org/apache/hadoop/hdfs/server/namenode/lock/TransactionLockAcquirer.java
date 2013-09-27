@@ -131,6 +131,7 @@ public class TransactionLockAcquirer {
               resolvedInodes,
               locks.isResolveLink(),
               true);
+      if(curNode[0] != null)
       locks.addLockedINodes(curNode[0], curInodeLock);
       if (lastComp) {
         break;
@@ -202,7 +203,7 @@ public class TransactionLockAcquirer {
   }
   
    //if path is already resolved then take locks based on primarny keys
-   public static void acquireInodeLockByResolvedPath(TransactionLocks locks) throws PersistanceException {
+   public static void acquireInodeLocksByPreTxResolvedIDs(TransactionLocks locks) throws PersistanceException {
     LinkedList<INode> resolvedInodes = locks.getPreTxResolvedInodes();
     int palthLength = resolvedInodes.size();
     int count = 0;
@@ -213,14 +214,13 @@ public class TransactionLockAcquirer {
       return;
     } 
 
-
+    boolean canTakeParentLock = locks.isPreTxPathFullyResolved(); //if the path is not fully resolved then there is no point in taking strong lock on the penultimate inode
     while (count < palthLength ) {
       if (
               // take write lock on the element if needed
               ((count == (palthLength -1)) && (locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT))
               ||
-              // take write lock on the penultimate element if the last element is not dir
-              ((count == (palthLength -2)) && (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && !resolvedInodes.get(count+1).isDirectory())
+              ((count == (palthLength -2)) && (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && canTakeParentLock)
           ){
         acquireINodeLockById(INodeLockType.WRITE, resolvedInodes.get(count).getId(), locks);
       } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {

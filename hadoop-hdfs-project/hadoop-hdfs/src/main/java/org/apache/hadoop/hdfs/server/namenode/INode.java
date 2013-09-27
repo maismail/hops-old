@@ -490,7 +490,12 @@ public abstract class INode implements Comparable<byte[]> {
     if (that == null || !(that instanceof INode)) {
       return false;
     }
-    return Arrays.equals(this.name, ((INode)that).name);
+    if(Arrays.equals(this.name, ((INode)that).name) 
+            && this.id == ((INode)that).id
+            && this.parentId == ((INode)that).parentId){
+        return true;
+    }
+    return false;
   }
 
   @Override

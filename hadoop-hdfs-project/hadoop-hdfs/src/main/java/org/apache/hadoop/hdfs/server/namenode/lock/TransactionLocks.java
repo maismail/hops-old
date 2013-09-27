@@ -25,6 +25,7 @@ public class TransactionLocks {
     private boolean resolveLink = true; // the file is a symlink should it resolve it?
     protected LinkedList<INode> preTxResolvedInodes = null; // For the operations requires to have inodes before starting transactions.
     private HashMap<INode,INodeLockType> allLockedInodesInTx = new HashMap<INode,INodeLockType>();
+    private boolean preTxPathFullyResolved;
     //block
     private LockType blockLock = null;
     private Long blockParam = null;
@@ -99,8 +100,9 @@ public class TransactionLocks {
     public TransactionLocks() {
     }
 
-    public TransactionLocks(LinkedList<INode> resolvedInodes) {
+    public TransactionLocks(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
         this.preTxResolvedInodes = resolvedInodes;
+        this.preTxPathFullyResolved = preTxPathFullyResolved;
     }
 
     private void checkStringParam(Object param) {
@@ -302,10 +304,13 @@ public class TransactionLocks {
        
     public void addLockedINodes(INode inode, INodeLockType lock) {
         allLockedInodesInTx.put(inode, lock);
-        
     }
     
     public INodeLockType getLockedINodeLockType(INode inode) {
        return  allLockedInodesInTx.get(inode);
+    }
+    
+    public boolean isPreTxPathFullyResolved() {
+        return preTxPathFullyResolved;
     }
 }
