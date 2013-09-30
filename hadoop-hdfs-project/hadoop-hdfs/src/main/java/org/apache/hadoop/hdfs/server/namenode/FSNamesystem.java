@@ -5866,7 +5866,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
       TransactionalRequestHandler listCorruptFileBlocksHandler = new TransactionalRequestHandler(OperationType.LIST_CORRUPT_FILE_BLOCKS) {
         private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
-        private boolean[] isPreTxPathFullyResolved = new boolean[0];
+        private boolean[] isPreTxPathFullyResolved = new boolean[1];
         private long inodeId;
 
         @Override
