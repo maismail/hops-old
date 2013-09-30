@@ -23,6 +23,7 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -152,9 +153,7 @@ public class BlockInfo extends Block {
     //if we call get block collection op of that copy then it should return null
 
     BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
-    if((bc == null && this.bc != null) || (bc != null && this.bc == null)){
-        setBlockCollection(bc);
-    }     
+    this.bc = bc; 
     return bc;
   }
   
@@ -162,6 +161,8 @@ public class BlockInfo extends Block {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());      
+    }else{
+      this.inodeId = INode.NON_EXISTING_ID;
     } 
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
