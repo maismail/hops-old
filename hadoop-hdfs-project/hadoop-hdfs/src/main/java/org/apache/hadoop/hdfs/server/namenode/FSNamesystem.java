@@ -3123,6 +3123,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 lks.addReplicaUc(TransactionLockTypes.LockType.WRITE);
                 lks.addUnderReplicatedBlock(TransactionLockTypes.LockType.WRITE);
                 lks.addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
+                lks.addPendingBlock(TransactionLockTypes.LockType.WRITE);
                 TransactionLockManager tlm = new TransactionLockManager(lks);
                 tlm.acquireForRename();
                 return lks;
