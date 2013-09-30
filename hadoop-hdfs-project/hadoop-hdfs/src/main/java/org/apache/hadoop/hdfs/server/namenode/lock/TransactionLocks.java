@@ -303,7 +303,18 @@ public class TransactionLocks {
     }
        
     public void addLockedINodes(INode inode, INodeLockType lock) {
-        allLockedInodesInTx.put(inode, lock);
+        if(inode == null) return ;
+        
+        //snapshot layer will prevent the read from going to db if it has already 
+        //read that row. In a tx you can only read a row once. if you read again then
+        //the snapshot layer will return the  cached value and the lock type will
+        //remain the same as it was set when reading the row for the first time.
+        //So if the lock for a indoe already exist in the hash map then
+        //then there is no need to update the map
+        if(!allLockedInodesInTx.containsKey(inode)){
+            allLockedInodesInTx.put(inode, lock);
+            System.out.println("TX Locks inode id = "+inode.getId()+" has lock "+lock);
+        }
     }
     
     public INodeLockType getLockedINodeLockType(INode inode) {

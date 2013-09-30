@@ -237,47 +237,60 @@ public class TransactionLockManager {
   }
 
   public void acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
-    // TODO[H]: Sort before taking locks.
-    // acuires lock in order
-    String src = locks.getInodeParam()[0];
-    String dst = locks.getInodeParam()[1];
-    if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      INode[] inodeResult1 = acquireInodeLocks(src);
-      INode[] inodeResult2 = acquireInodeLocks(dst);
-      if (allowExistingDir) // In deprecated rename, it allows to move a dir to an existing destination.
-      {
-        LinkedList<INode> dstINodes = TransactionLockAcquirer.acquireInodeLockByPath(locks, dst); // reads from snapshot.
-        byte[][] dstComponents = INode.getPathComponents(dst);
-        byte[][] srcComponents = INode.getPathComponents(src);
-        if (dstINodes.size() == dstComponents.length - 1 && dstINodes.getLast().isDirectory()) {
-          //the dst exist and is a directory.
-          INode existingInode = TransactionLockAcquirer.acquireINodeLockByNameAndParentId(
-                  locks.getInodeLock(),
-                  DFSUtil.bytes2String(srcComponents[srcComponents.length - 1]),
-                  dstINodes.getLast().getId(), locks);
+        // TODO[H]: Sort before taking locks.
+        // acuires lock in order
+
+        byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
+        byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
+
+        if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
+            INode[] inodeResult1 = null;
+            INode[] inodeResult2 = null;
+            //[S] consider src = /a/b/c and dst = /d
+            //during the acquire lock of src write locks will be acquired on parent of c and c
+            //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
+            //layer will not let the request go to the db as it has already cached the root inode
+            //one simple solution is that to acquire lock on the short path first
+            if (srcComponents.length <= dstComponents.length) {
+                inodeResult1 = acquireInodeLocks(locks.getInodeParam()[0]);
+                inodeResult2 = acquireInodeLocks(locks.getInodeParam()[1]);
+            } else {
+                inodeResult2 = acquireInodeLocks(locks.getInodeParam()[1]);
+                inodeResult1 = acquireInodeLocks(locks.getInodeParam()[0]);
+            }
+
+            if (allowExistingDir) // In deprecated rename, it allows to move a dir to an existing destination.
+            {
+                LinkedList<INode> dstINodes = TransactionLockAcquirer.acquireInodeLockByPath(locks, locks.getInodeParam()[1]); // reads from snapshot.  
+                if (dstINodes.size() == dstComponents.length - 1 && dstINodes.getLast().isDirectory()) {
+                    //the dst exist and is a directory.
+                    INode existingInode = TransactionLockAcquirer.acquireINodeLockByNameAndParentId(
+                            locks.getInodeLock(),
+                            DFSUtil.bytes2String(srcComponents[srcComponents.length - 1]),
+                            dstINodes.getLast().getId(), locks);
 //        inodeResult = new INode[inodeResult1.length + inodeResult2.length + 1];
 //        if (existingInode != null & !existingInode.isDirectory()) {
 //          inodeResult[inodeResult.length - 1] = existingInode;
 //        }
+                }
+            }
+            inodeResult = new INode[inodeResult1.length + inodeResult2.length];
+            System.arraycopy(inodeResult1, 0, inodeResult, 0, inodeResult1.length);
+            System.arraycopy(inodeResult2, 0, inodeResult, inodeResult1.length, inodeResult2.length);
         }
-      }
-      inodeResult = new INode[inodeResult1.length + inodeResult2.length];
-      System.arraycopy(inodeResult1, 0, inodeResult, 0, inodeResult1.length);
-      System.arraycopy(inodeResult2, 0, inodeResult, inodeResult1.length, inodeResult2.length);
+
+        if (locks.getBlockLock() != null) {
+            if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
+                throw new RuntimeException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
+            }
+
+            blockResults = acquireBlockLock(locks.getBlockLock(), locks.getBlockParam());
+        }
+
+        acquireLeaseAndLpathLockNormal();
+        acquireBlockRelatedLocksNormal();
+        acquireLeaderLock();
     }
-
-    if (locks.getBlockLock() != null) {
-      if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
-        throw new RuntimeException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
-      }
-
-      blockResults = acquireBlockLock(locks.getBlockLock(), locks.getBlockParam());
-    }
-
-    acquireLeaseAndLpathLockNormal();
-    acquireBlockRelatedLocksNormal();
-    acquireLeaderLock();
-  }
 
   private void acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
