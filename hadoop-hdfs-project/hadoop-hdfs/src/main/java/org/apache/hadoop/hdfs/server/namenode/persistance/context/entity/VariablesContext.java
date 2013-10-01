@@ -19,9 +19,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageExcepti
 public class VariablesContext extends EntityContext<Variable> {
 
   private EnumMap<Variable.Finder, Variable> variables = new EnumMap<Variable.Finder, Variable>(Variable.Finder.class);
- 
   private EnumMap<Variable.Finder, Variable> modifiedVariables = new EnumMap<Variable.Finder, Variable>(Variable.Finder.class);
- 
   private VariablesDataAccess da;
 
   public VariablesContext(VariablesDataAccess da) {
@@ -50,10 +48,10 @@ public class VariablesContext extends EntityContext<Variable> {
   public Variable find(FinderType<Variable> finder, Object... params) throws PersistanceException {
     Variable.Finder varType = (Variable.Finder) finder;
     Variable var = null;
-    if(variables.containsKey(varType)){
+    if (variables.containsKey(varType)) {
       log("find-" + varType.toString(), CacheHitState.HIT);
       var = variables.get(varType);
-    }else{
+    } else {
       log("find-" + varType.toString(), CacheHitState.LOSS);
       aboutToAccessStorage();
       var = da.getVariable(varType);
@@ -69,11 +67,12 @@ public class VariablesContext extends EntityContext<Variable> {
 
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
-    for(Variable.Finder varType : modifiedVariables.keySet()){
-      switch(varType){
+    for (Variable.Finder varType : modifiedVariables.keySet()) {
+      switch (varType) {
         case GenerationStamp:
-          if(lks.getGenerationStampLock() != TransactionLockTypes.LockType.WRITE)
+          if (lks.getGenerationStampLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade generation stamp lock");
+          }
           break;
         default:
       }
@@ -96,8 +95,8 @@ public class VariablesContext extends EntityContext<Variable> {
     modifiedVariables.put(var.getType(), var);
     variables.put(var.getType(), var);
     log(
-        "updated-" + var.getType().toString(),
-        CacheHitState.NA,
-        new String[]{"value", Long.toString(var.getValue())});
+            "updated-" + var.getType().toString(),
+            CacheHitState.NA,
+            new String[]{"value", Long.toString(var.getValue())});
   }
 }
