@@ -1788,7 +1788,8 @@ public class BlockManager {
                 addReplicaUc(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addInvalidatedBlock(LockType.READ).
-                addPendingBlock(LockType.READ);
+                addPendingBlock(LockType.READ).
+                addGenerationStamp(LockType.READ);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
@@ -1885,7 +1886,8 @@ public class BlockManager {
                 addReplicaUc(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addInvalidatedBlock(LockType.READ).
-                addPendingBlock(LockType.READ);
+                addPendingBlock(LockType.READ).
+                addGenerationStamp(LockType.READ);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
@@ -2069,7 +2071,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addBlock(LockType.WRITE, rbi.getBlock().getBlockId()).
                 addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE);
+                addExcess(LockType.WRITE).
+                addGenerationStamp(LockType.READ);
         TransactionLockManager tlm = new TransactionLockManager(lks);
         tlm.acquireByBlock(inodeId);
         return lks;
@@ -2882,7 +2885,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addUnderReplicatedBlock(LockType.WRITE).
+                addGenerationStamp(LockType.READ);
         if (!rdbi.isDeletedBlock()) {
           lks.addPendingBlock(LockType.WRITE).
                   addReplicaUc(LockType.WRITE).
