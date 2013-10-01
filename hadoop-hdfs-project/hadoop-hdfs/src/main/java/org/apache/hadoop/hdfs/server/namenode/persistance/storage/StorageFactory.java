@@ -7,6 +7,8 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
 import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.*;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
@@ -31,9 +33,9 @@ public class StorageFactory {
   private static ReplicaDataAccess replicaDataAccess;
   private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
   private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
+  private static  VariablesDataAccess variablesDataAccess;
 //  private static LeaderDataAccess leaderDataAccess;
 //  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
-//  private static GenerationStampDataAccess generationStampDataAccess;
   private static StorageInfoDataAccess storageInfoDataAccess;
   private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
 
@@ -49,9 +51,9 @@ public class StorageFactory {
     dataAccessMap.put(replicaDataAccess.getClass().getSuperclass(), replicaDataAccess);
     dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
     dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
+    dataAccessMap.put(variablesDataAccess.getClass().getSuperclass(), variablesDataAccess);
 //    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
 //    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
-//    dataAccessMap.put(generationStampDataAccess.getClass().getSuperclass(), generationStampDataAccess);
     dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
   }
 
@@ -60,6 +62,7 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) {
+    Variables.registerDefaultValues();
     String storageType = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY, 
             DFSConfigKeys.DFS_STORAGE_TYPE_DEFAULT);
     if (storageType.equals(DerbyConnector.DERBY_EMBEDDED)
@@ -96,8 +99,8 @@ public class StorageFactory {
       replicaDataAccess = new ReplicaClusterj();
       replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
       underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
+      variablesDataAccess = new VariablesClusterj();
 //      leaderDataAccess = new LeaderClusterj();
-//      generationStampDataAccess = new GenerationStampClusterj();
 //      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
       storageInfoDataAccess = new StorageInfoClusterj();
     }
@@ -126,9 +129,9 @@ public class StorageFactory {
     entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
     entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
     entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
+    entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
 //    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
-//    entityContexts.put(GenerationStamp.class, new GenerationStampContext(generationStampDataAccess));
     return entityContexts;
   }
 

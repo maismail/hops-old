@@ -52,7 +52,7 @@ public abstract class RequestHandler {
     // Block Generationstamp
     GET_GENERATION_STAMP, SET_GENERATION_STAMP,
     //FSNamesystem
-    TOTAL_FILES,GET_STORAGE_INFO, GET_COMPLETE_BLOCKS_TOTAL,
+    TOTAL_FILES,GET_STORAGE_INFO, GET_COMPLETE_BLOCKS_TOTAL, SET_GEN_STAMP,
     //ClusterInfos
     GET_CLUSTER_INFO,
     // NNStorage

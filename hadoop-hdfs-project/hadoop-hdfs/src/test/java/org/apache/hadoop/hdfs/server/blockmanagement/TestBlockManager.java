@@ -379,7 +379,8 @@ public class TestBlockManager {
                 addUnderReplicatedBlock(LockType.WRITE).
                 addPendingBlock(LockType.WRITE).
                 addReplicaUc(LockType.WRITE).
-                addInvalidatedBlock(LockType.READ);
+                addInvalidatedBlock(LockType.READ).
+                addGenerationStamp(LockType.READ);
         TransactionLockManager lm = new TransactionLockManager(tl);  
         lm.acquireByBlock(inodeId);
         return tl;

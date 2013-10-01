@@ -205,8 +205,6 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.LinkedList;
 import java.util.SortedSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
@@ -217,7 +215,6 @@ import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLoc
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
@@ -411,7 +408,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void clear() throws IOException {
     dir.reset();
     dtSecretManager.reset();
-    generationStamp.setStamp(GenerationStamp.FIRST_VALID_STAMP);
+    generationStamp.setStampTx(GenerationStamp.FIRST_VALID_STAMP);
     leaseManager.removeAllLeases();
   }
 
@@ -5494,21 +5491,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Sets the generation stamp for this filesystem
    */
-  void setGenerationStamp(long stamp) {
+  void setGenerationStamp(long stamp) throws PersistanceException {
     generationStamp.setStamp(stamp);
   }
 
   /**
    * Gets the generation stamp for this filesystem
    */
-  long getGenerationStamp() {
+  long getGenerationStamp() throws PersistanceException {
     return generationStamp.getStamp();
   }
 
   /**
    * Increments, logs and then returns the stamp
    */
-  private long nextGenerationStamp() throws SafeModeException, IOException {
+  private long nextGenerationStamp() throws SafeModeException, IOException, PersistanceException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException(
@@ -6435,7 +6432,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   @Override
-  public boolean isGenStampInFuture(long genStamp) {
+  public boolean isGenStampInFuture(long genStamp) throws PersistanceException {
     return (genStamp > getGenerationStamp());
   }
 //HOP  @VisibleForTesting

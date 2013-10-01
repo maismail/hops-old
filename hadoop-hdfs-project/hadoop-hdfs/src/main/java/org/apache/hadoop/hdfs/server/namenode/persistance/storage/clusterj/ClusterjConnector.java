@@ -17,6 +17,7 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_NAME;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_DATABASE_NAME_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DB_NUM_SESSION_FACTORIES;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageConnector;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 
@@ -127,11 +128,13 @@ public enum ClusterjConnector implements StorageConnector<Session> {
 //HOP FIXME      session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
 //HOP FIXME      session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
       session.deletePersistentAll(StorageInfoClusterj.StorageInfoDTO.class);
-//HOP FIXME      session.deletePersistentAll(GenerationStampClusterj.GenerationStampDTO.class);
-//HOP FIXME      GenerationStampClusterj.GenerationStampDTO gs = session.newInstance(GenerationStampClusterj.GenerationStampDTO.class);
-//HOP FIXME      gs.setId(GenerationStampClusterj.COUNTER_ID);
-//HOP FIXME      gs.setCounter(0L);
-//HOP FIXME      session.savePersistent(gs);
+      session.deletePersistentAll(VariablesClusterj.VariableDTO.class);
+      for(Variable.Finder varType : Variable.Finder.values()){
+        VariablesClusterj.VariableDTO vd = session.newInstance(VariablesClusterj.VariableDTO.class);
+        vd.setId(varType.getId());
+        vd.setValue(varType.getDefaultValue());
+        session.savePersistent(vd);
+      }
       tx.commit();
       session.flush();
       return true;
