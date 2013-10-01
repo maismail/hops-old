@@ -2367,8 +2367,8 @@ public class MiniDFSCluster {
   private void deleteReplicasTable(){    
       try {
           Session session = (Session) StorageFactory.getConnector().obtainSession();
-          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+//          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+//          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
           session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
           session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
           session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
