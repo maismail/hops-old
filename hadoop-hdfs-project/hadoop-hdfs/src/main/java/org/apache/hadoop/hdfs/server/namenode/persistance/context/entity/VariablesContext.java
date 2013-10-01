@@ -35,6 +35,7 @@ public class VariablesContext extends EntityContext<Variable> {
 
   @Override
   public void clear() {
+    log("CLEARING THE VARIABLES CONTEXT");
     storageCallPrevented = false;
     variables.clear();
     modifiedVariables.clear();
