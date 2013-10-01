@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
 
 /**
  *
@@ -370,9 +371,9 @@ public class TransactionLockManager {
 //      }
 //    }
 //
-//    if (generationStampLock != null) {
-//      TransactionLockAcquirer.acquireLock(generationStampLock, GenerationStamp.Finder.Counter);
-//    }
+    if (locks.getGenerationStampLock() != null) {
+      TransactionLockAcquirer.acquireLock(locks.getGenerationStampLock(), Variable.Finder.GenerationStamp);
+    }
   }
 
   private INode[] acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {
