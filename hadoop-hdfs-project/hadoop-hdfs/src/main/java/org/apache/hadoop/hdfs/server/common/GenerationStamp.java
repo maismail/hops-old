@@ -17,9 +17,16 @@
  */
 package org.apache.hadoop.hdfs.server.common;
 
-import java.util.concurrent.atomic.AtomicLong;
 
+import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
 
 /****************************************************************
  * A GenerationStamp is a Hadoop FS primitive, identified by a long.
@@ -37,7 +44,7 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
    */
   public static final long GRANDFATHER_GENERATION_STAMP = 0;
 
-  private AtomicLong genstamp = new AtomicLong();
+  private long genstamp;
 
   /**
    * Create a new instance, initialized to FIRST_VALID_STAMP.
@@ -49,35 +56,40 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
   /**
    * Create a new instance, initialized to the specified value.
    */
-  GenerationStamp(long stamp) {
-    genstamp.set(stamp);
+  public GenerationStamp(long stamp) {
+    genstamp = stamp;
   }
 
   /**
    * Returns the current generation stamp
    */
-  public long getStamp() {
-    return genstamp.get();
+  public long getStamp() throws PersistanceException {
+    genstamp = Variables.getGenerationStamp();
+    return genstamp;
   }
 
   /**
    * Sets the current generation stamp
    */
-  public void setStamp(long stamp) {
-    genstamp.set(stamp);
+  public void setStamp(long stamp) throws PersistanceException {
+    genstamp = stamp;
+    Variables.setGenerationStamp(stamp);
   }
 
   /**
    * First increments the counter and then returns the stamp 
    */
-  public long nextStamp() {
-    return genstamp.incrementAndGet();
+  public long nextStamp() throws PersistanceException {
+    genstamp = Variables.getGenerationStamp();
+    genstamp++;
+    Variables.setGenerationStamp(genstamp);
+    return genstamp;
   }
 
   @Override // Comparable
   public int compareTo(GenerationStamp that) {
-    long stamp1 = this.genstamp.get();
-    long stamp2 = that.genstamp.get();
+    long stamp1 = this.genstamp;
+    long stamp2 = that.genstamp;
     return stamp1 < stamp2 ? -1 :
            stamp1 > stamp2 ? 1 : 0;
   }
@@ -92,7 +104,28 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
 
   @Override // Object
   public int hashCode() {
-    long stamp = genstamp.get();
+    long stamp = genstamp;
     return (int) (stamp^(stamp>>>32));
   }
+  
+  //START_HOP_CODE
+  public void setStampTx(final long stamp) throws IOException {
+    new TransactionalRequestHandler(RequestHandler.OperationType.SET_GEN_STAMP) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLocks tlks = new TransactionLocks();
+        tlks.addGenerationStamp(TransactionLockTypes.LockType.WRITE);
+        TransactionLockManager tlm = new TransactionLockManager(tlks);
+        tlm.acquire();
+        return tlks;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        setStamp(stamp);
+        return null;
+      }
+    }.handle(null);
+  }
+  //END_HOP_CODE
 }
