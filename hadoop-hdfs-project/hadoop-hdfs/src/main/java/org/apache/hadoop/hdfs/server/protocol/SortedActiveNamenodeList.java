@@ -22,10 +22,10 @@ import java.util.List;
  *
  * @author jdowling
  */
-public class ActiveNamenodeList {
+public class SortedActiveNamenodeList {
     private List<ActiveNamenode> listActiveNamenodes;
 
-    public ActiveNamenodeList(List<ActiveNamenode> listActiveNamenodes) {
+    public SortedActiveNamenodeList(List<ActiveNamenode> listActiveNamenodes) {
         if (listActiveNamenodes == null) {
             throw new NullPointerException("List of active namenodes was null");
         }
@@ -36,4 +36,32 @@ public class ActiveNamenodeList {
     public List<ActiveNamenode> getListActiveNamenodes() {
         return listActiveNamenodes;
     }
+    
+    public int size(){
+        return listActiveNamenodes.size();
+    }
+    
+    public List<ActiveNamenode> getActiveNamenodes(){
+        return listActiveNamenodes;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("Active Namenodes are ");
+        if(listActiveNamenodes == null || listActiveNamenodes.size() == 0){
+            sb.append(" EMPTY ");
+        }
+        else{
+            for(int i = 0 ; i < listActiveNamenodes.size(); i++)
+            {
+                ActiveNamenode ann = listActiveNamenodes.get(i);
+                sb.append("[ id: "+ann.getId());
+                sb.append(" addr: "+ann.getIpAddress()+":"+ann.getPort());
+                sb.append(" ] ");
+            }
+        }
+        return sb.toString();
+    }
+    
+    
 }

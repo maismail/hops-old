@@ -57,6 +57,7 @@ import org.apache.hadoop.util.VersionUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * A thread per active or standby namenode to perform:
@@ -513,6 +514,13 @@ class BPServiceActor implements Runnable {
         // Every so often, send heartbeat or block-report
         //
         if (startTime - lastHeartbeat > dnConf.heartBeatInterval) {
+            
+          //HOP_START_CODE
+          SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
+
+
+          
+          //HOP_END_CODE
           //
           // All heartbeat messages include following info:
           // -- Datanode name

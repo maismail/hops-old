@@ -61,7 +61,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNameno
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 public class DatanodeProtocolServerSideTranslatorPB implements
     DatanodeProtocolPB {
@@ -258,7 +258,7 @@ public class DatanodeProtocolServerSideTranslatorPB implements
     
     try
     {
-        ActiveNamenodeList anl = impl.getActiveNamenodes();
+        SortedActiveNamenodeList anl = impl.getActiveNamenodes();
         ActiveNamenodeListResponseProto response = PBHelper.convert(anl);
         return response;  
     }catch (IOException e)

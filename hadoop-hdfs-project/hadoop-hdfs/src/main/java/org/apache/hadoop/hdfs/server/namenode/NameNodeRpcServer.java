@@ -124,11 +124,19 @@ import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
+import java.util.SortedMap;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -1110,22 +1118,60 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   
   // HOP_CODE_START
+    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(OperationType.SELECT_ALL_NAMENODES) {
+        @Override
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            TransactionLocks lks = new TransactionLocks();
+            lks.addLeaderLock(LockType.READ_COMMITTED);
+            TransactionLockManager tlm = new TransactionLockManager(lks);
+            tlm.acquire();
+            return lks;
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+            return nn.getLeaderElectionInstance().selectAll();
+        }
+    };
+
     @Override
-    public ActiveNamenodeList getActiveNamenodes() throws IOException {
-       //FIXME. This is dummy code;
-      List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
-      for(int i = 0; i < 5; i++)
-      {
-        ActiveNamenode an = new ActiveNamenode(i,"Host"+i, "192.168.1."+i, (new Random()).nextInt());
-        anl.add(an);
-      }
-      return new ActiveNamenodeList(anl);
+    public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+
+        return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
     }
+    protected volatile int nnIndex = 0;
 
     @Override
     public String getNextNamenodeToSendBlockReport() throws IOException {
-      //FIXME. This is dummy response. 
-      return "Namenode1:192.168.1.1:8080";
+        // Use the modulo to roundrobin b/w namenodes
+        nnIndex++;
+        List<ActiveNamenode> totalNamenodes = ((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
+        nnIndex = nnIndex % totalNamenodes.size();
+        Iterator<ActiveNamenode> iter = totalNamenodes.iterator();
+        int count = nnIndex;
+        while (iter.hasNext()) {
+            if (count == 0) {
+                break;
+            } else {
+                // skip this namenode
+                iter.next();
+                count--;
+            }
+        }
+        // Convert to string format to be passed over RPC
+        if (!iter.hasNext()) {
+            throw new IOException("Something went wrong [nnIndex: " + nnIndex + ", size: " + totalNamenodes.size() + ", count: " + count + "]. Expecting namenode entry");
+        }
+        ActiveNamenode ann = iter.next();
+        String ip_port = ann.getIpAddress()+ ":" + ann.getPort();
+
+        // TODO if i am the leader and I am in safe-mode, then send the block reports
+        // only to me - these are the initial block reports needed to leave safe mode.
+        //    if (nn.isInSafeMode() && nn.isLeader()) {
+        //        ip_port = // my ip-port
+        //    }
+
+        return ip_port;
     }
     //HOP_CODE_END
 }

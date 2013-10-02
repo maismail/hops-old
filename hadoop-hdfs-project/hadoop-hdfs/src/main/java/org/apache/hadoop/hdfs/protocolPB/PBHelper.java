@@ -144,7 +144,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNameno
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * Utilities for converting protobuf classes to and from implementation classes
@@ -1359,14 +1359,14 @@ public class PBHelper {
   }
   
 //HOP_CODE_START
-  public static ActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
+  public static SortedActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
     List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
     List<ActiveNamenodeProto> anlp = p.getNamenodesList();
     for (int i = 0; i < anlp.size(); i++) {
       ActiveNamenode an = PBHelper.convert(anlp.get(i));
       anl.add(an);
     }
-    return new ActiveNamenodeList(anl);
+    return new SortedActiveNamenodeList(anl);
   }
   
   public static ActiveNamenode convert(ActiveNamenodeProto p)
@@ -1386,7 +1386,7 @@ public class PBHelper {
     return anp.build();
   }
   
-  public static ActiveNamenodeListResponseProto convert(ActiveNamenodeList anlWrapper)
+  public static ActiveNamenodeListResponseProto convert(SortedActiveNamenodeList anlWrapper)
   {
     List<ActiveNamenode> anl = anlWrapper.getListActiveNamenodes();
     ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();

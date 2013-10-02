@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
+import java.util.StringTokenizer;
 import java.util.TreeMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -19,6 +20,8 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.net.NetUtils;
 
 /**
@@ -185,7 +188,7 @@ public class LeaderElection extends Thread {
 
   /* The function that returns the list of actively running NNs */
   //--------------------------------------------------------------------------------------------------------------
-  SortedMap<Long, InetSocketAddress> selectAll() throws IOException, PersistanceException {
+  SortedActiveNamenodeList selectAll() throws IOException, PersistanceException {
     return getActiveNamenodes();
   }
 
@@ -270,7 +273,7 @@ public class LeaderElection extends Thread {
     return minId;
   }
 
-  public SortedMap<Long, InetSocketAddress> getActiveNamenodes() throws PersistanceException, IOException {
+  public SortedActiveNamenodeList getActiveNamenodes() throws PersistanceException, IOException {
     // get max counter and total namenode count
     long maxCounter = getLeaderRowCount();
     int totalNamenodes = getAllNamenodesInternal().size();
@@ -279,13 +282,18 @@ public class LeaderElection extends Thread {
     List<Leader> nns = getActiveNamenodesInternal(maxCounter, totalNamenodes);
 
     // Order by id
-    SortedMap<Long, InetSocketAddress> activennMap = new TreeMap<Long, InetSocketAddress>();
+    List<ActiveNamenode> activeNameNodeList = new ArrayList<ActiveNamenode>();    
     for (Leader l : nns) {
-      InetSocketAddress addr = NetUtils.createSocketAddr(l.getHostName());
-      activennMap.put(l.getId(), addr);
+      String hostNameNPort = l.getHostName();
+      StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
+      String hostName = st.nextToken();
+      int port = Integer.parseInt(st.nextToken());
+      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
+      activeNameNodeList.add(ann);
     }
-
-    return activennMap;
+    
+    SortedActiveNamenodeList sortedNNList = new SortedActiveNamenodeList(activeNameNodeList);
+    return sortedNNList;
   }
 
   public void removePrevoiouslyElectedLeaders(long id) throws PersistanceException {

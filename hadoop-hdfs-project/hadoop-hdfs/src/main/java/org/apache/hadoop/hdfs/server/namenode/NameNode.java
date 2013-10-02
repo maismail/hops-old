@@ -261,7 +261,7 @@ public class NameNode {
   
   //START_HOP_CODE
   private long id = LeaderElection.LEADER_INITIALIZATION_ID;
-  protected LeaderElection leaderAlgo;
+  protected LeaderElection leaderElection;
   //END_HOP_CODE
 
   /** Format a new filesystem.  Destroys any filesystem that may already
@@ -449,8 +449,8 @@ public class NameNode {
     
     //START_HOP_CODE
     // Initialize the leader election algorithm (only once rpc server is created)
-    leaderAlgo = new LeaderElection(conf, this);
-    leaderAlgo.initialize();
+    leaderElection = new LeaderElection(conf, this);
+    leaderElection.initialize();
     //END_HOP_CODE
     
     try {
@@ -1529,7 +1529,7 @@ public class NameNode {
    * @return {@link LeaderElection} object.
    */
   public LeaderElection getLeaderElectionInstance() {
-    return leaderAlgo;
+    return leaderElection;
   }
 
   /**

@@ -75,7 +75,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNameno
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * This class is the client side translator to translate the requests made on
@@ -303,12 +303,12 @@ public class DatanodeProtocolClientSideTranslatorPB implements
 
   //START_HOP_CODE
   @Override
-  public ActiveNamenodeList getActiveNamenodes() throws IOException {
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
 
     try {
       ActiveNamenodeListRequestProto.Builder request = ActiveNamenodeListRequestProto.newBuilder();
       ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodes(NULL_CONTROLLER, request.build());
-      ActiveNamenodeList anl = PBHelper.convert(response);
+      SortedActiveNamenodeList anl = PBHelper.convert(response);
       return anl;
     } catch (ServiceException se) {
       throw ProtobufHelper.getRemoteException(se);

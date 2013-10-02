@@ -167,7 +167,7 @@ public interface DatanodeProtocol {
    * The datanodes periodically asks the leader namenode for the list of
    * actively running namenodes
    */
-  public ActiveNamenodeList getActiveNamenodes() throws IOException;
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException;
 
   /**
    * The BPOfferService that corresponds to the leader Namenode asks it which
