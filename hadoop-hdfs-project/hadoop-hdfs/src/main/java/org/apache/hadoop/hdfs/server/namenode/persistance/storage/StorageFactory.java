@@ -35,7 +35,7 @@ public class StorageFactory {
   private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
   private static  VariablesDataAccess variablesDataAccess;
 //  private static LeaderDataAccess leaderDataAccess;
-//  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
+  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
   private static StorageInfoDataAccess storageInfoDataAccess;
   private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
 
@@ -53,7 +53,7 @@ public class StorageFactory {
     dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
     dataAccessMap.put(variablesDataAccess.getClass().getSuperclass(), variablesDataAccess);
 //    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
-//    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
+    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
     dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
   }
 
@@ -101,7 +101,7 @@ public class StorageFactory {
       underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
       variablesDataAccess = new VariablesClusterj();
 //      leaderDataAccess = new LeaderClusterj();
-//      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
+      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
       storageInfoDataAccess = new StorageInfoClusterj();
     }
 
@@ -131,7 +131,7 @@ public class StorageFactory {
     entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
     entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
 //    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
-//    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
+    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
     return entityContexts;
   }
 
