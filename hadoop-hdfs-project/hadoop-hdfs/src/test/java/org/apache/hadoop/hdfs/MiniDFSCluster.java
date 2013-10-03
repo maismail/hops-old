@@ -109,6 +109,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockTokenKeyClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeasePathClusterj;
@@ -2372,6 +2373,7 @@ public class MiniDFSCluster {
           session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
           session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
           session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
+          session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
           session.flush();
       } catch (StorageException e) {
           LOG.error(e);
