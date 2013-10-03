@@ -82,6 +82,8 @@ import org.mockito.stubbing.Answer;
 import com.google.protobuf.BlockingService;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /** Unit tests for block tokens */
 public class TestBlockToken {
@@ -106,10 +108,12 @@ public class TestBlockToken {
   ExtendedBlock block3 = new ExtendedBlock("-10", -108L);
   
   @Before
-  public void disableKerberos() {
+  public void disableKerberos() throws StorageException {
     Configuration conf = new Configuration();
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "simple");
     UserGroupInformation.setConfiguration(conf);
+    StorageFactory.setConfiguration(conf);
+    resetStorage();
   }
 
   private static class GetLengthAnswer implements
@@ -161,8 +165,8 @@ public class TestBlockToken {
   @Test
   public void testWritable() throws Exception {
     TestWritable.testWritable(new BlockTokenIdentifier());
-    BlockTokenSecretManager sm = new BlockTokenSecretManager(
-        blockKeyUpdateInterval, blockTokenLifetime, 0, "fake-pool", null);
+    BlockTokenSecretManager sm = new NameNodeBlockTokenSecretManager(
+        blockKeyUpdateInterval, blockTokenLifetime, true, "fake-pool", null);
     TestWritable.testWritable(generateTokenId(sm, block1,
         EnumSet.allOf(BlockTokenSecretManager.AccessMode.class)));
     TestWritable.testWritable(generateTokenId(sm, block2,
@@ -200,8 +204,8 @@ public class TestBlockToken {
   /** test block key and token handling */
   @Test
   public void testBlockTokenSecretManager() throws Exception {
-    BlockTokenSecretManager masterHandler = new BlockTokenSecretManager(
-        blockKeyUpdateInterval, blockTokenLifetime, 0, "fake-pool", null);
+    BlockTokenSecretManager masterHandler = new NameNodeBlockTokenSecretManager(
+        blockKeyUpdateInterval, blockTokenLifetime, true, "fake-pool", null);
     BlockTokenSecretManager slaveHandler = new BlockTokenSecretManager(
         blockKeyUpdateInterval, blockTokenLifetime, "fake-pool", null);
     ExportedBlockKeys keys = masterHandler.exportKeys();
@@ -242,8 +246,8 @@ public class TestBlockToken {
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "kerberos");
     UserGroupInformation.setConfiguration(conf);
     
-    BlockTokenSecretManager sm = new BlockTokenSecretManager(
-        blockKeyUpdateInterval, blockTokenLifetime, 0, "fake-pool", null);
+    BlockTokenSecretManager sm = new NameNodeBlockTokenSecretManager(
+        blockKeyUpdateInterval, blockTokenLifetime, true, "fake-pool", null);
     Token<BlockTokenIdentifier> token = sm.generateToken(block3,
         EnumSet.allOf(BlockTokenSecretManager.AccessMode.class));
 
@@ -281,8 +285,8 @@ public class TestBlockToken {
     UserGroupInformation.setConfiguration(conf);
     
     Assume.assumeTrue(FD_DIR.exists());
-    BlockTokenSecretManager sm = new BlockTokenSecretManager(
-        blockKeyUpdateInterval, blockTokenLifetime, 0, "fake-pool", null);
+    BlockTokenSecretManager sm = new NameNodeBlockTokenSecretManager(
+        blockKeyUpdateInterval, blockTokenLifetime, true, "fake-pool", null);
     Token<BlockTokenIdentifier> token = sm.generateToken(block3,
         EnumSet.allOf(BlockTokenSecretManager.AccessMode.class));
 
@@ -350,8 +354,8 @@ public class TestBlockToken {
     // Test BlockPoolSecretManager with upto 10 block pools
     for (int i = 0; i < 10; i++) {
       String bpid = Integer.toString(i);
-      BlockTokenSecretManager masterHandler = new BlockTokenSecretManager(
-          blockKeyUpdateInterval, blockTokenLifetime, 0, "fake-pool", null);
+      BlockTokenSecretManager masterHandler = new NameNodeBlockTokenSecretManager(
+          blockKeyUpdateInterval, blockTokenLifetime, true, "fake-pool", null);
       BlockTokenSecretManager slaveHandler = new BlockTokenSecretManager(
           blockKeyUpdateInterval, blockTokenLifetime, "fake-pool", null);
       bpMgr.addBlockPool(bpid, slaveHandler);
@@ -366,6 +370,7 @@ public class TestBlockToken {
       keys = masterHandler.exportKeys();
       bpMgr.addKeys(bpid, keys);
       tokenGenerationAndVerification(masterHandler, bpMgr.get(bpid));
+      resetStorage();
     }
   }
 
@@ -407,5 +412,9 @@ public class TestBlockToken {
     } finally {
       cluster.shutdown();
     }
+  }
+  
+  private void resetStorage() throws StorageException{
+    StorageFactory.getConnector().formatStorage();
   }
 }
