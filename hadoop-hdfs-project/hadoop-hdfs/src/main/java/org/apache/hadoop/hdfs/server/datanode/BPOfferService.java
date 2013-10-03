@@ -118,12 +118,20 @@ class BPOfferService {
     }
     Set<InetSocketAddress> newAddrs = Sets.newHashSet(addrs);
     
-    if (!Sets.symmetricDifference(oldAddrs, newAddrs).isEmpty()) {
-      // Keep things simple for now -- we can implement this at a later date.
-      throw new IOException(
-          "HA does not currently support adding a new standby to a running DN. " +
-          "Please do a rolling restart of DNs to reconfigure the list of NNs.");
-    }
+    //START_HOP_CODE
+//HOP    if (!Sets.symmetricDifference(oldAddrs, newAddrs).isEmpty()) {
+//      // Keep things simple for now -- we can implement this at a later date.
+//      throw new IOException(
+//          "HA does not currently support adding a new standby to a running DN. " +
+//          "Please do a rolling restart of DNs to reconfigure the list of NNs.");
+//    }
+    //TODO[S]
+    // stop the dead threads 
+    
+    
+    // start threads for new NNs
+    
+    //END_HOP_CODE
   }
 
   /**
@@ -499,6 +507,9 @@ class BPOfferService {
 
   synchronized boolean processCommandFromActor(DatanodeCommand cmd,
       BPServiceActor actor) throws IOException {
+    //TODO[S] remove this check . you can receive the commands from any NN 
+    //check the command types 
+      
     assert bpServices.contains(actor);
     if (actor == bpServiceToActive) {
       return processCommandFromActive(cmd, actor);

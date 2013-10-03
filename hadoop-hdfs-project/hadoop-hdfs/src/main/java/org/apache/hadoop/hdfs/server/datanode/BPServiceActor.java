@@ -96,6 +96,7 @@ class BPServiceActor implements Runnable {
    * keyed by block ID, contains the pending changes which have yet to be
    * reported to the NN. Access should be synchronized on this object.
    */
+  //TODO[S] only once actor shoudl send this to the leader NN
   private final Map<Long, ReceivedDeletedBlockInfo> pendingIncrementalBR 
     = Maps.newHashMap();
   
@@ -516,6 +517,7 @@ class BPServiceActor implements Runnable {
         if (startTime - lastHeartbeat > dnConf.heartBeatInterval) {
             
           //HOP_START_CODE
+          //TODO [S]
           SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
 
 
