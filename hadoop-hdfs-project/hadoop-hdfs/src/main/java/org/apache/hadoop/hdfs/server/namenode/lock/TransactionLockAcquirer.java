@@ -459,6 +459,10 @@ public class TransactionLockAcquirer {
     if (locks.getGenerationStampLock() != null) {
       acquireLock(locks.getGenerationStampLock(), Variable.Finder.GenerationStamp);
     }
+
+    if (locks.getBlockIdCounterLock() != null) {
+      acquireLock(locks.getBlockIdCounterLock(), Variable.Finder.BlockID);
+    }
   }
 
   private INode[] acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {

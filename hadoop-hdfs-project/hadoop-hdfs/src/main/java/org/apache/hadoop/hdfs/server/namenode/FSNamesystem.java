@@ -2448,7 +2448,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addCorrupt(LockType.WRITE).
                       addExcess(LockType.WRITE).
                       addReplicaUc(LockType.WRITE).
-                      addGenerationStamp(LockType.WRITE);
+                      addGenerationStamp(LockType.WRITE).
+                      addBlockIdCounter(LockType.WRITE);
               return tla.acquire();
             }
 
@@ -2908,7 +2909,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   Block createNewBlock() throws IOException, PersistanceException {
     assert hasWriteLock();
-    Block b = new Block(HOPBlockIDGen.getUniqueBlockId(this), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
+    Block b = new Block(HOPBlockIDGen.getUniqueBlockId(), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
     nextGenerationStamp();
     b.setGenerationStampNoPersistance(getGenerationStamp());

@@ -15,7 +15,8 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import org.apache.hadoop.util.IdGenerator;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
 
 /**
  *
@@ -24,9 +25,12 @@ import org.apache.hadoop.util.IdGenerator;
  * this function was previously in FSImage.java.
  *
  */
-public class HOPBlockIDGen {
+public class HOPBlockIDGen{
 
-  public static long getUniqueBlockId(FSNamesystem fsn) {
-    return (new RandomBlockIdGenerator(fsn)).nextValue();
+  public static long getUniqueBlockId() throws PersistanceException {
+    long lastBlockId = Variables.getBlockId();
+    lastBlockId++;
+    Variables.setBlockId(lastBlockId);
+    return lastBlockId;
   }
 }

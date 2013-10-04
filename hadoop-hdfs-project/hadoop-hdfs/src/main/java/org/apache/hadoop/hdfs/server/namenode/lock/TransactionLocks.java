@@ -54,6 +54,8 @@ public class TransactionLocks {
   private List<Short> blockKeyTypes = null;
   // block generation stamp
   private LockType generationStampLock = null;
+  //block id counter 
+  private LockType blockIdCounterLock = null;
   // Leader
   private LockType leaderLock = null;
   private long[] leaderIds = null;
@@ -187,6 +189,11 @@ public class TransactionLocks {
     return this;
   }
 
+  public TransactionLocks addBlockIdCounter(LockType lock) {
+    this.blockIdCounterLock = lock;
+    return this;
+  }
+
   /**
    * Lock on block token key data.
    *
@@ -282,6 +289,10 @@ public class TransactionLocks {
 
   public LockType getGenerationStampLock() {
     return generationStampLock;
+  }
+
+  public LockType getBlockIdCounterLock() {
+    return blockIdCounterLock;
   }
 
   public LockType getLeaderLock() {
