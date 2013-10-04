@@ -34,13 +34,8 @@ public class StorageFactory {
   private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
   private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
   private static  VariablesDataAccess variablesDataAccess;
-<<<<<<< HEAD
   private static LeaderDataAccess leaderDataAccess;
-//  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
-=======
-//  private static LeaderDataAccess leaderDataAccess;
   private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
->>>>>>> master
   private static StorageInfoDataAccess storageInfoDataAccess;
   private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
 
@@ -57,13 +52,8 @@ public class StorageFactory {
     dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
     dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
     dataAccessMap.put(variablesDataAccess.getClass().getSuperclass(), variablesDataAccess);
-<<<<<<< HEAD
     dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
-//    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
-=======
-//    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
     dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
->>>>>>> master
     dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
   }
 
@@ -110,13 +100,8 @@ public class StorageFactory {
       replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
       underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
       variablesDataAccess = new VariablesClusterj();
-<<<<<<< HEAD
       leaderDataAccess = new LeaderClusterj();
-//      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
-=======
-//      leaderDataAccess = new LeaderClusterj();
       blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
->>>>>>> master
       storageInfoDataAccess = new StorageInfoClusterj();
     }
 
@@ -145,13 +130,8 @@ public class StorageFactory {
     entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
     entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
     entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
-<<<<<<< HEAD
     entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
-//    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
-=======
-//    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
     entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
->>>>>>> master
     return entityContexts;
   }
 
