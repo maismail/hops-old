@@ -118,6 +118,9 @@ public class BlockManager {
   private final HeartbeatManager heartbeatManager;
   private final BlockTokenSecretManager blockTokenSecretManager;
   
+  //HOP: This data structre is not used in HOPS. It is possible that the secondary NN
+  //falls behind the primarny NN and receive a block with generation stamp in future.
+  //in that case the block in put in the pending dn message queue for delayed processing.
   private final PendingDataNodeMessages pendingDNMessages =
     new PendingDataNodeMessages();
 
