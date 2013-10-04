@@ -61,7 +61,7 @@ public class BlockTokenSecretManager extends
   
   public static final Token<BlockTokenIdentifier> DUMMY_TOKEN = new Token<BlockTokenIdentifier>();
 
-  private final boolean isMaster;
+  protected final boolean isMaster;
   private int nnIndex;
   
   /**
@@ -69,16 +69,16 @@ public class BlockTokenSecretManager extends
    * be set long enough so that all live DN's and Balancer should have sync'ed
    * their block keys with NN at least once during each interval.
    */
-  private long keyUpdateInterval;
-  private volatile long tokenLifetime;
-  private int serialNo;
-  private BlockKey currentKey;
-  private BlockKey nextKey;
+  protected long keyUpdateInterval;
+  protected volatile long tokenLifetime;
+  protected int serialNo;
+  protected BlockKey currentKey;
+  protected BlockKey nextKey;
   private Map<Integer, BlockKey> allKeys;
-  private String blockPoolId;
-  private String encryptionAlgorithm;
+  protected String blockPoolId;
+  protected String encryptionAlgorithm;
   
-  private SecureRandom nonceGenerator = new SecureRandom();
+  protected SecureRandom nonceGenerator = new SecureRandom();
 
   public static enum AccessMode {
     READ, WRITE, COPY, REPLACE
@@ -105,7 +105,7 @@ public class BlockTokenSecretManager extends
    * @param thisNnId the NN ID of this NN in an HA setup
    * @param otherNnId the NN ID of the other NN in an HA setup
    */
-  public BlockTokenSecretManager(long keyUpdateInterval,
+  private BlockTokenSecretManager(long keyUpdateInterval,
       long tokenLifetime, int nnIndex, String blockPoolId,
       String encryptionAlgorithm) {
     this(true, keyUpdateInterval, tokenLifetime, blockPoolId,
@@ -116,7 +116,7 @@ public class BlockTokenSecretManager extends
     generateKeys();
   }
   
-  private BlockTokenSecretManager(boolean isMaster, long keyUpdateInterval,
+  protected BlockTokenSecretManager(boolean isMaster, long keyUpdateInterval,
       long tokenLifetime, String blockPoolId, String encryptionAlgorithm) {
     this.isMaster = isMaster;
     this.keyUpdateInterval = keyUpdateInterval;
@@ -163,7 +163,7 @@ public class BlockTokenSecretManager extends
   }
 
   /** Export block keys, only to be used in master mode */
-  public synchronized ExportedBlockKeys exportKeys() {
+  public synchronized ExportedBlockKeys exportKeys() throws IOException{
     if (!isMaster)
       return null;
     if (LOG.isDebugEnabled())
@@ -305,7 +305,7 @@ public class BlockTokenSecretManager extends
     }
   }
 
-  private static boolean isExpired(long expiryDate) {
+  protected static boolean isExpired(long expiryDate) {
     return Time.now() > expiryDate;
   }
 
@@ -393,7 +393,7 @@ public class BlockTokenSecretManager extends
    * @return a data encryption key which may be used to encrypt traffic
    *         over the DataTransferProtocol
    */
-  public DataEncryptionKey generateDataEncryptionKey() {
+  public DataEncryptionKey generateDataEncryptionKey()  throws IOException {
     byte[] nonce = new byte[8];
     nonceGenerator.nextBytes(nonce);
     BlockKey key = null;

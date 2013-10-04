@@ -12,10 +12,10 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
-//import org.apache.hadoop.hdfs.server.blockmanagement.GenerationStamp;
 import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
@@ -358,19 +358,19 @@ public class TransactionLockManager {
     }
 //    }
 
-//    if (blockKeyLock != null) {
-//      if (blockKeyIds != null) {
-//        for (int id : blockKeyIds) {
-//          TransactionLockAcquirer.acquireLock(blockKeyLock, BlockKey.Finder.ById, id);
-//        }
-//      }
-//      if (blockKeyTypes != null) {
-//        for (short type : blockKeyTypes) {
-//          TransactionLockAcquirer.acquireLock(blockKeyLock, BlockKey.Finder.ByType, type);
-//        }
-//      }
-//    }
-//
+    if (locks.getBlockKeyLock() != null) {
+      if (locks.getBlockKeyIds() != null) {
+        for (int id : locks.getBlockKeyIds()) {
+          TransactionLockAcquirer.acquireLock(locks.getBlockKeyLock(), BlockKey.Finder.ById, id);
+        }
+      }
+      if (locks.getBlockKeyTypes() != null) {
+        for (short type : locks.getBlockKeyTypes()) {
+          TransactionLockAcquirer.acquireLock(locks.getBlockKeyLock(), BlockKey.Finder.ByType, type);
+        }
+      }
+    }
+
     if (locks.getGenerationStampLock() != null) {
       TransactionLockAcquirer.acquireLock(locks.getGenerationStampLock(), Variable.Finder.GenerationStamp);
     }

@@ -126,7 +126,7 @@ public enum ClusterjConnector implements StorageConnector<Session> {
       session.deletePersistentAll(CorruptReplicaClusterj.CorruptReplicaDTO.class);
       session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
 //HOP FIXME      session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
-//HOP FIXME      session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
+      session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
       session.deletePersistentAll(StorageInfoClusterj.StorageInfoDTO.class);
       session.deletePersistentAll(VariablesClusterj.VariableDTO.class);
       for(Variable.Finder varType : Variable.Finder.values()){

@@ -78,6 +78,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.hdfs.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
@@ -116,7 +117,7 @@ public class BlockManager {
 
   private final DatanodeManager datanodeManager;
   private final HeartbeatManager heartbeatManager;
-  private final BlockTokenSecretManager blockTokenSecretManager;
+  private final NameNodeBlockTokenSecretManager blockTokenSecretManager;
   
   //HOP: This data structre is not used in HOPS. It is possible that the secondary NN
   //falls behind the primarny NN and receive a block with generation stamp in future.
@@ -320,8 +321,8 @@ public class BlockManager {
     LOG.info("encryptDataTransfer        = " + encryptDataTransfer);
   }
 
-  private static BlockTokenSecretManager createBlockTokenSecretManager(
-      final Configuration conf) {
+  private static NameNodeBlockTokenSecretManager createBlockTokenSecretManager(
+      final Configuration conf) throws IOException {
     final boolean isEnabled = conf.getBoolean(
         DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, 
         DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_DEFAULT);
@@ -346,19 +347,23 @@ public class BlockManager {
         + DFSConfigKeys.DFS_DATA_ENCRYPTION_ALGORITHM_KEY
         + "=" + encryptionAlgorithm);
     
-    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
-    boolean isHaEnabled = HAUtil.isHAEnabled(conf, nsId);
-
-    if (isHaEnabled) {
-      String thisNnId = HAUtil.getNameNodeId(conf, nsId);
-      String otherNnId = HAUtil.getNameNodeIdOfOtherNode(conf, nsId);
-      return new BlockTokenSecretManager(updateMin*60*1000L,
-          lifetimeMin*60*1000L, thisNnId.compareTo(otherNnId) < 0 ? 0 : 1, null,
-          encryptionAlgorithm);
-    } else {
-      return new BlockTokenSecretManager(updateMin*60*1000L,
-          lifetimeMin*60*1000L, 0, null, encryptionAlgorithm);
-    }
+//    String nsId = DFSUtil.getNamenodeNameServiceId(conf);
+//    boolean isHaEnabled = HAUtil.isHAEnabled(conf, nsId);
+//
+//    if (isHaEnabled) {
+//      String thisNnId = HAUtil.getNameNodeId(conf, nsId);
+//      String otherNnId = HAUtil.getNameNodeIdOfOtherNode(conf, nsId);
+//      return new BlockTokenSecretManager(updateMin*60*1000L,
+//          lifetimeMin*60*1000L, thisNnId.compareTo(otherNnId) < 0 ? 0 : 1, null,
+//          encryptionAlgorithm);
+//    } else {
+//      return new BlockTokenSecretManager(updateMin*60*1000L,
+//          lifetimeMin*60*1000L, 0, null, encryptionAlgorithm);
+//    }
+    //FIXME:
+    boolean isLeader = true;
+    return new NameNodeBlockTokenSecretManager(updateMin*60*1000L,
+           lifetimeMin*60*1000L, isLeader, null, encryptionAlgorithm);
   }
   
   public void setBlockPoolId(String blockPoolId) {
@@ -827,7 +832,7 @@ public class BlockManager {
   }
 
   /** @return current access keys. */
-  public ExportedBlockKeys getBlockKeys() {
+  public ExportedBlockKeys getBlockKeys() throws IOException {
     return isBlockTokenEnabled()? blockTokenSecretManager.exportKeys()
         : ExportedBlockKeys.DUMMY_KEYS;
   }
@@ -842,7 +847,7 @@ public class BlockManager {
   }
 
   void addKeyUpdateCommand(final List<DatanodeCommand> cmds,
-      final DatanodeDescriptor nodeinfo) {
+      final DatanodeDescriptor nodeinfo) throws IOException {
     // check access key update
     if (isBlockTokenEnabled() && nodeinfo.needKeyUpdate) {
       cmds.add(new KeyUpdateCommand(blockTokenSecretManager.exportKeys()));
@@ -850,7 +855,7 @@ public class BlockManager {
     }
   }
   
-  public DataEncryptionKey generateDataEncryptionKey() {
+  public DataEncryptionKey generateDataEncryptionKey() throws IOException {
     if (isBlockTokenEnabled() && encryptDataTransfer) {
       return blockTokenSecretManager.generateDataEncryptionKey();
     } else {
@@ -3697,6 +3702,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return null;
       }
     }.handle(namesystem);
+  }
+  
+  public void updateLeaderState(boolean isLeader){
+    if(isBlockTokenEnabled()){
+      blockTokenSecretManager.updateLeaderState(isLeader);
+    }
   }
   //END_HOP_CODE
 }

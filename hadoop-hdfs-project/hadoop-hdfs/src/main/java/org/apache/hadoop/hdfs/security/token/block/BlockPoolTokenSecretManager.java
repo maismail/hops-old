@@ -120,7 +120,7 @@ public class BlockPoolTokenSecretManager extends
     }
   }
 
-  public DataEncryptionKey generateDataEncryptionKey(String blockPoolId) {
+  public DataEncryptionKey generateDataEncryptionKey(String blockPoolId) throws IOException {
     return get(blockPoolId).generateDataEncryptionKey();
   }
   
