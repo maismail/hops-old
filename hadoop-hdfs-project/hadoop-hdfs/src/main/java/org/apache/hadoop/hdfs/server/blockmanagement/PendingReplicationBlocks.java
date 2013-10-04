@@ -28,7 +28,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -249,11 +249,9 @@ class PendingReplicationBlocks {
     return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException { 
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.READ_COMMITTED, pbi.getBlockId());
-        TransactionLockManager lm = new TransactionLockManager(tl); 
-        lm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlock(LockType.READ_COMMITTED, pbi.getBlockId());
+        return tla.acquire();
       }
 
       @Override

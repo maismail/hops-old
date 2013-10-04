@@ -80,15 +80,14 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import com.mysql.clusterj.Session;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;
 
 /**
  * A JUnit test for doing fsck
@@ -743,12 +742,11 @@ public class TestFsck {
         TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
             @Override
             public TransactionLocks acquireLock() throws PersistanceException, IOException {
-                TransactionLocks lks = new TransactionLocks();
-                lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{fileName});
-                lks.addBlock(TransactionLockTypes.LockType.WRITE);
-                TransactionLockManager tlm = new TransactionLockManager(lks);
-                tlm.acquire();
-                return lks;
+              TransactionLockAcquirer tla = new TransactionLockAcquirer();
+              tla.getLocks().
+                      addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).
+                      addBlock(LockType.WRITE);
+              return tla.acquire();
             }
 
             @Override

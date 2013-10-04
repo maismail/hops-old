@@ -20,7 +20,7 @@ package org.apache.hadoop.hdfs.server.common;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -113,11 +113,9 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
     new TransactionalRequestHandler(RequestHandler.OperationType.SET_GEN_STAMP) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tlks = new TransactionLocks();
-        tlks.addGenerationStamp(TransactionLockTypes.LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(tlks);
-        tlm.acquire();
-        return tlks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override

@@ -49,8 +49,6 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import org.apache.hadoop.hdfs.server.common.JspHelper;
-import org.apache.hadoop.hdfs.server.common.Storage;
-import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 //import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;    //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.http.HttpConfig;
@@ -64,10 +62,10 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
-import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -807,12 +805,11 @@ class NamenodeJspHelper {
 
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
-            TransactionLocks lks = new TransactionLocks();
-            lks.addINode(TransactionLockTypes.INodeLockType.READ).
-                    addBlock(TransactionLockTypes.LockType.READ, block.getBlockId());
-            TransactionLockManager tlm = new TransactionLockManager(lks);
-            tlm.acquireByBlock(inodeId);
-            return lks;
+            TransactionLockAcquirer tla = new TransactionLockAcquirer();
+            tla.getLocks().
+                    addINode(INodeLockType.READ).
+                    addBlock(LockType.READ, block.getBlockId());
+            return tla.acquireByBlock(inodeId);
           }
 
           @Override

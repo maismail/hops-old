@@ -88,8 +88,8 @@ import org.apache.hadoop.util.VersionInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -354,12 +354,11 @@ public class DFSTestUtil {
     TransactionalRequestHandler corruptReplicasHandler = new TransactionalRequestHandler(OperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks  lks = new TransactionLocks();
-        lks.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
-                addCorrupt(TransactionLockTypes.LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquire();
-        return lks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.READ, b.getBlockId()).
+                addCorrupt(LockType.READ);
+        return tla.acquire();
       }
       
       @Override

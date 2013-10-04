@@ -34,8 +34,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -109,13 +108,12 @@ public class TestNodeCount {
       TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(OperationType.TEST_NODE_COUNT) {
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLocks  lks = new TransactionLocks();
-          lks.addBlock(LockType.READ, block.getBlockId());
-          lks.addReplica(LockType.READ);
-          lks.addExcess(LockType.READ);
-          TransactionLockManager tlm = new TransactionLockManager(lks);
-          tlm.acquire();
-          return lks;
+          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+          tla.getLocks().
+                  addBlock(LockType.READ, block.getBlockId()).
+                  addReplica(LockType.READ).
+                  addExcess(LockType.READ);
+          return tla.acquire();
         }
 
         @Override
@@ -200,14 +198,13 @@ public class TestNodeCount {
       return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
          @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLocks lks = new TransactionLocks();
-          lks.addBlock(TransactionLockTypes.LockType.READ, block.getBlockId()).
-                  addReplica(LockType.READ).
-                  addExcess(LockType.READ).
-                  addCorrupt(LockType.READ);
-          TransactionLockManager tlm = new TransactionLockManager(lks);
-          tlm.acquire();
-          return lks;
+           TransactionLockAcquirer tla = new TransactionLockAcquirer();
+           tla.getLocks().
+                   addBlock(LockType.READ, block.getBlockId()).
+                   addReplica(LockType.READ).
+                   addExcess(LockType.READ).
+                   addCorrupt(LockType.READ);
+           return tla.acquire();
         }
          
         @Override

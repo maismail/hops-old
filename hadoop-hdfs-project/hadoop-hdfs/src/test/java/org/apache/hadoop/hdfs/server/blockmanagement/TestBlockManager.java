@@ -50,7 +50,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
@@ -370,8 +370,9 @@ public class TestBlockManager {
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addINode(INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blockInfo.getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
@@ -381,9 +382,7 @@ public class TestBlockManager {
                 addReplicaUc(LockType.WRITE).
                 addInvalidatedBlock(LockType.READ).
                 addGenerationStamp(LockType.READ);
-        TransactionLockManager lm = new TransactionLockManager(tl);  
-        lm.acquireByBlock(inodeId);
-        return tl;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -403,12 +402,11 @@ public class TestBlockManager {
     return (BlockInfo) new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.READ, blkId).
+          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+        addBlock(LockType.READ, blkId).
            addReplica(LockType.READ);
-        TransactionLockManager lm = new TransactionLockManager(tl);  
-        lm.acquire();
-        return tl;
+        return tla.acquire();
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -447,11 +445,10 @@ public class TestBlockManager {
     new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
        @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.WRITE, blockId);
-        TransactionLockManager lm = new TransactionLockManager(tl);  
-        lm.acquire();
-        return tl;
+         TransactionLockAcquirer tla = new TransactionLockAcquirer();
+         tla.getLocks().
+                 addBlock(LockType.WRITE, blockId);
+         return tla.acquire();
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -474,17 +471,16 @@ public class TestBlockManager {
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addINode(INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(INodeLockType.WRITE).
                 addBlock(LockType.WRITE, block.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
                 addPendingBlock(LockType.READ).
                 addUnderReplicatedBlock(LockType.WRITE);
-        TransactionLockManager lm = new TransactionLockManager(tl);  
-        lm.acquireByBlock(inodeId);
-        return tl;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override

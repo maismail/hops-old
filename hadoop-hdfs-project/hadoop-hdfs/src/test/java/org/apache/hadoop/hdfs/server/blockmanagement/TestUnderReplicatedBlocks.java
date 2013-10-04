@@ -29,8 +29,9 @@ import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -67,14 +68,13 @@ public class TestUnderReplicatedBlocks {
 
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLocks lks = new TransactionLocks();
-          lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
-                  addBlock(TransactionLockTypes.LockType.WRITE, b.getBlockId()).
-                  addReplica(TransactionLockTypes.LockType.WRITE).
-                  addInvalidatedBlock(TransactionLockTypes.LockType.WRITE);
-          TransactionLockManager tlm = new TransactionLockManager(lks);
-          tlm.acquireByBlock(inodeId);
-          return lks;
+          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+          tla.getLocks().
+                  addINode(INodeLockType.WRITE).
+                  addBlock(LockType.WRITE, b.getBlockId()).
+                  addReplica(LockType.WRITE).
+                  addInvalidatedBlock(LockType.WRITE);
+          return tla.acquireByBlock(inodeId);
         }
 
         @Override

@@ -23,7 +23,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
@@ -31,8 +30,8 @@ import org.apache.hadoop.util.Daemon;
 import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -74,15 +73,14 @@ public class BlockManagerTestUtil {
       return (int[]) new TransactionalRequestHandler(OperationType.TEST) {
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLocks  lks = new TransactionLocks();
-          lks.addBlock(TransactionLockTypes.LockType.READ, b.getBlockId()).
-                  addReplica(TransactionLockTypes.LockType.READ).
-                  addCorrupt(TransactionLockTypes.LockType.READ).
-                  addExcess(TransactionLockTypes.LockType.READ).
-                  addUnderReplicatedBlock(TransactionLockTypes.LockType.READ);
-          TransactionLockManager tlm = new TransactionLockManager(lks);
-          tlm.acquire();
-          return lks;
+          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+          tla.getLocks().
+                  addBlock(LockType.READ, b.getBlockId()).
+                  addReplica(LockType.READ).
+                  addCorrupt(LockType.READ).
+                  addExcess(LockType.READ).
+                  addUnderReplicatedBlock(LockType.READ);
+          return tla.acquire();
         }
 
         @Override

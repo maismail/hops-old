@@ -1,7 +1,7 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
 import java.util.Collection;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;

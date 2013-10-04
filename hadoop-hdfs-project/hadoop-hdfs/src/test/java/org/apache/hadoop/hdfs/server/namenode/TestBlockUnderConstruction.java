@@ -38,7 +38,7 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
@@ -93,14 +93,11 @@ public class TestBlockUnderConstruction {
     TransactionalRequestHandler verifyFileBlocksHandler = new TransactionalRequestHandler(OperationType.VERIFY_FILE_BLOCKS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(INodeResolveType.PATH,
-                INodeLockType.READ,
-                new String[]{file});
-        lks.addBlock(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquire();
-        return lks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{file}).
+                addBlock(LockType.READ);
+        return tla.acquire();
       }
       
       @Override
