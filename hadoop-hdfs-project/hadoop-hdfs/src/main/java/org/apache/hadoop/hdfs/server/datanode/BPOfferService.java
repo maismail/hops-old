@@ -48,6 +48,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 
 /**
  * One instance per block-pool/namespace on the DN, which handles the
@@ -118,19 +119,33 @@ class BPOfferService {
     }
     Set<InetSocketAddress> newAddrs = Sets.newHashSet(addrs);
     
-    //START_HOP_CODE
 //HOP    if (!Sets.symmetricDifference(oldAddrs, newAddrs).isEmpty()) {
 //      // Keep things simple for now -- we can implement this at a later date.
 //      throw new IOException(
 //          "HA does not currently support adding a new standby to a running DN. " +
 //          "Please do a rolling restart of DNs to reconfigure the list of NNs.");
 //    }
-    //TODO[S]
-    // stop the dead threads 
     
+    //START_HOP_CODE
+    SetView<InetSocketAddress> deadNNs = Sets.difference(oldAddrs, newAddrs);
+    SetView<InetSocketAddress> newNNs  = Sets.difference(newAddrs, oldAddrs);  
+    
+    
+    // stop the dead threads 
+    if(deadNNs.size()!=0){
+        for(InetSocketAddress deadNN: deadNNs){
+           BPServiceActor deadActor = stopAnActor(deadNN);
+           bpServices.remove(deadActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
+        }
+    }
     
     // start threads for new NNs
-    
+    if(newNNs.size() != 0){
+        for(InetSocketAddress newNN: newNNs){
+            BPServiceActor newActor = startAnActor(newNN);
+            bpServices.add(newActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
+        }
+    }
     //END_HOP_CODE
   }
 
@@ -634,4 +649,31 @@ class BPOfferService {
     return true;
   }
 
+  //START_HOP_CODE
+  private BPServiceActor stopAnActor(InetSocketAddress address){
+      
+      BPServiceActor actor = getAnActor(address);
+      if(actor != null){
+          actor.stop();
+          actor.join(); //[S] hmm to join, or not to join ? how long does it take to kill a BPServiceActor thread
+          return actor;
+      }else{
+        return null;
+      }
+  }
+  
+  private BPServiceActor startAnActor(InetSocketAddress address){
+      BPServiceActor actor = new BPServiceActor(address, this);
+      actor.start();
+      return actor;   
+  }
+  
+  private BPServiceActor getAnActor(InetSocketAddress address){
+      for(BPServiceActor actor :bpServices){
+          if(actor.getNNSocketAddress().equals(address))
+              return actor;
+      }
+      return null;
+  }
+  //END_HOP_CODE
 }

@@ -751,4 +751,15 @@ class BPServiceActor implements Runnable {
     }
   }
 
+  //START_HOP_CODE
+    @Override
+    public boolean equals(Object obj) {
+        //Two actors are same if they are connected to save NN
+        BPServiceActor that = (BPServiceActor)obj;
+        if(this.getNNSocketAddress().equals(that.getNNSocketAddress())){
+            return true;
+        }
+        return false;          
+    }
+  //END_HOP_CODE
 }
