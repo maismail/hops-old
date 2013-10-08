@@ -1388,7 +1388,7 @@ public class PBHelper {
   
   public static ActiveNamenodeListResponseProto convert(SortedActiveNamenodeList anlWrapper)
   {
-    List<ActiveNamenode> anl = anlWrapper.getListActiveNamenodes();
+    List<ActiveNamenode> anl = anlWrapper.geActiveNamenodes();
     ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();
     for(int i = 0; i < anl.size(); i++)
     {

@@ -13,6 +13,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
@@ -60,11 +61,9 @@ public class LeaderElection extends Thread {
 
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLocks  lks = new TransactionLocks();
-          lks.addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
-          TransactionLockManager tlm = new TransactionLockManager(lks);
-          tlm.acquire();
-          return lks;
+          TransactionLockAcquirer  tla = new TransactionLockAcquirer();
+          tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+          return tla.acquire();
         }
 
         @Override
@@ -113,11 +112,9 @@ public class LeaderElection extends Thread {
 
     @Override
     public TransactionLocks acquireLock() throws PersistanceException, IOException {
-      TransactionLocks  lks = new TransactionLocks();
-      lks.addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
-      TransactionLockManager tlm = new TransactionLockManager(lks);
-      tlm.acquire();
-      return lks;
+      TransactionLockAcquirer  tla = new TransactionLockAcquirer();
+      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+      return tla.acquire();
     }
 
     @Override
