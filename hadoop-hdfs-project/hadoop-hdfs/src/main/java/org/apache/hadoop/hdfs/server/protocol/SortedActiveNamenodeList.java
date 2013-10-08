@@ -32,11 +32,7 @@ public class SortedActiveNamenodeList {
         this.listActiveNamenodes = listActiveNamenodes;
         Collections.sort(listActiveNamenodes);
     }
-
-    public List<ActiveNamenode> getListActiveNamenodes() {
-        return listActiveNamenodes;
-    }
-    
+   
     public int size(){
         return listActiveNamenodes.size();
     }
@@ -61,6 +57,15 @@ public class SortedActiveNamenodeList {
             }
         }
         return sb.toString();
+    }
+    
+    public ActiveNamenode getLeader(){
+        //return the leader node in from the list
+        for(ActiveNamenode anode : listActiveNamenodes){
+            if(anode.isLeader())
+                return anode;
+        }
+        return null;
     }
     
     

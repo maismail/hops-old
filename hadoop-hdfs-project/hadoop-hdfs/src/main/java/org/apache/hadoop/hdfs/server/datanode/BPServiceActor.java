@@ -57,6 +57,9 @@ import org.apache.hadoop.util.VersionUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
@@ -517,12 +520,9 @@ class BPServiceActor implements Runnable {
         if (startTime - lastHeartbeat > dnConf.heartBeatInterval) {
             
           //HOP_START_CODE
-          //TODO [S]
-          SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
-
-
-          
+          refreshNNConnection();       
           //HOP_END_CODE
+          
           //
           // All heartbeat messages include following info:
           // -- Datanode name
@@ -532,7 +532,7 @@ class BPServiceActor implements Runnable {
           //
           lastHeartbeat = startTime;
           if (!dn.areHeartbeatsDisabledForTests()) {
-            HeartbeatResponse resp = sendHeartBeat();
+            HeartbeatResponse resp = sendHeartBeat();       
             assert resp != null;
             dn.getMetrics().addHeartbeat(now() - startTime);
 
@@ -761,5 +761,23 @@ class BPServiceActor implements Runnable {
         }
         return false;          
     }
+    
+    /**
+     * get the list of active namenodes in the system. It connects to new
+     * namenodes and stops the threads connected to dead namenodes
+     */
+    private void refreshNNConnection() throws IOException {
+        SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
+        InetSocketAddress leaderAddress = new InetSocketAddress(list.getLeader().getIpAddress(), list.getLeader().getPort());   
+        if(this.getNNSocketAddress().equals(leaderAddress)){
+            ArrayList<InetSocketAddress> nnList = new ArrayList<InetSocketAddress>();
+            for (ActiveNamenode ann : list.getActiveNamenodes()) {
+                InetSocketAddress socketAddress = new InetSocketAddress(ann.getIpAddress(), ann.getPort());
+                nnList.add(socketAddress);
+            }
+        bpos.refreshNNList(nnList);
+        }
+    }
+    
   //END_HOP_CODE
 }
