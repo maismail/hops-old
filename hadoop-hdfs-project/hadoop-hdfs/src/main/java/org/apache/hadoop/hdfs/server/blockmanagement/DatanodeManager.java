@@ -1200,9 +1200,12 @@ public class DatanodeManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
-        //FIXME [M] why not to use the TransactionLockManager
-        TransactionLockAcquirer.acquireLockList(LockType.READ_COMMITTED, ReplicaUnderConstruction.Finder.ByBlockId, b.getBlockId());
-        return null;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.READ_COMMITTED, b.getBlockId()).
+                addReplica(LockType.READ_COMMITTED).
+                addReplicaUc(LockType.READ_COMMITTED);
+        return tla.acquire();
       }
 
       @Override

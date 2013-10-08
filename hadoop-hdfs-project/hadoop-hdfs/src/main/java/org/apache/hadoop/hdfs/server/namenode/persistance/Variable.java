@@ -16,8 +16,9 @@ public class Variable {
 
   public static enum Finder implements FinderType<Variable> {
 
-    GenerationStamp;
-
+    GenerationStamp,
+    BlockID;
+    
     public int getId() {
       return this.ordinal();
     }

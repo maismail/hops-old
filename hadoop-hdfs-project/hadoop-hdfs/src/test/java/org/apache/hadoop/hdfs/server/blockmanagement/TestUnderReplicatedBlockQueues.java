@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -139,12 +138,11 @@ public class TestUnderReplicatedBlockQueues extends Assert {
     return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.READ_COMMITTED, block.getBlockId());
-        tl.addUnderReplicatedBlock(LockType.WRITE);
-        TransactionLockManager lm = new TransactionLockManager(tl);
-        lm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
+                addUnderReplicatedBlock(LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override

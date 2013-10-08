@@ -34,7 +34,7 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -224,12 +224,11 @@ public class TestPendingReplication {
     new TransactionalRequestHandler(OperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.READ_COMMITTED, block.getBlockId());
-        tl.addPendingBlock(LockType.WRITE);
-        TransactionLockManager lm = new TransactionLockManager(tl);
-        lm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
+                addPendingBlock(LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override
@@ -248,12 +247,11 @@ public class TestPendingReplication {
     return (Integer) new TransactionalRequestHandler(OperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.READ_COMMITTED, block.getBlockId());
-        tl.addPendingBlock(LockType.WRITE);
-        TransactionLockManager lm = new TransactionLockManager(tl);
-        lm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
+                addPendingBlock(LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override

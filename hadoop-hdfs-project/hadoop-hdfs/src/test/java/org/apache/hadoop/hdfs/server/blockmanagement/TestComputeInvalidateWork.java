@@ -26,7 +26,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
@@ -91,12 +91,11 @@ public class TestComputeInvalidateWork {
     new TransactionalRequestHandler(RequestHandler.OperationType.COMP_INVALIDATE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.WRITE, block.getBlockId());
-        tl.addInvalidatedBlock(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(tl);
-        tlm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.WRITE, block.getBlockId()).
+                addInvalidatedBlock(LockType.WRITE);
+        return tla.acquire();
       }
       
       @Override

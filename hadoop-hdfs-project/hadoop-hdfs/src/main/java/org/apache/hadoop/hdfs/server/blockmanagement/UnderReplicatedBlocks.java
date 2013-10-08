@@ -30,7 +30,7 @@ import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -591,12 +591,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addUnderReplicatedBlock(LockType.WRITE);
-        tl.addBlock(LockType.READ_COMMITTED, urb.getBlockId());
-        TransactionLockManager tlm = new TransactionLockManager(tl);
-        tlm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addUnderReplicatedBlock(LockType.WRITE).
+                addBlock(LockType.READ_COMMITTED, urb.getBlockId());
+        return tla.acquire();
       }
       
       @Override

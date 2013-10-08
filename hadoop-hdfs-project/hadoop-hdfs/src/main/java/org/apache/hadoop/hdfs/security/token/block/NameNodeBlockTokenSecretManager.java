@@ -3,7 +3,7 @@ package org.apache.hadoop.hdfs.security.token.block;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.List;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
@@ -178,7 +178,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     new TransactionalRequestHandler(RequestHandler.OperationType.ADD_BLOCK_TOKENS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return new TransactionLocks();
+        return null;
       }
 
       @Override
@@ -243,11 +243,9 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         int keyId = (Integer) params[0];
-        TransactionLocks tlks = new TransactionLocks();
-        tlks.addBlockKeyLockById(TransactionLockTypes.LockType.WRITE, keyId);
-        TransactionLockManager tlm = new TransactionLockManager(tlks);
-        tlm.acquire();
-        return tlks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlockKeyLockById(TransactionLockTypes.LockType.WRITE, keyId);
+        return tla.acquire();
       }
 
       @Override
@@ -274,12 +272,11 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     new TransactionalRequestHandler(RequestHandler.OperationType.UPDATE_BLOCK_KEYS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tlks = new TransactionLocks();
-        tlks.addBlockKeyLockByType(LockType.WRITE, BlockKey.CURR_KEY);
-        tlks.addBlockKeyLockByType(LockType.WRITE, BlockKey.NEXT_KEY);
-        TransactionLockManager tlm = new TransactionLockManager(tlks);
-        tlm.acquire();
-        return tlks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlockKeyLockByType(LockType.WRITE, BlockKey.CURR_KEY).
+                addBlockKeyLockByType(LockType.WRITE, BlockKey.NEXT_KEY);
+        return tla.acquire();
       }
 
       @Override

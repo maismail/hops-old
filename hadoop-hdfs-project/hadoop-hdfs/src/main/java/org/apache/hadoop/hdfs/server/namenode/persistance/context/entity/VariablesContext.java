@@ -74,6 +74,11 @@ public class VariablesContext extends EntityContext<Variable> {
             throw new LockUpgradeException("Trying to upgrade generation stamp lock");
           }
           break;
+        case BlockID:
+          if (lks.getBlockIdCounterLock() != TransactionLockTypes.LockType.WRITE) {
+            throw new LockUpgradeException("Trying to upgrade block id counter lock");
+          }
+          break;
         default:
       }
     }

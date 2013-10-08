@@ -42,7 +42,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -993,12 +993,11 @@ public class TestReplicationPolicy {
     return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks tl = new TransactionLocks();
-        tl.addBlock(LockType.WRITE, block.getBlockId());
-        tl.addUnderReplicatedBlock(LockType.WRITE);
-        TransactionLockManager lm = new TransactionLockManager(tl);
-        lm.acquire();
-        return tl;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addBlock(LockType.WRITE, block.getBlockId()).
+                addUnderReplicatedBlock(LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override

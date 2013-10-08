@@ -17,11 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.spy;
-
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -33,12 +28,10 @@ import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
-import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
-import org.apache.hadoop.hdfs.server.namenode.Lease;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
@@ -140,10 +133,8 @@ public class NameNodeAdapter {
     return (String) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks  lks = new TransactionLocks();
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
-        return lks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
       }
 
       @Override
@@ -163,10 +154,8 @@ public class NameNodeAdapter {
     TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks  lks = new TransactionLocks();
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByLeasePath(path, TransactionLockTypes.LockType.READ, TransactionLockTypes.LockType.READ);
-        return lks;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
       }
 
       @Override

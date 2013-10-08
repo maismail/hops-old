@@ -82,7 +82,7 @@ import org.apache.hadoop.hdfs.security.token.block.NameNodeBlockTokenSecretManag
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
@@ -1024,17 +1024,16 @@ public class BlockManager {
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, blk.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addReplicaUc(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -1664,15 +1663,14 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks()
+                .addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -1733,16 +1731,15 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks()
+                .addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -1787,8 +1784,9 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addReplica(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
@@ -1798,9 +1796,7 @@ public class BlockManager {
                 addInvalidatedBlock(LockType.READ).
                 addPendingBlock(LockType.READ).
                 addGenerationStamp(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -1885,8 +1881,9 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block iblk = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, iblk.getBlockId()).
                 addReplica(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
@@ -1896,9 +1893,7 @@ public class BlockManager {
                 addInvalidatedBlock(LockType.READ).
                 addPendingBlock(LockType.READ).
                 addGenerationStamp(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -2074,16 +2069,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, rbi.getBlock().getBlockId()).
                 addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
                 addGenerationStamp(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -2441,17 +2435,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addInvalidatedBlock(LockType.WRITE).
                 addReplica(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addExcess(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -2788,14 +2781,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.READ).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.READ).
                 addBlock(LockType.READ, block.getBlockId()).
                 addReplica(LockType.READ).
                 addInvalidatedBlock(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -2887,8 +2879,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, rdbi.getBlock().getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
@@ -2896,13 +2889,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addUnderReplicatedBlock(LockType.WRITE).
                 addGenerationStamp(LockType.READ);
         if (!rdbi.isDeletedBlock()) {
-          lks.addPendingBlock(LockType.WRITE).
+          tla.getLocks().
+                  addPendingBlock(LockType.WRITE).
                   addReplicaUc(LockType.WRITE).
                   addInvalidatedBlock(LockType.READ);
         }
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -3069,8 +3061,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         final Block block = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, block.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
@@ -3078,9 +3071,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addPendingBlock(LockType.READ).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addInvalidatedBlock(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -3131,17 +3122,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         final Block block = (Block) getParams()[0];
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, block.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addPendingBlock(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -3556,17 +3546,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addReplica(LockType.WRITE).
                 addExcess(LockType.WRITE).
                 addCorrupt(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addReplicaUc(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -3595,8 +3584,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, b.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
@@ -3604,9 +3594,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addPendingBlock(LockType.READ).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addReplicaUc(LockType.READ);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override
@@ -3672,17 +3660,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLocks lks = new TransactionLocks();
-        lks.addINode(TransactionLockTypes.INodeLockType.WRITE).
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(LockType.WRITE, timedOutItem.getBlockId()).
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
                 addPendingBlock(LockType.READ).
                 addUnderReplicatedBlock(LockType.WRITE);
-        TransactionLockManager tlm = new TransactionLockManager(lks);
-        tlm.acquireByBlock(inodeId);
-        return lks;
+        return tla.acquireByBlock(inodeId);
       }
 
       @Override

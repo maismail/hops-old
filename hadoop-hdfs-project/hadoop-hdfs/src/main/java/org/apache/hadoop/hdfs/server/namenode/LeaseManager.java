@@ -41,8 +41,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -443,22 +444,21 @@ public class LeaseManager {
       private SortedSet<String> leasePaths = null;
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-            String holder = (String) getParams()[0];
-            TransactionLocks  lks = new TransactionLocks();
-            lks.addINode(TransactionLockTypes.INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE);
-            lks.addBlock(TransactionLockTypes.LockType.WRITE);
-            lks.addLease(TransactionLockTypes.LockType.WRITE, holder);
-            lks.addNameNodeLease(LockType.WRITE);
-            lks.addLeasePath(TransactionLockTypes.LockType.WRITE);
-            lks.addReplica(TransactionLockTypes.LockType.READ);
-            lks.addCorrupt(TransactionLockTypes.LockType.READ);
-            lks.addExcess(TransactionLockTypes.LockType.READ);
-            lks.addReplicaUc(TransactionLockTypes.LockType.READ);
-            lks.addUnderReplicatedBlock(LockType.READ);
-            lks.addGenerationStamp(LockType.WRITE);
-            TransactionLockManager tlm = new TransactionLockManager(lks);
-            tlm.acquireByLease(leasePaths);
-            return lks;
+        String holder = (String) getParams()[0];
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().
+                addINode(INodeResolveType.PATH, INodeLockType.WRITE).
+                addBlock(LockType.WRITE).
+                addLease(LockType.WRITE, holder).
+                addNameNodeLease(LockType.WRITE).
+                addLeasePath(LockType.WRITE).
+                addReplica(LockType.READ).
+                addCorrupt(LockType.READ).
+                addExcess(LockType.READ).
+                addReplicaUc(LockType.READ).
+                addUnderReplicatedBlock(LockType.READ).
+                addGenerationStamp(LockType.WRITE);
+        return tla.acquireByLease(leasePaths);
         }
       
       @Override
