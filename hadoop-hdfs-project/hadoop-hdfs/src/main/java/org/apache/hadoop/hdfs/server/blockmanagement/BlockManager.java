@@ -321,7 +321,7 @@ public class BlockManager {
     LOG.info("encryptDataTransfer        = " + encryptDataTransfer);
   }
 
-  private static NameNodeBlockTokenSecretManager createBlockTokenSecretManager(
+  private  NameNodeBlockTokenSecretManager createBlockTokenSecretManager(
       final Configuration conf) throws IOException {
     final boolean isEnabled = conf.getBoolean(
         DFSConfigKeys.DFS_BLOCK_ACCESS_TOKEN_ENABLE_KEY, 
@@ -360,10 +360,8 @@ public class BlockManager {
 //      return new BlockTokenSecretManager(updateMin*60*1000L,
 //          lifetimeMin*60*1000L, 0, null, encryptionAlgorithm);
 //    }
-    //FIXME:
-    boolean isLeader = true;
     return new NameNodeBlockTokenSecretManager(updateMin*60*1000L,
-           lifetimeMin*60*1000L, isLeader, null, encryptionAlgorithm);
+           lifetimeMin*60*1000L, namesystem.isLeader(), null, encryptionAlgorithm);
   }
   
   public void setBlockPoolId(String blockPoolId) {

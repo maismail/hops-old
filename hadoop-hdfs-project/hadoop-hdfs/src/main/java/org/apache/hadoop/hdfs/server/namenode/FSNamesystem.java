@@ -6470,6 +6470,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
   public void setNameNodeRole(NamenodeRole role) {
     this.nameNodeRole = role;
+    blockManager.updateLeaderState(nameNodeRole == NamenodeRole.LEADER);
   }
   
   public String getSupergroup() {
