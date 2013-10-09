@@ -47,8 +47,27 @@ import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStat
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
+import org.apache.hadoop.hdfs.protocol.UnregisteredNodeException;
+import org.apache.hadoop.hdfs.server.common.IncorrectVersionException;
+import static org.apache.hadoop.hdfs.server.datanode.BPServiceActor.LOG;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
+import org.apache.hadoop.hdfs.server.protocol.DisallowedDatanodeException;
+import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.StorageBlockReport;
+import org.apache.hadoop.hdfs.server.protocol.StorageReceivedDeletedBlocks;
+import org.apache.hadoop.ipc.RemoteException;
+import org.apache.hadoop.util.Time;
+import static org.apache.hadoop.util.Time.now;
 
 /**
  * One instance per block-pool/namespace on the DN, which handles the
@@ -58,7 +77,7 @@ import com.google.common.collect.Sets.SetView;
  * It also maintains the state about which of the NNs is considered active.
  */
 @InterfaceAudience.Private
-class BPOfferService {
+class BPOfferService implements Runnable{
   static final Log LOG = DataNode.LOG;
 
   /**
@@ -101,7 +120,34 @@ class BPOfferService {
    * for details. 
    */
   private long lastActiveClaimTxId = -1;
-
+  
+  //START_HOP_CODE
+  private final DNConf dnConf;
+  private volatile int pendingReceivedRequests = 0;
+  volatile long lastDeletedReport = 0;
+  // lastBlockReport, lastDeletedReport and lastHeartbeat may be assigned/read
+  // by testing threads (through BPServiceActor#triggerXXX), while also 
+  // assigned/read by the actor thread. Thus they should be declared as volatile
+  // to make sure the "happens-before" consistency.
+  private volatile long lastBlockReport = 0;
+  private boolean resetBlockReportTime = true;
+  private BPServiceActor blkReportHander = null;
+  private SortedActiveNamenodeList nnlist;
+  private int rpcRoundRobinIndex = 0; // you have bunch of NNs, which one to send the incremental block report
+  private int refreshNNRoundRobinIndex = 0; //in a heart beat only one actor should talk to name node and get the updated list of NNs
+                                            //how to stop actors from communicating with all the NN at the same time for same RPC?
+                                            //for that we will use a separate RR which will be incremented after Delta time (heartbeat time)
+  /**
+   * Between block reports (which happen on the order of once an hour) the
+   * DN reports smaller incremental changes to its block list. This map,
+   * keyed by block ID, contains the pending changes which have yet to be
+   * reported to the NN. Access should be synchronized on this object.
+   */
+  private final Map<Long, ReceivedDeletedBlockInfo> pendingIncrementalBR = Maps.newHashMap();
+  private Thread blockReportThread = null;
+  
+  //END_HOP_CODE
+  
   BPOfferService(List<InetSocketAddress> nnAddrs, DataNode dn) {
     Preconditions.checkArgument(!nnAddrs.isEmpty(),
         "Must pass at least one NN.");
@@ -110,6 +156,9 @@ class BPOfferService {
     for (InetSocketAddress addr : nnAddrs) {
       this.bpServices.add(new BPServiceActor(addr, this));
     }
+    //START_HOP_CODE
+    dnConf = dn.getDnConf();
+    //END_HOP_CODE
   }
 
   void refreshNNList(ArrayList<InetSocketAddress> addrs) throws IOException {
@@ -202,14 +251,18 @@ class BPOfferService {
         ")";
     }
   }
-  
-  void reportBadBlocks(ExtendedBlock block) {
-    checkBlock(block);
-    for (BPServiceActor actor : bpServices) {
-      actor.reportBadBlocks(block);
+
+    void reportBadBlocks(ExtendedBlock block) {
+        checkBlock(block);
+//HOP    for (BPServiceActor actor : bpServices) {
+        ActiveNamenode an = nextNNForNonBlkReportRPC();
+        if (an != null) {
+            BPServiceActor actor = getAnActor(an.getInetSocketAddress());
+            actor.reportBadBlocks(block);
+        }
+//    }
     }
-  }
-  
+
   /*
    * Informing the name node could take a long long time! Should we wait
    * till namenode is informed before responding with success to the
@@ -223,9 +276,9 @@ class BPOfferService {
         ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK,
         delHint);
 
-    for (BPServiceActor actor : bpServices) {
-      actor.notifyNamenodeBlockImmediately(bInfo);
-    }
+//HOP    for (BPServiceActor actor : bpServices) {
+      notifyNamenodeBlockImmediatelyInt(bInfo);
+//HOP    }
   }
 
   private void checkBlock(ExtendedBlock block) {
@@ -246,9 +299,9 @@ class BPOfferService {
     ReceivedDeletedBlockInfo bInfo = new ReceivedDeletedBlockInfo(
        block.getLocalBlock(), BlockStatus.DELETED_BLOCK, null);
     
-    for (BPServiceActor actor : bpServices) {
-      actor.notifyNamenodeDeletedBlock(bInfo);
-    }
+//HOP    for (BPServiceActor actor : bpServices) {
+      notifyNamenodeDeletedBlockInt(bInfo);
+//HOP    }
   }
   
   void notifyNamenodeReceivingBlock(ExtendedBlock block) {
@@ -256,15 +309,21 @@ class BPOfferService {
     ReceivedDeletedBlockInfo bInfo = new ReceivedDeletedBlockInfo(
        block.getLocalBlock(), BlockStatus.RECEIVING_BLOCK, null);
     
-    for (BPServiceActor actor : bpServices) {
-      actor.notifyNamenodeBlockImmediately(bInfo);
-    }
+//HOP    for (BPServiceActor actor : bpServices) {
+      notifyNamenodeBlockImmediatelyInt(bInfo);
+//HOP    }
   }
 
   //This must be called only by blockPoolManager
   void start() {
     for (BPServiceActor actor : bpServices) {
       actor.start();
+    }
+    
+    if(blockReportThread == null || !blockReportThread.isAlive() ){
+    blockReportThread = new Thread(this, "BlkReportThread");
+    blockReportThread.setDaemon(true); // needed for JUnit testing
+    blockReportThread.start();
     }
   }
   
@@ -387,23 +446,24 @@ class BPOfferService {
    * the specified delay.
    */
   void scheduleBlockReport(long delay) {
-    for (BPServiceActor actor : bpServices) {
-      actor.scheduleBlockReport(delay);
-    }
+//    for (BPServiceActor actor : bpServices) {
+      scheduleBlockReportInt(delay);
+//    }
   }
 
   /**
    * Ask each of the actors to report a bad block hosted on another DN.
    */
   void reportRemoteBadBlock(DatanodeInfo dnInfo, ExtendedBlock block) {
-    for (BPServiceActor actor : bpServices) {
+      BPServiceActor actor = null;
+//HOP    for (BPServiceActor actor : bpServices) {
       try {
-        actor.reportRemoteBadBlock(dnInfo, block);
+        actor = reportRemoteBadBlockInt(dnInfo, block);
       } catch (IOException e) {
-        LOG.warn("Couldn't report bad block " + block + " to " + actor,
-            e);
+        if(actor != null)
+           LOG.warn("Couldn't report bad block " + block + " to " + actor, e);
       }
-    }
+//    }
   }
 
   /**
@@ -423,54 +483,54 @@ class BPOfferService {
     return Lists.newArrayList(bpServices);
   }
   
-  /**
-   * Update the BPOS's view of which NN is active, based on a heartbeat
-   * response from one of the actors.
-   * 
-   * @param actor the actor which received the heartbeat
-   * @param nnHaState the HA-related heartbeat contents
-   */
-  synchronized void updateActorStatesFromHeartbeat(
-      BPServiceActor actor,
-      NNHAStatusHeartbeat nnHaState) {
-    final long txid = nnHaState.getTxId();
-    
-    final boolean nnClaimsActive =
-      nnHaState.getState() == HAServiceState.ACTIVE;
-    final boolean bposThinksActive = bpServiceToActive == actor;
-    final boolean isMoreRecentClaim = txid > lastActiveClaimTxId; 
-    
-    if (nnClaimsActive && !bposThinksActive) {
-      LOG.info("Namenode " + actor + " trying to claim ACTIVE state with " +
-          "txid=" + txid);
-      if (!isMoreRecentClaim) {
-        // Split-brain scenario - an NN is trying to claim active
-        // state when a different NN has already claimed it with a higher
-        // txid.
-        LOG.warn("NN " + actor + " tried to claim ACTIVE state at txid=" +
-            txid + " but there was already a more recent claim at txid=" +
-            lastActiveClaimTxId);
-        return;
-      } else {
-        if (bpServiceToActive == null) {
-          LOG.info("Acknowledging ACTIVE Namenode " + actor);
-        } else {
-          LOG.info("Namenode " + actor + " taking over ACTIVE state from " +
-              bpServiceToActive + " at higher txid=" + txid);
-        }
-        bpServiceToActive = actor;
-      }
-    } else if (!nnClaimsActive && bposThinksActive) {
-      LOG.info("Namenode " + actor + " relinquishing ACTIVE state with " +
-          "txid=" + nnHaState.getTxId());
-      bpServiceToActive = null;
-    }
-    
-    if (bpServiceToActive == actor) {
-      assert txid >= lastActiveClaimTxId;
-      lastActiveClaimTxId = txid;
-    }
-  }
+//  /**
+//   * Update the BPOS's view of which NN is active, based on a heartbeat
+//   * response from one of the actors.
+//   * 
+//   * @param actor the actor which received the heartbeat
+//   * @param nnHaState the HA-related heartbeat contents
+//   */
+//  synchronized void updateActorStatesFromHeartbeat(
+//      BPServiceActor actor,
+//      NNHAStatusHeartbeat nnHaState) {
+//    final long txid = nnHaState.getTxId();
+//    
+//    final boolean nnClaimsActive =
+//      nnHaState.getState() == HAServiceState.ACTIVE;
+//    final boolean bposThinksActive = bpServiceToActive == actor;
+//    final boolean isMoreRecentClaim = txid > lastActiveClaimTxId; 
+//    
+//    if (nnClaimsActive && !bposThinksActive) {
+//      LOG.info("Namenode " + actor + " trying to claim ACTIVE state with " +
+//          "txid=" + txid);
+//      if (!isMoreRecentClaim) {
+//        // Split-brain scenario - an NN is trying to claim active
+//        // state when a different NN has already claimed it with a higher
+//        // txid.
+//        LOG.warn("NN " + actor + " tried to claim ACTIVE state at txid=" +
+//            txid + " but there was already a more recent claim at txid=" +
+//            lastActiveClaimTxId);
+//        return;
+//      } else {
+//        if (bpServiceToActive == null) {
+//          LOG.info("Acknowledging ACTIVE Namenode " + actor);
+//        } else {
+//          LOG.info("Namenode " + actor + " taking over ACTIVE state from " +
+//              bpServiceToActive + " at higher txid=" + txid);
+//        }
+//        bpServiceToActive = actor;
+//      }
+//    } else if (!nnClaimsActive && bposThinksActive) {
+//      LOG.info("Namenode " + actor + " relinquishing ACTIVE state with " +
+//          "txid=" + nnHaState.getTxId());
+//      bpServiceToActive = null;
+//    }
+//    
+//    if (bpServiceToActive == actor) {
+//      assert txid >= lastActiveClaimTxId;
+//      lastActiveClaimTxId = txid;
+//    }
+//  }
 
   /**
    * @return true if the given NN address is one of the NNs for this
@@ -495,9 +555,9 @@ class BPOfferService {
    */
   @VisibleForTesting
   void triggerBlockReportForTests() throws IOException {
-    for (BPServiceActor actor : bpServices) {
-      actor.triggerBlockReportForTests();
-    }
+//HOP    for (BPServiceActor actor : bpServices) {
+      triggerBlockReportForTestsInt();
+//    }
   }
 
   /**
@@ -505,9 +565,9 @@ class BPOfferService {
    */
   @VisibleForTesting
   void triggerDeletionReportForTests() throws IOException {
-    for (BPServiceActor actor : bpServices) {
-      actor.triggerDeletionReportForTests();
-    }
+//HOP    for (BPServiceActor actor : bpServices) {
+      triggerDeletionReportForTestsInt();
+//    }
   }
 
   /**
@@ -522,15 +582,13 @@ class BPOfferService {
 
   synchronized boolean processCommandFromActor(DatanodeCommand cmd,
       BPServiceActor actor) throws IOException {
-    //TODO[S] remove this check . you can receive the commands from any NN 
-    //check the command types 
       
     assert bpServices.contains(actor);
-    if (actor == bpServiceToActive) {
+//HOP    if (actor == bpServiceToActive) {
       return processCommandFromActive(cmd, actor);
-    } else {
-      return processCommandFromStandby(cmd, actor);
-    }
+//HOP    } else {
+//      return processCommandFromStandby(cmd, actor);
+//    }
   }
 
   /**
@@ -669,11 +727,316 @@ class BPOfferService {
   }
   
   private BPServiceActor getAnActor(InetSocketAddress address){
+      if(address == null) return null;
+      
       for(BPServiceActor actor :bpServices){
           if(actor.getNNSocketAddress().equals(address))
               return actor;
       }
       return null;
   }
-  //END_HOP_CODE
+
+  /**
+   * Main loop for each BP thread. Run until shutdown,
+   * forever calling remote NameNode functions.
+   */
+  private void whirlingLikeASufi() throws Exception {   //http://en.wikipedia.org/wiki/Sufi_whirling
+
+      while (dn.shouldRun) {  //as long as datanode is alive keep working
+      try {
+        long startTime = now();
+        
+        if (pendingReceivedRequests > 0
+            || (startTime - lastDeletedReport > dnConf.deleteReportInterval)) {
+          reportReceivedDeletedBlocks();
+          lastDeletedReport = startTime;
+        }
+
+        DatanodeCommand cmd = blockReport();
+        blkReportHander.processCommand(new DatanodeCommand[]{ cmd });
+        
+        // Now safe to start scanning the block pool.
+        // If it has already been started, this is a no-op.
+        if (dn.blockScanner != null) {
+          dn.blockScanner.addBlockPool(getBlockPoolId());
+        }
+
+        //
+        // There is no work to do;  sleep until hearbeat timer elapses, 
+        // or work arrives, and then iterate again.
+        //
+        long waitTime = dnConf.heartBeatInterval;
+//        - (Time.now() - lastHeartbeat);
+        synchronized(pendingIncrementalBR) {
+          if (waitTime > 0 && pendingReceivedRequests == 0) {
+            try {
+              pendingIncrementalBR.wait(waitTime);
+            } catch (InterruptedException ie) {
+              LOG.warn("BPOfferService for " + this + " interrupted");
+            }
+          }
+        } // synchronized
+        
+        synchronized(nnlist){
+            refreshNNRoundRobinIndex++;
+            if(refreshNNRoundRobinIndex >= nnlist.size()){
+                refreshNNRoundRobinIndex=0;
+            }
+        }
+      } catch(Exception re) {
+        LOG.warn("Exception in offerService", re);
+        try {
+          long sleepTime = Math.min(1000, dnConf.heartBeatInterval);
+          Thread.sleep(sleepTime);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+        }
+      } 
+    } // while (shouldRun())
+  } // offerService
+  
+  /**
+   * Report received blocks and delete hints to the Namenode
+   * 
+   * @throws IOException
+   */
+  private void reportReceivedDeletedBlocks() throws IOException {
+
+    // check if there are newly received blocks
+    ReceivedDeletedBlockInfo[] receivedAndDeletedBlockArray = null;
+    synchronized (pendingIncrementalBR) {
+      int numBlocks = pendingIncrementalBR.size();
+      if (numBlocks > 0) {
+        //
+        // Send newly-received and deleted blockids to namenode
+        //
+        receivedAndDeletedBlockArray = pendingIncrementalBR
+            .values().toArray(new ReceivedDeletedBlockInfo[numBlocks]);
+      }
+      pendingIncrementalBR.clear();
+    }
+    if (receivedAndDeletedBlockArray != null) {
+      StorageReceivedDeletedBlocks[] report = { new StorageReceivedDeletedBlocks(
+          bpRegistration.getStorageID(), receivedAndDeletedBlockArray) };
+      boolean success = false;
+      try {
+        ActiveNamenode an = nextNNForNonBlkReportRPC();
+        if(an != null){
+        BPServiceActor actor = getAnActor(an.getInetSocketAddress());
+        actor.blockReceivedAndDeleted(bpRegistration, getBlockPoolId(), report);
+        success = true;
+        }
+      } finally {
+        synchronized (pendingIncrementalBR) {
+          if (!success) {
+            // If we didn't succeed in sending the report, put all of the
+            // blocks back onto our queue, but only in the case where we didn't
+            // put something newer in the meantime.
+            for (ReceivedDeletedBlockInfo rdbi : receivedAndDeletedBlockArray) {
+              if (!pendingIncrementalBR.containsKey(rdbi.getBlock().getBlockId())) {
+                pendingIncrementalBR.put(rdbi.getBlock().getBlockId(), rdbi);
+              }
+            }
+          }
+          pendingReceivedRequests = pendingIncrementalBR.size();
+        }
+      }
+    }
+  }
+  
+  /*
+   * Informing the name node could take a long long time! Should we wait
+   * till namenode is informed before responding with success to the
+   * client? For now we don't.
+   */
+  void notifyNamenodeBlockImmediatelyInt(ReceivedDeletedBlockInfo bInfo) {
+    synchronized (pendingIncrementalBR) {
+      pendingIncrementalBR.put(
+          bInfo.getBlock().getBlockId(), bInfo);
+      pendingReceivedRequests++;
+      pendingIncrementalBR.notifyAll();
+    }
+  }
+
+  void notifyNamenodeDeletedBlockInt(ReceivedDeletedBlockInfo bInfo) {
+    synchronized (pendingIncrementalBR) {
+      pendingIncrementalBR.put(
+          bInfo.getBlock().getBlockId(), bInfo);
+    }
+  }
+  
+  private ActiveNamenode nextNNForNonBlkReportRPC(){
+      synchronized(nnlist){
+          if(nnlist == null || nnlist.size() == 0) return null;
+          
+          if(rpcRoundRobinIndex>=nnlist.size()){
+              rpcRoundRobinIndex = 0;
+          }
+          return nnlist.getActiveNamenodes().get(rpcRoundRobinIndex++);
+      }
+  }
+  
+  private ActiveNamenode nextNNForBlkReport() throws IOException{
+     ActiveNamenode leader = nnlist.getLeader();
+     BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
+     return leaderActor.nextNNForBlkReport();
+  }
+  
+  /**
+   * Report the list blocks to the Namenode
+   * @throws IOException
+   */
+  DatanodeCommand blockReport() throws IOException {
+    // send block report if timer has expired.
+    DatanodeCommand cmd = null;
+    long startTime = now();
+    if (startTime - lastBlockReport > dnConf.blockReportInterval) {
+
+      // Flush any block information that precedes the block report. Otherwise
+      // we have a chance that we will miss the delHint information
+      // or we will report an RBW replica after the BlockReport already reports
+      // a FINALIZED one.
+      reportReceivedDeletedBlocks();
+
+      // Create block report
+      long brCreateStartTime = now();
+      BlockListAsLongs bReport = dn.getFSDataset().getBlockReport(getBlockPoolId());
+
+      // Send block report
+      long brSendStartTime = now();
+      StorageBlockReport[] report = { new StorageBlockReport(
+          new DatanodeStorage(bpRegistration.getStorageID()),
+          bReport.getBlockListAsLongs()) };
+      
+      ActiveNamenode an = nextNNForBlkReport();
+      blkReportHander = getAnActor(an.getInetSocketAddress());
+      if(an == null || blkReportHander == null){
+          return null; //no one is ready to handle the request, return now without changing the values of lastBlockReport. it will be retried in next cycle
+      }
+      cmd = blkReportHander.blockReport(bpRegistration, getBlockPoolId(), report);
+
+      // Log the block report processing stats from Datanode perspective
+      long brSendCost = now() - brSendStartTime;
+      long brCreateCost = brSendStartTime - brCreateStartTime;
+      dn.getMetrics().addBlockReport(brSendCost);
+      LOG.info("BlockReport of " + bReport.getNumberOfBlocks()
+          + " blocks took " + brCreateCost + " msec to generate and "
+          + brSendCost + " msecs for RPC and NN processing");
+
+      // If we have sent the first block report, then wait a random
+      // time before we start the periodic block reports.
+      if (resetBlockReportTime) {
+        lastBlockReport = startTime - DFSUtil.getRandom().nextInt((int)(dnConf.blockReportInterval));
+        resetBlockReportTime = false;
+      } else {
+        /* say the last block report was at 8:20:14. The current report
+         * should have started around 9:20:14 (default 1 hour interval).
+         * If current time is :
+         *   1) normal like 9:20:18, next report should be at 10:20:14
+         *   2) unexpected like 11:35:43, next report should be at 12:20:14
+         */
+        lastBlockReport += (now() - lastBlockReport) /
+        dnConf.blockReportInterval * dnConf.blockReportInterval;
+      }
+      LOG.info("sent block report, processed command:" + cmd);
+    }
+    return cmd;
+  }
+  
+  BPServiceActor reportRemoteBadBlockInt(DatanodeInfo dnInfo, ExtendedBlock block) throws IOException {
+        ActiveNamenode an = nextNNForNonBlkReportRPC();
+        if(an != null){
+        BPServiceActor actor = getAnActor(an.getInetSocketAddress());
+        actor.reportRemoteBadBlock(dnInfo, block); 
+        return actor;
+        }
+        return null;
+  }
+  
+    /**
+   * This methods  arranges for the data node to send the block report at 
+   * the next heartbeat.
+   */
+  void scheduleBlockReportInt(long delay) {
+    if (delay > 0) { // send BR after random delay
+      lastBlockReport = Time.now()
+      - ( dnConf.blockReportInterval - DFSUtil.getRandom().nextInt((int)(delay)));
+    } else { // send at next heartbeat
+//      lastBlockReport = lastHeartbeat - dnConf.blockReportInterval;
+        lastBlockReport = Time.now() - dnConf.blockReportInterval;
+    }
+    resetBlockReportTime = true; // reset future BRs for randomness
+  }
+  
+   /**
+   * Run an immediate block report on this thread. Used by tests.
+   */
+  void triggerBlockReportForTestsInt() {
+    synchronized (pendingIncrementalBR) {
+      lastBlockReport = 0;
+      pendingIncrementalBR.notifyAll();
+      while (lastBlockReport == 0) {
+        try {
+          pendingIncrementalBR.wait(100);
+        } catch (InterruptedException e) {
+          return;
+        }
+      }
+    }
+  }
+  
+  void triggerDeletionReportForTestsInt() {
+    synchronized (pendingIncrementalBR) {
+      lastDeletedReport = 0;
+      pendingIncrementalBR.notifyAll();
+
+      while (lastDeletedReport == 0) {
+        try {
+          pendingIncrementalBR.wait(100);
+        } catch (InterruptedException e) {
+          return;
+        }
+      }
+    }
+  }
+  
+  void updateNNList(SortedActiveNamenodeList list) throws IOException {
+        ArrayList<InetSocketAddress> nnList = new ArrayList<InetSocketAddress>();
+        for (ActiveNamenode ann : list.getActiveNamenodes()) {
+            InetSocketAddress socketAddress = new InetSocketAddress(ann.getIpAddress(), ann.getPort());
+            nnList.add(socketAddress);
+        }
+
+        bpServiceToActive = getAnActor(list.getLeader().getInetSocketAddress());
+        
+        refreshNNList(nnList);
+        
+        synchronized(nnlist){
+            nnlist = list;
+            if(nnlist.size() <= refreshNNRoundRobinIndex){
+                refreshNNRoundRobinIndex = 0;
+            }
+        }
+    }
+  
+  boolean canUpdateNNList(InetSocketAddress address){
+      synchronized(nnlist){        
+          ActiveNamenode an  = nnlist.getActiveNamenodes().get(refreshNNRoundRobinIndex);
+          if(an.getInetSocketAddress().equals(address))
+              return true;
+          else
+              return false;
+      }
+      
+  }
+  
+    @Override
+    public void run() {
+      try { 
+          whirlingLikeASufi();
+      } catch (Exception ex) {
+          LOG.warn("Unexpected exception in BPOfferService " + this, ex);
+      }
+    }
+    //END_HOP_CODE
 }

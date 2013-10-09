@@ -174,6 +174,6 @@ public interface DatanodeProtocol {
    * 'namenode' to send the block reports to This is a feature added to do load
    * balancing of block reports among namenodes
    */
-  public String getNextNamenodeToSendBlockReport() throws IOException;
+  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException;
   //END_HOP_CODE
 }

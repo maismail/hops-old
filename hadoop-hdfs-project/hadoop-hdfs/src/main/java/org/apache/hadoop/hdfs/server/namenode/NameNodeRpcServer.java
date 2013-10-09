@@ -1136,7 +1136,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   protected volatile int nnIndex = 0;
 
   @Override
-  public String getNextNamenodeToSendBlockReport() throws IOException {
+  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
     // Use the modulo to roundrobin b/w namenodes
     nnIndex++;
     List<ActiveNamenode> totalNamenodes = ((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
@@ -1157,7 +1157,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
       throw new IOException("Something went wrong [nnIndex: " + nnIndex + ", size: " + totalNamenodes.size() + ", count: " + count + "]. Expecting namenode entry");
     }
     ActiveNamenode ann = iter.next();
-    String ip_port = ann.getIpAddress() + ":" + ann.getPort();
 
     // TODO if i am the leader and I am in safe-mode, then send the block reports
     // only to me - these are the initial block reports needed to leave safe mode.
@@ -1165,7 +1164,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
     //        ip_port = // my ip-port
     //    }
 
-    return ip_port;
+    return ann;
   }
     //HOP_CODE_END
 }

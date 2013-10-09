@@ -14,7 +14,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockManager;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
@@ -285,7 +284,7 @@ public class LeaderElection extends Thread {
       StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
       String hostName = st.nextToken();
       int port = Integer.parseInt(st.nextToken());
-      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
+      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port, nn.isLeader());
       activeNameNodeList.add(ann);
     }
     

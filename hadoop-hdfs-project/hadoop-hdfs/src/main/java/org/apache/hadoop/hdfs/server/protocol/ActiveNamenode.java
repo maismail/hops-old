@@ -15,6 +15,8 @@
  */
 package org.apache.hadoop.hdfs.server.protocol;
 
+import java.net.InetSocketAddress;
+
 /**
  *
  * @author jdowling
@@ -26,7 +28,7 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     private final String ipAddress;
     private final int port;
     private final boolean leader;
-
+    
     public ActiveNamenode(long id, String hostname, String ipAddress, int port, boolean isLeader) {
         this.id = id;
         this.hostname = hostname;
@@ -53,6 +55,10 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     
     public boolean isLeader(){
         return leader;
+    }
+    
+    public InetSocketAddress getInetSocketAddress(){
+        return new InetSocketAddress(ipAddress, port);
     }
 
   @Override

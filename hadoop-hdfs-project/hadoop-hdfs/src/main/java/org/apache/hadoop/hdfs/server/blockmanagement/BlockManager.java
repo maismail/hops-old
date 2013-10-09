@@ -3419,8 +3419,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     public void run() {
       while (namesystem.isRunning()) {
         try {
-          computeDatanodeWork();
-          processPendingReplications();
+            if(namesystem.isLeader()){
+                computeDatanodeWork();
+                processPendingReplications();
+            }
           Thread.sleep(replicationRecheckInterval);
         } catch (InterruptedException ie) {
           LOG.warn("ReplicationMonitor thread received InterruptedException.", ie);

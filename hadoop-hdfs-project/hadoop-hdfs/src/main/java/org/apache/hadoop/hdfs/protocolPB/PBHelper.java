@@ -142,7 +142,6 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
@@ -1371,7 +1370,7 @@ public class PBHelper {
   
   public static ActiveNamenode convert(ActiveNamenodeProto p)
   {
-    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
+    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getLeader());
     return an;
   }
   
@@ -1388,7 +1387,7 @@ public class PBHelper {
   
   public static ActiveNamenodeListResponseProto convert(SortedActiveNamenodeList anlWrapper)
   {
-    List<ActiveNamenode> anl = anlWrapper.geActiveNamenodes();
+    List<ActiveNamenode> anl = anlWrapper.getActiveNamenodes();
     ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();
     for(int i = 0; i < anl.size(); i++)
     {
@@ -1397,12 +1396,6 @@ public class PBHelper {
     }
     return anlrpb.build();
   }
-  
-  public static NameNodeAddressResponseForBlockReportingProto convert(String host)
-  {
-    NameNodeAddressResponseForBlockReportingProto.Builder response = NameNodeAddressResponseForBlockReportingProto.newBuilder();
-    response.setHostname(host);
-    return response.build();
-  }
+
 //HOP_CODE_END
 }

@@ -734,6 +734,15 @@ public class DatanodeManager {
    * checks if any of the hosts have changed states:
    */
   public void refreshNodes(final Configuration conf) throws IOException {
+    // refreshNodes starts/stops decommission/recommission process
+    // it should only be handled by the leader node. 
+    // because it depends upon threads like replication_deamon which is only active
+    // on the leader node. 
+      
+    if(!this.namesystem.isLeader())
+    {
+        throw new UnsupportedOperationException("Only Leader NameNode can do refreshNodes");
+    }  
     refreshHostsReader(conf);
     namesystem.writeLock();
     try {

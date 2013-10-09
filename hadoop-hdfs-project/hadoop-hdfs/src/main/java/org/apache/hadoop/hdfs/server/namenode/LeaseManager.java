@@ -369,43 +369,44 @@ public class LeaseManager {
 
     /** Check leases periodically. */
     @Override
-    public void run() {
-      for(; shouldRunMonitor && fsnamesystem.isRunning(); ) {
-        //boolean needSync = false;
-        try {
-          fsnamesystem.writeLockInterruptibly();
-          try {
-            //HOP:
-            /*if (!fsnamesystem.isInSafeMode()) {
-              needSync = checkLeases();
-            }*/
-            if (!(Boolean) isInSafeModeHandler.handle(fsnamesystem)) {
-               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle(fsnamesystem);
-               if (sortedLeases != null) {
-                 for (Lease expiredLease : sortedLeases) {
-                   expiredLeaseHandler.setParams(expiredLease.getHolder()).handle(fsnamesystem);
-                 }
-               }
-             }
-          } catch (IOException ex) {
-            LOG.error(ex);
-          } finally {
-            fsnamesystem.writeUnlock();
-            //HOP:
-            // lease reassignments should to be sync'ed.
-            //if (needSync) {
-            //  fsnamesystem.getEditLog().logSync();
-            //}
+      public void run() {
+          for (; shouldRunMonitor && fsnamesystem.isRunning();) {
+              //boolean needSync = false;
+              try {
+                  if (fsnamesystem.isLeader()) { 
+                      fsnamesystem.writeLockInterruptibly();
+                      try {
+                          //HOP:
+                           /*if (!fsnamesystem.isInSafeMode()) {
+                           needSync = checkLeases();
+                           }*/
+                          if (!(Boolean) isInSafeModeHandler.handle(fsnamesystem)) {
+                              SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle(fsnamesystem);
+                              if (sortedLeases != null) {
+                                  for (Lease expiredLease : sortedLeases) {
+                                      expiredLeaseHandler.setParams(expiredLease.getHolder()).handle(fsnamesystem);
+                                  }
+                              }
+                          }
+                      } catch (IOException ex) {
+                          LOG.error(ex);
+                      } finally {
+                          fsnamesystem.writeUnlock();
+                          //HOP:
+                          // lease reassignments should to be sync'ed.
+                          //if (needSync) {
+                          //  fsnamesystem.getEditLog().logSync();
+                          //}
+                      }
+                  }
+                  Thread.sleep(HdfsServerConstants.NAMENODE_LEASE_RECHECK_INTERVAL);
+              } catch (InterruptedException ie) {
+                  if (LOG.isDebugEnabled()) {
+                      LOG.debug(name + " is interrupted", ie);
+                  }
+              }
           }
-  
-          Thread.sleep(HdfsServerConstants.NAMENODE_LEASE_RECHECK_INTERVAL);
-        } catch(InterruptedException ie) {
-          if (LOG.isDebugEnabled()) {
-            LOG.debug(name + " is interrupted", ie);
-          }
-        }
       }
-    }
     
     TransactionalRequestHandler isInSafeModeHandler = new TransactionalRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       
