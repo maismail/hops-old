@@ -68,8 +68,9 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
       throw new IllegalStateException("I write horrible code");
     }
   }
-   
-   
-    
-    
+
+  @Override
+  public String toString() {
+    return "Active NN ("+id+") address "+getInetSocketAddress();
+  }   
 }

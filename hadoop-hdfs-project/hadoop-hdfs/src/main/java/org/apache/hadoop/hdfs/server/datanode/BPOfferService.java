@@ -49,6 +49,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -172,6 +173,7 @@ class BPOfferService implements Runnable {
       for (InetSocketAddress deadNN : deadNNs) {
         BPServiceActor deadActor = stopAnActor(deadNN);
         bpServices.remove(deadActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
+        LOG.debug("TestNN stopped actor for "+deadActor.getNNSocketAddress());
       }
     }
 
@@ -180,6 +182,7 @@ class BPOfferService implements Runnable {
       for (InetSocketAddress newNN : newNNs) {
         BPServiceActor newActor = startAnActor(newNN);
         bpServices.add(newActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
+        LOG.debug("TestNN started actor for "+newActor.getNNSocketAddress());
       }
     }
     //END_HOP_CODE
@@ -862,6 +865,7 @@ class BPOfferService implements Runnable {
       ActiveNamenode leader = null;
       leader = nnList.get(index++); //leader
       try {
+        LOG.debug("TestNN, nextNNForBlkReport ann "+ ann.getInetSocketAddress());
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
         if(leaderActor!=null){
           ann = leaderActor.nextNNForBlkReport();
@@ -1012,6 +1016,7 @@ class BPOfferService implements Runnable {
 
     nnList.clear();
     nnList.addAll(list.getActiveNamenodes());
+    LOG.debug("TestNN, Updated the NN List "+ Arrays.toString(nnList.toArray()));
   }
 
   boolean canUpdateNNList(InetSocketAddress address) {
@@ -1058,6 +1063,7 @@ class BPOfferService implements Runnable {
     while (ann != null && maxRetries > 0) {
       try {
         BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
+         LOG.debug("TestNN, reportBadBlocksWithRetry ann "+ ann.getInetSocketAddress());
         actor.reportBadBlocks(block);
         //no exception
         break;
@@ -1079,6 +1085,7 @@ class BPOfferService implements Runnable {
     while (ann != null && maxRetries > 0) {
       try {
         BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
+         LOG.debug("TestNN, blockReceivedAndDeletedWithRetry ann "+ ann.getInetSocketAddress());
         actor.blockReceivedAndDeleted(bpRegistration, getBlockPoolId(), receivedAndDeletedBlocks);
         //no exception
         break;
@@ -1101,6 +1108,7 @@ class BPOfferService implements Runnable {
     while (ann != null && maxRetries > 0) {
       try {
         BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
+        LOG.debug("TestNN, reportRemoteBadBlockWithRetry ann "+ ann.getInetSocketAddress());
         actor.reportRemoteBadBlock(dnInfo, block);
         //no exception
         break;

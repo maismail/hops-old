@@ -2293,8 +2293,8 @@ public class MiniDFSCluster {
    */
   public NameNode addNameNode(Configuration conf, int namenodePort)
       throws IOException {
-//    if(!federation)
-//      throw new IOException("cannot add namenode to non-federated cluster");
+    if(!federation)
+      throw new IOException("cannot add namenode to non-federated cluster");
 
     int nnIndex = nameNodes.length;
     int numNameNodes = nameNodes.length + 1;
