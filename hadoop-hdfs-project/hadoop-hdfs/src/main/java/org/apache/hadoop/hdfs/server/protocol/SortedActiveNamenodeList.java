@@ -59,13 +59,11 @@ public class SortedActiveNamenodeList {
         return sb.toString();
     }
     
-    public ActiveNamenode getLeader(){
-        //return the leader node in from the list
-        for(ActiveNamenode anode : listActiveNamenodes){
-            if(anode.isLeader())
-                return anode;
+    public ActiveNamenode getLeader(){ //in our case the node wiht smallest id is the leader
+        if(listActiveNamenodes == null || listActiveNamenodes.size() == 0){
+            return null;
         }
-        return null;
+        return listActiveNamenodes.get(0);
     }
     
     

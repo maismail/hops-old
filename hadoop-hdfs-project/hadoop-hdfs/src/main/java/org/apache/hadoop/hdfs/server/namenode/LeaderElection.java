@@ -61,7 +61,7 @@ public class LeaderElection extends Thread {
         @Override
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer  tla = new TransactionLockAcquirer();
-          tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+          tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
           return tla.acquire();
         }
 
@@ -112,7 +112,7 @@ public class LeaderElection extends Thread {
     @Override
     public TransactionLocks acquireLock() throws PersistanceException, IOException {
       TransactionLockAcquirer  tla = new TransactionLockAcquirer();
-      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
       return tla.acquire();
     }
 
@@ -284,7 +284,7 @@ public class LeaderElection extends Thread {
       StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
       String hostName = st.nextToken();
       int port = Integer.parseInt(st.nextToken());
-      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port, nn.isLeader());
+      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
       activeNameNodeList.add(ann);
     }
     

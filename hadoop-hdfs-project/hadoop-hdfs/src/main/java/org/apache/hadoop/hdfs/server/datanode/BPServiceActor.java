@@ -192,10 +192,12 @@ class BPServiceActor implements Runnable {
 
   private void connectToNNAndHandshake() throws IOException {
     // get NN proxy
+    
     bpNamenode = dn.connectToNN(nnAddr);
-
+    LOG.debug("TestX connecting to "+nnAddr);
     // First phase of the handshake with NN - get the namespace
     // info.
+    LOG.debug("TestX retriving nsinfo to "+nnAddr);
     NamespaceInfo nsInfo = retrieveNamespaceInfo();
     
     // Verify that this matches the other NN in this HA pair.
@@ -298,7 +300,10 @@ class BPServiceActor implements Runnable {
     
     shouldServiceRun = false;
     IOUtils.cleanup(LOG, bpNamenode);
+    LOG.debug("TestX clean up called removing the actor "+this.getNNSocketAddress());
     bpos.shutdownActor(this);
+    
+    
   }
 
   /**
@@ -312,6 +317,10 @@ class BPServiceActor implements Runnable {
         + dnConf.initialBlockReportDelay + "msec" + "; heartBeatInterval="
         + dnConf.heartBeatInterval);
 
+    //START_HOP_CODE
+    bpos.startWhirlingSufiThread();
+    //END_HOP_CODE
+    
     //
     // Now loop for a long time....
     //
@@ -382,8 +391,8 @@ class BPServiceActor implements Runnable {
 //        // There is no work to do;  sleep until hearbeat timer elapses, 
 //        // or work arrives, and then iterate again.
 //        //
-        long waitTime = dnConf.heartBeatInterval - 
-        (Time.now() - lastHeartbeat);
+//        long waitTime = dnConf.heartBeatInterval - 
+//        (Time.now() - lastHeartbeat);
 //        synchronized(pendingIncrementalBR) {
 //          if (waitTime > 0 && pendingReceivedRequests == 0) {
 //            try {
@@ -393,6 +402,8 @@ class BPServiceActor implements Runnable {
 //            }
 //          }
 //        } // synchronized
+        
+        long waitTime = dnConf.heartBeatInterval - (Time.now() - startTime);
         Thread.sleep(waitTime);
         
       } catch(RemoteException re) {
@@ -488,6 +499,7 @@ class BPServiceActor implements Runnable {
         // Initial handshake, storage recovery or registration failed
         // End BPOfferService thread
         LOG.fatal("Initialization failed for block pool " + this, ioe);
+        cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
         return;
       }
 
@@ -498,14 +510,15 @@ class BPServiceActor implements Runnable {
           offerService();
         } catch (Exception ex) {
           LOG.error("Exception in BPOfferService for " + this, ex);
-          sleepAndLogInterrupts(5000, "offering service");
+//HOP          sleepAndLogInterrupts(5000, "offering service");
+          cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
         }
       }
     } catch (Throwable ex) {
       LOG.warn("Unexpected exception in block pool " + this, ex);
     } finally {
       LOG.warn("Ending block pool service for: " + this);
-      cleanUp();
+      cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
     }
   }
 
@@ -583,10 +596,8 @@ class BPServiceActor implements Runnable {
             return;
         
         SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
-        InetSocketAddress leaderAddress = new InetSocketAddress(list.getLeader().getIpAddress(), list.getLeader().getPort());   
-        if(this.getNNSocketAddress().equals(leaderAddress)){
-            bpos.updateNNList(list);
-        }
+        bpos.updateNNList(list);
+        
     }
     
     public void blockReceivedAndDeleted(DatanodeRegistration registration,

@@ -35,13 +35,13 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
   public static final String DFS_STORAGE_DERBY_PROTOCOL_KEY = "dfs.storage.derby.protocol";
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
-  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloudX.sics.se";
+  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud11.sics.se";
   public static final String DFS_DB_DATABASE_NAME = "dfs.dbconnector.database";
-  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_X";
+  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_salman";
   public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
   public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user.";
-  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
+  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hooman";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.user.password";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "";  
   public static final String DFS_STORAGE_MYSQL_PORT = "dfs.storage.mysql.port";

@@ -330,7 +330,6 @@ message ActiveNamenodeProto {
   required string hostname = 2;    
   required string ipAddress = 3;    
   required int32 port = 4;    
-  required bool  leader = 5;
 }
 
 /**

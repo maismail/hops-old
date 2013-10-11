@@ -27,14 +27,12 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     private final String hostname;
     private final String ipAddress;
     private final int port;
-    private final boolean leader;
     
-    public ActiveNamenode(long id, String hostname, String ipAddress, int port, boolean isLeader) {
+    public ActiveNamenode(long id, String hostname, String ipAddress, int port) {
         this.id = id;
         this.hostname = hostname;
         this.ipAddress = ipAddress;
         this.port = port;
-        this.leader = isLeader;
     }
 
     public String getHostname() {
@@ -51,10 +49,6 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
 
     public int getPort() {
         return port;
-    }
-    
-    public boolean isLeader(){
-        return leader;
     }
     
     public InetSocketAddress getInetSocketAddress(){
