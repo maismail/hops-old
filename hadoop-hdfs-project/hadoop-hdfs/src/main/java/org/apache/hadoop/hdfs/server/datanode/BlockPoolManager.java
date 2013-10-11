@@ -151,11 +151,6 @@ class BlockPoolManager {
     Map<String, Map<String, InetSocketAddress>> newAddressMap = 
       DFSUtil.getNNServiceRpcAddresses(conf);
     
-    
-    for(String key : newAddressMap.keySet())
-    {
-        LOG.debug("TestX, Key: "+key+" valude: "+newAddressMap.get(key).toString());
-    }
     synchronized (refreshNamenodesLock) {
       doRefreshNamenodes(newAddressMap);
     }
