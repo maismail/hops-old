@@ -194,10 +194,8 @@ class BPServiceActor implements Runnable {
     // get NN proxy
     
     bpNamenode = dn.connectToNN(nnAddr);
-    LOG.debug("TestX connecting to "+nnAddr);
     // First phase of the handshake with NN - get the namespace
     // info.
-    LOG.debug("TestX retriving nsinfo to "+nnAddr);
     NamespaceInfo nsInfo = retrieveNamespaceInfo();
     
     // Verify that this matches the other NN in this HA pair.
@@ -209,7 +207,7 @@ class BPServiceActor implements Runnable {
     register();
   }
   
-  void reportBadBlocks(ExtendedBlock block) {
+  void reportBadBlocks(ExtendedBlock block) throws IOException  {
     if (bpRegistration == null) {
       return;
     }
@@ -224,6 +222,8 @@ class BPServiceActor implements Runnable {
        */
       LOG.warn("Failed to report bad block " + block + " to namenode : "
           + " Exception", e);
+      //HOP we will retry by sending it to another nn. it could be because of NN failue
+      throw e;
     }
   }
   
@@ -300,7 +300,7 @@ class BPServiceActor implements Runnable {
     
     shouldServiceRun = false;
     IOUtils.cleanup(LOG, bpNamenode);
-    LOG.debug("TestX clean up called removing the actor "+this.getNNSocketAddress());
+
     bpos.shutdownActor(this);
     
     
@@ -403,7 +403,12 @@ class BPServiceActor implements Runnable {
 //          }
 //        } // synchronized
         
-        long waitTime = dnConf.heartBeatInterval - (Time.now() - startTime);
+        long waitTime = Math.abs(dnConf.heartBeatInterval - (Time.now() - startTime));
+        if(waitTime > dnConf.heartBeatInterval){
+          // above code took longer than dnConf.heartBeatInterval to execute 
+          // set wait time to 1 ms to send a new HB immediately
+          waitTime = 1;
+        }
         Thread.sleep(waitTime);
         
       } catch(RemoteException re) {

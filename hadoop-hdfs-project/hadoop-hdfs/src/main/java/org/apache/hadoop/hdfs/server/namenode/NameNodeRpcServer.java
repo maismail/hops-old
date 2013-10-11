@@ -1114,57 +1114,14 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   
   // HOP_CODE_START
-  TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(OperationType.SELECT_ALL_NAMENODES) {
-    @Override
-    public TransactionLocks acquireLock() throws PersistanceException, IOException {
-      TransactionLockAcquirer tla = new TransactionLockAcquirer();
-      tla.getLocks().addLeaderLock(LockType.READ_COMMITTED);
-      return tla.acquire();
-    }
-
-    @Override
-    public Object performTask() throws PersistanceException, IOException {
-      return nn.getLeaderElectionInstance().selectAll();
-    }
-  };
-
   @Override
   public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
-
-    return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
+    return nn.getActiveNamenodes();
   }
-  protected volatile int nnIndex = 0;
 
   @Override
   public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
-    // Use the modulo to roundrobin b/w namenodes
-    nnIndex++;
-    List<ActiveNamenode> totalNamenodes = ((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
-    nnIndex = nnIndex % totalNamenodes.size();
-    Iterator<ActiveNamenode> iter = totalNamenodes.iterator();
-    int count = nnIndex;
-    while (iter.hasNext()) {
-      if (count == 0) {
-        break;
-      } else {
-        // skip this namenode
-        iter.next();
-        count--;
-      }
-    }
-    // Convert to string format to be passed over RPC
-    if (!iter.hasNext()) {
-      throw new IOException("Something went wrong [nnIndex: " + nnIndex + ", size: " + totalNamenodes.size() + ", count: " + count + "]. Expecting namenode entry");
-    }
-    ActiveNamenode ann = iter.next();
-
-    // TODO if i am the leader and I am in safe-mode, then send the block reports
-    // only to me - these are the initial block reports needed to leave safe mode.
-    //    if (nn.isInSafeMode() && nn.isLeader()) {
-    //        ip_port = // my ip-port
-    //    }
-
-    return ann;
+    return nn.getNextNamenodeToSendBlockReport();
   }
     //HOP_CODE_END
 }

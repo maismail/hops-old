@@ -83,9 +83,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
+import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -1542,6 +1550,40 @@ public class NameNode {
 
   public boolean isLeader() {
     return role.equals(NamenodeRole.LEADER);
+  }
+    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.SELECT_ALL_NAMENODES) {
+    @Override
+    public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+      return tla.acquire();
+    }
+
+    @Override
+    public Object performTask() throws PersistanceException, IOException {
+      return getLeaderElectionInstance().selectAll();
+    }
+  };
+
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+    return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
+  }
+  
+  protected volatile int nnIndex = 0;
+  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
+    List<ActiveNamenode> allNodes = ((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
+    if(this.isLeader())
+    {
+      // Use the modulo to roundrobin b/w namenodes
+      nnIndex = ++nnIndex % allNodes.size();
+      ActiveNamenode ann = allNodes.get(nnIndex);
+      return ann;
+    }else{
+      // random allocation of NN
+      Random rand = new Random();
+      rand.setSeed(System.currentTimeMillis());
+      return allNodes.get(rand.nextInt(allNodes.size()));
+    }
   }
   //END_HOP_CODE
 }
