@@ -1577,12 +1577,15 @@ public class NameNode {
       // Use the modulo to roundrobin b/w namenodes
       nnIndex = ++nnIndex % allNodes.size();
       ActiveNamenode ann = allNodes.get(nnIndex);
+      LOG.debug("TestNN server leader returning "+ann.getIpAddress());
       return ann;
     }else{
       // random allocation of NN
       Random rand = new Random();
       rand.setSeed(System.currentTimeMillis());
-      return allNodes.get(rand.nextInt(allNodes.size()));
+      ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
+      LOG.debug("TestNN server leader returning "+ann.getIpAddress());
+      return ann;
     }
   }
   //END_HOP_CODE

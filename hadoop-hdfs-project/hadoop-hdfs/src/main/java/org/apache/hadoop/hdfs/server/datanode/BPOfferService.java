@@ -143,7 +143,8 @@ class BPOfferService implements Runnable {
     this.dn = dn;
 
     for (InetSocketAddress addr : nnAddrs) {
-      this.bpServices.add(new BPServiceActor(addr, this));
+      this.bpServices.add(new BPServiceActor(addr, this)); 
+      nnList.add(new ActiveNamenode(0, "", addr.getAddress().getHostAddress(), addr.getPort()));
     }
     //START_HOP_CODE
     dnConf = dn.getDnConf();
@@ -752,7 +753,7 @@ class BPOfferService implements Runnable {
         // There is no work to do;  sleep until hearbeat timer elapses, 
         // or work arrives, and then iterate again.
         //
-        long waitTime = dnConf.heartBeatInterval;
+        long waitTime = 1000;
 //        - (Time.now() - lastHeartbeat);
         synchronized (pendingIncrementalBR) {
           if (waitTime > 0 && pendingReceivedRequests == 0) {
@@ -764,12 +765,12 @@ class BPOfferService implements Runnable {
           }
         } // synchronized
 
-        //after every heartBeatInterval increment the refreshNNRoundRobinIndex
+        //after every 1000ms increment the refreshNNRoundRobinIndex
         refreshNNRoundRobinIndex = ++refreshNNRoundRobinIndex % nnList.size();
         } catch (Exception re) {
         LOG.warn("Exception in whirlingLikeASufi", re);
         try {
-          long sleepTime = Math.min(1000, dnConf.heartBeatInterval);
+          long sleepTime = 1000;
           Thread.sleep(sleepTime);
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
@@ -865,7 +866,7 @@ class BPOfferService implements Runnable {
       ActiveNamenode leader = null;
       leader = nnList.get(index++); //leader
       try {
-        LOG.debug("TestNN, nextNNForBlkReport ann "+ ann.getInetSocketAddress());
+        LOG.debug("TestNN, nextNNForBlkReport ann "+ leader.getInetSocketAddress());
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
         if(leaderActor!=null){
           ann = leaderActor.nextNNForBlkReport();
@@ -883,7 +884,7 @@ class BPOfferService implements Runnable {
         
       }
     }
-
+    
     return ann;
   }
 
@@ -961,10 +962,10 @@ class BPOfferService implements Runnable {
   void scheduleBlockReportInt(long delay) {
     if (delay > 0) { // send BR after random delay
       lastBlockReport = Time.now()
-              - (dnConf.blockReportInterval - DFSUtil.getRandom().nextInt((int) (delay)));
+              - (dnConf.blockReportInterval - DFSUtil.getRandom().nextInt((int) (delay)));      
     } else { // send at next heartbeat
 //      lastBlockReport = lastHeartbeat - dnConf.blockReportInterval;
-      lastBlockReport = Time.now() - dnConf.blockReportInterval;
+      lastBlockReport = 0;// Time.now() - dnConf.blockReportInterval;
     }
     resetBlockReportTime = true; // reset future BRs for randomness
   }
@@ -1085,7 +1086,6 @@ class BPOfferService implements Runnable {
     while (ann != null && maxRetries > 0) {
       try {
         BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
-         LOG.debug("TestNN, blockReceivedAndDeletedWithRetry ann "+ ann.getInetSocketAddress());
         actor.blockReceivedAndDeleted(bpRegistration, getBlockPoolId(), receivedAndDeletedBlocks);
         //no exception
         break;
@@ -1119,7 +1119,6 @@ class BPOfferService implements Runnable {
       }
     }
   }
-  
-  
+
   //END_HOP_CODE
 }

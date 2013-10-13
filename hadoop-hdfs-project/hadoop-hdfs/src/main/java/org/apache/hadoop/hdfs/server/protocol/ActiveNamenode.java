@@ -16,6 +16,7 @@
 package org.apache.hadoop.hdfs.server.protocol;
 
 import java.net.InetSocketAddress;
+import org.apache.hadoop.net.NetUtils;
 
 /**
  *
@@ -52,7 +53,8 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     }
     
     public InetSocketAddress getInetSocketAddress(){
-        return new InetSocketAddress(ipAddress, port);
+//        return new InetSocketAddress(ipAddress, port);
+        return NetUtils.createSocketAddrForHost(ipAddress, port);
     }
 
   @Override
