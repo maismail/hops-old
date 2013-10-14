@@ -90,13 +90,13 @@ public class TestHABasicFailover extends junit.framework.TestCase
             
             LOG.debug("TestNN going to restart the NN2");
             // restart the newly elected leader and see if it is still the leader
-            cluster.restartNameNode(NN2);
-            if(true) return;
+         cluster.restartNameNodeWithoutDeletingNonFSImageData(NN2);
+         
             cluster.waitActive();
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
             assertTrue("NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
             assertTrue("Not all datanodes detected the new leader", doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
-
+   
             /**
              * **************************************
              * testing fail-back after some interval datanode asks for a
@@ -118,9 +118,9 @@ public class TestHABasicFailover extends junit.framework.TestCase
              * other namenodes. **************************************
              */
             // Doing a fail back scenario to NN1
-            cluster.restartNameNode(NN1); // will be restarted in the system with the next highest id while NN2 is still the leader
+            cluster.restartNameNodeWithoutDeletingNonFSImageData(NN1); // will be restarted in the system with the next highest id while NN2 is still the leader
             cluster.waitActive();
-
+  
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
 
             cluster.shutdownNameNode(NN2);
@@ -134,6 +134,7 @@ public class TestHABasicFailover extends junit.framework.TestCase
         catch (Exception ex)
         {
             LOG.error(ex);
+            ex.printStackTrace();
             fail();
         }
         finally
