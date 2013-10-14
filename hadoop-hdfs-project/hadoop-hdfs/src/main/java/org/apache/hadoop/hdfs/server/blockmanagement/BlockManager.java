@@ -390,7 +390,9 @@ public class BlockManager {
     pendingReplications.start();
     datanodeManager.activate(conf);
     this.replicationThread.start();
-    this.blockTokenSecretManager.generateKeysIfNeeded(namesystem.isLeader());
+    if (isBlockTokenEnabled()) {
+      this.blockTokenSecretManager.generateKeysIfNeeded(namesystem.isLeader());
+    }
   }
 
   public void close() {
