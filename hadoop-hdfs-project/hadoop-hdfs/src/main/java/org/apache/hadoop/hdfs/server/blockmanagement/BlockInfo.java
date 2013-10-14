@@ -154,6 +154,9 @@ public class BlockInfo extends Block {
 
     BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
     this.bc = bc; 
+    if(bc == null){
+      this.inodeId = INode.NON_EXISTING_ID;
+    }
     return bc;
   }
   
@@ -161,9 +164,7 @@ public class BlockInfo extends Block {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());      
-    }else{
-      this.inodeId = INode.NON_EXISTING_ID;
-    } 
+    }
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
 //      setINodeIdNoPersistance(-1);
