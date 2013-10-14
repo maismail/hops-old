@@ -1184,7 +1184,7 @@ public class TestFileCreation {
     if (simulatedStorage) {
       SimulatedFSDataset.setFactory(conf);
     }
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(2))
       .checkDataNodeHostConfig(true)
       .build();
     FileSystem fs = cluster.getFileSystem();
