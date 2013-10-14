@@ -3416,7 +3416,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HdfsFileStatus resultingStat = null;
     boolean status = false;
     if(NameNode.stateChangeLog.isDebugEnabled()) {
-      NameNode.stateChangeLog.debug("DIR* NameSystem.mkdirs: " + src);
+      NameNode.stateChangeLog.debug(this.getNamenodeId()+") DIR* NameSystem.mkdirs: " + src);
     }
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
