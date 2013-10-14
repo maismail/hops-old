@@ -628,7 +628,8 @@ public class NameNode {
     this.role = role;
     String nsId = getNameServiceId(conf);
     String namenodeId = HAUtil.getNameNodeId(conf, nsId);
-    this.haEnabled = HAUtil.isHAEnabled(conf, nsId);
+//    this.haEnabled = HAUtil.isHAEnabled(conf, nsId); // HOP disable it
+    this.haEnabled = false; // HOP this will force every namenode to be active
     state = createHAState();
     this.allowStaleStandbyReads = HAUtil.shouldAllowStandbyReads(conf);
     this.haContext = createHAContext();
