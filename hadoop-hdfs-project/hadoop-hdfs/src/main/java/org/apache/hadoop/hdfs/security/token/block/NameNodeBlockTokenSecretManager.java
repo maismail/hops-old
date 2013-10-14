@@ -165,6 +165,14 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     return createPassword(identifier.getBytes(), key.getKey());
   }
 
+  public void generateKeysIfNeeded(boolean isLeader) throws IOException{
+    this.isLeader = isLeader;
+    retrieveBlockKeys();
+    if(currentKey == null && nextKey == null){
+      generateKeys();
+    }
+  }
+  
   public void updateLeaderState(boolean isLeader) {
     this.isLeader = isLeader;
   }

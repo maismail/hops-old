@@ -386,10 +386,11 @@ public class BlockManager {
         : false;
   }
 
-  public void activate(Configuration conf) {
+  public void activate(Configuration conf) throws IOException {
     pendingReplications.start();
     datanodeManager.activate(conf);
     this.replicationThread.start();
+    this.blockTokenSecretManager.generateKeysIfNeeded(namesystem.isLeader());
   }
 
   public void close() {
