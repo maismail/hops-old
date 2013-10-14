@@ -1543,7 +1543,7 @@ public class MiniDFSCluster {
     Configuration conf = nameNodes[nnIndex].conf;
     shutdownNameNode(nnIndex);
     //HOP_START_CODE
-    deleteReplicasTable();
+    //deleteReplicasTable();
     //HOP_END_CODE
     NameNode nn = NameNode.createNameNode(new String[] {}, conf);
     nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
@@ -1733,7 +1733,7 @@ public class MiniDFSCluster {
   public boolean isNameNodeUp(int nnIndex) throws IOException {
     NameNode nameNode = nameNodes[nnIndex].nameNode;
     if (nameNode == null) {
-      return false;
+        return true;        // this node was shut down so return true
     }
     long[] sizes;
     sizes = NameNodeAdapter.getStats(nameNode.getNamesystem());
@@ -1887,7 +1887,7 @@ public class MiniDFSCluster {
 
   /** Wait until the given namenode gets registration from all the datanodes */
   public void waitActive(int nnIndex) throws IOException {
-    if (nameNodes.length == 0 || nameNodes[nnIndex] == null) {
+    if (nameNodes.length == 0 || nameNodes[nnIndex] == null || nameNodes[nnIndex].nameNode == null) {
       return;
     }
     InetSocketAddress addr = nameNodes[nnIndex].nameNode.getServiceRpcAddress();
@@ -2384,5 +2384,39 @@ public class MiniDFSCluster {
           LOG.error(e);
       }  
   }
+  
+  /**
+   * Restart the namenode at a given index.
+   */
+  // Inorder to be compatible with the existing implementation when a namenode
+  //restarts it deletes the tables like replicas, under construction tables etc
+  //In HoPS use these fns restartNameNodeWithoutDeletingNonFSImageData to restart the NNs
+  public synchronized void restartNameNodeWithoutDeletingNonFSImageData(int nnIndex) throws IOException {
+    restartNameNode(nnIndex, true);
+  }
+
+  /**
+   * Restart the namenode at a given index. Optionally wait for the cluster
+   * to become active.
+   */
+  public synchronized void restartNameNodeWithoutDeletingNonFSImageData(int nnIndex, boolean waitActive)
+      throws IOException {
+    String nameserviceId = nameNodes[nnIndex].nameserviceId;
+    String nnId = nameNodes[nnIndex].nnId;
+    Configuration conf = nameNodes[nnIndex].conf;
+    shutdownNameNode(nnIndex);
+    //HOP_START_CODE
+    //deleteReplicasTable();
+    //HOP_END_CODE
+    NameNode nn = NameNode.createNameNode(new String[] {}, conf);
+    nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
+    if (waitActive) {
+      waitClusterUp();
+      LOG.info("Restarted the namenode");
+      waitActive();
+    }
+  }
+
+  
   //HOP_END_CODE      
 }
