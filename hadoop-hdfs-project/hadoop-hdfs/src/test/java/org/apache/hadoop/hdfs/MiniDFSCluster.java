@@ -998,7 +998,9 @@ public class MiniDFSCluster {
           Thread.sleep(1000);
         } catch (InterruptedException e) {
         }
-        if (++i > 10) {
+        if (++i > 15) { //HOP increase the time from 10 to 15 becase now the registration process some 
+                        //times takes longer. it is because the threads for sending HB and Block Report 
+                        //are separate and some times we take couple of second more 
           throw new IOException("Timed out waiting for Mini HDFS Cluster to start");
         }
       }
