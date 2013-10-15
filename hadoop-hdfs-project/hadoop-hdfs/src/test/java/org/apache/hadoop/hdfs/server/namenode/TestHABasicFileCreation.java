@@ -2,27 +2,36 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import static junit.framework.Assert.assertTrue;
 import org.apache.commons.logging.Log;
 
 import org.apache.log4j.Level;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
+import org.apache.hadoop.hdfs.TestFileCreation;
+import static org.apache.hadoop.hdfs.TestFileCreation.createFile;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
+import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 /**
  *
- * @author Jude This tests basic failover b/w two namenodes in the system
+ * @author Salman <salman@sics.se> 
+ * Creates a simple file and checks if it exists even if a NN fails
  */
-public class TestHABasicFailover extends junit.framework.TestCase
+public class TestHABasicFileCreation extends junit.framework.TestCase
 {
 
-    public static final Log LOG = LogFactory.getLog(TestHABasicFailover.class);
+    public static final Log LOG = LogFactory.getLog(TestHABasicFileCreation.class);
 
     
     {
@@ -74,11 +83,22 @@ public class TestHABasicFailover extends junit.framework.TestCase
 
             assertTrue("NN1 is expected to be leader, but is not", cluster.getNameNode(NN1).isLeader());
 
+            
+            Path file = new Path("/file.txt");
+            FileSystem fs = cluster.getNewFileSystemInstance(NN1);
+            DistributedFileSystem dfs = (DistributedFileSystem)fs;
+            FSDataOutputStream stm = TestFileCreation.createFile(fs, file, 1);
+
+            // verify that file exists in FS namespace
+            assertTrue(file + " should be a file",  fs.getFileStatus(file).isFile());
+            System.out.println("Path : \"" + file + "\"");
+            // write to file
+            TestFileCreation.writeFile(stm, 1/*write one byte*/);
+            stm.close();
+//            fs.close();       
+            
             // performing failover - Kill NN1. This would allow NN2 to be leader
             cluster.shutdownNameNode(NN1);
-
-            
-
 
             // wait for leader to be elected and for Datanodes to also detect the leader
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
@@ -88,9 +108,15 @@ public class TestHABasicFailover extends junit.framework.TestCase
             assertTrue("Not all datanodes detected the new leader", doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
 
             
+//            fs = cluster.getNewFileSystemInstance(NN2);
+            assertTrue(file + " should be a file",  fs.getFileStatus(file).isFile());
+            fs.close();
+            
+            if(true ) return ;
+            
             LOG.debug("TestNN going to restart the NN2");
             // restart the newly elected leader and see if it is still the leader
-         cluster.restartNameNodeWithoutDeletingNonFSImageData(NN2);
+            cluster.restartNameNodeWithoutDeletingNonFSImageData(NN2);
          
             cluster.waitActive();
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
