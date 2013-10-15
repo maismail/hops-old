@@ -160,6 +160,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /********************************************************
  * DFSClient can connect to a Hadoop Filesystem and 
@@ -198,6 +199,11 @@ public class DFSClient implements java.io.Closeable {
   private Random r = new Random();
   private SocketAddress[] localInterfaceAddrs;
   private DataEncryptionKey encryptionKey;
+  
+  //START_HOP_CODE
+  private static int counter = 10001;
+  private int id=-1;
+  //END_HOP_CODE
 
   /**
    * DFSClient configuration 
@@ -435,6 +441,10 @@ public class DFSClient implements java.io.Closeable {
     }
     
     this.socketCache = SocketCache.getInstance(dfsClientConf.socketCacheCapacity, dfsClientConf.socketCacheExpiry);
+    
+    //START_HOP_CODE
+    this.id= counter++;
+    //END_HOP_CODE
   }
 
   /**
@@ -2252,4 +2262,34 @@ public class DFSClient implements java.io.Closeable {
   void disableShortCircuit() {
     shortCircuitLocalReads = false;
   }
+  
+  //START_HOP_CODE
+    /**
+   * Ping the name node to see if there is a connection
+   * -- A connection won't exist if it gives an IOException of type ConnectException or SocketTimeout
+   */
+  public boolean pingNamenode() {
+    try {
+    namenode.ping();
+    }
+    catch (IOException ex) {
+      LOG.warn("Ping to Namenode "+ex);
+      return false;
+      }
+    // There is a connection
+    return true;
+  }
+  
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException{
+    return namenode.getActiveNamenodesForClient();
+  }
+  
+  /**
+   * Since we have multiple clients, we differentiate the clients via the ID
+   * Used in NamenodeSelector
+   */
+  public int getId() {
+    return id;
+  }
+  //END_HOP_CODE
 }

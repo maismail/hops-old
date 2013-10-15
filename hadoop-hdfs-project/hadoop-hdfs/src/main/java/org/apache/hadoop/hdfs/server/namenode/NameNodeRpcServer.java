@@ -1123,5 +1123,14 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
     return nn.getNextNamenodeToSendBlockReport();
   }
+  
+  @Override
+  public void ping() throws IOException {
+  }
+  
+  @Override
+  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
+      throw new UnsupportedOperationException("");
+  }
     //HOP_CODE_END
 }

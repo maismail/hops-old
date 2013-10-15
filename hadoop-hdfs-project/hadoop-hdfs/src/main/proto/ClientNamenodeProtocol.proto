@@ -422,6 +422,24 @@ message GetDataEncryptionKeyRequestProto { // no parameters
 message GetDataEncryptionKeyResponseProto {
   optional DataEncryptionKeyProto dataEncryptionKey = 1;
 }
+//START_HOP_CODE
+message PingRequestProto { // empty request
+}
+message PingResponseProto { // void response
+}
+
+message ActiveNamenodeProto {
+  required uint64 id = 1;    
+  required string hostname = 2;    
+  required string ipAddress = 3;    
+  required int32 port = 4;    
+}
+message ActiveNamenodeListRequestProto {
+}
+message ActiveNamenodeListResponseProto {
+  repeated ActiveNamenodeProto namenodes = 1;
+}
+//END_HOP_CODE
 
 service ClientNamenodeProtocol {
   rpc getBlockLocations(GetBlockLocationsRequestProto)
@@ -496,4 +514,9 @@ service ClientNamenodeProtocol {
       returns(SetBalancerBandwidthResponseProto);
   rpc getDataEncryptionKey(GetDataEncryptionKeyRequestProto)
       returns(GetDataEncryptionKeyResponseProto);
+  //START_HOP_CODE
+  rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
+  rpc ping (PingRequestProto) returns (PingResponseProto);
+  //END_HOP_CODE
+
 }
