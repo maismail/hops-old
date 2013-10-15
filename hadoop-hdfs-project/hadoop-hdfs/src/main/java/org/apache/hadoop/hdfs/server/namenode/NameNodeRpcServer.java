@@ -1130,7 +1130,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   @Override
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
-      throw new UnsupportedOperationException("");
+    return nn.getActiveNamenodes();
   }
     //HOP_CODE_END
 }
