@@ -69,7 +69,7 @@ public class TestDataTransferKeepalive {
     cluster = new MiniDFSCluster.Builder(conf)
       .numDataNodes(1).build();
     fs = cluster.getFileSystem();
-    dfsClient = ((DistributedFileSystem)fs).dfs;
+    dfsClient = ((DistributedFileSystem)fs).getDFS();
 
     String poolId = cluster.getNamesystem().getBlockPoolId();
     dn = cluster.getDataNodes().get(0);
@@ -173,7 +173,7 @@ public class TestDataTransferKeepalive {
       IOUtils.cleanup(null, stms);
     }
     
-    DFSClient client = ((DistributedFileSystem)fs).dfs;
+    DFSClient client = ((DistributedFileSystem)fs).getDFS();
     assertEquals(5, client.socketCache.size());
     
     // Let all the xceivers timeout

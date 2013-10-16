@@ -158,7 +158,7 @@ public class TestSocketCache {
     FileSystem fsWithoutCache = FileSystem.newInstance(conf);
     try {
       DFSTestUtil.readFile(fsWithoutCache, testFile);
-      assertEquals(0, ((DistributedFileSystem)fsWithoutCache).dfs.socketCache.size());
+      assertEquals(0, ((DistributedFileSystem)fsWithoutCache).getDFS().socketCache.size());
     } finally {
       fsWithoutCache.close();
     }
