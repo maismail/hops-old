@@ -179,7 +179,7 @@ public class CommonConfigurationKeysPublic {
   public static final String  IPC_CLIENT_CONNECT_MAX_RETRIES_KEY =
     "ipc.client.connect.max.retries";
   /** Default value for IPC_CLIENT_CONNECT_MAX_RETRIES_KEY */
-  public static final int     IPC_CLIENT_CONNECT_MAX_RETRIES_DEFAULT = 10;
+  public static final int     IPC_CLIENT_CONNECT_MAX_RETRIES_DEFAULT = 1;
   /** See <a href="{@docRoot}/../core-default.html">core-default.xml</a> */
   public static final String  IPC_CLIENT_CONNECT_MAX_RETRIES_ON_SOCKET_TIMEOUTS_KEY =
     "ipc.client.connect.max.retries.on.timeouts";
