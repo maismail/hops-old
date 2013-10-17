@@ -122,15 +122,7 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
-import java.util.Iterator;
-import java.util.List;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 

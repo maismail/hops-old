@@ -104,7 +104,9 @@ public class NamenodeSelector extends Thread {
         while (periodicNNListUpdate) {
             try {
                 //first sleep and then update
+                synchronized(wiatObjectForUpdate){
                 wiatObjectForUpdate.wait(3000);
+                }
                 if (periodicNNListUpdate) {
                     periodicDFSClientsUpdate();
                 }
@@ -160,7 +162,9 @@ public class NamenodeSelector extends Thread {
                 maxRetries--;
                 continue;
             } else {
-                return client;
+                LOG.debug("Returning NN" +client.getId()+" for next RPC call. RRIndex "+index);
+                printNamenodes();
+                 return client;
             }
         }
 
@@ -177,7 +181,7 @@ public class NamenodeSelector extends Thread {
             rand.setSeed(System.currentTimeMillis());
             return rand.nextInt(clients.size());
         } else if (policy == NNSelectionPolicy.ROUND_ROBIN) {
-            rrIndex = (rrIndex++) / clients.size();
+            rrIndex = (++rrIndex) % clients.size();
             return rrIndex;
         } else {
             throw new UnsupportedOperationException("Namenode selection policy is not supported. Selected policy is " + policy);
@@ -185,9 +189,10 @@ public class NamenodeSelector extends Thread {
     }
 
     void printNamenodes() {
-        String nns = "TestNN Client is connected to namenodes: ";
+        String nns = "Client is connected to namenodes: ";
         for (InetSocketAddress address : clients.keySet()) {
-            nns += address + ", ";
+            DFSClient clinet = clients.get(address);
+            nns += "[ Client ID "+clinet.getId()+", NN Addr: "+ address + "], ";
         }
         LOG.debug(nns);
     }

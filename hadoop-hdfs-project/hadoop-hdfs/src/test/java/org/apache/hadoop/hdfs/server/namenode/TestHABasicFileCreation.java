@@ -1,39 +1,37 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.List;
+import java.io.EOFException;
+import java.io.IOException;
+import static java.lang.Thread.sleep;
+import java.net.ConnectException;
 import java.util.concurrent.TimeoutException;
-import static junit.framework.Assert.assertTrue;
 import org.apache.commons.logging.Log;
 
 import org.apache.log4j.Level;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
+import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import org.apache.hadoop.hdfs.TestFileCreation;
-import static org.apache.hadoop.hdfs.TestFileCreation.createFile;
-import org.apache.hadoop.hdfs.server.datanode.DataNode;
-import static org.junit.Assert.assertTrue;
+import org.apache.hadoop.io.IOUtils;
 import org.junit.Test;
 
 /**
  *
- * @author Salman <salman@sics.se> 
- * Creates a simple file and checks if it exists even if a NN fails
+ * @author Salman
  */
-public class TestHABasicFileCreation extends junit.framework.TestCase
-{
+public class TestHABasicFileCreation extends junit.framework.TestCase {
 
     public static final Log LOG = LogFactory.getLog(TestHABasicFileCreation.class);
 
-    
     {
         ((Log4JLogger) NameNode.stateChangeLog).getLogger().setLevel(Level.ALL);
         ((Log4JLogger) LeaseManager.LOG).getLogger().setLevel(Level.ALL);
@@ -41,197 +39,252 @@ public class TestHABasicFileCreation extends junit.framework.TestCase
     }
     Configuration conf = new HdfsConfiguration();
     MiniDFSCluster cluster = null;
-    int NUM_NAMENODES = 2;
-    int NUM_DATANODES = 1;
+    FileSystem fs = null;
+    int NN1 = 0, NN2 = 1;
+    static int NUM_NAMENODES = 2;
+    static int NUM_DATANODES = 1;
+    // 10 seconds timeout default
+    long timeout = 10000;
+    Path dir = new Path("/testsLoad");
+    //Writer[] writers = new Writer[10];
+    Writer[] writers = new Writer[1];
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private void setupCluster(int replicationFactor) throws IOException {
+        // initialize the cluster with minimum 2 namenodes and minimum 6 datanodes
+        if (NUM_NAMENODES < 2) {
+            NUM_NAMENODES = 2;
+        }
+        
+        if(replicationFactor > NUM_DATANODES){
+            NUM_DATANODES = replicationFactor;
+        }
+
+        this.conf = new Configuration();
+        conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, replicationFactor);
+        conf.setInt(DFSConfigKeys.DFS_DATANODE_HANDLER_COUNT_KEY, 1);
+        //conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 10 * 1000); // 10 sec
+        //conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
+
+        cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
+        cluster.waitActive();
+        
+        fs = cluster.getNewFileSystemInstance(NN1);
+
+        timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_DEFAULT)
+                + conf.getLong(DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_KEY, DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT) * 1000L;
+
+
+        // create the directory namespace
+        assertTrue(fs.mkdirs(dir));
+
+        // create writers
+        for (int i = 0; i < writers.length; i++) {
+            writers[i] = new Writer(fs, new Path(dir, "file" + i));
+        }
+
+
+    }
+
+    private void shutdown() {
+        if (cluster != null) {
+            cluster.shutdown();
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private void startWriters() {
+        for (int i = 0; i < writers.length; i++) {
+            writers[i].start();
+        }
+    }
+
+    private void stopWriters() throws InterruptedException {
+        for (int i = 0; i < writers.length; i++) {
+            if (writers[i] != null) {
+                writers[i].running = false;
+                writers[i].interrupt();
+            }
+        }
+        for (int i = 0; i < writers.length; i++) {
+            if (writers[i] != null) {
+                writers[i].join();
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    private void verifyFile() throws IOException {
+        LOG.info("Verify the file");
+        for (int i = 0; i < writers.length; i++) {
+            LOG.info(writers[i].filepath + ": length=" + fs.getFileStatus(writers[i].filepath).getLen());
+            FSDataInputStream in = null;
+            try {
+                in = fs.open(writers[i].filepath);
+                boolean eof = false;
+                int j = 0, x = 0;
+                long dataRead = 0;
+                while (!eof) {
+                    try {
+                        x = in.readInt();
+                        dataRead++;
+                        assertEquals(j, x);
+                        j++;
+                    } catch (EOFException ex) {
+                        eof = true; // finished reading file
+                    }
+                }
+                if(writers[i].datawrote != dataRead){
+                    fail("File length read lenght is not consistant. wrote "+writers[i].datawrote+" data read "+dataRead);
+                }
+            } finally {
+                IOUtils.closeStream(in);
+            }
+        }
+    }
+
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
     /**
-     * Testing basic failover. After starting namenodes NN1, NN2, the namenode
-     * that first initializes itself would be elected the leader. We allow NN1
-     * to be the leader. We kill NN1. Failover will start and NN2 will detect
-     * failure of NN1 and hence would elect itself as the leader Also perform
-     * fail-back to NN1 by killing NN2
+     * Under load perform failover by killing leader NN1 NN2 will be active and
+     * loads are now processed by NN2 Load should still continue No corrupt
+     * blocks should be reported
      */
     @Test
-    public void testFailover()
-    {
+    public void testFailoverWhenLeaderNNCrashes() {
+        // Testing with replication factor of 3
+        short repFactor = 1;
+        LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
+        failoverWhenLeaderNNCrashes(repFactor);
+        // Testing with replication factor of 6
+//    repFactor = 6;
+//    LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
+//    failoverWhenLeaderNNCrashes(repFactor);
+    }
 
-        final int NN1 = 0, NN2 = 1;
-        if (NUM_NAMENODES < 2)
-        {
-            NUM_NAMENODES = 2;
-        }
+    private void failoverWhenLeaderNNCrashes(short replicationFactor) {
+        try {
+            // setup the cluster with required replication factor
+            setupCluster(replicationFactor);
 
-        try
-        {
-            // Create cluster with 2 namenodes
-            cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
+            // save leader namenode port to restart with the same port
+            int nnport = cluster.getNameNodePort(NN1);
+
+            try {
+                // writers start writing to their files
+                startWriters();
+
+                // Give all the threads a chance to create their files and write something to it
+                Thread.sleep(5000); // 50 sec
+
+                // kill leader NN1
+                cluster.shutdownNameNode(NN1);
+                TestHABasicFailover.waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout);
+                // Check NN2 is the leader and failover is detected
+                assertTrue("NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
+                assertTrue("Not all datanodes detected the new leader", TestHABasicFailover.doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
+
+                // the load should still continue without any IO Exception thrown
+                LOG.info("Wait a few seconds. Let them write some more");
+                Thread.sleep(5000);
+
+            } finally {
+                stopWriters();
+            }
+            
+            verifyFile();
+            // the block report intervals would inform the namenode of under replicated blocks
+            // hflush() and close() would guarantee replication at all datanodes. This is a confirmation
+            waitReplication(fs, dir, replicationFactor, timeout);
+
+            if (true) {
+                return;
+            }
+            // restart the cluster without formatting using same ports and same configurations
+            cluster.shutdown();
+            cluster = new MiniDFSCluster.Builder(conf).nameNodePort(nnport).format(false).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
             cluster.waitActive();
 
-            // Give it time for leader to be elected
-            long timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_DEFAULT)
-                    + conf.getLong(DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_KEY, DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT) * 1000L;
+            // update the client so that it has the fresh list of namenodes. Black listed namenodes will be removed
+            fs = cluster.getNewFileSystemInstance(NN1);
 
-            /**
-             * *********************************
-             * testing fail over from NN1 to NN2
-             * **********************************
-             */
-            // Check NN1 is the leader
-            LOG.info("NameNode 1 id " + cluster.getNameNode(NN1).getId() + " address " + cluster.getNameNode(NN1).getServiceRpcAddress().toString());
-            LOG.info("NameNode 2 id " + cluster.getNameNode(NN2).getId() + " address " + cluster.getNameNode(NN2).getServiceRpcAddress().toString());
-
-            assertTrue("NN1 is expected to be leader, but is not", cluster.getNameNode(NN1).isLeader());
-
-            
-            Path file = new Path("/file.txt");
-            FileSystem fs = cluster.getNewFileSystemInstance(NN1);
-            DistributedFileSystem dfs = (DistributedFileSystem)fs;
-            FSDataOutputStream stm = TestFileCreation.createFile(fs, file, 1);
-
-            // verify that file exists in FS namespace
-            assertTrue(file + " should be a file",  fs.getFileStatus(file).isFile());
-            System.out.println("Path : \"" + file + "\"");
-            // write to file
-            TestFileCreation.writeFile(stm, 1/*write one byte*/);
-            stm.close();
-//            fs.close();       
-            
-            // performing failover - Kill NN1. This would allow NN2 to be leader
-            cluster.shutdownNameNode(NN1);
-
-            // wait for leader to be elected and for Datanodes to also detect the leader
-            waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
-
-            // Check NN2 is the leader and failover is detected
-            assertTrue("NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
-            assertTrue("Not all datanodes detected the new leader", doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
-
-            
-//            fs = cluster.getNewFileSystemInstance(NN2);
-            assertTrue(file + " should be a file",  fs.getFileStatus(file).isFile());
-            fs.close();
-            
-            if(true ) return ;
-            
-            LOG.debug("TestNN going to restart the NN2");
-            // restart the newly elected leader and see if it is still the leader
-            cluster.restartNameNodeWithoutDeletingNonFSImageData(NN2);
-         
-            cluster.waitActive();
-            waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
-            assertTrue("NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
-            assertTrue("Not all datanodes detected the new leader", doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
-   
-            /**
-             * **************************************
-             * testing fail-back after some interval datanode asks for a
-             * namenode to return all alive namenodes in the system. 
-             * 
-             * datanode starts new threads for new namenodes. if it finds out that some
-             * previous namenode is dead then the corresponding service thread
-             * is killed.              *
-             * A datanodes find out new namenodes by asking existing name nodes
-             * in the system. what happen data node is connected to X set of
-             * namenodes and they all die suddenly; and after a while Y set of
-             * namenodes come online. datanode will have no way of finding out
-             * namenodes belonging to set Y
-             *
-             * there is no fix for it yet. if such thing happens then restart
-             * datanode with some correct namenode.              *
-             * in the tests such secnaiors are avoided by making sure that
-             * datanodes are connected to atleast one name node after killing
-             * other namenodes. **************************************
-             */
-            // Doing a fail back scenario to NN1
-            cluster.restartNameNodeWithoutDeletingNonFSImageData(NN1); // will be restarted in the system with the next highest id while NN2 is still the leader
-            cluster.waitActive();
-  
-            waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
-
-            cluster.shutdownNameNode(NN2);
-            cluster.waitActive();
-
-            // waiting for NN1 to elect itself as the leader
-            waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN1), timeout * 10);
-            assertTrue("NN1 is expected to be the leader, but is not", cluster.getNameNode(NN1).isLeader());
-            assertTrue("Not all datanodes detected the new leader", doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN1)));
-        }
-        catch (Exception ex)
-        {
-            LOG.error(ex);
+            verifyFile(); // throws IOException. Should be caught by parent
+        } catch (Exception ex) {
+            LOG.error("Received exception: " + ex.getMessage(), ex);
             ex.printStackTrace();
-            fail();
-        }
-        finally
-        {
-            if (cluster != null)
-            {
-                cluster.shutdown();
-            }
+            fail("Exception: " + ex.getMessage());
+        } finally {
+            shutdown();
         }
 
+    }  
+
+    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    public static void waitReplication(FileSystem fs, Path rootDir, short replicationFactor, long timeout) throws IOException, TimeoutException {
+        FileStatus[] files = fs.listStatus(rootDir);
+        for (int i = 0; i < files.length;) {
+            try {
+                // increasing timeout to take into consideration 'ping' time with failed namenodes
+                // if the client fetches for block locations from a dead NN, it would need to retry many times and eventually this time would cause a timeout
+                // to avoid this, we set a larger timeout
+                long expectedRetyTime = 20000; // 20seconds
+                timeout = timeout + expectedRetyTime;
+                DFSTestUtil.waitReplicationWithTimeout(fs, files[i].getPath(), replicationFactor, timeout);
+                i++;
+            } catch (ConnectException ex) {
+                LOG.warn("Received Connect Exception (expected due to failure of NN)");
+                ex.printStackTrace();
+            }
+        }
     }
 
     // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    public static boolean doesDataNodesRecognizeLeader(List<DataNode> datanodes, NameNode namenode)
-    {
-        boolean result = true;
-        for (DataNode datanode : datanodes)
-        {
-            result = result & datanode.isConnectedToNN(namenode.getNameNodeAddress());
-        }
-        return result;
-    }
+    static class Writer extends Thread {
 
-    // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    public static void waitLeaderElection(List<DataNode> datanodes, NameNode nn, long timeout) throws TimeoutException
-    {
-        // wait for the new leader to be elected
-        long initTime = System.currentTimeMillis();
-        while (!nn.isLeader())
-        {
+        FileSystem fs;
+        final Path filepath;
+        boolean running = true;
+        FSDataOutputStream outputStream = null;
+        long datawrote = 0;
 
-            try
-            {
-                Thread.sleep(2000); // 2sec
-            }
-            catch (InterruptedException ex)
-            {
-                ex.printStackTrace();
-            }
+        Writer(FileSystem fs, Path filepath) {
+            super(Writer.class.getSimpleName() + ":" + filepath);
+            this.fs = fs;
+            this.filepath = filepath;
 
-            // check for time out
-            if (System.currentTimeMillis() - initTime >= timeout)
-            {
-                throw new TimeoutException("Namenode was not elected leader");
+            // creating the file here
+            try {
+                outputStream = this.fs.create(filepath);
+            } catch (Exception ex) {
+                LOG.info(getName() + " unable to create file [" + filepath + "]" + ex, ex);
+                if (outputStream != null) {
+                    IOUtils.closeStream(outputStream);
+                    outputStream = null;
+                }
             }
         }
 
-        // wait for all datanodes to recognize the new leader
-        initTime = System.currentTimeMillis();
-        while (true)
-        {
+        public void run() {
 
-            try
-            {
-                Thread.sleep(2000); // 2sec
+            int i = 0;
+            if (outputStream != null) {
+                try {
+                    for (; running; i++) {
+                        outputStream.writeInt(i);
+                        datawrote++;
+                        outputStream.hflush();
+                        sleep(100);
+                    }
+                } catch (Exception e) {
+                    LOG.info(getName() + " dies: e=" + e, e);
+                } finally {
+                    LOG.info(getName() + ": i=" + i);
+                    IOUtils.closeStream(outputStream);
+                }//end-finally
+            }// end-outcheck
+            else {
+                LOG.info(getName() + " outstream was null for file  [" + filepath + "]");
             }
-            catch (InterruptedException ex)
-            {
-                ex.printStackTrace();
-            }
-
-            boolean result = doesDataNodesRecognizeLeader(datanodes, nn);
-            if (result)
-            {
-                break;
-            }
-            // check for time out
-            if (System.currentTimeMillis() - initTime >= timeout)
-            {
-                throw new TimeoutException("Datanodes weren't able to detect newly elected leader");
-            }
-        }
-    }
+        }//end-run        
+    }//end-method
 }
