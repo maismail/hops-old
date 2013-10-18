@@ -24,22 +24,16 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 
 public class DFSClientAdapter {
   public static DFSClient getDFSClient(DistributedFileSystem dfs) {
-      try{
-    return dfs.getDFS();
-      }catch(IOException ex){
-          ex.printStackTrace();
-          return null;
-      }
+    return dfs.dfs;
   }
   
   public static void setDFSClient(DistributedFileSystem dfs, DFSClient client) {
-//HOP    dfs.dfs = client;
-      throw new UnsupportedOperationException("Fix the function. it is only used once in the test case");
+    dfs.dfs = client;
   }
   
   public static void stopLeaseRenewer(DistributedFileSystem dfs) throws IOException {
     try {
-      dfs.getDFS().getLeaseRenewer().interruptAndJoin();
+      dfs.dfs.getLeaseRenewer().interruptAndJoin();
     } catch (InterruptedException e) {
       throw new IOException(e);
     }
