@@ -80,10 +80,7 @@ public class DistributedFileSystem extends FileSystem {
   private Path workingDir;
   private URI uri;
 
-//HOP  DFSClient dfs;
-  //START_HOP_CODE
-  NamenodeSelector nnSelector;
-  //END_HOP_CODE
+  DFSClient dfs;
   private boolean verifyChecksum = true;
   
   static{
@@ -123,10 +120,7 @@ public class DistributedFileSystem extends FileSystem {
       throw new IOException("Incomplete HDFS URI, no host: "+ uri);
     }
 
-    //HOP this.dfs = new DFSClient(uri, conf, statistics);
-    //START_HOP_CODE
-    nnSelector = new NamenodeSelector(conf,uri,statistics);
-    //END_HOP_CODE
+    this.dfs = new DFSClient(uri, conf, statistics);
     this.uri = URI.create(uri.getScheme()+"://"+uri.getAuthority());
     this.workingDir = getHomeDirectory();
   }
@@ -138,22 +132,12 @@ public class DistributedFileSystem extends FileSystem {
 
   @Override
   public long getDefaultBlockSize() {
-    try{  
-        return getDFS().getDefaultBlockSize();
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return -1;
-    }
+    return dfs.getDefaultBlockSize();
   }
 
   @Override
   public short getDefaultReplication() {
-    try{
-    return getDFS().getDefaultReplication();
-    } catch (IOException ex){
-        ex.printStackTrace();
-        return -1;
-    }
+    return dfs.getDefaultReplication();
   }
 
   private Path makeAbsolute(Path f) {
@@ -177,12 +161,7 @@ public class DistributedFileSystem extends FileSystem {
   
   @Override
   public Path getHomeDirectory() {
-    try{
-    return makeQualified(new Path("/user/" + getDFS().ugi.getShortUserName()));
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return null;
-    }
+    return makeQualified(new Path("/user/" + dfs.ugi.getShortUserName()));
   }
 
   private String getPathName(Path file) {
@@ -208,7 +187,7 @@ public class DistributedFileSystem extends FileSystem {
   public BlockLocation[] getFileBlockLocations(Path p, 
       long start, long len) throws IOException {
     statistics.incrementReadOps(1);
-    return getDFS().getBlockLocations(getPathName(p), start, len);
+    return dfs.getBlockLocations(getPathName(p), start, len);
 
   }
 
@@ -239,7 +218,7 @@ public class DistributedFileSystem extends FileSystem {
   public BlockStorageLocation[] getFileBlockStorageLocations(
       List<BlockLocation> blocks) throws IOException, 
       UnsupportedOperationException, InvalidBlockTokenException {
-    return getDFS().getBlockStorageLocations(blocks);
+    return dfs.getBlockStorageLocations(blocks);
   }
 
   @Override
@@ -255,7 +234,7 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException if an error occurs
    */
   public boolean recoverLease(Path f) throws IOException {
-    return getDFS().recoverLease(getPathName(f));
+    return dfs.recoverLease(getPathName(f));
   }
 
   @SuppressWarnings("deprecation")
@@ -263,7 +242,7 @@ public class DistributedFileSystem extends FileSystem {
   public HdfsDataInputStream open(Path f, int bufferSize) throws IOException {
     statistics.incrementReadOps(1);
     return new DFSClient.DFSDataInputStream(
-          getDFS().open(getPathName(f), bufferSize, verifyChecksum));
+          dfs.open(getPathName(f), bufferSize, verifyChecksum));
   }
 
   /** This optional operation is not yet supported. */
@@ -271,7 +250,7 @@ public class DistributedFileSystem extends FileSystem {
   public HdfsDataOutputStream append(Path f, int bufferSize,
       Progressable progress) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().append(getPathName(f), bufferSize, progress, statistics);
+    return dfs.append(getPathName(f), bufferSize, progress, statistics);
   }
 
   @Override
@@ -289,7 +268,7 @@ public class DistributedFileSystem extends FileSystem {
     EnumSet<CreateFlag> cflags, int bufferSize, short replication, long blockSize,
     Progressable progress, ChecksumOpt checksumOpt) throws IOException {
     statistics.incrementWriteOps(1);
-    final DFSOutputStream out = getDFS().create(getPathName(f), permission, cflags,
+    final DFSOutputStream out = dfs.create(getPathName(f), permission, cflags,
         replication, blockSize, progress, bufferSize, checksumOpt);
     return new HdfsDataOutputStream(out, statistics);
   }
@@ -301,7 +280,7 @@ public class DistributedFileSystem extends FileSystem {
     short replication, long blockSize, Progressable progress,
     ChecksumOpt checksumOpt) throws IOException {
     statistics.incrementWriteOps(1);
-    return new HdfsDataOutputStream(getDFS().primitiveCreate(getPathName(f),
+    return new HdfsDataOutputStream(dfs.primitiveCreate(getPathName(f),
         absolutePermission, flag, true, replication, blockSize,
         progress, bufferSize, checksumOpt),statistics);
    } 
@@ -317,7 +296,7 @@ public class DistributedFileSystem extends FileSystem {
     if (flag.contains(CreateFlag.OVERWRITE)) {
       flag.add(CreateFlag.CREATE);
     }
-    return new HdfsDataOutputStream(getDFS().create(getPathName(f), permission, flag,
+    return new HdfsDataOutputStream(dfs.create(getPathName(f), permission, flag,
         false, replication, blockSize, progress, 
         bufferSize, null), statistics);
   }
@@ -327,7 +306,7 @@ public class DistributedFileSystem extends FileSystem {
                                 short replication
                                ) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().setReplication(getPathName(src), replication);
+    return dfs.setReplication(getPathName(src), replication);
   }
   
   /**
@@ -344,7 +323,7 @@ public class DistributedFileSystem extends FileSystem {
       srcs[i] = getPathName(psrcs[i]);
     }
     statistics.incrementWriteOps(1);
-    getDFS().concat(getPathName(trg), srcs);
+    dfs.concat(getPathName(trg), srcs);
   }
 
   
@@ -352,7 +331,7 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public boolean rename(Path src, Path dst) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().rename(getPathName(src), getPathName(dst));
+    return dfs.rename(getPathName(src), getPathName(dst));
   }
 
   /** 
@@ -362,19 +341,19 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public void rename(Path src, Path dst, Options.Rename... options) throws IOException {
     statistics.incrementWriteOps(1);
-    getDFS().rename(getPathName(src), getPathName(dst), options);
+    dfs.rename(getPathName(src), getPathName(dst), options);
   }
   
   @Override
   public boolean delete(Path f, boolean recursive) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().delete(getPathName(f), recursive);
+    return dfs.delete(getPathName(f), recursive);
   }
   
   @Override
   public ContentSummary getContentSummary(Path f) throws IOException {
     statistics.incrementReadOps(1);
-    return getDFS().getContentSummary(getPathName(f));
+    return dfs.getContentSummary(getPathName(f));
   }
 
   /** Set a directory's quotas
@@ -382,7 +361,7 @@ public class DistributedFileSystem extends FileSystem {
    */
   public void setQuota(Path src, long namespaceQuota, long diskspaceQuota) 
                        throws IOException {
-    getDFS().setQuota(getPathName(src), namespaceQuota, diskspaceQuota);
+    dfs.setQuota(getPathName(src), namespaceQuota, diskspaceQuota);
   }
   
   private FileStatus makeQualified(HdfsFileStatus f, Path parent) {
@@ -419,7 +398,7 @@ public class DistributedFileSystem extends FileSystem {
     String src = getPathName(p);
 
     // fetch the first batch of entries in the directory
-    DirectoryListing thisListing = getDFS().listPaths(
+    DirectoryListing thisListing = dfs.listPaths(
         src, HdfsFileStatus.EMPTY_NAME);
 
     if (thisListing == null) { // the directory does not exist
@@ -450,7 +429,7 @@ public class DistributedFileSystem extends FileSystem {
  
     // now fetch more entries
     do {
-      thisListing = getDFS().listPaths(src, thisListing.getLastName());
+      thisListing = dfs.listPaths(src, thisListing.getLastName());
  
       if (thisListing == null) { // the directory is deleted
         throw new FileNotFoundException("File " + p + " does not exist.");
@@ -479,7 +458,7 @@ public class DistributedFileSystem extends FileSystem {
       { // initializer
         src = getPathName(p);
         // fetch the first batch of entries in the directory
-        thisListing = getDFS().listPaths(src, HdfsFileStatus.EMPTY_NAME, true);
+        thisListing = dfs.listPaths(src, HdfsFileStatus.EMPTY_NAME, true);
         statistics.incrementReadOps(1);
         if (thisListing == null) { // the directory does not exist
           throw new FileNotFoundException("File " + p + " does not exist.");
@@ -506,7 +485,7 @@ public class DistributedFileSystem extends FileSystem {
         if (i>=thisListing.getPartialListing().length
             && thisListing.hasMore()) { 
           // current listing is exhausted & fetch a new listing
-          thisListing = getDFS().listPaths(src, thisListing.getLastName(), true);
+          thisListing = dfs.listPaths(src, thisListing.getLastName(), true);
           statistics.incrementReadOps(1);
           if (thisListing == null) {
             return false;
@@ -541,7 +520,7 @@ public class DistributedFileSystem extends FileSystem {
    */
   public boolean mkdir(Path f, FsPermission permission) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().mkdirs(getPathName(f), permission, false);
+    return dfs.mkdirs(getPathName(f), permission, false);
   }
 
   /**
@@ -558,7 +537,7 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public boolean mkdirs(Path f, FsPermission permission) throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().mkdirs(getPathName(f), permission, true);
+    return dfs.mkdirs(getPathName(f), permission, true);
   }
 
   @SuppressWarnings("deprecation")
@@ -566,7 +545,7 @@ public class DistributedFileSystem extends FileSystem {
   protected boolean primitiveMkdir(Path f, FsPermission absolutePermission)
     throws IOException {
     statistics.incrementWriteOps(1);
-    return getDFS().primitiveMkdir(getPathName(f), absolutePermission);
+    return dfs.primitiveMkdir(getPathName(f), absolutePermission);
   }
 
  
@@ -574,7 +553,7 @@ public class DistributedFileSystem extends FileSystem {
   public void close() throws IOException {
     try {
       super.processDeleteOnExit();
-      closeDFS();
+      dfs.close();
     } finally {
       super.close();
     }
@@ -582,24 +561,14 @@ public class DistributedFileSystem extends FileSystem {
 
   @Override
   public String toString() {
-    try{
-    return "DFS[" + getDFS() + "]";
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return ex.toString();
-    }
+    return "DFS[" + dfs + "]";
   }
 
   /** @deprecated DFSClient should not be accessed directly. */
   @InterfaceAudience.Private
   @Deprecated
   public DFSClient getClient() {
-    try{
-        return getDFS();
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return null;
-    }
+    return dfs;
   }        
   
   /** @deprecated Use {@link org.apache.hadoop.fs.FsStatus} instead */
@@ -622,7 +591,7 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public FsStatus getStatus(Path p) throws IOException {
     statistics.incrementReadOps(1);
-    return getDFS().getDiskStatus();
+    return dfs.getDiskStatus();
   }
 
   /** Return the disk usage of the filesystem, including total capacity,
@@ -631,7 +600,7 @@ public class DistributedFileSystem extends FileSystem {
    * instead */
    @Deprecated
   public DiskStatus getDiskStatus() throws IOException {
-    return new DiskStatus(getDFS().getDiskStatus());
+    return new DiskStatus(dfs.getDiskStatus());
   }
   
   /** Return the total raw capacity of the filesystem, disregarding
@@ -640,7 +609,7 @@ public class DistributedFileSystem extends FileSystem {
    * instead */
    @Deprecated
   public long getRawCapacity() throws IOException{
-    return getDFS().getDiskStatus().getCapacity();
+    return dfs.getDiskStatus().getCapacity();
   }
 
   /** Return the total raw used space in the filesystem, disregarding
@@ -649,7 +618,7 @@ public class DistributedFileSystem extends FileSystem {
    * instead */
    @Deprecated
   public long getRawUsed() throws IOException{
-    return getDFS().getDiskStatus().getUsed();
+    return dfs.getDiskStatus().getUsed();
   }
    
   /**
@@ -659,7 +628,7 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException
    */
   public long getMissingBlocksCount() throws IOException {
-    return getDFS().getMissingBlocksCount();
+    return dfs.getMissingBlocksCount();
   }
 
   /**
@@ -668,7 +637,7 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException
    */
   public long getUnderReplicatedBlocksCount() throws IOException {
-    return getDFS().getUnderReplicatedBlocksCount();
+    return dfs.getUnderReplicatedBlocksCount();
   }
 
   /**
@@ -677,13 +646,13 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException
    */
   public long getCorruptBlocksCount() throws IOException {
-    return getDFS().getCorruptBlocksCount();
+    return dfs.getCorruptBlocksCount();
   }
 
   @Override
   public RemoteIterator<Path> listCorruptFileBlocks(Path path)
     throws IOException {
-    return new CorruptFileBlockIterator(getDFS(), path);
+    return new CorruptFileBlockIterator(dfs, path);
   }
 
   /** @return datanode statistics. */
@@ -694,7 +663,7 @@ public class DistributedFileSystem extends FileSystem {
   /** @return datanode statistics for the given type. */
   public DatanodeInfo[] getDataNodeStats(final DatanodeReportType type
       ) throws IOException {
-    return getDFS().datanodeReport(type);
+    return dfs.datanodeReport(type);
   }
 
   /**
@@ -721,7 +690,7 @@ public class DistributedFileSystem extends FileSystem {
    */
   public boolean setSafeMode(HdfsConstants.SafeModeAction action,
       boolean isChecked) throws IOException {
-    return getDFS().setSafeMode(action, isChecked);
+    return dfs.setSafeMode(action, isChecked);
   }
 
   /**
@@ -730,7 +699,7 @@ public class DistributedFileSystem extends FileSystem {
    * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#saveNamespace()
    */
   public void saveNamespace() throws AccessControlException, IOException {
-    getDFS().saveNamespace();
+    dfs.saveNamespace();
   }
   
   /**
@@ -740,7 +709,7 @@ public class DistributedFileSystem extends FileSystem {
    * @return the transaction ID of the newly created segment
    */
   public long rollEdits() throws AccessControlException, IOException {
-    return getDFS().rollEdits();
+    return dfs.rollEdits();
   }
 
   /**
@@ -750,7 +719,7 @@ public class DistributedFileSystem extends FileSystem {
    */
   public boolean restoreFailedStorage(String arg)
       throws AccessControlException, IOException {
-    return getDFS().restoreFailedStorage(arg);
+    return dfs.restoreFailedStorage(arg);
   }
   
 
@@ -759,7 +728,7 @@ public class DistributedFileSystem extends FileSystem {
    * files.  
    */
   public void refreshNodes() throws IOException {
-    getDFS().refreshNodes();
+    dfs.refreshNodes();
   }
 
   /**
@@ -767,7 +736,7 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException
    */
   public void finalizeUpgrade() throws IOException {
-    getDFS().finalizeUpgrade();
+    dfs.finalizeUpgrade();
   }
 
   /*
@@ -775,12 +744,12 @@ public class DistributedFileSystem extends FileSystem {
    * file.
    */
   public void metaSave(String pathname) throws IOException {
-    getDFS().metaSave(pathname);
+    dfs.metaSave(pathname);
   }
 
   @Override
   public FsServerDefaults getServerDefaults() throws IOException {
-    return getDFS().getServerDefaults();
+    return dfs.getServerDefaults();
   }
 
   /**
@@ -827,12 +796,7 @@ public class DistributedFileSystem extends FileSystem {
         + sumsBlock + " on datanode=" + sumsNode[0]);
 
     // Ask client to delete blocks.
-    try{
-        getDFS().reportChecksumFailure(f.toString(), lblocks);
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return false;
-    }
+    dfs.reportChecksumFailure(f.toString(), lblocks);
 
     return true;
   }
@@ -844,7 +808,7 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {
     statistics.incrementReadOps(1);
-    HdfsFileStatus fi = getDFS().getFileInfo(getPathName(f));
+    HdfsFileStatus fi = dfs.getFileInfo(getPathName(f));
     if (fi != null) {
       return makeQualified(fi, f);
     } else {
@@ -855,14 +819,14 @@ public class DistributedFileSystem extends FileSystem {
   @Override
   public MD5MD5CRC32FileChecksum getFileChecksum(Path f) throws IOException {
     statistics.incrementReadOps(1);
-    return getDFS().getFileChecksum(getPathName(f));
+    return dfs.getFileChecksum(getPathName(f));
   }
 
   @Override
   public void setPermission(Path p, FsPermission permission
       ) throws IOException {
     statistics.incrementWriteOps(1);
-    getDFS().setPermission(getPathName(p), permission);
+    dfs.setPermission(getPathName(p), permission);
   }
 
   @Override
@@ -872,14 +836,14 @@ public class DistributedFileSystem extends FileSystem {
       throw new IOException("username == null && groupname == null");
     }
     statistics.incrementWriteOps(1);
-    getDFS().setOwner(getPathName(p), username, groupname);
+    dfs.setOwner(getPathName(p), username, groupname);
   }
 
   @Override
   public void setTimes(Path p, long mtime, long atime
       ) throws IOException {
     statistics.incrementWriteOps(1);
-    getDFS().setTimes(getPathName(p), mtime, atime);
+    dfs.setTimes(getPathName(p), mtime, atime);
   }
   
 
@@ -893,7 +857,7 @@ public class DistributedFileSystem extends FileSystem {
   Token<DelegationTokenIdentifier> getDelegationToken(String renewer
   ) throws IOException {
     Token<DelegationTokenIdentifier> result =
-      getDFS().getDelegationToken(renewer == null ? null : new Text(renewer));
+      dfs.getDelegationToken(renewer == null ? null : new Text(renewer));
     return result;
   }
 
@@ -959,7 +923,7 @@ public class DistributedFileSystem extends FileSystem {
    * @throws IOException
    */
   public void setBalancerBandwidth(long bandwidth) throws IOException {
-    getDFS().setBalancerBandwidth(bandwidth);
+    dfs.setBalancerBandwidth(bandwidth);
   }
 
   /**
@@ -969,12 +933,7 @@ public class DistributedFileSystem extends FileSystem {
    */
   @Override
   public String getCanonicalServiceName() {
-    try{  
-    return getDFS().getCanonicalServiceName();
-    }catch(IOException ex){
-        ex.printStackTrace();
-        return ex.toString();
-    }
+    return dfs.getCanonicalServiceName();
   }
 
   /**
@@ -988,14 +947,4 @@ public class DistributedFileSystem extends FileSystem {
   public boolean isInSafeMode() throws IOException {
     return setSafeMode(SafeModeAction.SAFEMODE_GET, true);
   }
-  
-  //START_HOP_CODE
-  public DFSClient getDFS() throws IOException{
-      return nnSelector.getNextNamenode();
-  }
-  
-  public void closeDFS() throws IOException{
-      nnSelector.close();
-  }
-  //END_HOP_CODE
 }

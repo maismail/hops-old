@@ -60,7 +60,7 @@ public class TestBlockMissingException {
 
       // extract block locations from File system. Wait till file is closed.
       LocatedBlocks locations = null;
-      locations = fileSys.getDFS().getNamenode().getBlockLocations(file1.toString(),
+      locations = fileSys.dfs.getNamenode().getBlockLocations(file1.toString(),
           0, numBlocks * blockSize);
       // remove block of file
       LOG.info("Remove first block of file");
