@@ -182,6 +182,7 @@ public class DFSClient implements java.io.Closeable {
   public static final long SERVER_DEFAULTS_VALIDITY_PERIOD = 60 * 60 * 1000L; // 1 hour
   static final int TCP_WINDOW_SIZE = 128 * 1024; // 128 KB
   //final ClientProtocol namenode;
+  final NamenodeSelector namenodeSelector;
   /* The service used for delegation tokens */
   private Text dtService;
 
@@ -416,7 +417,8 @@ public class DFSClient implements java.io.Closeable {
     if (rpcNamenode != null) {
       // This case is used for testing.
       Preconditions.checkArgument(nameNodeUri == null);
-      this.namenode = rpcNamenode;
+      namenodeSelector = new NamenodeSelector(rpcNamenode);
+//HOP      this.namenode = rpcNamenode;
       dtService = null;
     } else {
       Preconditions.checkArgument(nameNodeUri != null,
@@ -424,7 +426,8 @@ public class DFSClient implements java.io.Closeable {
       NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo =
         NameNodeProxies.createProxy(conf, nameNodeUri, ClientProtocol.class);
       this.dtService = proxyInfo.getDelegationTokenService();
-      this.namenode = proxyInfo.getProxy();
+//HOP      this.namenode = proxyInfo.getProxy();
+      namenodeSelector = new NamenodeSelector(proxyInfo.getProxy());
     }
 
     // read directly from the block file if configured.
@@ -662,7 +665,8 @@ public class DFSClient implements java.io.Closeable {
    * Close connections the Namenode.
    */
   void closeConnectionToNamenode() {
-    RPC.stopProxy(namenode);
+//HOP   RPC.stopProxy(namenode);
+      namenodeSelector.stop();
   }
   
   /** Abort and release resources held.  Ignore all errors. */
@@ -1194,7 +1198,8 @@ public class DFSClient implements java.io.Closeable {
    * @return the namenode associated with this DFSClient object
    */
   public ClientProtocol getNamenode() {
-    return namenode;
+//    return namenode;
+      return namenodeSelector.getNetNamenodeForRpc();
   }
   
   /**
@@ -1725,7 +1730,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public MD5MD5CRC32FileChecksum getFileChecksum(String src) throws IOException {
     checkOpen();
-    return getFileChecksum(src, clientName, namenode, socketFactory,
+    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNetNamenodeForRpc(), socketFactory,
         dfsClientConf.socketTimeout, getDataEncryptionKey(),
         dfsClientConf.connectToDnViaHostname);
   }
@@ -2533,7 +2538,7 @@ public class DFSClient implements java.io.Closeable {
   }
   
   private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException{
-     return handler.doAction(namenode);
+     return handler.doAction(namenodeSelector.getNetNamenodeForRpc());
   }
    
     /**
@@ -2682,6 +2687,21 @@ public class DFSClient implements java.io.Closeable {
             }
         };
         return (Boolean) doClientActionWithRetry(handler);
+    }
+    
+    private class NamenodeSelector{
+        ClientProtocol namenode; 
+        NamenodeSelector(ClientProtocol namenode){
+            this.namenode = namenode;
+        }
+        
+        public ClientProtocol getNetNamenodeForRpc(){
+            return this.namenode;
+        }
+        
+        public void stop(){
+            RPC.stopProxy(namenode);
+        }
     }
   //END_HOP_CODE
 }
