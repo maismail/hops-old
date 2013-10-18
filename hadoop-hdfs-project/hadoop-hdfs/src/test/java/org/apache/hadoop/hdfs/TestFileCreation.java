@@ -502,7 +502,7 @@ public class TestFileCreation {
     try {
       cluster.waitActive();
       dfs = (DistributedFileSystem)cluster.getFileSystem();
-      DFSClient client = dfs.getDFS();
+      DFSClient client = dfs.dfs;
 
       // create a new file.
       //
@@ -562,7 +562,7 @@ public class TestFileCreation {
     try {
       cluster.waitActive();
       dfs = (DistributedFileSystem)cluster.getFileSystem();
-      DFSClient client = dfs.getDFS();
+      DFSClient client = dfs.dfs;
 
       // create a new file.
       final Path f = new Path("/foo.txt");
@@ -702,7 +702,7 @@ public class TestFileCreation {
       stm4.close();
 
       // verify that new block is associated with this file
-      DFSClient client = ((DistributedFileSystem)fs).getDFS();
+      DFSClient client = ((DistributedFileSystem)fs).dfs;
       LocatedBlocks locations = client.getNamenode().getBlockLocations(
                                   file1.toString(), 0, Long.MAX_VALUE);
       System.out.println("locations = " + locations.locatedBlockCount());
@@ -734,7 +734,7 @@ public class TestFileCreation {
     MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).build();
     FileSystem fs = cluster.getFileSystem();
     DistributedFileSystem dfs = (DistributedFileSystem) fs;
-    DFSClient dfsclient = dfs.getDFS();
+    DFSClient dfsclient = dfs.dfs;
     try {
 
       // create a new file in home directory. Do not close it.
@@ -968,7 +968,7 @@ public class TestFileCreation {
       // wait for the lease to expire
       try {Thread.sleep(5 * leasePeriod);} catch (InterruptedException e) {}
 
-      LocatedBlocks locations = dfs.getDFS().getNamenode().getBlockLocations(
+      LocatedBlocks locations = dfs.dfs.getNamenode().getBlockLocations(
           f, 0, Long.MAX_VALUE);
       assertEquals(1, locations.locatedBlockCount());
       LocatedBlock locatedblock = locations.getLocatedBlocks().get(0);

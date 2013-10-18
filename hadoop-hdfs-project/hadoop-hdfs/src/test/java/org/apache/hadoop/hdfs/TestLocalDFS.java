@@ -57,7 +57,7 @@ public class TestLocalDFS {
 
   static String getUserName(FileSystem fs) throws IOException {
     if (fs instanceof DistributedFileSystem) {
-      return ((DistributedFileSystem)fs).getDFS().ugi.getShortUserName();
+      return ((DistributedFileSystem)fs).dfs.ugi.getShortUserName();
     }
     return System.getProperty("user.name");
   }

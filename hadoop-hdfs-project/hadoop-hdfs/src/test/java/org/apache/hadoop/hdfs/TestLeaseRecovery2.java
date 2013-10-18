@@ -160,7 +160,7 @@ public class TestLeaseRecovery2 {
     Path filepath = new Path(filestr);
     FSDataOutputStream stm = dfs.create(filepath, true, BUF_SIZE,
       REPLICATION_NUM, BLOCK_SIZE);
-    assertTrue(dfs.getDFS().exists(filestr));
+    assertTrue(dfs.dfs.exists(filestr));
 
     AppendTestUtil.LOG.info("size=" + size);
     stm.write(buffer, 0, size);
@@ -171,7 +171,7 @@ public class TestLeaseRecovery2 {
 
     if (triggerLeaseRenewerInterrupt) {
       AppendTestUtil.LOG.info("leasechecker.interruptAndJoin()");
-      dfs.getDFS().getLeaseRenewer().interruptAndJoin();
+      dfs.dfs.getLeaseRenewer().interruptAndJoin();
     }
     return filepath;
   }
@@ -263,7 +263,7 @@ public class TestLeaseRecovery2 {
     Path filepath = new Path(filestr);
     FSDataOutputStream stm = dfs.create(filepath, true,
         BUF_SIZE, REPLICATION_NUM, BLOCK_SIZE);
-    assertTrue(dfs.getDFS().exists(filestr));
+    assertTrue(dfs.dfs.exists(filestr));
 
     // write bytes into the file.
     int size = AppendTestUtil.nextInt(FILE_SIZE);
@@ -276,7 +276,7 @@ public class TestLeaseRecovery2 {
     
     // kill the lease renewal thread
     AppendTestUtil.LOG.info("leasechecker.interruptAndJoin()");
-    dfs.getDFS().getLeaseRenewer().interruptAndJoin();
+    dfs.dfs.getLeaseRenewer().interruptAndJoin();
 
     // set the hard limit to be 1 second 
     cluster.setLeasePeriod(LONG_LEASE_PERIOD, SHORT_LEASE_PERIOD);
@@ -285,7 +285,7 @@ public class TestLeaseRecovery2 {
     LocatedBlocks locatedBlocks;
     do {
       Thread.sleep(SHORT_LEASE_PERIOD);
-      locatedBlocks = dfs.getDFS().getLocatedBlocks(filestr, 0L, size);
+      locatedBlocks = dfs.dfs.getLocatedBlocks(filestr, 0L, size);
     } while (locatedBlocks.isUnderConstruction());
     assertEquals(size, locatedBlocks.getFileLength());
 
@@ -330,7 +330,7 @@ public class TestLeaseRecovery2 {
     Path filepath = new Path(filestr);
     FSDataOutputStream stm = dfs.create(filepath, true,
         BUF_SIZE, REPLICATION_NUM, BLOCK_SIZE);
-    assertTrue(dfs.getDFS().exists(filestr));
+    assertTrue(dfs.dfs.exists(filestr));
 
     // write random number of bytes into it.
     int size = AppendTestUtil.nextInt(FILE_SIZE);
@@ -341,7 +341,7 @@ public class TestLeaseRecovery2 {
     AppendTestUtil.LOG.info("hflush");
     stm.hflush();
     AppendTestUtil.LOG.info("leasechecker.interruptAndJoin()");
-    dfs.getDFS().getLeaseRenewer().interruptAndJoin();
+    dfs.dfs.getLeaseRenewer().interruptAndJoin();
 
     // set the soft limit to be 1 second so that the
     // namenode triggers lease recovery on next attempt to write-for-open.
@@ -433,7 +433,7 @@ public class TestLeaseRecovery2 {
     Path filePath = new Path(fileStr);
     FSDataOutputStream stm = dfs.create(filePath, true,
         BUF_SIZE, REPLICATION_NUM, BLOCK_SIZE);
-    assertTrue(dfs.getDFS().exists(fileStr));
+    assertTrue(dfs.dfs.exists(fileStr));
 
     // write bytes into the file.
     AppendTestUtil.LOG.info("size=" + size);
@@ -463,7 +463,7 @@ public class TestLeaseRecovery2 {
     
     // kill the lease renewal thread
     AppendTestUtil.LOG.info("leasechecker.interruptAndJoin()");
-    dfs.getDFS().getLeaseRenewer().interruptAndJoin();
+    dfs.dfs.getLeaseRenewer().interruptAndJoin();
     
     // Make sure the DNs don't send a heartbeat for a while, so the blocks
     // won't actually get completed during lease recovery.
@@ -497,7 +497,7 @@ public class TestLeaseRecovery2 {
     LocatedBlocks locatedBlocks;
     do {
       Thread.sleep(SHORT_LEASE_PERIOD);
-      locatedBlocks = dfs.getDFS().getLocatedBlocks(fileStr, 0L, size);
+      locatedBlocks = dfs.dfs.getLocatedBlocks(fileStr, 0L, size);
     } while (locatedBlocks.isUnderConstruction());
     assertEquals(size, locatedBlocks.getFileLength());
 
