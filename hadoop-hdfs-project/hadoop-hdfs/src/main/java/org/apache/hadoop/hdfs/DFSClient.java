@@ -160,6 +160,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
+import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /********************************************************
@@ -2571,8 +2574,114 @@ public class DFSClient implements java.io.Closeable {
    * Since we have multiple clients, we differentiate the clients via the ID
    * Used in NamenodeSelector
    */
-  public int getId() {
-    return id;
-  }
+    public int getId() {
+        return id;
+    }
+
+    public LocatedBlock getAdditionalDatanode(final String src, final ExtendedBlock blk,
+            final DatanodeInfo[] existings, final DatanodeInfo[] excludes,
+            final int numAdditionalNodes, final String clientName) throws AccessControlException, FileNotFoundException,
+            SafeModeException, UnresolvedLinkException, IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                return namenode.getAdditionalDatanode(src, blk, existings, excludes, numAdditionalNodes, clientName);
+            }
+        };
+        return (LocatedBlock) doClientActionWithRetry(handler);
+    }
+
+    public LocatedBlock updateBlockForPipeline(final ExtendedBlock block,
+            final String clientName) throws IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                return namenode.updateBlockForPipeline(block, clientName);
+            }
+        };
+        return (LocatedBlock) doClientActionWithRetry(handler);
+    }
+
+    public void updatePipeline(final String clientName, final ExtendedBlock oldBlock,
+            final ExtendedBlock newBlock, final DatanodeID[] newNodes)
+            throws IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                namenode.updatePipeline(clientName, oldBlock, newBlock, newNodes);
+                return null;
+            }
+        };
+        doClientActionWithRetry(handler);
+    }
+
+    public void abandonBlock(final ExtendedBlock b, final String src, final String holder)
+            throws AccessControlException, FileNotFoundException,
+            UnresolvedLinkException, IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                namenode.abandonBlock(b, src, holder);
+                return null;
+            }
+        };
+        doClientActionWithRetry(handler);
+    }
+
+    public LocatedBlock addBlock(final String src, final String clientName,
+            final ExtendedBlock previous, final DatanodeInfo[] excludeNodes)
+            throws AccessControlException, FileNotFoundException,
+            NotReplicatedYetException, SafeModeException, UnresolvedLinkException,
+            IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                return namenode.addBlock(src, clientName, previous, excludeNodes);
+            }
+        };
+        return (LocatedBlock) doClientActionWithRetry(handler);
+    }
+
+    public void create(final String src, final FsPermission masked, final String clientName,
+            final EnumSetWritable<CreateFlag> flag, final boolean createParent,
+            final short replication, final long blockSize) throws AccessControlException,
+            AlreadyBeingCreatedException, DSQuotaExceededException,
+            FileAlreadyExistsException, FileNotFoundException,
+            NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
+            UnresolvedLinkException, IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                namenode.create(src, masked, clientName, flag, createParent, replication, blockSize);
+                return null;
+            }
+        };
+        doClientActionWithRetry(handler);
+    }
+
+    public void fsync(final String src, final String client, final long lastBlockLength)
+            throws AccessControlException, FileNotFoundException,
+            UnresolvedLinkException, IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                namenode.fsync(src, client, lastBlockLength);
+                return null;
+            }
+        };
+        doClientActionWithRetry(handler);
+    }
+
+    public boolean complete(final String src, final String clientName, final ExtendedBlock last)
+            throws AccessControlException, FileNotFoundException, SafeModeException,
+            UnresolvedLinkException, IOException {
+        ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+                return namenode.complete(src, clientName, last);
+            }
+        };
+        return (Boolean) doClientActionWithRetry(handler);
+    }
   //END_HOP_CODE
 }
