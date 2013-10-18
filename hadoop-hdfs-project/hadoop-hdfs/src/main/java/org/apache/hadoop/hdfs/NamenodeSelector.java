@@ -283,6 +283,7 @@ public class NamenodeSelector extends Thread {
     }
 
     private synchronized void refreshNamenodeList(SortedActiveNamenodeList anl) {
+        if(anl == null) return;
         //NOTE should not restart a valid client
 
         //find out which client to start and stop  

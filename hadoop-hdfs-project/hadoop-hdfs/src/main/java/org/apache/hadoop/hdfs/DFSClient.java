@@ -178,7 +178,7 @@ public class DFSClient implements java.io.Closeable {
   public static final Log LOG = LogFactory.getLog(DFSClient.class);
   public static final long SERVER_DEFAULTS_VALIDITY_PERIOD = 60 * 60 * 1000L; // 1 hour
   static final int TCP_WINDOW_SIZE = 128 * 1024; // 128 KB
-  final ClientProtocol namenode;
+  //final ClientProtocol namenode;
   /* The service used for delegation tokens */
   private Text dtService;
 
@@ -626,7 +626,15 @@ public class DFSClient implements java.io.Closeable {
   boolean renewLease() throws IOException {
     if (clientRunning && !isFilesBeingWrittenEmpty()) {
       try {
-        namenode.renewLease(clientName);
+        ClientActionHandler handler = new ClientActionHandler(){
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+               namenode.renewLease(clientName);
+               return null;
+            }
+        };
+        doClientActionWithRetry(handler);            
+        
         updateLastLeaseRenewal();
         return true;
       } catch (IOException e) {
@@ -722,9 +730,16 @@ public class DFSClient implements java.io.Closeable {
   /**
    * @see ClientProtocol#getPreferredBlockSize(String)
    */
-  public long getBlockSize(String f) throws IOException {
+  public long getBlockSize(final String f) throws IOException {
     try {
-      return namenode.getPreferredBlockSize(f);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getPreferredBlockSize(f);
+        }
+      };
+      return (Long) doClientActionWithRetry(handler);
+        
     } catch (IOException ie) {
       LOG.warn("Problem getting block size", ie);
       throw ie;
@@ -738,7 +753,13 @@ public class DFSClient implements java.io.Closeable {
   public FsServerDefaults getServerDefaults() throws IOException {
     long now = Time.now();
     if (now - serverDefaultsLastUpdate > SERVER_DEFAULTS_VALIDITY_PERIOD) {
-      serverDefaults = namenode.getServerDefaults();
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getServerDefaults();
+        }
+      };
+      serverDefaults = (FsServerDefaults)doClientActionWithRetry(handler);   
       serverDefaultsLastUpdate = now;
     }
     return serverDefaults;
@@ -757,11 +778,17 @@ public class DFSClient implements java.io.Closeable {
   /**
    * @see ClientProtocol#getDelegationToken(Text)
    */
-  public Token<DelegationTokenIdentifier> getDelegationToken(Text renewer)
+  public Token<DelegationTokenIdentifier> getDelegationToken(final Text renewer)
       throws IOException {
     assert dtService != null;
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getDelegationToken(renewer);
+      }
+    };       
     Token<DelegationTokenIdentifier> token =
-      namenode.getDelegationToken(renewer);
+      (Token<DelegationTokenIdentifier>)doClientActionWithRetry(handler);
     token.setService(this.dtService);
 
     LOG.info("Created " + DelegationTokenIdentifier.stringifyToken(token));
@@ -966,8 +993,15 @@ public class DFSClient implements java.io.Closeable {
    * Report corrupt blocks that were discovered by the client.
    * @see ClientProtocol#reportBadBlocks(LocatedBlock[])
    */
-  public void reportBadBlocks(LocatedBlock[] blocks) throws IOException {
-    namenode.reportBadBlocks(blocks);
+  public void reportBadBlocks(final LocatedBlock[] blocks) throws IOException {
+   ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.reportBadBlocks(blocks);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler);
   }
   
   public short getDefaultReplication() {
@@ -979,9 +1013,15 @@ public class DFSClient implements java.io.Closeable {
    * we can stub it out for tests.
    */
   @VisibleForTesting
-  public LocatedBlocks getLocatedBlocks(String src, long start, long length)
+  public LocatedBlocks getLocatedBlocks(final String src, final long start, final long length)
       throws IOException {
-    return callGetBlockLocations(namenode, src, start, length);
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return callGetBlockLocations(namenode, src, start, length);
+      }
+    };
+    return (LocatedBlocks) doClientActionWithRetry(handler);
   }
 
   /**
@@ -1005,11 +1045,16 @@ public class DFSClient implements java.io.Closeable {
    * @return true if the file is already closed
    * @throws IOException
    */
-  boolean recoverLease(String src) throws IOException {
+  boolean recoverLease(final String src) throws IOException {
     checkOpen();
-
     try {
-      return namenode.recoverLease(src, clientName);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.recoverLease(src, clientName);
+        }
+      };
+      return (Boolean) doClientActionWithRetry(handler);
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(FileNotFoundException.class,
                                      AccessControlException.class);
@@ -1336,12 +1381,19 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#createSymlink(String, String,FsPermission, boolean) 
    */
-  public void createSymlink(String target, String link, boolean createParent)
+  public void createSymlink(final String target, final String link, final boolean createParent)
       throws IOException {
     try {
-      FsPermission dirPerm = 
-          FsPermission.getDefault().applyUMask(dfsClientConf.uMask); 
-      namenode.createSymlink(target, link, dirPerm, createParent);
+      final FsPermission dirPerm =
+              FsPermission.getDefault().applyUMask(dfsClientConf.uMask);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.createSymlink(target, link, dirPerm, createParent);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileAlreadyExistsException.class, 
@@ -1358,22 +1410,34 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#getLinkTarget(String)
    */
-  public String getLinkTarget(String path) throws IOException { 
+  public String getLinkTarget(final String path) throws IOException {
     checkOpen();
     try {
-      return namenode.getLinkTarget(path);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getLinkTarget(path);
+        }
+      };
+      return (String) doClientActionWithRetry(handler);
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
-                                     FileNotFoundException.class);
+              FileNotFoundException.class);
     }
   }
 
   /** Method to get stream returned by append call */
-  private DFSOutputStream callAppend(HdfsFileStatus stat, String src,
+  private DFSOutputStream callAppend(HdfsFileStatus stat, final String src,
       int buffersize, Progressable progress) throws IOException {
     LocatedBlock lastBlock = null;
     try {
-      lastBlock = namenode.append(src, clientName);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.append(src, clientName);
+        }
+      };
+      lastBlock = (LocatedBlock) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1424,10 +1488,16 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#setReplication(String, short)
    */
-  public boolean setReplication(String src, short replication)
+  public boolean setReplication(final String src, final short replication)
       throws IOException {
     try {
-      return namenode.setReplication(src, replication);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.setReplication(src, replication);
+        }
+      };
+      return (Boolean) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1443,10 +1513,17 @@ public class DFSClient implements java.io.Closeable {
    * @deprecated Use {@link #rename(String, String, Options.Rename...)} instead.
    */
   @Deprecated
-  public boolean rename(String src, String dst) throws IOException {
+  public boolean rename(final String src, final String dst) throws IOException {
     checkOpen();
     try {
-      return namenode.rename(src, dst);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.rename(src, dst);
+        }
+      };
+      doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      NSQuotaExceededException.class,
@@ -1459,25 +1536,39 @@ public class DFSClient implements java.io.Closeable {
    * Move blocks from src to trg and delete src
    * See {@link ClientProtocol#concat(String, String [])}. 
    */
-  public void concat(String trg, String [] srcs) throws IOException {
+  public void concat(final String trg, final String [] srcs) throws IOException {
     checkOpen();
     try {
-      namenode.concat(trg, srcs);
-    } catch(RemoteException re) {
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.concat(trg, srcs);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
+    } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
-                                     UnresolvedPathException.class);
+              UnresolvedPathException.class);
     }
   }
   /**
    * Rename file or directory.
    * @see ClientProtocol#rename2(String, String, Options.Rename...)
    */
-  public void rename(String src, String dst, Options.Rename... options)
+  public void rename(final String src, final String dst, final Options.Rename... options)
       throws IOException {
     checkOpen();
     try {
-      namenode.rename2(src, dst, options);
-    } catch(RemoteException re) {
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.rename2(src, dst, options);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);      
+          } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      DSQuotaExceededException.class,
                                      FileAlreadyExistsException.class,
@@ -1491,11 +1582,18 @@ public class DFSClient implements java.io.Closeable {
   /**
    * Delete file or directory.
    * See {@link ClientProtocol#delete(String, boolean)}. 
+
    */
   @Deprecated
-  public boolean delete(String src) throws IOException {
+  public boolean delete(final String src) throws IOException {
     checkOpen();
-    return namenode.delete(src, true);
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.delete(src, true);
+      }
+    };
+    return (Boolean) doClientActionWithRetry(handler);
   }
 
   /**
@@ -1505,10 +1603,16 @@ public class DFSClient implements java.io.Closeable {
    *
    * @see ClientProtocol#delete(String, boolean)
    */
-  public boolean delete(String src, boolean recursive) throws IOException {
+  public boolean delete(final String src, final boolean recursive) throws IOException {
     checkOpen();
     try {
-      return namenode.delete(src, recursive);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.delete(src, recursive);
+        }
+      };
+      return (Boolean) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1542,12 +1646,18 @@ public class DFSClient implements java.io.Closeable {
    *
    * @see ClientProtocol#getListing(String, byte[], boolean)
    */
-  public DirectoryListing listPaths(String src,  byte[] startAfter,
-      boolean needLocation) 
+  public DirectoryListing listPaths(final String src,  final byte[] startAfter,
+      final boolean needLocation) 
     throws IOException {
     checkOpen();
     try {
-      return namenode.getListing(src, startAfter, needLocation);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getListing(src, startAfter, needLocation);
+        }
+      };
+      return (DirectoryListing) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1563,11 +1673,17 @@ public class DFSClient implements java.io.Closeable {
    *         
    * @see ClientProtocol#getFileInfo(String) for description of exceptions
    */
-  public HdfsFileStatus getFileInfo(String src) throws IOException {
+  public HdfsFileStatus getFileInfo(final String src) throws IOException {
     checkOpen();
     try {
-      return namenode.getFileInfo(src);
-    } catch(RemoteException re) {
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getFileInfo(src);
+        }
+      };
+      return (HdfsFileStatus) doClientActionWithRetry(handler);
+    } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
                                      UnresolvedPathException.class);
@@ -1582,10 +1698,16 @@ public class DFSClient implements java.io.Closeable {
    * For description of exceptions thrown 
    * @see ClientProtocol#getFileLinkInfo(String)
    */
-  public HdfsFileStatus getFileLinkInfo(String src) throws IOException {
+  public HdfsFileStatus getFileLinkInfo(final String src) throws IOException {
     checkOpen();
     try {
-      return namenode.getFileLinkInfo(src);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getFileLinkInfo(src);
+        }
+      };
+      return (HdfsFileStatus) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      UnresolvedPathException.class);
@@ -1631,7 +1753,13 @@ public class DFSClient implements java.io.Closeable {
         if (encryptionKey == null ||
             encryptionKey.expiryDate < Time.now()) {
           LOG.debug("Getting new encryption token from NN");
-          encryptionKey = namenode.getDataEncryptionKey();
+          ClientActionHandler handler = new ClientActionHandler() {
+            @Override
+            public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+              return namenode.getDataEncryptionKey();
+            }
+          };
+          encryptionKey = (DataEncryptionKey) doClientActionWithRetry(handler);
         }
         return encryptionKey;
       }
@@ -1912,11 +2040,18 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#setPermission(String, FsPermission)
    */
-  public void setPermission(String src, FsPermission permission)
+  public void setPermission(final String src, final FsPermission permission)
       throws IOException {
     checkOpen();
     try {
-      namenode.setPermission(src, permission);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.setPermission(src, permission);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);          
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1933,11 +2068,18 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#setOwner(String, String, String)
    */
-  public void setOwner(String src, String username, String groupname)
+  public void setOwner(final String src, final String username, final String groupname)
       throws IOException {
     checkOpen();
     try {
-      namenode.setOwner(src, username, groupname);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.setOwner(src, username, groupname);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1950,7 +2092,13 @@ public class DFSClient implements java.io.Closeable {
    * @see ClientProtocol#getStats()
    */
   public FsStatus getDiskStatus() throws IOException {
-    long rawNums[] = namenode.getStats();
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getStats();
+      }
+    };
+    long rawNums[] = (long[]) doClientActionWithRetry(handler);
     return new FsStatus(rawNums[0], rawNums[1], rawNums[2]);
   }
 
@@ -1960,7 +2108,13 @@ public class DFSClient implements java.io.Closeable {
    * @throws IOException
    */ 
   public long getMissingBlocksCount() throws IOException {
-    return namenode.getStats()[ClientProtocol.GET_STATS_MISSING_BLOCKS_IDX];
+    ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getStats()[ClientProtocol.GET_STATS_MISSING_BLOCKS_IDX];
+      }
+    };
+    return (Long) doClientActionWithRetry(handler);
   }
   
   /**
@@ -1968,7 +2122,13 @@ public class DFSClient implements java.io.Closeable {
    * @throws IOException
    */ 
   public long getUnderReplicatedBlocksCount() throws IOException {
-    return namenode.getStats()[ClientProtocol.GET_STATS_UNDER_REPLICATED_IDX];
+    ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getStats()[ClientProtocol.GET_STATS_UNDER_REPLICATED_IDX];
+      }
+    };
+    return (Long) doClientActionWithRetry(handler);
   }
   
   /**
@@ -1976,22 +2136,40 @@ public class DFSClient implements java.io.Closeable {
    * @throws IOException
    */ 
   public long getCorruptBlocksCount() throws IOException {
-    return namenode.getStats()[ClientProtocol.GET_STATS_CORRUPT_BLOCKS_IDX];
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getStats()[ClientProtocol.GET_STATS_CORRUPT_BLOCKS_IDX];
+      }
+    };
+    return (Long) doClientActionWithRetry(handler);
   }
   
   /**
    * @return a list in which each entry describes a corrupt file/block
    * @throws IOException
    */
-  public CorruptFileBlocks listCorruptFileBlocks(String path,
-                                                 String cookie)
+  public CorruptFileBlocks listCorruptFileBlocks(final String path,
+                                                 final String cookie)
     throws IOException {
-    return namenode.listCorruptFileBlocks(path, cookie);
+    ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.listCorruptFileBlocks(path, cookie);
+      }
+    };
+    return (CorruptFileBlocks) doClientActionWithRetry(handler);
   }
 
-  public DatanodeInfo[] datanodeReport(DatanodeReportType type)
+  public DatanodeInfo[] datanodeReport(final DatanodeReportType type)
   throws IOException {
-    return namenode.getDatanodeReport(type);
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.getDatanodeReport(type);
+      }
+    };
+    return (DatanodeInfo[]) doClientActionWithRetry(handler);
   }
     
   /**
@@ -2014,8 +2192,14 @@ public class DFSClient implements java.io.Closeable {
    *          check first namenode's status.
    * @see ClientProtocol#setSafeMode(HdfsConstants.SafeModeAction, boolean)
    */
-  public boolean setSafeMode(SafeModeAction action, boolean isChecked) throws IOException{
-    return namenode.setSafeMode(action, isChecked);    
+  public boolean setSafeMode(final SafeModeAction action, final boolean isChecked) throws IOException{
+    ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.setSafeMode(action, isChecked);
+      }
+    };
+    return (Boolean) doClientActionWithRetry(handler);
   }
 
   /**
@@ -2025,7 +2209,14 @@ public class DFSClient implements java.io.Closeable {
    */
   void saveNamespace() throws AccessControlException, IOException {
     try {
-      namenode.saveNamespace();
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.saveNamespace();
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class);
     }
@@ -2039,7 +2230,13 @@ public class DFSClient implements java.io.Closeable {
    */
   long rollEdits() throws AccessControlException, IOException {
     try {
-      return namenode.rollEdits();
+      ClientActionHandler handler = new ClientActionHandler(){
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.rollEdits();
+        }
+      };
+      return (Long) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class);
     }
@@ -2050,9 +2247,15 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#restoreFailedStorage(String arg)
    */
-  boolean restoreFailedStorage(String arg)
+  boolean restoreFailedStorage(final String arg)
       throws AccessControlException, IOException{
-    return namenode.restoreFailedStorage(arg);
+    ClientActionHandler handler = new ClientActionHandler(){
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return namenode.restoreFailedStorage(arg);
+      }
+    };
+    return (Boolean) doClientActionWithRetry(handler);
   }
 
   /**
@@ -2063,7 +2266,14 @@ public class DFSClient implements java.io.Closeable {
    * @see ClientProtocol#refreshNodes()
    */
   public void refreshNodes() throws IOException {
-    namenode.refreshNodes();
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.refreshNodes();
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler);
   }
 
   /**
@@ -2071,8 +2281,15 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#metaSave(String)
    */
-  public void metaSave(String pathname) throws IOException {
-    namenode.metaSave(pathname);
+  public void metaSave(final String pathname) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.metaSave(pathname);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler);
   }
 
   /**
@@ -2083,15 +2300,29 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#setBalancerBandwidth(long)
    */
-  public void setBalancerBandwidth(long bandwidth) throws IOException {
-    namenode.setBalancerBandwidth(bandwidth);
+  public void setBalancerBandwidth(final long bandwidth) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.setBalancerBandwidth(bandwidth);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler);
   }
     
   /**
    * @see ClientProtocol#finalizeUpgrade()
    */
   public void finalizeUpgrade() throws IOException {
-    namenode.finalizeUpgrade();
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.finalizeUpgrade();
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler);
   }
 
   /**
@@ -2136,20 +2367,30 @@ public class DFSClient implements java.io.Closeable {
    * Same {{@link #mkdirs(String, FsPermission, boolean)} except
    * that the permissions has already been masked against umask.
    */
-  public boolean primitiveMkdir(String src, FsPermission absPermission, 
-    boolean createParent)
-    throws IOException {
+  public boolean primitiveMkdir(final String src, FsPermission absPermission, 
+    final boolean createParent)
+          throws IOException {
     checkOpen();
+    final FsPermission finalPermission;
     if (absPermission == null) {
-      absPermission = 
-        FsPermission.getDefault().applyUMask(dfsClientConf.uMask);
-    } 
+      finalPermission =
+              FsPermission.getDefault().applyUMask(dfsClientConf.uMask);
+    } else {
+      finalPermission = absPermission;
+    }
+    
 
-    if(LOG.isDebugEnabled()) {
-      LOG.debug(src + ": masked=" + absPermission);
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(src + ": masked=" + finalPermission);
     }
     try {
-      return namenode.mkdirs(src, absPermission, createParent);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.mkdirs(src, finalPermission, createParent);
+        }
+      };
+      return (Boolean) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      InvalidPathException.class,
@@ -2169,9 +2410,15 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#getContentSummary(String)
    */
-  ContentSummary getContentSummary(String src) throws IOException {
+  ContentSummary getContentSummary(final String src) throws IOException {
     try {
-      return namenode.getContentSummary(src);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          return namenode.getContentSummary(src);
+        }
+      };
+      return (ContentSummary) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2183,7 +2430,7 @@ public class DFSClient implements java.io.Closeable {
    * Sets or resets quotas for a directory.
    * @see ClientProtocol#setQuota(String, long, long)
    */
-  void setQuota(String src, long namespaceQuota, long diskspaceQuota) 
+  void setQuota(final String src, final long namespaceQuota, final long diskspaceQuota) 
       throws IOException {
     // sanity check
     if ((namespaceQuota <= 0 && namespaceQuota != HdfsConstants.QUOTA_DONT_SET &&
@@ -2193,10 +2440,17 @@ public class DFSClient implements java.io.Closeable {
       throw new IllegalArgumentException("Invalid values for quota : " +
                                          namespaceQuota + " and " + 
                                          diskspaceQuota);
-                                         
+
     }
     try {
-      namenode.setQuota(src, namespaceQuota, diskspaceQuota);
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.setQuota(src, namespaceQuota, diskspaceQuota);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2211,11 +2465,18 @@ public class DFSClient implements java.io.Closeable {
    * 
    * @see ClientProtocol#setTimes(String, long, long)
    */
-  public void setTimes(String src, long mtime, long atime) throws IOException {
+  public void setTimes(final String src, final long mtime, final long atime) throws IOException {
     checkOpen();
     try {
-      namenode.setTimes(src, mtime, atime);
-    } catch(RemoteException re) {
+      ClientActionHandler handler = new ClientActionHandler() {
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.setTimes(src, mtime, atime);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler);
+    } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
                                      UnresolvedPathException.class);
@@ -2264,15 +2525,31 @@ public class DFSClient implements java.io.Closeable {
   }
   
   //START_HOP_CODE
+  private interface ClientActionHandler {
+    Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
+  }
+  
+  private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException{
+     return handler.doAction(namenode);
+  }
+   
     /**
    * Ping the name node to see if there is a connection
    * -- A connection won't exist if it gives an IOException of type ConnectException or SocketTimeout
    */
   public boolean pingNamenode() {
     try {
-    namenode.ping();
+       ClientActionHandler handler = new ClientActionHandler(){
+           @Override
+           public Object doAction(ClientProtocol namenode) throws IOException {
+               namenode.ping();
+               return null;
+           }
+       } ;
+       doClientActionWithRetry(handler);
     }
-    catch (IOException ex) {
+    catch (Exception ex) {
+      ex.printStackTrace();
       LOG.warn("Ping to Namenode "+ex);
       return false;
       }
@@ -2281,7 +2558,13 @@ public class DFSClient implements java.io.Closeable {
   }
   
   public SortedActiveNamenodeList getActiveNamenodes() throws IOException{
-    return namenode.getActiveNamenodesForClient();
+    ClientActionHandler handler = new ClientActionHandler(){
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+            return namenode.getActiveNamenodesForClient();
+        }
+    };
+    return (SortedActiveNamenodeList) doClientActionWithRetry(handler);
   }
   
   /**
