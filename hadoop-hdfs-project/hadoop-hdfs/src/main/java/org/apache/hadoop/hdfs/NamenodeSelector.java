@@ -86,27 +86,14 @@ public class NamenodeSelector extends Thread {
   };
   /* List of name nodes */
   private List<NamenodeHandle> nnList = new CopyOnWriteArrayList<NamenodeHandle>();
-  //ConcurrentHashMap<InetSocketAddress, DFSClient> clients = new ConcurrentHashMap<InetSocketAddress, DFSClient>();
   private static Log LOG = LogFactory.getLog(NamenodeSelector.class);
-  private final Statistics statistics;
   private final URI defaultUri;
   private final NNSelectionPolicy policy;
   private final Configuration conf;
   private boolean periodicNNListUpdate = true;
   private final Object wiatObjectForUpdate = new Object();
 
-  /**
-   * Loads the appropriate instance of the the NameNodeSelector from the
-   * configuration file So that appropriate reader/ writer namenodes can be
-   * selected for each operation
-   *
-   * @param conf - The configuration from hdfs
-   * @param namenodes - The list of namenodes for read/write operations
-   * @return NameNodeSelector - Returns the implementor of the NameNodeSelector
-   * depending on the policy as specified the configuration
-   */
-  NamenodeSelector(Configuration conf, URI defaultUri, Statistics statistics) throws IOException {
-    this.statistics = statistics;
+  NamenodeSelector(Configuration conf, URI defaultUri) throws IOException {
     this.defaultUri = defaultUri;
     this.conf = conf;
 
@@ -123,7 +110,7 @@ public class NamenodeSelector extends Thread {
     LOG.debug("Namenode selection policy is set to " + policy);
 
     //get the list of Namenodes
-    createDFSClientsFromList();
+    createNamenodeClinetsFromList();
 
     //start periodic Namenode list update thread.
     start();
@@ -138,7 +125,7 @@ public class NamenodeSelector extends Thread {
           wiatObjectForUpdate.wait(3000);
         }
         if (periodicNNListUpdate) {
-          periodicDFSClientsUpdate();
+          periodicNamenodeClientsUpdate();
         }
       } catch (Exception ex) {
         LOG.warn(ex);
@@ -231,7 +218,7 @@ public class NamenodeSelector extends Thread {
    * fails then read the list of NNs from the config file and connect to them
    * for list of Namenodes in the syste.
    */
-  private void createDFSClientsFromList() throws IOException {
+  private void createNamenodeClinetsFromList() throws IOException {
     SortedActiveNamenodeList anl = null;
     if (defaultUri != null) {
       try {
@@ -272,7 +259,7 @@ public class NamenodeSelector extends Thread {
    * map fail then call the 'createDFSClientsForFirstTime' function. with will
    * try to connect to defaults namenode provided at the initialization phase.
    */
-  private void periodicDFSClientsUpdate() throws IOException {
+  private void periodicNamenodeClientsUpdate() throws IOException {
     SortedActiveNamenodeList anl = null;
     if (!clients.isEmpty()) {
       for (DFSClient clinet : clients.values()) {
@@ -293,7 +280,7 @@ public class NamenodeSelector extends Thread {
     }
 
     if (anl == null) { // try contacting default NNs
-      createDFSClientsFromList();
+      createNamenodeClinetsFromList();
     }
   }
 
