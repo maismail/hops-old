@@ -57,6 +57,22 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
         return NetUtils.createSocketAddrForHost(ipAddress, port);
     }
 
+    @Override
+    public boolean equals(Object obj) {
+        // objects are equal if the belong to same NN
+        // namenode id is not taken in to account
+        // sometimes the id of the namenode may change even without 
+        //namenode restart
+        if(!(obj instanceof  ActiveNamenode))
+        { return false; }
+        ActiveNamenode that = (ActiveNamenode)obj;
+        if(this.getInetSocketAddress().equals(that.getInetSocketAddress())){
+            return true;
+        }else{
+            return false;
+        }
+    }
+
   @Override
   public int compareTo(ActiveNamenode o) {
 
