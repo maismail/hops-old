@@ -15,6 +15,7 @@
  */
 package org.apache.hadoop.hdfs.server.protocol;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,6 +40,15 @@ public class SortedActiveNamenodeList {
     
     public List<ActiveNamenode> getActiveNamenodes(){
         return listActiveNamenodes;
+    }
+    
+    public ActiveNamenode getActiveNamenode(InetSocketAddress address){
+      for(ActiveNamenode namenode : listActiveNamenodes){
+        if(namenode.getInetSocketAddress().equals(address)){
+          return namenode;
+        }
+      }
+      return null;
     }
 
     @Override

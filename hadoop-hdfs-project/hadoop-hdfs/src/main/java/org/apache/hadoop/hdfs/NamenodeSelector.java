@@ -51,7 +51,7 @@ public class NamenodeSelector extends Thread {
     }
   }
 
-  private class NamenodeHandle {
+   class NamenodeHandle {
 
     final private ClientProtocol namenodeRPCHandle;
     final private ActiveNamenode namenode;
@@ -80,22 +80,32 @@ public class NamenodeSelector extends Thread {
         return false;
       } else {
         NamenodeHandle that = (NamenodeHandle) obj;
-        return namenode.equals(that);
+        return this.namenode.equals(that.getNamenode());
       }
     }
   };
   /* List of name nodes */
   private List<NamenodeHandle> nnList = new CopyOnWriteArrayList<NamenodeHandle>();
+  private List<NamenodeHandle> blackListedNamenodes = new CopyOnWriteArrayList<NamenodeHandle>();
   private static Log LOG = LogFactory.getLog(NamenodeSelector.class);
   private final URI defaultUri;
   private final NNSelectionPolicy policy;
   private final Configuration conf;
   private boolean periodicNNListUpdate = true;
   private final Object wiatObjectForUpdate = new Object();
+  private final int namenodeListUpdateTimePeriod;
 
+  NamenodeSelector(Configuration conf, ClientProtocol namenode) throws IOException {
+    this.defaultUri = null;
+    this.nnList.add(new NamenodeHandle(namenode, null));
+    this.conf  = conf;
+    this.policy = NNSelectionPolicy.ROUND_ROBIN;
+    this.namenodeListUpdateTimePeriod = -1;
+  }
   NamenodeSelector(Configuration conf, URI defaultUri) throws IOException {
     this.defaultUri = defaultUri;
     this.conf = conf;
+    namenodeListUpdateTimePeriod = conf.getInt(DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST, DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_DEFAULT);
 
     // Getting appropriate policy
     // supported policies are 'RANDOM' and 'ROUND_ROBIN'
@@ -122,7 +132,7 @@ public class NamenodeSelector extends Thread {
       try {
         //first sleep and then update
         synchronized (wiatObjectForUpdate) {
-          wiatObjectForUpdate.wait(3000);
+          wiatObjectForUpdate.wait(namenodeListUpdateTimePeriod);
         }
         if (periodicNNListUpdate) {
           periodicNamenodeClientsUpdate();
@@ -135,7 +145,7 @@ public class NamenodeSelector extends Thread {
   }
 
   public synchronized void close() throws IOException {
-    periodicNNListUpdate = false;
+    stopPeriodicUpdates();
 
     //close all clients
     for (NamenodeHandle namenode : nnList) {
@@ -155,7 +165,7 @@ public class NamenodeSelector extends Thread {
    */
   static int rrIndex = 0;
 
-  public ClientProtocol getNextNamenode() throws IOException {
+  public NamenodeHandle getNextNamenode() throws IOException {
     if (nnList == null || nnList.isEmpty()) {
       return null;
     }
@@ -165,20 +175,20 @@ public class NamenodeSelector extends Thread {
     int maxRetries = nnList.size();
     while (client == null && maxRetries > 0) {
       index = getNNIndex();
+      if(index == -1) return null;
       NamenodeHandle handle = nnList.get(index);
       client = handle.getRPCHandle();
-
       //return a good NN.
-      if (!pingNamenode(client)) {
-        LOG.debug(handle+" failed. Trying next NN...");
-        client = null;
-        maxRetries--;
-        continue;
-      } else {
+//      if (!pingNamenode(client)) {
+//        LOG.debug(handle+" failed. Trying next NN...");
+//        client = null;
+//        maxRetries--;
+//        continue;
+//      } else {
         LOG.debug("Returning " + handle+ " for next RPC call. RRIndex " + index);
         printNamenodes();
-        return client;
-      }
+        return handle;
+//      }
     }
 
     //notify the periodic update thread to update the list of namenodes
@@ -190,12 +200,25 @@ public class NamenodeSelector extends Thread {
 
   private int getNNIndex() {
     if (policy == NNSelectionPolicy.RANDOM) {
-      Random rand = new Random();
-      rand.setSeed(System.currentTimeMillis());
-      return rand.nextInt(nnList.size());
+      for(int i = 0; i < 10; i++){
+        Random rand = new Random();
+        rand.setSeed(System.currentTimeMillis());
+        int index = rand.nextInt(nnList.size());
+        NamenodeHandle handle = nnList.get(index);
+        if(!this.blackListedNamenodes.contains(handle)){
+          return index;
+        }
+      }
+      return -1;
     } else if (policy == NNSelectionPolicy.ROUND_ROBIN) {
-      rrIndex = (++rrIndex) % nnList.size();
-      return rrIndex;
+      for(int i = 0; i < 10; i++){
+        rrIndex = (++rrIndex) % nnList.size();
+        NamenodeHandle handle = nnList.get(rrIndex);
+        if(!this.blackListedNamenodes.contains(handle)){
+          return rrIndex;
+        }
+      }
+      return -1;
     } else {
       throw new UnsupportedOperationException("Namenode selection policy is not supported. Selected policy is " + policy);
     }
@@ -220,37 +243,45 @@ public class NamenodeSelector extends Thread {
    */
   private void createNamenodeClinetsFromList() throws IOException {
     SortedActiveNamenodeList anl = null;
+    ClientProtocol handle = null;
     if (defaultUri != null) {
       try {
-        DFSClient defaultClient = new DFSClient(defaultUri, conf, statistics);
-        anl = defaultClient.getActiveNamenodes();
-        defaultClient.close();
+        NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, defaultUri, ClientProtocol.class);
+        handle = proxyInfo.getProxy();
+        if (handle != null) {
+          anl = handle.getActiveNamenodesForClient();
+          RPC.stopProxy(handle);
+        }
       } catch (Exception e) {
         LOG.debug("Failed to get list of NN from default NN. Default NN was " + defaultUri);
+        RPC.stopProxy(handle);
       }
-
     }
 
     if (anl == null) { // default failed, now try the list of NNs from the config file
       String[] namenodes = getNamenodesFromConfigFile(conf);
       if (namenodes.length > 0) {
         for (int i = 0; i < namenodes.length; i++) {
-          DFSClient dfsClient = null;
           try {
             URI uri = new URI(namenodes[i]);
-            dfsClient = new DFSClient(uri, conf, statistics);
-            anl = dfsClient.getActiveNamenodes();
+            NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
+            handle = proxyInfo.getProxy();
+            if (handle != null) {
+              anl = handle.getActiveNamenodesForClient();
+              RPC.stopProxy(handle);
+            }
             if (anl != null && !anl.getActiveNamenodes().isEmpty()) {
-              dfsClient.close();
               break; // we got the list
             }
           } catch (Exception e) {
-            dfsClient.close();
+            RPC.stopProxy(handle);
           }
         }
       }
     }
-    refreshNamenodeList(anl);
+    if (anl != null) {
+      refreshNamenodeList(anl);
+    }
   }
 
   /**
@@ -261,10 +292,11 @@ public class NamenodeSelector extends Thread {
    */
   private void periodicNamenodeClientsUpdate() throws IOException {
     SortedActiveNamenodeList anl = null;
-    if (!clients.isEmpty()) {
-      for (DFSClient clinet : clients.values()) {
+    if (!nnList.isEmpty()) {
+      for (NamenodeHandle namenode : nnList) {
         try {
-          anl = clinet.getActiveNamenodes();
+          ClientProtocol handle = namenode.getRPCHandle();
+          anl = handle.getActiveNamenodesForClient();
           if (anl == null || anl.size() == 0) {
             anl = null;
             continue;
@@ -296,13 +328,15 @@ public class NamenodeSelector extends Thread {
     if (anl == null) {
       return;
     }
+    LOG.debug("refreshing namenodes new anl is size "+anl.size());
     //NOTE should not restart a valid client
 
     //find out which client to start and stop  
     //make sets objects of old and new lists
     Set<InetSocketAddress> oldClients = Sets.newHashSet();
-    for (InetSocketAddress nnAddress : clients.keySet()) {
-      oldClients.add(nnAddress);
+    for(NamenodeHandle namenode : nnList){
+      ActiveNamenode ann = namenode.getNamenode();
+      oldClients.add(ann.getInetSocketAddress());
     }
 
     //new list
@@ -325,7 +359,7 @@ public class NamenodeSelector extends Thread {
     // start threads for new NNs
     if (newNNs.size() != 0) {
       for (InetSocketAddress newNNAddr : newNNs) {
-        addDFSClient(newNNAddr);
+        addDFSClient(newNNAddr, anl.getActiveNamenode(newNNAddr));
       }
     }
 
@@ -333,25 +367,32 @@ public class NamenodeSelector extends Thread {
   }
 
   //thse are synchronized using external methods
-  private void removeDFSClient(InetSocketAddress address) {
-    try {
-      DFSClient deadClient = clients.get(address);
-      clients.remove(address);
-      deadClient.close();
-      LOG.debug("TestNN removed DFSClient for " + address);
-    } catch (IOException e) {
-      LOG.debug("Unable to Stop DFSClient for " + address);
+  private void removeDFSClient(InetSocketAddress address) {  
+    NamenodeHandle  handle = getNamenodeHandle(address);
+    if(handle != null){
+      if(nnList.remove(handle)){
+        RPC.stopProxy(handle.getRPCHandle());
+        LOG.debug("Removed RPC proxy for " + address);      
+      }
+      else{
+        LOG.debug("Failed to Remove RPC proxy for " + address);      
+      }
     }
   }
   //thse are synchronized using external methods
 
-  private void addDFSClient(InetSocketAddress address) {
+  private void addDFSClient(InetSocketAddress address, ActiveNamenode ann) {
+    if(address == null || ann == null){
+      LOG.warn("Unable to add proxy for namenode. ");
+      return;
+    }
     try {
-      URI uri = NameNode.getUri(address);
-      DFSClient newClient = new DFSClient(uri, conf, statistics);
-      clients.put(address, newClient);
+      URI uri = NameNode.getUri(address);      
+      NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
+      ClientProtocol handle = proxyInfo.getProxy();
+      nnList.add(new NamenodeHandle(handle, ann));
     } catch (IOException e) {
-      LOG.debug("Unable to Start DFSClient for " + address);
+      LOG.debug("Unable to Start RPC proxy for " + address);
     }
   }
   
@@ -363,4 +404,20 @@ public class NamenodeSelector extends Thread {
       return false;
     }
   }
+  
+  private NamenodeHandle getNamenodeHandle(InetSocketAddress address){
+    for(NamenodeHandle handle : nnList){
+      if(handle.getNamenode().getInetSocketAddress().equals(address)){
+        return handle;
+      }
+    }
+    return null;
+  }
+  
+  public void blackListNamenode(NamenodeHandle handle){
+    this.blackListedNamenodes.add(handle);
+    // trigger update nnList
+    wiatObjectForUpdate.notify();
+  }
+  
 }

@@ -160,6 +160,10 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import java.net.BindException;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketTimeoutException;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
@@ -181,8 +185,11 @@ public class DFSClient implements java.io.Closeable {
   public static final Log LOG = LogFactory.getLog(DFSClient.class);
   public static final long SERVER_DEFAULTS_VALIDITY_PERIOD = 60 * 60 * 1000L; // 1 hour
   static final int TCP_WINDOW_SIZE = 128 * 1024; // 128 KB
-  //final ClientProtocol namenode;
+//HOP  final ClientProtocol namenode;
+  //START_HOP_CODE
   final NamenodeSelector namenodeSelector;
+  final int MAX_RPC_RETRIES;
+  //END_HOP_CODE
   /* The service used for delegation tokens */
   private Text dtService;
 
@@ -417,7 +424,7 @@ public class DFSClient implements java.io.Closeable {
     if (rpcNamenode != null) {
       // This case is used for testing.
       Preconditions.checkArgument(nameNodeUri == null);
-      namenodeSelector = new NamenodeSelector(rpcNamenode);
+      namenodeSelector = new NamenodeSelector(conf, rpcNamenode);
 //HOP      this.namenode = rpcNamenode;
       dtService = null;
     } else {
@@ -427,7 +434,7 @@ public class DFSClient implements java.io.Closeable {
         NameNodeProxies.createProxy(conf, nameNodeUri, ClientProtocol.class);
       this.dtService = proxyInfo.getDelegationTokenService();
 //HOP      this.namenode = proxyInfo.getProxy();
-      namenodeSelector = new NamenodeSelector(proxyInfo.getProxy());
+      namenodeSelector = new NamenodeSelector(conf, nameNodeUri);
     }
 
     // read directly from the block file if configured.
@@ -450,6 +457,7 @@ public class DFSClient implements java.io.Closeable {
     
     //START_HOP_CODE
     this.id= counter++;
+    this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
     //END_HOP_CODE
   }
 
@@ -1197,9 +1205,9 @@ public class DFSClient implements java.io.Closeable {
    * Get the namenode associated with this DFSClient object
    * @return the namenode associated with this DFSClient object
    */
-  public ClientProtocol getNamenode() {
+  public ClientProtocol getNamenode() throws IOException {
 //    return namenode;
-      return namenodeSelector.getNetNamenodeForRpc();
+      return namenodeSelector.getNextNamenode().getRPCHandle();
   }
   
   /**
@@ -1530,7 +1538,6 @@ public class DFSClient implements java.io.Closeable {
           return namenode.rename(src, dst);
         }
       };
-      doClientActionWithRetry(handler);
       return (Boolean) doClientActionWithRetry(handler);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
@@ -1730,7 +1737,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public MD5MD5CRC32FileChecksum getFileChecksum(String src) throws IOException {
     checkOpen();
-    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNetNamenodeForRpc(), socketFactory,
+    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNextNamenode().getRPCHandle(), socketFactory,
         dfsClientConf.socketTimeout, getDataEncryptionKey(),
         dfsClientConf.connectToDnViaHostname);
   }
@@ -2538,7 +2545,46 @@ public class DFSClient implements java.io.Closeable {
   }
   
   private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException{
-     return handler.doAction(namenodeSelector.getNetNamenodeForRpc());
+    Exception exception  = null; 
+    NamenodeSelector.NamenodeHandle handle = null;
+    for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
+      try {
+        handle = namenodeSelector.getNextNamenode();
+        LOG.debug("TestNN trying RPC with "+handle.getNamenode()+" tries left ("+(MAX_RPC_RETRIES-i)+")");
+        for(int j = 0 ; j < 4; j++)
+        {
+          LOG.debug("TestNN "+Thread.currentThread().getStackTrace()[j]);
+        }
+        if(handle == null){
+          throw new Exception("No alive Namenode is the system");
+        }
+        Object obj = handler.doAction(handle.getRPCHandle());
+        //no exception 
+        return obj;
+      } catch (Exception e) {
+        exception = e;
+        if (e instanceof ConnectException
+                || e instanceof SocketException
+                || e instanceof BindException
+                || e instanceof UnknownHostException
+                || e instanceof SocketTimeoutException
+                || e instanceof NoRouteToHostException) {
+          continue;
+        }
+        else if(e instanceof IOException 
+                && e.getMessage().contains("Failed on local exception")){
+          //black list the namenode 
+          //so that it is not used again
+          namenodeSelector.blackListNamenode(handle);
+          continue;
+        }else{
+         LOG.debug("TestNN RPC failed "+e);
+         throw (IOException)e;
+        }
+      }
+    }
+    
+    throw (IOException)exception;
   }
    
     /**
@@ -2687,21 +2733,6 @@ public class DFSClient implements java.io.Closeable {
             }
         };
         return (Boolean) doClientActionWithRetry(handler);
-    }
-    
-    private class NamenodeSelector{
-        ClientProtocol namenode; 
-        NamenodeSelector(ClientProtocol namenode){
-            this.namenode = namenode;
-        }
-        
-        public ClientProtocol getNetNamenodeForRpc(){
-            return this.namenode;
-        }
-        
-        public void stop(){
-            RPC.stopProxy(namenode);
-        }
     }
   //END_HOP_CODE
 }
