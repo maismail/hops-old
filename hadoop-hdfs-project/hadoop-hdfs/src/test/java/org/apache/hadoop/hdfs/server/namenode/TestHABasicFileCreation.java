@@ -63,6 +63,7 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
         this.conf = new Configuration();
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, replicationFactor);
         conf.setInt(DFSConfigKeys.DFS_DATANODE_HANDLER_COUNT_KEY, 1);
+        conf.setInt(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, 1024);
         //conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 10 * 1000); // 10 sec
         //conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
 
@@ -175,8 +176,9 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                 startWriters();
 
                 // Give all the threads a chance to create their files and write something to it
-                Thread.sleep(5000); // 50 sec
+                Thread.sleep(15000); // 50 sec
 
+                LOG.debug("TestNN about to shutdown the namenode");
                 // kill leader NN1
                 cluster.shutdownNameNode(NN1);
                 TestHABasicFailover.waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout);
@@ -272,8 +274,8 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                     for (; running; i++) {
                         outputStream.writeInt(i);
                         datawrote++;
-                        outputStream.hflush();
-                        sleep(100);
+                        
+                        sleep(10);
                     }
                 } catch (Exception e) {
                     LOG.info(getName() + " dies: e=" + e, e);
