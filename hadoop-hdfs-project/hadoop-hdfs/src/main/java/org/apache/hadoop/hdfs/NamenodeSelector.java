@@ -362,6 +362,9 @@ public class NamenodeSelector extends Thread {
         addDFSClient(newNNAddr, anl.getActiveNamenode(newNNAddr));
       }
     }
+    
+    //clear black listed nodes
+    this.blackListedNamenodes.clear();
 
     printNamenodes();
   }
