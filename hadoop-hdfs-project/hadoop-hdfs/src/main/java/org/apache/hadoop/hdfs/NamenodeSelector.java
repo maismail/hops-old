@@ -414,10 +414,12 @@ public class NamenodeSelector extends Thread {
     return null;
   }
   
-  public void blackListNamenode(NamenodeHandle handle){
+  public void blackListNamenode(NamenodeHandle handle) throws IOException{
     this.blackListedNamenodes.add(handle);
     // trigger update nnList
-    wiatObjectForUpdate.notify();
+//    synchronized(wiatObjectForUpdate){
+//    wiatObjectForUpdate.notify();}
+//    periodicNamenodeClientsUpdate();
   }
   
 }

@@ -2568,11 +2568,9 @@ public class DFSClient implements java.io.Closeable {
                 || e instanceof BindException
                 || e instanceof UnknownHostException
                 || e instanceof SocketTimeoutException
-                || e instanceof NoRouteToHostException) {
-          continue;
-        }
-        else if(e instanceof IOException 
-                && e.getMessage().contains("Failed on local exception")){
+                || e instanceof NoRouteToHostException
+                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
+                || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
           //black list the namenode 
           //so that it is not used again
           namenodeSelector.blackListNamenode(handle);

@@ -1088,7 +1088,7 @@ class BPOfferService implements Runnable {
             //no exception
             break;
         }
-      } catch (IOException e) {
+      } catch (Exception e) {
         exception = e;
         if (e instanceof ConnectException
                 || e instanceof SocketException
@@ -1096,7 +1096,8 @@ class BPOfferService implements Runnable {
                 || e instanceof UnknownHostException
                 || e instanceof SocketTimeoutException
                 || e instanceof NoRouteToHostException
-                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))) {
+                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
+                || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
           
           LOG.debug("TestNN, got RPC exception for ann " + ann.getInetSocketAddress() + " got exception " + e);
           blackListNN.add(ann);
