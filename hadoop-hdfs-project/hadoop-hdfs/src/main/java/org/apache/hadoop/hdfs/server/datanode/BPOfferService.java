@@ -57,12 +57,14 @@ import java.util.Arrays;
 import java.util.Map;
 import static org.apache.hadoop.hdfs.DFSClient.LOG;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.ExceptionCheck;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.hdfs.server.protocol.StorageBlockReport;
 import org.apache.hadoop.hdfs.server.protocol.StorageReceivedDeletedBlocks;
+import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.util.Time;
 import static org.apache.hadoop.util.Time.now;
 
@@ -120,7 +122,7 @@ class BPOfferService implements Runnable {
   private boolean resetBlockReportTime = true;
   private BPServiceActor blkReportHander = null;
   private List<ActiveNamenode> nnList = new CopyOnWriteArrayList<ActiveNamenode>();
-  private List<ActiveNamenode> blackListNN = new CopyOnWriteArrayList<ActiveNamenode>();
+  private List<InetSocketAddress> blackListNN = new CopyOnWriteArrayList<InetSocketAddress>();
   private volatile int rpcRoundRobinIndex = 0; // you have bunch of NNs, which one to send the incremental block report
   private volatile int refreshNNRoundRobinIndex = 0; //in a heart beat only one actor should talk to name node and get the updated list of NNs
   //how to stop actors from communicating with all the NN at the same time for same RPC?
@@ -777,8 +779,7 @@ class BPOfferService implements Runnable {
           }
         } // synchronized
 
-        //after every 1000ms increment the refreshNNRoundRobinIndex
-        refreshNNRoundRobinIndex = ++refreshNNRoundRobinIndex % nnList.size();
+        forwardRRIndex();//after every 1000ms increment the refreshNNRoundRobinIndex
         } catch (Exception re) {
         LOG.warn("Exception in whirlingLikeASufi", re);
         try {
@@ -995,7 +996,7 @@ class BPOfferService implements Runnable {
       return true; // for edge case, any one can update. after that actors will take trun in updating the nnlist
     }
 
-    if(refreshNNRoundRobinIndex >= nnList.size()){
+    if(refreshNNRoundRobinIndex >= nnList.size() || refreshNNRoundRobinIndex < 0){
       refreshNNRoundRobinIndex = 0;
     }
     
@@ -1027,9 +1028,10 @@ class BPOfferService implements Runnable {
   private void reportBadBlocksWithRetry(final ExtendedBlock block) throws IOException {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
-      public void doAction(BPServiceActor actor) throws IOException {
+      public Object doAction(BPServiceActor actor) throws IOException {
         LOG.debug("TestNN, reportBadBlocksWithRetry ann " + actor.getNNSocketAddress());
         actor.reportBadBlocks(block);
+        return null;
       }
     });
   }
@@ -1037,9 +1039,10 @@ class BPOfferService implements Runnable {
   private void blockReceivedAndDeletedWithRetry(final StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks) throws IOException {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
-      public void doAction(BPServiceActor actor) throws IOException {
+      public Object doAction(BPServiceActor actor) throws IOException {
         LOG.debug("TestNN, blockReceivedAndDeletedWithRetry ann " + actor.getNNSocketAddress());
         actor.blockReceivedAndDeleted(bpRegistration, getBlockPoolId(), receivedAndDeletedBlocks);
+        return null;
       }
     });
   }
@@ -1047,9 +1050,10 @@ class BPOfferService implements Runnable {
   private void reportRemoteBadBlockWithRetry(final DatanodeInfo dnInfo, final ExtendedBlock block) throws IOException {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
-      public void doAction(BPServiceActor actor) throws IOException {
+      public Object doAction(BPServiceActor actor) throws IOException {
         LOG.debug("TestNN, reportRemoteBadBlockWithRetry ann " + actor.getNNSocketAddress());
         actor.reportRemoteBadBlock(dnInfo, block);
+        return null;
       }
     });
   }
@@ -1057,71 +1061,111 @@ class BPOfferService implements Runnable {
   private void trySendErrorReportWithRetry(final int errCode, final String errMsg) throws IOException {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
-      public void doAction(BPServiceActor actor) throws IOException {
+      public Object doAction(BPServiceActor actor) throws IOException {
         LOG.debug("TestNN, trySendErrorReportWithRetry ann " + actor.getNNSocketAddress());
         actor.trySendErrorReport(errCode, errMsg);
+        return null;
       }
     });
   }
 
   private interface ActorActionHandler {
 
-    void doAction(BPServiceActor actor) throws IOException;
+    Object doAction(BPServiceActor actor) throws IOException;
   }
   
-  private void doActorActionWithRetry(ActorActionHandler hndlr) throws IOException {
-    doActorActionWithRetry(hndlr, Integer.MAX_VALUE);
-  }
+//  private Object doActorActionWithRetry(ActorActionHandler hndlr) throws IOException {
+//    return doActorActionWithRetry(hndlr, Integer.MAX_VALUE);
+//  }
   
-  private void doActorActionWithRetry(ActorActionHandler hndlr, int maxRetriesIn) throws IOException {
-    ActiveNamenode ann = nextNNForNonBlkReportRPC();
-    if (ann == null) {
-      return;
-    }
-    int maxRetries = Math.min(nnList.size(), maxRetriesIn);
-    Exception exception = null;
-    while (ann != null && maxRetries > 0) {
-      try {
-        BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
-        if(actor != null){
-            hndlr.doAction(actor);
-            //no exception
-            break;
-        }
-      } catch (Exception e) {
-        exception = e;
-        if (e instanceof ConnectException
-                || e instanceof SocketException
-                || e instanceof BindException
-                || e instanceof UnknownHostException
-                || e instanceof SocketTimeoutException
-                || e instanceof NoRouteToHostException
-                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
-                || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
-          
-          LOG.debug("TestNN, got RPC exception for ann " + ann.getInetSocketAddress() + " got exception " + e);
-          blackListNN.add(ann);
-          ann = nextNNForNonBlkReportRPC();
-          maxRetries--;
-          continue;          
-        } else {
-          LOG.debug("TestNN RPC failed " + e);
-          throw (IOException) e;
-        }
-      }
-    }
-  }
+//  private void doActorActionWithRetry(ActorActionHandler hndlr, int maxRetriesIn) throws IOException {
+//    ActiveNamenode ann = nextNNForNonBlkReportRPC();
+//    if (ann == null) {
+//      return;
+//    }
+//    int maxRetries = Math.min(nnList.size(), maxRetriesIn);
+//    boolean success = false;
+//    Exception exception = null;
+//    while (ann != null && maxRetries > 0) {
+//      try {
+//        BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
+//        if(actor != null){
+//            hndlr.doAction(actor);
+//            //no exception
+//            success = true;
+//            break;
+//        }
+//      } catch (Exception e) {
+//        exception = e;
+//        if (ExceptionCheck.isLocalConnectException(e)){ 
+//          LOG.debug("TestNN RPC exception for ann " + ann.getInetSocketAddress() + " got exception " + e);
+//          blackListNN.add(ann);
+//          ann = nextNNForNonBlkReportRPC();
+//          maxRetries--;
+//          continue;          
+//        } else {
+//          LOG.debug("TestNN RPC failed " + e);
+//          throw (IOException) e;
+//        }
+//      }
+//    }
+//  }
+    private Object doActorActionWithRetry(ActorActionHandler handler) throws IOException {
+        Exception exception = null;
+        boolean success = false;
+        BPServiceActor actor = null;
+        final int MAX_RPC_RETRIES = nnList.size();
 
-  private ActiveNamenode nextNNForNonBlkReportRPC() {
-    if (nnList == null || nnList.size() == 0) {
+        for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
+            try {
+                actor = nextNNForNonBlkReportRPC();
+                if (actor != null) {
+                    Object obj = handler.doAction(actor);
+                    //no exception
+                    success = true;
+                    return obj;
+                }
+
+            } catch (Exception e) {
+                exception = e;
+                if (ExceptionCheck.isLocalConnectException(e)) {
+                    //black list the namenode 
+                    //so that it is not used again
+                    LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
+                    blackListNN.add(actor.getNNSocketAddress());
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+        
+        if (!success) {
+            LOG.debug("TestNN RPC failed nnList size = "+nnList.size()+" Exception: " + exception);
+            if (exception != null) {
+                if (exception instanceof RemoteException) {
+                    throw (RemoteException) exception;
+                } else {
+                    throw (IOException) exception;
+                }
+            }
+        }
+        return null;
+    }
+
+  private BPServiceActor nextNNForNonBlkReportRPC() {
+    if (nnList == null || nnList.isEmpty()) {
       return null;
     }
     
     for(int i = 0; i < 10; i++){
       rpcRoundRobinIndex = ++rpcRoundRobinIndex % nnList.size();
       ActiveNamenode ann = nnList.get(rpcRoundRobinIndex);
-      if(!this.blackListNN.contains(ann)){ 
-      return ann;
+      if(!this.blackListNN.contains(ann.getInetSocketAddress())){
+         BPServiceActor actor = getAnActor(ann.getInetSocketAddress()); 
+         if(actor != null){
+             return actor;
+         }
       }
     }
     return null;
@@ -1159,5 +1203,20 @@ class BPOfferService implements Runnable {
     }
     return ann;
   }
-  //END_HOP_CODE
+  
+    private void forwardRRIndex() {
+        if (nnList != null && !nnList.isEmpty()) {
+            // watch out for black listed NN
+            for (int i = 0; i < 10; i++) {
+                refreshNNRoundRobinIndex = ++refreshNNRoundRobinIndex % nnList.size();
+                ActiveNamenode ann = nnList.get(refreshNNRoundRobinIndex);
+                if (!this.blackListNN.contains(ann.getInetSocketAddress())) {
+                    return;
+                }
+            }
+        } else {
+            refreshNNRoundRobinIndex = -1;
+        }
+    }
+    //END_HOP_CODE
 }

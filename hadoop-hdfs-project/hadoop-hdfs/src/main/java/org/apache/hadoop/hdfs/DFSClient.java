@@ -2544,45 +2544,48 @@ public class DFSClient implements java.io.Closeable {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
   
-  private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException{
-    Exception exception  = null; 
+    private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException {
+    Exception exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
+    boolean success = false;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
         handle = namenodeSelector.getNextNamenode();
-        LOG.debug("TestNN trying RPC with "+handle.getNamenode()+" tries left ("+(MAX_RPC_RETRIES-i)+")");
-        for(int j = 0 ; j < 4; j++)
-        {
-          LOG.debug("TestNN "+Thread.currentThread().getStackTrace()[j]);
-        }
-        if(handle == null){
+        LOG.debug("TestNN RPC with " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        if (handle == null) {
           throw new Exception("No alive Namenode is the system");
         }
         Object obj = handler.doAction(handle.getRPCHandle());
+        success = true;
         //no exception 
         return obj;
       } catch (Exception e) {
         exception = e;
-        if (e instanceof ConnectException
-                || e instanceof SocketException
-                || e instanceof BindException
-                || e instanceof UnknownHostException
-                || e instanceof SocketTimeoutException
-                || e instanceof NoRouteToHostException
-                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
-                || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
+        if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
+          LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
           namenodeSelector.blackListNamenode(handle);
           continue;
-        }else{
-         LOG.debug("TestNN RPC failed "+e);
-         throw (IOException)e;
+        } else {
+          break;
         }
       }
     }
-    
-    throw (IOException)exception;
+    if (!success) {
+      for (int j = 0; j < 5; j++) {
+          LOG.debug("TestNN RPC failed " + exception +", "+ Thread.currentThread().getStackTrace()[j]);
+        }
+      LOG.debug("TestNN RPC failed " + exception);
+      if (exception != null) {
+        if (exception instanceof RemoteException) {
+          throw (RemoteException) exception;
+        } else {
+          throw (IOException) exception;
+        }
+      }
+    }
+    return null;
   }
    
     /**
