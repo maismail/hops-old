@@ -1074,84 +1074,48 @@ class BPOfferService implements Runnable {
     Object doAction(BPServiceActor actor) throws IOException;
   }
   
-//  private Object doActorActionWithRetry(ActorActionHandler hndlr) throws IOException {
-//    return doActorActionWithRetry(hndlr, Integer.MAX_VALUE);
-//  }
-  
-//  private void doActorActionWithRetry(ActorActionHandler hndlr, int maxRetriesIn) throws IOException {
-//    ActiveNamenode ann = nextNNForNonBlkReportRPC();
-//    if (ann == null) {
-//      return;
-//    }
-//    int maxRetries = Math.min(nnList.size(), maxRetriesIn);
-//    boolean success = false;
-//    Exception exception = null;
-//    while (ann != null && maxRetries > 0) {
-//      try {
-//        BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
-//        if(actor != null){
-//            hndlr.doAction(actor);
-//            //no exception
-//            success = true;
-//            break;
-//        }
-//      } catch (Exception e) {
-//        exception = e;
-//        if (ExceptionCheck.isLocalConnectException(e)){ 
-//          LOG.debug("TestNN RPC exception for ann " + ann.getInetSocketAddress() + " got exception " + e);
-//          blackListNN.add(ann);
-//          ann = nextNNForNonBlkReportRPC();
-//          maxRetries--;
-//          continue;          
-//        } else {
-//          LOG.debug("TestNN RPC failed " + e);
-//          throw (IOException) e;
-//        }
-//      }
-//    }
-//  }
-    private Object doActorActionWithRetry(ActorActionHandler handler) throws IOException {
-        Exception exception = null;
-        boolean success = false;
-        BPServiceActor actor = null;
-        final int MAX_RPC_RETRIES = nnList.size();
+  private Object doActorActionWithRetry(ActorActionHandler handler) throws IOException {
+    Exception exception = null;
+    boolean success = false;
+    BPServiceActor actor = null;
+    final int MAX_RPC_RETRIES = nnList.size();
 
-        for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
-            try {
-                actor = nextNNForNonBlkReportRPC();
-                if (actor != null) {
-                    Object obj = handler.doAction(actor);
-                    //no exception
-                    success = true;
-                    return obj;
-                }
+    for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
+      try {
+        actor = nextNNForNonBlkReportRPC();
+        if (actor != null) {
+          Object obj = handler.doAction(actor);
+          //no exception
+          success = true;
+          return obj;
+        }
 
-            } catch (Exception e) {
-                exception = e;
-                if (ExceptionCheck.isLocalConnectException(e)) {
-                    //black list the namenode 
-                    //so that it is not used again
-                    LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
-                    blackListNN.add(actor.getNNSocketAddress());
-                    continue;
-                } else {
-                    break;
-                }
-            }
+      } catch (Exception e) {
+        exception = e;
+        if (ExceptionCheck.isLocalConnectException(e)) {
+          //black list the namenode 
+          //so that it is not used again
+          LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
+          blackListNN.add(actor.getNNSocketAddress());
+          continue;
+        } else {
+          break;
         }
-        
-        if (!success) {
-            LOG.debug("TestNN RPC failed nnList size = "+nnList.size()+" Exception: " + exception);
-            if (exception != null) {
-                if (exception instanceof RemoteException) {
-                    throw (RemoteException) exception;
-                } else {
-                    throw (IOException) exception;
-                }
-            }
-        }
-        return null;
+      }
     }
+
+    if (!success) {
+      LOG.debug("TestNN RPC failed nnList size = " + nnList.size() + " Exception: " + exception);
+      if (exception != null) {
+        if (exception instanceof RemoteException) {
+          throw (RemoteException) exception;
+        } else {
+          throw (IOException) exception;
+        }
+      }
+    }
+    return null;
+  }
 
   private BPServiceActor nextNNForNonBlkReportRPC() {
     if (nnList == null || nnList.isEmpty()) {
