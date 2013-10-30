@@ -10,12 +10,14 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem.Statistics;
+import static org.apache.hadoop.hdfs.NamenodeSelector.rrIndex;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
@@ -76,20 +78,22 @@ public class NamenodeSelector extends Thread {
 
         @Override
         public boolean equals(Object obj) {
-            if (!(obj instanceof NamenodeHandle)) {
+            if (!(obj instanceof NamenodeSelector.NamenodeHandle)) {
                 return false;
             } else {
-                NamenodeHandle that = (NamenodeHandle) obj;
-                return this.namenode.equals(that.getNamenode());
+                NamenodeSelector.NamenodeHandle that = (NamenodeSelector.NamenodeHandle) obj;
+                boolean res = this.namenode.equals(that.getNamenode());
+                LOG.debug("Equals returning " + res + " for this " + namenode + " that " + that.getNamenode());
+                return res;
             }
         }
     };
     /* List of name nodes */
-    private List<NamenodeHandle> nnList = new CopyOnWriteArrayList<NamenodeHandle>();
-    private List<NamenodeHandle> blackListedNamenodes = new CopyOnWriteArrayList<NamenodeHandle>();
+    private List<NamenodeSelector.NamenodeHandle> nnList = new CopyOnWriteArrayList<NamenodeSelector.NamenodeHandle>();
+    private List<NamenodeSelector.NamenodeHandle> blackListedNamenodes = new CopyOnWriteArrayList<NamenodeSelector.NamenodeHandle>();
     private static Log LOG = LogFactory.getLog(NamenodeSelector.class);
     private final URI defaultUri;
-    private final NNSelectionPolicy policy;
+    private final NamenodeSelector.NNSelectionPolicy policy;
     private final Configuration conf;
     private boolean periodicNNListUpdate = true;
     private final Object wiatObjectForUpdate = new Object();
@@ -97,9 +101,9 @@ public class NamenodeSelector extends Thread {
 
     NamenodeSelector(Configuration conf, ClientProtocol namenode) throws IOException {
         this.defaultUri = null;
-        this.nnList.add(new NamenodeHandle(namenode, null));
+        this.nnList.add(new NamenodeSelector.NamenodeHandle(namenode, null));
         this.conf = conf;
-        this.policy = NNSelectionPolicy.ROUND_ROBIN;
+        this.policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
         this.namenodeListUpdateTimePeriod = -1;
     }
 
@@ -111,12 +115,12 @@ public class NamenodeSelector extends Thread {
         // Getting appropriate policy
         // supported policies are 'RANDOM' and 'ROUND_ROBIN'
         String policyName = conf.get(DFSConfigKeys.DFS_NAMENODE_SELECTOR_POLICY_KEY, "ROUND_ROBIN");
-        if (policyName == NNSelectionPolicy.RANDOM.toString()) {
-            policy = NNSelectionPolicy.RANDOM;
-        } else if (policyName == NNSelectionPolicy.ROUND_ROBIN.toString()) {
-            policy = NNSelectionPolicy.ROUND_ROBIN;
+        if (policyName == NamenodeSelector.NNSelectionPolicy.RANDOM.toString()) {
+            policy = NamenodeSelector.NNSelectionPolicy.RANDOM;
+        } else if (policyName == NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN.toString()) {
+            policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
         } else {
-            policy = NNSelectionPolicy.ROUND_ROBIN;
+            policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
         }
         LOG.debug("Namenode selection policy is set to " + policy);
 
@@ -149,7 +153,7 @@ public class NamenodeSelector extends Thread {
         stopPeriodicUpdates();
 
         //close all clients
-        for (NamenodeHandle namenode : nnList) {
+        for (NamenodeSelector.NamenodeHandle namenode : nnList) {
             ClientProtocol rpc = namenode.getRPCHandle();
             nnList.remove(namenode);
             RPC.stopProxy(rpc);
@@ -166,7 +170,7 @@ public class NamenodeSelector extends Thread {
      */
     static int rrIndex = 0;
 
-    public NamenodeHandle getNextNamenode() throws IOException {
+    public NamenodeSelector.NamenodeHandle getNextNamenode(AtomicLong txid) throws IOException {
         if (nnList == null || nnList.isEmpty()) {
             return null;
         }
@@ -174,65 +178,62 @@ public class NamenodeSelector extends Thread {
         int index = 0;
         ClientProtocol client = null;
         int maxRetries = nnList.size();
-        while (client == null && maxRetries > 0) {
-            index = getNNIndex();
-            if (index == -1) {
-                return null;
-            }
-            NamenodeHandle handle = nnList.get(index);
-            client = handle.getRPCHandle();
-            //return a good NN.
-//      if (!pingNamenode(client)) {
-//        LOG.debug(handle+" failed. Trying next NN...");
-//        client = null;
-//        maxRetries--;
-//        continue;
-//      } else {
-            LOG.debug("Returning " + handle + " for next RPC call. RRIndex " + index);
-            printNamenodes();
-            return handle;
-//      }
+
+        NamenodeSelector.NamenodeHandle handle = getNextNNBasedOnPolicy();
+        if (handle == null) {
+            //notify the periodic update thread to update the list of namenodes
+            wiatObjectForUpdate.notify();
+
+            // At this point, we have tried almost all NNs, all are not reachable. Something is wrong
+            throw new IOException("getNextNamenode() :: Unable to connect to any Namenode");
         }
+        client = handle.getRPCHandle();
+        LOG.debug(txid + ") Returning " + handle + " for next RPC call. RRIndex " + index);
+        LOG.debug(txid + ") " + printNamenodes());
+        return handle;
 
-        //notify the periodic update thread to update the list of namenodes
-        wiatObjectForUpdate.notify();
 
-        // At this point, we have tried almost all NNs, all are not reachable. Something is wrong
-        throw new IOException("getNextNamenode() :: Unable to connect to any Namenode");
+
     }
 
-    private int getNNIndex() {
-        if (policy == NNSelectionPolicy.RANDOM) {
+    private NamenodeSelector.NamenodeHandle getNextNNBasedOnPolicy() {
+        if (policy == NamenodeSelector.NNSelectionPolicy.RANDOM) {
             for (int i = 0; i < 10; i++) {
                 Random rand = new Random();
                 rand.setSeed(System.currentTimeMillis());
                 int index = rand.nextInt(nnList.size());
-                NamenodeHandle handle = nnList.get(index);
+                NamenodeSelector.NamenodeHandle handle = nnList.get(index);
                 if (!this.blackListedNamenodes.contains(handle)) {
-                    return index;
+                    return handle;
                 }
             }
-            return -1;
-        } else if (policy == NNSelectionPolicy.ROUND_ROBIN) {
+            return null;
+        } else if (policy == NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN) {
             for (int i = 0; i < 10; i++) {
                 rrIndex = (++rrIndex) % nnList.size();
-                NamenodeHandle handle = nnList.get(rrIndex);
+                NamenodeSelector.NamenodeHandle handle = nnList.get(rrIndex);
                 if (!this.blackListedNamenodes.contains(handle)) {
-                    return rrIndex;
+                    LOG.debug("returning idex for " + handle);
+                    return handle;
                 }
             }
-            return -1;
+            return null;
         } else {
             throw new UnsupportedOperationException("Namenode selection policy is not supported. Selected policy is " + policy);
         }
     }
 
-    void printNamenodes() {
+    String printNamenodes() {
         String nns = "Client is connected to namenodes: ";
-        for (NamenodeHandle namenode : nnList) {
+        for (NamenodeSelector.NamenodeHandle namenode : nnList) {
             nns += namenode + ", ";
         }
-        LOG.debug(nns);
+
+        nns += " Black Listed Nodes are ";
+        for (NamenodeSelector.NamenodeHandle namenode : this.blackListedNamenodes) {
+            nns += namenode + ", ";
+        }
+        return nns;
     }
 
     public int getTotalConnectedNamenodes() {
@@ -296,7 +297,7 @@ public class NamenodeSelector extends Thread {
     private void periodicNamenodeClientsUpdate() throws IOException {
         SortedActiveNamenodeList anl = null;
         if (!nnList.isEmpty()) {
-            for (NamenodeHandle namenode : nnList) {
+            for (NamenodeSelector.NamenodeHandle namenode : nnList) { //TODO dont try with black listed nodes
                 try {
                     ClientProtocol handle = namenode.getRPCHandle();
                     anl = handle.getActiveNamenodesForClient();
@@ -337,7 +338,7 @@ public class NamenodeSelector extends Thread {
         //find out which client to start and stop  
         //make sets objects of old and new lists
         Set<InetSocketAddress> oldClients = Sets.newHashSet();
-        for (NamenodeHandle namenode : nnList) {
+        for (NamenodeSelector.NamenodeHandle namenode : nnList) {
             ActiveNamenode ann = namenode.getNamenode();
             oldClients.add(ann.getInetSocketAddress());
         }
@@ -369,12 +370,12 @@ public class NamenodeSelector extends Thread {
         //clear black listed nodes
         this.blackListedNamenodes.clear();
 
-        printNamenodes();
+        LOG.debug(printNamenodes());
     }
 
     //thse are synchronized using external methods
     private void removeDFSClient(InetSocketAddress address) {
-        NamenodeHandle handle = getNamenodeHandle(address);
+        NamenodeSelector.NamenodeHandle handle = getNamenodeHandle(address);
         if (handle != null) {
             if (nnList.remove(handle)) {
                 RPC.stopProxy(handle.getRPCHandle());
@@ -395,7 +396,7 @@ public class NamenodeSelector extends Thread {
             URI uri = NameNode.getUri(address);
             NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
             ClientProtocol handle = proxyInfo.getProxy();
-            nnList.add(new NamenodeHandle(handle, ann));
+            nnList.add(new NamenodeSelector.NamenodeHandle(handle, ann));
         } catch (IOException e) {
             LOG.debug("Unable to Start RPC proxy for " + address);
         }
@@ -410,8 +411,8 @@ public class NamenodeSelector extends Thread {
         }
     }
 
-    private NamenodeHandle getNamenodeHandle(InetSocketAddress address) {
-        for (NamenodeHandle handle : nnList) {
+    private NamenodeSelector.NamenodeHandle getNamenodeHandle(InetSocketAddress address) {
+        for (NamenodeSelector.NamenodeHandle handle : nnList) {
             if (handle.getNamenode().getInetSocketAddress().equals(address)) {
                 return handle;
             }
@@ -419,8 +420,11 @@ public class NamenodeSelector extends Thread {
         return null;
     }
 
-    public void blackListNamenode(NamenodeHandle handle) {
-        this.blackListedNamenodes.add(handle);
+    public void blackListNamenode(NamenodeSelector.NamenodeHandle handle) {
+        if (!this.blackListedNamenodes.contains(handle)) {
+            this.blackListedNamenodes.add(handle);
+        }
+
 
         //if a bad namenode is detected then update the list of Namenodes in the system
         synchronized (wiatObjectForUpdate) {

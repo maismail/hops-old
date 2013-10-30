@@ -1096,6 +1096,7 @@ class BPOfferService implements Runnable {
           //black list the namenode 
           //so that it is not used again
           LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
+          e.printStackTrace();
           blackListNN.add(actor.getNNSocketAddress());
           continue;
         } else {
@@ -1117,53 +1118,49 @@ class BPOfferService implements Runnable {
     return null;
   }
 
-  private BPServiceActor nextNNForNonBlkReportRPC() {
+    private BPServiceActor nextNNForNonBlkReportRPC() {
     if (nnList == null || nnList.isEmpty()) {
       return null;
     }
-    
-    for(int i = 0; i < 10; i++){
-      rpcRoundRobinIndex = ++rpcRoundRobinIndex % nnList.size();
-      ActiveNamenode ann = nnList.get(rpcRoundRobinIndex);
-      if(!this.blackListNN.contains(ann.getInetSocketAddress())){
-         BPServiceActor actor = getAnActor(ann.getInetSocketAddress()); 
-         if(actor != null){
-             return actor;
-         }
+
+    for (int i = 0; i < 10; i++) {
+      try {
+        rpcRoundRobinIndex = ++rpcRoundRobinIndex % nnList.size();
+        ActiveNamenode ann = nnList.get(rpcRoundRobinIndex);
+        if (!this.blackListNN.contains(ann.getInetSocketAddress())) {
+          BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
+          if (actor != null) {
+            return actor;
+          }
+        }
+      } catch (Exception e) {
+        //any kind of exception try again
+        continue;
       }
     }
     return null;
   }
 
   private ActiveNamenode nextNNForBlkReport() {
-    if (nnList == null || nnList.size() == 0) {
+    if (nnList == null || nnList.isEmpty()) {
       return null;
     }
 
     ActiveNamenode ann = null;
-    int index = 0; // id  0 is the leader. if leader fails then we will ask others 
-    int maxRetries = nnList.size();
-    while (index < nnList.size() && maxRetries > 0) {
-      ActiveNamenode leader = null;
-      leader = nnList.get(index++); //leader
+    for (ActiveNamenode leader : nnList) {  // first element is the leader. if it does not work then ask non leader nodes
       try {
         LOG.debug("TestNN, nextNNForBlkReport ann " + leader.getInetSocketAddress());
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
         if (leaderActor != null) {
           ann = leaderActor.nextNNForBlkReport();
+          //no exception
+          if(ann != null){
+            return ann;
+          }
         }
       } catch (IOException e) {
-        maxRetries--;
         continue;
-      } finally {
-        if (ann != null) {
-          break;
-        } else {
-          maxRetries--;
-          continue;
-        }
-
-      }
+      } 
     }
     return ann;
   }

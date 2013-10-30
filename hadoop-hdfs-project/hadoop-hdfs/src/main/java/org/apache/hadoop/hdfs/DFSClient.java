@@ -160,10 +160,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
-import java.net.BindException;
-import java.net.ConnectException;
-import java.net.NoRouteToHostException;
-import java.net.SocketTimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
@@ -211,10 +208,7 @@ public class DFSClient implements java.io.Closeable {
   private SocketAddress[] localInterfaceAddrs;
   private DataEncryptionKey encryptionKey;
   
-  //START_HOP_CODE
-  private static int counter = 10001;
-  private int id=-1;
-  //END_HOP_CODE
+
 
   /**
    * DFSClient configuration 
@@ -456,7 +450,6 @@ public class DFSClient implements java.io.Closeable {
     this.socketCache = SocketCache.getInstance(dfsClientConf.socketCacheCapacity, dfsClientConf.socketCacheExpiry);
     
     //START_HOP_CODE
-    this.id= counter++;
     this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
     //END_HOP_CODE
   }
@@ -1207,7 +1200,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public ClientProtocol getNamenode() throws IOException {
 //    return namenode;
-      return namenodeSelector.getNextNamenode().getRPCHandle();
+      return namenodeSelector.getNextNamenode(txid).getRPCHandle();
   }
   
   /**
@@ -1737,7 +1730,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public MD5MD5CRC32FileChecksum getFileChecksum(String src) throws IOException {
     checkOpen();
-    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNextNamenode().getRPCHandle(), socketFactory,
+    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNextNamenode(txid).getRPCHandle(), socketFactory,
         dfsClientConf.socketTimeout, getDataEncryptionKey(),
         dfsClientConf.connectToDnViaHostname);
   }
@@ -2544,16 +2537,18 @@ public class DFSClient implements java.io.Closeable {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
   
+    private static AtomicLong txid = new AtomicLong();
     private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException {
+    txid.incrementAndGet();
     Exception exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
     boolean success = false;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
-        handle = namenodeSelector.getNextNamenode();
-        LOG.debug("TestNN RPC with " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        handle = namenodeSelector.getNextNamenode(txid);
+        LOG.debug(txid+") TestNN RPC with " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         if (handle == null) {
-          throw new Exception("No alive Namenode is the system");
+          throw new Exception(txid+") No alive Namenode is the system");
         }
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
@@ -2564,7 +2559,8 @@ public class DFSClient implements java.io.Closeable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
+          LOG.debug(txid+") TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
+          e.printStackTrace();
           namenodeSelector.blackListNamenode(handle);
           continue;
         } else {
@@ -2573,10 +2569,10 @@ public class DFSClient implements java.io.Closeable {
       }
     }
     if (!success) {
-      for (int j = 0; j < 5; j++) {
-          LOG.debug("TestNN RPC failed " + exception +", "+ Thread.currentThread().getStackTrace()[j]);
+      for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
+          LOG.debug(txid+") Trace, "+ Thread.currentThread().getStackTrace()[j]);
         }
-      LOG.debug("TestNN RPC failed " + exception);
+      LOG.debug(txid+") TestNN RPC failed " + exception);
       if (exception != null) {
         if (exception instanceof RemoteException) {
           throw (RemoteException) exception;
@@ -2621,14 +2617,6 @@ public class DFSClient implements java.io.Closeable {
     };
     return (SortedActiveNamenodeList) doClientActionWithRetry(handler);
   }
-  
-  /**
-   * Since we have multiple clients, we differentiate the clients via the ID
-   * Used in NamenodeSelector
-   */
-    public int getId() {
-        return id;
-    }
 
     public LocatedBlock getAdditionalDatanode(final String src, final ExtendedBlock blk,
             final DatanodeInfo[] existings, final DatanodeInfo[] excludes,

@@ -1148,7 +1148,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         DatanodeInfo[] excludedNodes) 
         throws IOException, UnresolvedLinkException {
       int retries = dfsClient.getConf().nBlockWriteLocateFollowingRetry;
-      long sleeptime = 400;
+      long sleeptime = 1000;  //HOP default value was 400
       while (true) {
         long localstart = Time.now();
         while (true) {
