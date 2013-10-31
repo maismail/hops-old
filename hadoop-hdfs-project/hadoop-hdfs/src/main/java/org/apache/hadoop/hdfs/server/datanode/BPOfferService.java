@@ -47,15 +47,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
-import java.net.BindException;
-import java.net.ConnectException;
-import java.net.NoRouteToHostException;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.Map;
-import static org.apache.hadoop.hdfs.DFSClient.LOG;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.ExceptionCheck;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
@@ -144,13 +136,11 @@ class BPOfferService implements Runnable {
 
     for (InetSocketAddress addr : nnAddrs) {
       this.bpServices.add(new BPServiceActor(addr, this)); 
-      LOG.debug("TestNN created an actor for addr "+addr);
       nnList.add(new ActiveNamenode(0, "", addr.getAddress().getHostAddress(), addr.getPort()));
     }
     //START_HOP_CODE
     dnConf = dn.getDnConf();
     //END_HOP_CODE
-    LOG.debug("TestNN created a BPOfferService bid ");
   }
 
   void refreshNNList(ArrayList<InetSocketAddress> addrs) throws IOException {
@@ -176,7 +166,7 @@ class BPOfferService implements Runnable {
       for (InetSocketAddress deadNN : deadNNs) {
         BPServiceActor deadActor = stopAnActor(deadNN);
         bpServices.remove(deadActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
-        LOG.debug("TestNN stopped actor for "+deadActor.getNNSocketAddress());
+        LOG.debug("Stopped actor for "+deadActor.getNNSocketAddress());
       }
     }
 
@@ -185,7 +175,7 @@ class BPOfferService implements Runnable {
       for (InetSocketAddress newNN : newNNs) {
         BPServiceActor newActor = startAnActor(newNN);
         bpServices.add(newActor); // NNs will not change frequently. so modification ops will not be expensive on the copyonwirte list
-        LOG.debug("TestNN started actor for "+newActor.getNNSocketAddress());
+        LOG.debug("Started actor for "+newActor.getNNSocketAddress());
       }
     }
     //END_HOP_CODE
@@ -250,7 +240,6 @@ class BPOfferService implements Runnable {
     try{
       reportBadBlocksWithRetry(block);
     }catch(Exception e){
-      //FIXME HOP
       LOG.error("Failed to send bad block report to any namenode ");
       e.printStackTrace();
     }
@@ -434,7 +423,6 @@ class BPOfferService implements Runnable {
     try{
       trySendErrorReportWithRetry(errCode, errMsg);
     }catch(Exception e){
-      //FIXME HOP
       LOG.error("FAILED to send error report to any namenode ");
       e.printStackTrace();
     }
@@ -892,6 +880,7 @@ class BPOfferService implements Runnable {
           return null; //no one is ready to handle the request, return now without changing the values of lastBlockReport. it will be retried in next cycle
         }
       } else {
+        LOG.warn("Unable to send block report");
         return null;
       }
 
@@ -988,7 +977,6 @@ class BPOfferService implements Runnable {
     nnList.clear();
     nnList.addAll(list.getActiveNamenodes());
     blackListNN.clear();
-    LOG.debug("TestNN, Updated the NN List "+ Arrays.toString(nnList.toArray()));
   }
 
   boolean canUpdateNNList(InetSocketAddress address) {
@@ -1029,7 +1017,6 @@ class BPOfferService implements Runnable {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
       public Object doAction(BPServiceActor actor) throws IOException {
-        LOG.debug("TestNN, reportBadBlocksWithRetry ann " + actor.getNNSocketAddress());
         actor.reportBadBlocks(block);
         return null;
       }
@@ -1040,7 +1027,6 @@ class BPOfferService implements Runnable {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
       public Object doAction(BPServiceActor actor) throws IOException {
-        LOG.debug("TestNN, blockReceivedAndDeletedWithRetry ann " + actor.getNNSocketAddress());
         actor.blockReceivedAndDeleted(bpRegistration, getBlockPoolId(), receivedAndDeletedBlocks);
         return null;
       }
@@ -1051,7 +1037,6 @@ class BPOfferService implements Runnable {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
       public Object doAction(BPServiceActor actor) throws IOException {
-        LOG.debug("TestNN, reportRemoteBadBlockWithRetry ann " + actor.getNNSocketAddress());
         actor.reportRemoteBadBlock(dnInfo, block);
         return null;
       }
@@ -1062,7 +1047,6 @@ class BPOfferService implements Runnable {
     doActorActionWithRetry(new ActorActionHandler() {
       @Override
       public Object doAction(BPServiceActor actor) throws IOException {
-        LOG.debug("TestNN, trySendErrorReportWithRetry ann " + actor.getNNSocketAddress());
         actor.trySendErrorReport(errCode, errMsg);
         return null;
       }
@@ -1095,8 +1079,7 @@ class BPOfferService implements Runnable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          LOG.debug("TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
-          e.printStackTrace();
+          LOG.warn("RPC faild. NN used was "+actor.getNNSocketAddress()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           blackListNN.add(actor.getNNSocketAddress());
           continue;
         } else {
@@ -1106,7 +1089,6 @@ class BPOfferService implements Runnable {
     }
 
     if (!success) {
-      LOG.debug("TestNN RPC failed nnList size = " + nnList.size() + " Exception: " + exception);
       if (exception != null) {
         if (exception instanceof RemoteException) {
           throw (RemoteException) exception;
@@ -1149,7 +1131,6 @@ class BPOfferService implements Runnable {
     ActiveNamenode ann = null;
     for (ActiveNamenode leader : nnList) {  // first element is the leader. if it does not work then ask non leader nodes
       try {
-        LOG.debug("TestNN, nextNNForBlkReport ann " + leader.getInetSocketAddress());
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
         if (leaderActor != null) {
           ann = leaderActor.nextNNForBlkReport();
