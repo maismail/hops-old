@@ -1200,7 +1200,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public ClientProtocol getNamenode() throws IOException {
 //    return namenode;
-      return namenodeSelector.getNextNamenode(txid).getRPCHandle();
+      return namenodeSelector.getNextNamenode().getRPCHandle();
   }
   
   /**
@@ -1730,7 +1730,7 @@ public class DFSClient implements java.io.Closeable {
    */
   public MD5MD5CRC32FileChecksum getFileChecksum(String src) throws IOException {
     checkOpen();
-    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNextNamenode(txid).getRPCHandle(), socketFactory,
+    return getFileChecksum(src, clientName, /*HOPnamenode*/ namenodeSelector.getNextNamenode().getRPCHandle(), socketFactory,
         dfsClientConf.socketTimeout, getDataEncryptionKey(),
         dfsClientConf.connectToDnViaHostname);
   }
@@ -2537,18 +2537,18 @@ public class DFSClient implements java.io.Closeable {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
   
-    private static AtomicLong txid = new AtomicLong();
+    private static AtomicLong fnID = new AtomicLong(); // for debuggin purpose
     private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException {
-    txid.incrementAndGet();
+    long thisFnID = fnID.incrementAndGet();
     Exception exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
     boolean success = false;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
-        handle = namenodeSelector.getNextNamenode(txid);
-        LOG.debug(txid+") TestNN RPC with " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        handle = namenodeSelector.getNextNamenode();
+        //LOG.debug(thisFnID+") sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         if (handle == null) {
-          throw new Exception(txid+") No alive Namenode is the system");
+          throw new IllegalStateException(thisFnID+") No alive Namenode is the system");
         }
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
@@ -2559,8 +2559,7 @@ public class DFSClient implements java.io.Closeable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          LOG.debug(txid+") TestNN RPC Faild Because of Local Exception. RPC retries left (" + (MAX_RPC_RETRIES - (i)) + ") " + e);
-          e.printStackTrace();
+          LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           namenodeSelector.blackListNamenode(handle);
           continue;
         } else {
@@ -2569,10 +2568,10 @@ public class DFSClient implements java.io.Closeable {
       }
     }
     if (!success) {
-      for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-          LOG.debug(txid+") Trace, "+ Thread.currentThread().getStackTrace()[j]);
-        }
-      LOG.debug(txid+") TestNN RPC failed " + exception);
+      //print the fn call trace to figure out with RPC failed
+      //for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
+      //    LOG.debug(thisFnID+") Trace, "+ Thread.currentThread().getStackTrace()[j]);
+      //}
       if (exception != null) {
         if (exception instanceof RemoteException) {
           throw (RemoteException) exception;
