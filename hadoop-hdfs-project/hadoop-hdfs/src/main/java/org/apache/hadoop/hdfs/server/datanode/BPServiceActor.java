@@ -460,8 +460,6 @@ class BPServiceActor implements Runnable {
     // off disk - so update the bpRegistration object from that info
     bpRegistration = bpos.createRegistration();
 
-    LOG.info(this + " beginning handshake with NN");
-
     while (shouldRun()) {
       try {
         // Use returned registration from namenode with updated fields
