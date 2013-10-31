@@ -122,6 +122,10 @@ public class LeaderElection extends Thread {
       // Determine the next leader and set it
       // if this is the leader, also remove previous leaders
       determineAndSetLeader();
+      
+      //Update list of active NN in Namenode.java
+      SortedActiveNamenodeList sortedList = getActiveNamenodes();
+      nn.setNameNodeList(sortedList);
       return null;
     }
   };
@@ -277,19 +281,7 @@ public class LeaderElection extends Thread {
     // get all active namenodes
     List<Leader> nns = getActiveNamenodesInternal(maxCounter, totalNamenodes);
 
-    // Order by id
-    List<ActiveNamenode> activeNameNodeList = new ArrayList<ActiveNamenode>();    
-    for (Leader l : nns) {
-      String hostNameNPort = l.getHostName();
-      StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
-      String hostName = st.nextToken();
-      int port = Integer.parseInt(st.nextToken());
-      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
-      activeNameNodeList.add(ann);
-    }
-    
-    SortedActiveNamenodeList sortedNNList = new SortedActiveNamenodeList(activeNameNodeList);
-    return sortedNNList;
+    return makeSortedActiveNamenodeList(nns);
   }
 
   public void removePrevoiouslyElectedLeaders(long id) throws PersistanceException {
@@ -335,5 +327,22 @@ public class LeaderElection extends Thread {
   private List<Leader> getPreceedingNamenodesInternal(long id) throws PersistanceException {
     List<Leader> list = (List<Leader>) EntityManager.findList(Leader.Finder.AllByIDLT, id);
     return list;
+  }
+  
+  
+ // Make sortedNNlist
+  private SortedActiveNamenodeList makeSortedActiveNamenodeList(List<Leader> nns){
+    List<ActiveNamenode> activeNameNodeList = new ArrayList<ActiveNamenode>();    
+    for (Leader l : nns) {
+      String hostNameNPort = l.getHostName();
+      StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
+      String hostName = st.nextToken();
+      int port = Integer.parseInt(st.nextToken());
+      ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
+      activeNameNodeList.add(ann);
+    }
+    
+    SortedActiveNamenodeList sortedNNList = new SortedActiveNamenodeList(activeNameNodeList);
+    return sortedNNList;
   }
 }
