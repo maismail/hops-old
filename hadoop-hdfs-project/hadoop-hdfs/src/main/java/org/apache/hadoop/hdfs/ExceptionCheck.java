@@ -22,6 +22,10 @@ import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import org.apache.hadoop.ipc.RemoteException;
 
 /**
  *
@@ -39,7 +43,14 @@ public class ExceptionCheck {
                 || e instanceof NoRouteToHostException
                 ||(e instanceof IOException && e.getMessage().contains("Failed on local exception"))
                 || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
-       return true;
+         return true;
+     }
+     if(e instanceof RemoteException){
+         //Unwrap
+         Exception unwrappedException = ((RemoteException)e).unwrapRemoteException();
+         if(unwrappedException instanceof PersistanceException){
+             return true;
+         }
      }
     
     return false;

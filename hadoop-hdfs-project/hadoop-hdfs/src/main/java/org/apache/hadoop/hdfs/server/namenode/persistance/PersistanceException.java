@@ -1,10 +1,12 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance;
 
+import java.io.IOException;
+
 /**
  *
  * @author kamal hakimzadeh<kamal@sics.se>
  */
-public abstract class PersistanceException extends Exception{
+public abstract class PersistanceException extends IOException{
 
   public PersistanceException() {
   }
