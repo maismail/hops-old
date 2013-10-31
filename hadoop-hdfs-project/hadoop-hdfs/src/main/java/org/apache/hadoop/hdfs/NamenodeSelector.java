@@ -83,7 +83,6 @@ public class NamenodeSelector extends Thread {
             } else {
                 NamenodeSelector.NamenodeHandle that = (NamenodeSelector.NamenodeHandle) obj;
                 boolean res = this.namenode.equals(that.getNamenode());
-                LOG.debug("Equals returning " + res + " for this " + namenode + " that " + that.getNamenode());
                 return res;
             }
         }
@@ -122,7 +121,6 @@ public class NamenodeSelector extends Thread {
         } else {
             policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
         }
-        LOG.debug("Namenode selection policy is set to " + policy);
 
         //get the list of Namenodes
         createNamenodeClinetsFromList();
@@ -144,7 +142,7 @@ public class NamenodeSelector extends Thread {
                 }
             } catch (Exception ex) {
                 LOG.warn(ex);
-                ex.printStackTrace();
+                //ex.printStackTrace();
             }
         }
     }
@@ -170,7 +168,7 @@ public class NamenodeSelector extends Thread {
      */
     static int rrIndex = 0;
 
-    public NamenodeSelector.NamenodeHandle getNextNamenode(AtomicLong txid) throws IOException {
+    public NamenodeSelector.NamenodeHandle getNextNamenode() throws IOException {
         if (nnList == null || nnList.isEmpty()) {
             return null;
         }
@@ -188,8 +186,8 @@ public class NamenodeSelector extends Thread {
             throw new IOException("getNextNamenode() :: Unable to connect to any Namenode");
         }
         client = handle.getRPCHandle();
-        LOG.debug(txid + ") Returning " + handle + " for next RPC call. RRIndex " + index);
-        LOG.debug(txid + ") " + printNamenodes());
+        //LOG.debug("Returning " + handle + " for next RPC call. RRIndex " + index);
+        //LOG.debug(printNamenodes());
         return handle;
 
 
@@ -213,7 +211,6 @@ public class NamenodeSelector extends Thread {
                 rrIndex = (++rrIndex) % nnList.size();
                 NamenodeSelector.NamenodeHandle handle = nnList.get(rrIndex);
                 if (!this.blackListedNamenodes.contains(handle)) {
-                    LOG.debug("returning idex for " + handle);
                     return handle;
                 }
             }
@@ -257,7 +254,7 @@ public class NamenodeSelector extends Thread {
                     RPC.stopProxy(handle);
                 }
             } catch (Exception e) {
-                LOG.debug("Failed to get list of NN from default NN. Default NN was " + defaultUri);
+                LOG.warn("Failed to get list of NN from default NN. Default NN was " + defaultUri);
                 RPC.stopProxy(handle);
             }
         }
@@ -332,7 +329,6 @@ public class NamenodeSelector extends Thread {
         if (anl == null) {
             return;
         }
-        LOG.debug("refreshing namenodes new anl is size " + anl.size());
         //NOTE should not restart a valid client
 
         //find out which client to start and stop  
@@ -369,8 +365,7 @@ public class NamenodeSelector extends Thread {
 
         //clear black listed nodes
         this.blackListedNamenodes.clear();
-
-        LOG.debug(printNamenodes());
+        //LOG.debug(printNamenodes());
     }
 
     //thse are synchronized using external methods
@@ -379,9 +374,8 @@ public class NamenodeSelector extends Thread {
         if (handle != null) {
             if (nnList.remove(handle)) {
                 RPC.stopProxy(handle.getRPCHandle());
-                LOG.debug("Removed RPC proxy for " + address);
             } else {
-                LOG.debug("Failed to Remove RPC proxy for " + address);
+                LOG.warn("Failed to Remove RPC proxy for " + address);
             }
         }
     }
@@ -398,7 +392,7 @@ public class NamenodeSelector extends Thread {
             ClientProtocol handle = proxyInfo.getProxy();
             nnList.add(new NamenodeSelector.NamenodeHandle(handle, ann));
         } catch (IOException e) {
-            LOG.debug("Unable to Start RPC proxy for " + address);
+            LOG.warn("Unable to Start RPC proxy for " + address);
         }
     }
 
