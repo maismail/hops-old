@@ -2570,7 +2570,7 @@ public class DFSClient implements java.io.Closeable {
     if (!success) {
       //print the fn call trace to figure out with RPC failed
       //for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-      //    LOG.debug(thisFnID+") Trace, "+ Thread.currentThread().getStackTrace()[j]);
+      //    LOG.debug(thisFnID+") Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
       //}
       if (exception != null) {
         if (exception instanceof RemoteException) {

@@ -76,6 +76,8 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
 
         cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
         cluster.waitActive();
+        
+        LOG.debug("NN1 address is "+cluster.getNameNode(NN1).getNameNodeAddress()+" NN2 address is "+cluster.getNameNode(NN2).getNameNodeAddress());
 
         fs = cluster.getNewFileSystemInstance(NN1);
 
