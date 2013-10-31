@@ -270,6 +270,7 @@ public class NameNode {
   //START_HOP_CODE
   private long id = LeaderElection.LEADER_INITIALIZATION_ID;
   protected LeaderElection leaderElection;
+  private SortedActiveNamenodeList nnList = null;
   //END_HOP_CODE
 
   /** Format a new filesystem.  Destroys any filesystem that may already
@@ -1548,44 +1549,52 @@ public class NameNode {
     this.role = role;
     namesystem.setNameNodeRole(role);
   }
+  
+  synchronized void setNameNodeList(SortedActiveNamenodeList list){
+    this.nnList = list;
+  }
 
   public boolean isLeader() {
     return role.equals(NamenodeRole.LEADER);
   }
-    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.SELECT_ALL_NAMENODES) {
-    @Override
-    public TransactionLocks acquireLock() throws PersistanceException, IOException {
-      TransactionLockAcquirer tla = new TransactionLockAcquirer();
-      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
-      return tla.acquire();
-    }
-
-    @Override
-    public Object performTask() throws PersistanceException, IOException {
-      return getLeaderElectionInstance().selectAll();
-    }
-  };
+//HOP the code is optimized. now when ever there is request for fresh list of 
+//namenodes in the system we return nnList. nnList is periodically updated by the leader
+//election algorith 
+//    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.SELECT_ALL_NAMENODES) {
+//    @Override
+//    public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//      TransactionLockAcquirer tla = new TransactionLockAcquirer();
+//      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+//      return tla.acquire();
+//    }
+//
+//    @Override
+//    public Object performTask() throws PersistanceException, IOException {
+//      return getLeaderElectionInstance().selectAll();
+//    }
+//  };
 
   public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
-    return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
+   // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
+    return nnList;
   }
   
   protected volatile int nnIndex = 0;
   public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
-    List<ActiveNamenode> allNodes = ((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
+    List<ActiveNamenode> allNodes = nnList.getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
     if(this.isLeader())
     {
       // Use the modulo to roundrobin b/w namenodes
       nnIndex = ++nnIndex % allNodes.size();
       ActiveNamenode ann = allNodes.get(nnIndex);
-      LOG.debug("TestNN server leader returning "+ann.getIpAddress());
+      //LOG.debug("Returning "+ann.getIpAddress()+" for Next Block report");
       return ann;
     }else{
       // random allocation of NN
       Random rand = new Random();
       rand.setSeed(System.currentTimeMillis());
       ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
-      LOG.debug("TestNN server leader returning "+ann.getIpAddress());
+      //LOG.debug("Returning "+ann.getIpAddress()+" for Next Block report");
       return ann;
     }
   }
