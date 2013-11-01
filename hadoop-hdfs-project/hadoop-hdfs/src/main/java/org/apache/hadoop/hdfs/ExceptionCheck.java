@@ -15,6 +15,8 @@
  */
 package org.apache.hadoop.hdfs;
 
+import com.mysql.clusterj.ClusterJDatastoreException;
+import com.mysql.clusterj.ClusterJException;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ConnectException;
@@ -22,9 +24,8 @@ import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.ipc.RemoteException;
 
 /**
@@ -32,28 +33,33 @@ import org.apache.hadoop.ipc.RemoteException;
  * @author salman
  */
 public class ExceptionCheck {
-  
-  public static boolean isLocalConnectException(Exception e){
-     //for these Exceptions RPC call will be retried
-     if (e instanceof ConnectException
+
+    public static boolean isLocalConnectException(Exception e) {
+        //for these Exceptions RPC call will be retried
+        if (e instanceof ConnectException
                 || e instanceof SocketException
                 || e instanceof BindException
                 || e instanceof UnknownHostException
                 || e instanceof SocketTimeoutException
                 || e instanceof NoRouteToHostException
-                ||(e instanceof IOException && e.getMessage().contains("Failed on local exception"))
-                || e instanceof NullPointerException){ // Nullpointer exception as caused by dead locks
-         return true;
-     }
-     if(e instanceof RemoteException){
-         //Unwrap
-         Exception unwrappedException = ((RemoteException)e).unwrapRemoteException();
-         if(unwrappedException instanceof PersistanceException){
-             return true;
-         }
-     }
-    
-    return false;
-  }
-  
+                || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
+                || e instanceof NullPointerException) { // Nullpointer exception as caused by dead locks
+            return true;
+        }
+
+        if (e instanceof RemoteException) {
+            Exception unwrappedException = ((RemoteException) e).unwrapRemoteException(); //unwraps wrapped IOExceptions
+            if(unwrappedException instanceof RemoteException){ //unable to unwrap
+               unwrappedException =  ((RemoteException) e).unwrapRemoteRuntimeException(); //unwraps wrapped RuntimeExceptions
+            }
+            
+            if(unwrappedException != null && !(unwrappedException instanceof RemoteException)) { 
+                if (unwrappedException instanceof PersistanceException
+                    || unwrappedException instanceof ClusterJException) {
+                        return true;
+                }
+            }
+        }
+       return false;
+    }
 }
