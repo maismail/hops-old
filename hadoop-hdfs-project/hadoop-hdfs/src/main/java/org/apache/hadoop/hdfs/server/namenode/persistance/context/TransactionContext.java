@@ -53,7 +53,6 @@ public class TransactionContext {
   public void begin() throws StorageException {
     activeTxExpected = true;
     connector.beginTransaction();
-    logger.debug("begin");
   }
 
   public void preventStorageCall() {
@@ -68,17 +67,13 @@ public class TransactionContext {
     for (EntityContext context : contexts) {
       context.prepare(tlm);
     }
-
     resetContext();
-
     connector.commit();
-    logger.debug("commit");
   }
 
   public void rollback() throws StorageException {
     resetContext();
     connector.rollback();
-    logger.debug("rollback");
   }
 
   public <T> void update(T obj) throws PersistanceException {
