@@ -180,7 +180,9 @@ public class NamenodeSelector extends Thread {
         NamenodeSelector.NamenodeHandle handle = getNextNNBasedOnPolicy();
         if (handle == null) {
             //notify the periodic update thread to update the list of namenodes
-            wiatObjectForUpdate.notify();
+            synchronized(wiatObjectForUpdate){
+                wiatObjectForUpdate.notify();
+            }
 
             // At this point, we have tried almost all NNs, all are not reachable. Something is wrong
             throw new IOException("getNextNamenode() :: Unable to connect to any Namenode");
