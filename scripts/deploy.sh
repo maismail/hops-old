@@ -7,7 +7,7 @@ rm $DEPLOY
 rm -rf $HOPS
 mkdir -p $HOPS
 
-mvn clean -f ./../pom.xml  package -Pdist -DskipTests
+mvn -f ./../pom.xml  package -Pdist -Dtar -DskipTests
 
 HADOOP=hadoop-2.0.4-alpha
 
