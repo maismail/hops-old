@@ -38,6 +38,7 @@ public class StorageFactory {
   private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
   private static StorageInfoDataAccess storageInfoDataAccess;
   private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
+  private static boolean isInitialized = false;
 
   private static void initDataAccessMap() {
     dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
@@ -62,6 +63,7 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) {
+    if(isInitialized)  return;
     Variables.registerDefaultValues();
     String storageType = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY, 
             DFSConfigKeys.DFS_STORAGE_TYPE_DEFAULT);
@@ -106,6 +108,7 @@ public class StorageFactory {
     }
 
     initDataAccessMap();
+    isInitialized = true;
   }
 
   public static Map<Class, EntityContext> createEntityContexts() {
