@@ -438,6 +438,10 @@ public class NameNode {
     UserGroupInformation.setConfiguration(conf);
     loginAsNameNodeUser(conf);
 
+    //START_HOP_CODE
+    StorageFactory.setConfiguration(conf);
+    //END_HOP_CODE
+    
     NameNode.initMetrics(conf, this.getRole());
     loadNamesystem(conf);
 
@@ -445,7 +449,6 @@ public class NameNode {
     
     //START_HOP_CODE
     // Initialize the leader election algorithm (only once rpc server is created)
-    StorageFactory.setConfiguration(conf);
     leaderElection = new LeaderElection(conf, this);
     leaderElection.initialize();
     //END_HOP_CODE
