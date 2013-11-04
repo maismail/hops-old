@@ -651,7 +651,7 @@ public class MiniDFSCluster {
     }
     
     //START_HOP_CODE
-        // Setting the configuration for Storage
+    // Setting the configuration for Storage
     StorageFactory.setConfiguration(conf);
     if (format) {
       try {
