@@ -33,10 +33,10 @@ public enum MysqlServerConnector implements StorageConnector<Connection> {
   @Override
   public void setConfiguration(Configuration conf) {
     String host = conf.get(DFSConfigKeys.DFS_DB_CONNECTOR_STRING_KEY, DFSConfigKeys.DFS_DB_CONNECTOR_STRING_DEFAULT);
-    String database = conf.get(DFSConfigKeys.DFS_DB_DATABASE_NAME_KEY,DFSConfigKeys.DFS_DB_DATABASE_NAME_DEFAULT);
-    String port = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PORT_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_PORT_DEFAULT);
+    String database = conf.get(DFSConfigKeys.DFS_DB_DATABASE_NAME,DFSConfigKeys.DFS_DB_DATABASE_NAME_DEFAULT);
+    String port = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_PORT, DFSConfigKeys.DFS_STORAGE_MYSQL_PORT_DEFAULT);
     this.protocol = "jdbc:mysql://"+ host + ":"+port+"/" + database;
-    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_KEY, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_DEFAULT);
+    this.user = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_DEFAULT);
     this.password = conf.get(DFSConfigKeys.DFS_STORAGE_MYSQL_USER_PASSWORD, DFSConfigKeys.DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT);
     loadDriver();
   }

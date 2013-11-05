@@ -72,7 +72,7 @@ public class TestFileStatus {
   @BeforeClass
   public static void testSetUp() throws Exception {
     conf = new HdfsConfiguration();
-    conf.setInt(DFSConfigKeys.DFS_LIST_LIMIT_KEY, 2);
+    conf.setInt(DFSConfigKeys.DFS_LIST_LIMIT, 2);
     cluster = new MiniDFSCluster.Builder(conf).build();
     fs = cluster.getFileSystem();
     fc = FileContext.getFileContext(cluster.getURI(0), conf);
