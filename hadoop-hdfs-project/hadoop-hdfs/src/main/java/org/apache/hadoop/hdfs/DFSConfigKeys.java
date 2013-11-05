@@ -40,7 +40,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_salman";
   public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
-  public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user.";
+  public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user";
   public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.user.password";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "hop";  
@@ -72,8 +72,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE = "dfs.clinet.max.retires.on.failure";
   public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
   
-  public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST = "dsf.client.refresh.namenode.list";
-  public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_DEFAULT = 60*1000; //time in milliseconds. 
+  public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
+  public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

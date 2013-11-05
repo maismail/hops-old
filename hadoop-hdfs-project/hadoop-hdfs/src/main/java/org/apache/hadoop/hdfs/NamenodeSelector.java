@@ -109,7 +109,7 @@ public class NamenodeSelector extends Thread {
     NamenodeSelector(Configuration conf, URI defaultUri) throws IOException {
         this.defaultUri = defaultUri;
         this.conf = conf;
-        namenodeListUpdateTimePeriod = conf.getInt(DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST, DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_DEFAULT);
+        namenodeListUpdateTimePeriod = conf.getInt(DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY, DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT);
 
         // Getting appropriate policy
         // supported policies are 'RANDOM' and 'ROUND_ROBIN'
