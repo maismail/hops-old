@@ -146,9 +146,9 @@ public class StorageInfo {
         String bpid = newBlockPoolID();
         StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
-                conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
+                conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID_KEY, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
                 clusterId, 0L, bpid));
-        LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID+" CID:"+clusterId+" pbid:"+bpid);
+        LOG.info("Added new entry to storage info. nsid:"+DFSConfigKeys.DFS_NAME_SPACE_ID_KEY+" CID:"+clusterId+" pbid:"+bpid);
         return null;
       }
 

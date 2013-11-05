@@ -36,15 +36,15 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_DERBY_PROTOCOL_KEY = "dfs.storage.derby.protocol";
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
   public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud1.sics.se";
-  public static final String DFS_DB_DATABASE_NAME = "dfs.dbconnector.database";
+  public static final String DFS_DB_DATABASE_NAME_KEY = "dfs.dbconnector.database";
   public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_salman";
-  public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
+  public static final String DFS_DB_NUM_SESSION_FACTORIES_KEY = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
-  public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user";
+  public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
   public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
-  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.user.password";
+  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.password";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "hop";  
-  public static final String DFS_STORAGE_MYSQL_PORT = "dfs.storage.mysql.port";
+  public static final String DFS_STORAGE_MYSQL_PORT_KEY = "dfs.storage.mysql.port";
   public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3307"; //3308
   
 
@@ -60,16 +60,16 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
   public static final String  DFS_LEADER_CHECK_INTERVAL_KEY = "dfs.leader.check.interval";
   public static final int     DFS_LEADER_CHECK_INTERVAL_DEFAULT = 1*1000; // 1 second 
-  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD = "dfs.leader.missed.hb";
+  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD_KEY = "dfs.leader.missed.hb";
   public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
   
-  public static final String  DFS_BLOCK_POOL_ID = "dfs.block.pool.id";
+  public static final String  DFS_BLOCK_POOL_ID_KEY = "dfs.block.pool.id";
   public static final String  DFS_BLOCK_POOL_ID_DEFAULT = "HOP_BLOCK_POOL_123";
   
-  public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
+  public static final String  DFS_NAME_SPACE_ID_KEY = "dfs.name.space.id";
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
-  public static final String  DFS_CLIENT_RETRIES_ON_FAILURE = "dfs.clinet.max.retires.on.failure";
+  public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.client.max.retires.on.failure";
   public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
   
   public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
@@ -98,11 +98,11 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_CLIENT_WRITE_REPLACE_DATANODE_ON_FAILURE_POLICY_DEFAULT = "DEFAULT";
   public static final String  DFS_CLIENT_SOCKET_CACHE_CAPACITY_KEY = "dfs.client.socketcache.capacity";
   public static final int     DFS_CLIENT_SOCKET_CACHE_CAPACITY_DEFAULT = 16;
-  public static final String  DFS_CLIENT_USE_DN_HOSTNAME = "dfs.client.use.datanode.hostname";
+  public static final String  DFS_CLIENT_USE_DN_HOSTNAME_KEY = "dfs.client.use.datanode.hostname";
   public static final boolean DFS_CLIENT_USE_DN_HOSTNAME_DEFAULT = false;
-  public static final String  DFS_HDFS_BLOCKS_METADATA_ENABLED = "dfs.datanode.hdfs-blocks-metadata.enabled";
+  public static final String  DFS_HDFS_BLOCKS_METADATA_ENABLED_KEY = "dfs.datanode.hdfs-blocks-metadata.enabled";
   public static final boolean DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT = false;
-  public static final String  DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS = "dfs.client.file-block-storage-locations.num-threads";
+  public static final String  DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS_KEY = "dfs.client.file-block-storage-locations.num-threads";
   public static final int     DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS_DEFAULT = 10;
   public static final String  DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT = "dfs.client.file-block-storage-locations.timeout";
   public static final int     DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT_DEFAULT = 60;
@@ -137,7 +137,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_DATANODE_SYNC_BEHIND_WRITES_DEFAULT = false;
   public static final String  DFS_DATANODE_DROP_CACHE_BEHIND_READS_KEY = "dfs.datanode.drop.cache.behind.reads";
   public static final boolean DFS_DATANODE_DROP_CACHE_BEHIND_READS_DEFAULT = false;
-  public static final String  DFS_DATANODE_USE_DN_HOSTNAME = "dfs.datanode.use.datanode.hostname";
+  public static final String  DFS_DATANODE_USE_DN_HOSTNAME_KEY = "dfs.datanode.use.datanode.hostname";
   public static final boolean DFS_DATANODE_USE_DN_HOSTNAME_DEFAULT = false;
 
   public static final String  DFS_NAMENODE_HTTP_PORT_KEY = "dfs.http.port";
@@ -220,7 +220,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_NAMENODE_EDITS_DIR_MINIMUM_KEY = "dfs.namenode.edits.dir.minimum";
   public static final int     DFS_NAMENODE_EDITS_DIR_MINIMUM_DEFAULT = 1;
   
-  public static final String  DFS_LIST_LIMIT = "dfs.ls.limit";
+  public static final String  DFS_LIST_LIMIT_KEY = "dfs.ls.limit";
   public static final int     DFS_LIST_LIMIT_DEFAULT = 1000;
   public static final String  DFS_DATANODE_FAILED_VOLUMES_TOLERATED_KEY = "dfs.datanode.failed.volumes.tolerated";
   public static final int     DFS_DATANODE_FAILED_VOLUMES_TOLERATED_DEFAULT = 0;
@@ -249,7 +249,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final float DFS_NAMENODE_USE_STALE_DATANODE_FOR_WRITE_RATIO_DEFAULT = 0.5f;
 
   // Replication monitoring related keys
-  public static final String DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION =
+  public static final String DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY =
       "dfs.namenode.invalidate.work.pct.per.iteration";
   public static final float DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_DEFAULT = 0.32f;
   public static final String DFS_NAMENODE_REPLICATION_WORK_MULTIPLIER_PER_ITERATION =

@@ -911,18 +911,18 @@ public class TestReplicationPolicy {
         .getInvalidateWorkPctPerIteration(conf);
     assertTrue(blocksInvalidateWorkPct > 0);
 
-    conf.set(DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION,
+    conf.set(DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY,
         "0.5f");
     blocksInvalidateWorkPct = DFSUtil.getInvalidateWorkPctPerIteration(conf);
     assertEquals(blocksInvalidateWorkPct, 0.5f, blocksInvalidateWorkPct * 1e-7);
     
     conf.set(DFSConfigKeys.
-        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION, "1.0f");
+        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY, "1.0f");
     blocksInvalidateWorkPct = DFSUtil.getInvalidateWorkPctPerIteration(conf);
     assertEquals(blocksInvalidateWorkPct, 1.0f, blocksInvalidateWorkPct * 1e-7);
     
     conf.set(DFSConfigKeys.
-        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION, "0.0f");
+        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY, "0.0f");
     exception.expect(IllegalArgumentException.class);
     blocksInvalidateWorkPct = DFSUtil.getInvalidateWorkPctPerIteration(conf);
   }
@@ -940,7 +940,7 @@ public class TestReplicationPolicy {
     assertTrue(blocksInvalidateWorkPct > 0);
     
     conf.set(DFSConfigKeys.
-        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION, "-0.5f");
+        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY, "-0.5f");
     exception.expect(IllegalArgumentException.class);
     blocksInvalidateWorkPct = DFSUtil.getInvalidateWorkPctPerIteration(conf);
   }
@@ -958,7 +958,7 @@ public class TestReplicationPolicy {
     assertTrue(blocksInvalidateWorkPct > 0);
     
     conf.set(DFSConfigKeys.
-        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION, "1.5f");
+        DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY, "1.5f");
     exception.expect(IllegalArgumentException.class);
     blocksInvalidateWorkPct = DFSUtil.getInvalidateWorkPctPerIteration(conf);
   }

@@ -47,7 +47,7 @@ public class LeaderElection extends Thread {
   public LeaderElection(Configuration conf, NameNode nn) {
     this.nn = nn;
     this.leadercheckInterval = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_DEFAULT);
-    this.missedHeartBeatThreshold = conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT);
+    this.missedHeartBeatThreshold = conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT);
     hostname = nn.getNameNodeAddress().getAddress().getHostAddress() + ":" + nn.getNameNodeAddress().getPort();
   }
 

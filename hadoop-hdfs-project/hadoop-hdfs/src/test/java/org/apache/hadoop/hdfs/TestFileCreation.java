@@ -207,7 +207,7 @@ public class TestFileCreation {
     if (netIf != null) {
       conf.set(DFSConfigKeys.DFS_CLIENT_LOCAL_INTERFACES, netIf);
     }
-    conf.setBoolean(DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME, useDnHostname);
+    conf.setBoolean(DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME_KEY, useDnHostname);
     if (useDnHostname) {
       // Since the mini cluster only listens on the loopback we have to
       // ensure the hostname used to access DNs maps to the loopback. We

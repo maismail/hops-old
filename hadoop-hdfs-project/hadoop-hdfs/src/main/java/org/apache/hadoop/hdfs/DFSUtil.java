@@ -1228,11 +1228,11 @@ public class DFSUtil {
    */
   public static float getInvalidateWorkPctPerIteration(Configuration conf) {
     float blocksInvalidateWorkPct = conf.getFloat(
-        DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION,
+        DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY,
         DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_DEFAULT);
     Preconditions.checkArgument(
         (blocksInvalidateWorkPct > 0 && blocksInvalidateWorkPct <= 1.0f),
-        DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION +
+        DFSConfigKeys.DFS_NAMENODE_INVALIDATE_WORK_PCT_PER_ITERATION_KEY +
         " = '" + blocksInvalidateWorkPct + "' is invalid. " +
         "It should be a positive, non-zero float value, not greater than 1.0f, " +
         "to indicate a percentage.");

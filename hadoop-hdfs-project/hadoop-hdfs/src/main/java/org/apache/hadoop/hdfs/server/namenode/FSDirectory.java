@@ -146,7 +146,7 @@ public class FSDirectory implements Closeable {
     createRootInode(ns, false /*dont overwrite if root inode already existes*/);
 
     int configuredLimit = conf.getInt(
-        DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
+        DFSConfigKeys.DFS_LIST_LIMIT_KEY, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
     this.lsLimit = configuredLimit>0 ?
         configuredLimit : DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT;
     

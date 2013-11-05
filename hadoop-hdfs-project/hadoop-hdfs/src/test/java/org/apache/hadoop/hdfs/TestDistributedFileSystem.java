@@ -318,7 +318,7 @@ public class TestDistributedFileSystem {
   public void testStatistics() throws Exception {
     int lsLimit = 2;
     final Configuration conf = getTestConfiguration();
-    conf.setInt(DFSConfigKeys.DFS_LIST_LIMIT, lsLimit);
+    conf.setInt(DFSConfigKeys.DFS_LIST_LIMIT_KEY, lsLimit);
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).build();
     try {
       final FileSystem fs = cluster.getFileSystem();
@@ -600,7 +600,7 @@ public class TestDistributedFileSystem {
   @Test
   public void testGetFileBlockStorageLocationsBatching() throws Exception {
     final Configuration conf = getTestConfiguration();
-    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
+    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_KEY,
         true);
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(2).build();
@@ -652,7 +652,7 @@ public class TestDistributedFileSystem {
   @Test
   public void testGetFileBlockStorageLocationsError() throws Exception {
     final Configuration conf = getTestConfiguration();
-    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED,
+    conf.setBoolean(DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_KEY,
         true);
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
         .numDataNodes(2).build();

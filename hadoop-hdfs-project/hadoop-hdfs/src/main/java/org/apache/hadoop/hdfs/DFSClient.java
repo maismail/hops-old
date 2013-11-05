@@ -49,7 +49,7 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_SOCKET_WRITE_TIMEOUT_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_REPLICATION_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_REPLICATION_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME_DEFAULT;
 
 import java.io.BufferedOutputStream;
@@ -290,13 +290,13 @@ public class DFSClient implements java.io.Closeable {
       useLegacyBlockReader = conf.getBoolean(
           DFS_CLIENT_USE_LEGACY_BLOCKREADER,
           DFS_CLIENT_USE_LEGACY_BLOCKREADER_DEFAULT);
-      connectToDnViaHostname = conf.getBoolean(DFS_CLIENT_USE_DN_HOSTNAME,
+      connectToDnViaHostname = conf.getBoolean(DFS_CLIENT_USE_DN_HOSTNAME_KEY,
           DFS_CLIENT_USE_DN_HOSTNAME_DEFAULT);
       getHdfsBlocksMetadataEnabled = conf.getBoolean(
-          DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED, 
+          DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_KEY, 
           DFSConfigKeys.DFS_HDFS_BLOCKS_METADATA_ENABLED_DEFAULT);
       getFileBlockStorageLocationsNumThreads = conf.getInt(
-          DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS,
+          DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS_KEY,
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_NUM_THREADS_DEFAULT);
       getFileBlockStorageLocationsTimeout = conf.getInt(
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT,
@@ -450,7 +450,7 @@ public class DFSClient implements java.io.Closeable {
     this.socketCache = SocketCache.getInstance(dfsClientConf.socketCacheCapacity, dfsClientConf.socketCacheExpiry);
     
     //START_HOP_CODE
-    this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
+    this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_KEY, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
     //END_HOP_CODE
   }
 
