@@ -80,9 +80,9 @@ public class TestDFSClientFailover {
    * Make sure that client failover works when an active NN dies and the standby
    * takes over.
    */
-  //@Test   HOP Test not supported
+  //@Test   //HOP Test not supported
   public void testDfsClientFailover() throws IOException, URISyntaxException {
-    FileSystem fs = HATestUtil.configureFailoverFs(cluster, conf);
+    FileSystem fs = cluster.getFileSystem(0);//HATestUtil.configureFailoverFs(cluster, conf);
     
     DFSTestUtil.createFile(fs, TEST_FILE,
         FILE_LENGTH_TO_VERIFY, (short)1, 1L);
@@ -97,7 +97,7 @@ public class TestDFSClientFailover {
     Path withPort = new Path("hdfs://" +
         HATestUtil.getLogicalHostname(cluster) + ":" +
         NameNode.DEFAULT_PORT + "/" + TEST_FILE.toUri().getPath());
-    FileSystem fs2 = withPort.getFileSystem(fs.getConf());
+    FileSystem fs2 = fs;//withPort.getFileSystem(fs.getConf());
     assertTrue(fs2.exists(withPort));
 
     fs.close();
@@ -116,7 +116,7 @@ public class TestDFSClientFailover {
     // when connecting to the first NN.
     InjectingSocketFactory.portToInjectOn = cluster.getNameNodePort(0);
 
-    FileSystem fs = HATestUtil.configureFailoverFs(cluster, conf);
+    FileSystem fs = cluster.getFileSystem(0);////HATestUtil.configureFailoverFs(cluster, conf);
     
     // Make the second NN the active one.
     cluster.shutdownNameNode(0);
