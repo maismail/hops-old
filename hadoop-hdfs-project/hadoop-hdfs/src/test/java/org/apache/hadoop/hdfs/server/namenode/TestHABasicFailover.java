@@ -90,7 +90,7 @@ public class TestHABasicFailover extends junit.framework.TestCase
             
             LOG.debug("TestNN going to restart the NN2");
             // restart the newly elected leader and see if it is still the leader
-         cluster.restartNameNodeWithoutDeletingNonFSImageData(NN2);
+            cluster.restartNameNode(NN2);
          
             cluster.waitActive();
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
@@ -118,7 +118,7 @@ public class TestHABasicFailover extends junit.framework.TestCase
              * other namenodes. **************************************
              */
             // Doing a fail back scenario to NN1
-            cluster.restartNameNodeWithoutDeletingNonFSImageData(NN1); // will be restarted in the system with the next highest id while NN2 is still the leader
+            cluster.restartNameNode(NN1); // will be restarted in the system with the next highest id while NN2 is still the leader
             cluster.waitActive();
   
             waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout * 10);
