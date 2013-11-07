@@ -43,6 +43,7 @@ public class ExceptionCheck {
                 || e instanceof SocketTimeoutException
                 || e instanceof NoRouteToHostException
                 || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
+                || e instanceof NoAliveNamenodeException
                 || e instanceof NullPointerException) { // Nullpointer exception as caused by dead locks
             return true;
         }
