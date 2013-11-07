@@ -60,7 +60,7 @@ public class TestHABasicFailover extends junit.framework.TestCase
             cluster.waitActive();
 
             // Give it time for leader to be elected
-            long timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_DEFAULT)
+            long timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)
                     + conf.getLong(DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_KEY, DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT) * 1000L;
 
             /**
