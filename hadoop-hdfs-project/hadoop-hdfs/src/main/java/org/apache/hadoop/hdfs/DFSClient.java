@@ -161,6 +161,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
@@ -240,6 +242,9 @@ public class DFSClient implements java.io.Closeable {
     final boolean getHdfsBlocksMetadataEnabled;
     final int getFileBlockStorageLocationsNumThreads;
     final int getFileBlockStorageLocationsTimeout;
+    //START_HOP_CODE
+    final int dfsClientMaxRandomWaitOnRetry;
+    //END_HOP_CODE
 
     Conf(Configuration conf) {
       maxFailoverAttempts = conf.getInt(
@@ -301,6 +306,10 @@ public class DFSClient implements java.io.Closeable {
       getFileBlockStorageLocationsTimeout = conf.getInt(
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT,
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT_DEFAULT);
+      //START_HOP_CODE
+      dfsClientMaxRandomWaitOnRetry = conf.getInt(DFSConfigKeys.DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY, 
+              DFSConfigKeys.DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT);
+      //END_HOP_CODE
     }
 
     private DataChecksum.Type getChecksumType(Configuration conf) {
@@ -450,7 +459,7 @@ public class DFSClient implements java.io.Closeable {
     this.socketCache = SocketCache.getInstance(dfsClientConf.socketCacheCapacity, dfsClientConf.socketCacheExpiry);
     
     //START_HOP_CODE
-    this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
+    this.MAX_RPC_RETRIES = conf.getInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_KEY, DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT);
     //END_HOP_CODE
   }
 
@@ -667,7 +676,7 @@ public class DFSClient implements java.io.Closeable {
    */
   void closeConnectionToNamenode() {
 //HOP   RPC.stopProxy(namenode);
-      namenodeSelector.stop();
+      namenodeSelector.close();
   }
   
   /** Abort and release resources held.  Ignore all errors. */
@@ -2547,9 +2556,6 @@ public class DFSClient implements java.io.Closeable {
       try {
         handle = namenodeSelector.getNextNamenode();
         //LOG.debug(thisFnID+") sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
-        if (handle == null) {
-          throw new IllegalStateException(thisFnID+") No alive Namenode is the system");
-        }
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
         //no exception 
@@ -2559,8 +2565,22 @@ public class DFSClient implements java.io.Closeable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
-          namenodeSelector.blackListNamenode(handle);
+          if(handle != null){
+            LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            namenodeSelector.blackListNamenode(handle);
+          }else{
+              LOG.warn(thisFnID+") RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          }
+          //Before retry wait for some random time.
+          if(i <= MAX_RPC_RETRIES ){
+              Random rand = new Random();
+              rand.setSeed(System.currentTimeMillis());
+              int waitTime = rand.nextInt(dfsClientConf.dfsClientMaxRandomWaitOnRetry);
+              try {
+                  Thread.sleep(waitTime);
+              } catch (InterruptedException ex) {
+              }
+          }
           continue;
         } else {
           break;
