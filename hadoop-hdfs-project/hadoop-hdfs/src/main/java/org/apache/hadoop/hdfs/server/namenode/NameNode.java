@@ -1292,7 +1292,7 @@ public class NameNode {
       throws HealthCheckFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      return; // no-op, if HA is not enabled
+//HOP      return; // no-op, if HA is not enabled
     }
 //HOP    getNamesystem().checkAvailableResources();
     if (!getNamesystem().nameNodeHasResourcesAvailable()) {
@@ -1305,7 +1305,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     state.setState(haContext, ACTIVE_STATE);
   }
@@ -1314,7 +1314,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     state.setState(haContext, STANDBY_STATE);
   }
@@ -1323,7 +1323,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException, IOException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     if (state == null) {
       return new HAServiceStatus(HAServiceState.INITIALIZING);
