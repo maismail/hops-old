@@ -1174,7 +1174,7 @@ public class TestFileCreation {
 
   
 //  //START_HOP_CODE
-//  @Test
+  @Test
   public void testFileCreationSimple() throws IOException {
     String netIf = null;
     boolean useDnHostname = false;
@@ -1194,19 +1194,35 @@ public class TestFileCreation {
     if (simulatedStorage) {
       SimulatedFSDataset.setFactory(conf);
     }
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(2))
-            .checkDataNodeHostConfig(true)
-            .build();
+//    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(2))
+//            .checkDataNodeHostConfig(true)
+//            .build();
+    
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).build();
     FileSystem fs = cluster.getFileSystem();
     try{
         
-        
-        
-        
-        
-        
-        
-        
+    try {
+      
+      
+      Path p = new Path("/foo");
+      
+      //write 2 files at the same time
+      FSDataOutputStream out = fs.create(p);
+      int i = 0;
+      for(; i < 100; i++) {
+        out.write(i);
+      }
+      out.close();
+
+      cluster.restartNameNode();
+      
+      //verify
+      FSDataInputStream in = fs.open(p);  
+      for(i = 0; i < 100; i++) {assertEquals(i, in.read());}
+    } finally {
+      if (cluster != null) {cluster.shutdown();}
+    }
     } finally {
       cluster.shutdown();
     }
