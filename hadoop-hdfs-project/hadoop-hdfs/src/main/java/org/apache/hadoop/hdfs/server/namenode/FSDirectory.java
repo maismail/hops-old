@@ -135,7 +135,7 @@ public class FSDirectory implements Closeable {
   FSDirectory(FSNamesystem ns, Configuration conf) throws IOException {
      //START_HOP_CODE
      this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_QUOTA_ENABLED_KEY,
-                DFSConfigKeys.DFS_QUOTA_ENABLED_KEY_DEFAULT);  
+                DFSConfigKeys.DFS_QUOTA_ENABLED_DEFAULT);  
      //END_HOP_CODE
       
     this.dirLock = new ReentrantReadWriteLock(true); // fair
