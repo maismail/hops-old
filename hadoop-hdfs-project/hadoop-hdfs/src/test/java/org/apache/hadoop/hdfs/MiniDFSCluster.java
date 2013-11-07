@@ -1483,7 +1483,7 @@ public class MiniDFSCluster {
       shutdownNameNode(i);
     }
   }
-  
+   
   /**
    * Shutdown the namenode at a given index.
    */
@@ -1543,7 +1543,7 @@ public class MiniDFSCluster {
     Configuration conf = nameNodes[nnIndex].conf;
     shutdownNameNode(nnIndex);
     //HOP_START_CODE
-    //deleteReplicasTable();
+    deleteReplicasTable();  // it will delete the tables if there are no active nn
     //HOP_END_CODE
     NameNode nn = NameNode.createNameNode(new String[] {}, conf);
     nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
@@ -2368,55 +2368,36 @@ public class MiniDFSCluster {
   }
   
   //HOP_START_CODE
-  private void deleteReplicasTable(){    
-      try {
-          Session session = (Session) StorageFactory.getConnector().obtainSession();
-          //lease is persisted in the edit logs
-//          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-//          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-          session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-          session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-          session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
-          session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
-          session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
-          session.flush();
-      } catch (StorageException e) {
-          LOG.error(e);
-      }  
-  }
-  
   /**
-   * Restart the namenode at a given index.
+   * deletes tables if there are no alive nn in the system
    */
-  // Inorder to be compatible with the existing implementation when a namenode
-  //restarts it deletes the tables like replicas, under construction tables etc
-  //In HoPS use these fns restartNameNodeWithoutDeletingNonFSImageData to restart the NNs
-  public synchronized void restartNameNodeWithoutDeletingNonFSImageData(int nnIndex) throws IOException {
-    restartNameNode(nnIndex, true);
-  }
+    private void deleteReplicasTable() {
 
-  /**
-   * Restart the namenode at a given index. Optionally wait for the cluster
-   * to become active.
-   */
-  public synchronized void restartNameNodeWithoutDeletingNonFSImageData(int nnIndex, boolean waitActive)
-      throws IOException {
-    String nameserviceId = nameNodes[nnIndex].nameserviceId;
-    String nnId = nameNodes[nnIndex].nnId;
-    Configuration conf = nameNodes[nnIndex].conf;
-    shutdownNameNode(nnIndex);
-    //HOP_START_CODE
-    //deleteReplicasTable();
-    //HOP_END_CODE
-    NameNode nn = NameNode.createNameNode(new String[] {}, conf);
-    nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
-    if (waitActive) {
-      waitClusterUp();
-      LOG.info("Restarted the namenode");
-      waitActive();
+        //count number of active NN
+        int activeNameNodes = 0;
+        for (int i = 0; i < nameNodes.length; i++) {
+            if (nameNodes[i] == null || nameNodes[i].nameNode == null) {
+                continue;
+            } else {
+                activeNameNodes++;
+            }
+        }
+        if (activeNameNodes == 0) {
+            try {
+                Session session = (Session) StorageFactory.getConnector().obtainSession();
+                //lease is persisted in the edit logs
+//              session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+//              session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+                session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+                session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+                session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
+                session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
+                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
+                session.flush();
+            } catch (StorageException e) {
+                LOG.error(e);
+            }
+        }
     }
-  }
-
-  
   //HOP_END_CODE      
 }
