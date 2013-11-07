@@ -33,47 +33,62 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   //START_HOP_CODE
   public static final String DFS_STORAGE_TYPE_KEY = "dfs.storage.type";
   public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
-  public static final String DFS_STORAGE_DERBY_PROTOCOL_KEY = "dfs.storage.derby.protocol";
+   
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
   public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud1.sics.se";
-  public static final String DFS_DB_DATABASE_NAME = "dfs.dbconnector.database";
+  
+  public static final String DFS_DB_DATABASE_NAME_KEY = "dfs.dbconnector.database";
   public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_salman";
-  public static final String DFS_DB_NUM_SESSION_FACTORIES = "dfs.dbconnector.num-session-factories";
+  
+  public static final String DFS_DB_NUM_SESSION_FACTORIES_KEY = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
-  public static final String DFS_STORAGE_MYSQL_USER = "dfs.storage.mysql.user";
+  
+  public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
   public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
-  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD = "dfs.storage.mysql.user.password";
+  
+  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_KEY = "dfs.storage.mysql.user.password";
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "hop";  
-  public static final String DFS_STORAGE_MYSQL_PORT = "dfs.storage.mysql.port";
+  
+  public static final String DFS_STORAGE_MYSQL_PORT_KEY = "dfs.storage.mysql.port";
   public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3307"; //3308
   
-
-  public static final String DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
+  public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
-  public static final String DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
+  
+  public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
-  public static final String DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_KEY_DEFAULT = false;
+  
+  public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
+  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = false;
   
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
+  public static final String  DFS_NAMENODES_RPC_ADDRESS_DEFAULT = "";
+  
   public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
-  public static final String  DFS_LEADER_CHECK_INTERVAL_KEY = "dfs.leader.check.interval";
-  public static final int     DFS_LEADER_CHECK_INTERVAL_DEFAULT = 1*1000; // 1 second 
-  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD = "dfs.leader.missed.hb";
+  public static final String  DFS_NAMENODE_SELECTOR_POLICY_DEFAULT = "ROUND_ROBIN";     //RANDOM
+  
+  public static final String  DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY = "dfs.leader.check.interval";
+  public static final int     DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT = 1*1000; // 1 second 
+  
+  public static final String  DFS_LEADER_MISSED_HB_THRESHOLD_KEY = "dfs.leader.missed.hb";
   public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
   
-  public static final String  DFS_BLOCK_POOL_ID = "dfs.block.pool.id";
+  public static final String  DFS_BLOCK_POOL_ID_KEY = "dfs.block.pool.id";
   public static final String  DFS_BLOCK_POOL_ID_DEFAULT = "HOP_BLOCK_POOL_123";
   
-  public static final String  DFS_NAME_SPACE_ID = "dfs.name.space.id";
+  public static final String  DFS_NAME_SPACE_ID_KEY = "dfs.name.space.id";
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
-  public static final String  DFS_CLIENT_RETRIES_ON_FAILURE = "dfs.clinet.max.retires.on.failure";
+  public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
   public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
+  
+  public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
+  public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
   
   public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
   public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
+  
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";
