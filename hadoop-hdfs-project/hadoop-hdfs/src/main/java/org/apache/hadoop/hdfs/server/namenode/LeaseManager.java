@@ -448,7 +448,7 @@ public class LeaseManager {
         String holder = (String) getParams()[0];
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT).
+                addINode(INodeResolveType.PATH, INodeLockType.WRITE).
                 addBlock(LockType.WRITE).
                 addLease(LockType.WRITE, holder).
                 addNameNodeLease(LockType.WRITE).
