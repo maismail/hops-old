@@ -54,6 +54,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                 txSuccessful = false; 
 
                 long oldTime = 0;
+                long setupTime = 0;
                 long acquireLockTime = 0;
                 long inMemoryProcessingTime = 0;
                 long commitTime = 0;
@@ -61,32 +62,34 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                 try {
                     // Defines a context for every operation to track them in the logs easily.
                     if (namesystem != null && namesystem instanceof FSNamesystem) {
-                        NDC.push("NN (" + namesystem.getNamenodeId() + ") " + opType.name());
+                        NDC.push("NN (" + namesystem.getNamenodeId() + ") " + opType.name()+"["+Thread.currentThread().getId()+"]");
                     } else {
                         NDC.push(opType.name());
                     }
-                    setUp();
-                    log.debug("Pretransaction phase finished.");
                     txStartTime = System.currentTimeMillis();
+                    oldTime = System.currentTimeMillis();
+                    setUp();
+                    setupTime = (System.currentTimeMillis() - oldTime);
+                    log.debug("Pretransaction phase finished. Time "+setupTime+" ms");
                     oldTime = 0;
                     EntityManager.begin();
                     log.debug("TX Started");
                     oldTime = System.currentTimeMillis();
                     if (rowLevelLock) {
                         locks = acquireLock();
-                        log.debug("All Locks Acquired");
                         acquireLockTime = (System.currentTimeMillis() - oldTime);
+                        log.debug("All Locks Acquired. Time "+acquireLockTime+" ms");
                         oldTime = System.currentTimeMillis();
                         EntityManager.preventStorageCall();
                     }
                     txRetValue = performTask();
-                    log.debug("In Memory Processing Finished");
                     inMemoryProcessingTime = (System.currentTimeMillis() - oldTime);
+                    log.debug("In Memory Processing Finished. Time "+inMemoryProcessingTime+" ms");
                     oldTime = System.currentTimeMillis();
                     EntityManager.commit(locks);
-                    log.debug("TX committed");
                     txSuccessful = true;
                     commitTime = (System.currentTimeMillis() - oldTime);
+                    log.debug("TX committed. Time "+commitTime+" ms");
                     oldTime = System.currentTimeMillis();
                     totalTime = (System.currentTimeMillis() - txStartTime);
                     log.debug("TX Finished. TX Stats : Acquire Locks: " + acquireLockTime + "ms, In Memory Processing: " + inMemoryProcessingTime + "ms, Commit Time: " + commitTime + "ms, Total Time: " + totalTime + "ms");
