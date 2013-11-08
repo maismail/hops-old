@@ -3595,7 +3595,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica(LockType.READ).
                 addExcess(LockType.READ).
                 addCorrupt(LockType.READ).
-                addPendingBlock(LockType.READ).
+                addPendingBlock(LockType.WRITE).
                 addUnderReplicatedBlock(LockType.WRITE).
                 addReplicaUc(LockType.READ);
         return tla.acquireByBlock(inodeId);
