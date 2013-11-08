@@ -37,6 +37,7 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceede
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -77,6 +78,7 @@ public class TestFsLimits {
   @Before
   public void setUp() throws IOException {
     conf = new Configuration();
+    StorageFactory.setConfiguration(conf);
     conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY,
              fileAsURI(new File(MiniDFSCluster.getBaseDirectory(),
                                 "namenode")).toString());
