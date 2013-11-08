@@ -126,12 +126,18 @@ public class CorruptReplicasMap{
    * @return collection of nodes. Null if does not exists
    */
   Collection<DatanodeDescriptor> getNodes(Block blk) throws PersistanceException {
+   
+    //HOPS datanodeMgr is null in some tests
+    if (datanodeMgr == null) return new ArrayList<DatanodeDescriptor>();  
+    
     Collection<CorruptReplica> corruptReplicas = getCorruptReplicas(blk);
     Collection<DatanodeDescriptor> dnds = new TreeSet<DatanodeDescriptor>();
     if(corruptReplicas != null){
       for(CorruptReplica cr : corruptReplicas){
         DatanodeDescriptor dn = datanodeMgr.getDatanode(cr.getStorageId());
-        dnds.add(dn);
+        if(dn!=null){
+            dnds.add(dn);
+        }
       }
     }
     return dnds;
