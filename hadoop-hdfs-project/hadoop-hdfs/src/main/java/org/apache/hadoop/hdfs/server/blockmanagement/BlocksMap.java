@@ -158,8 +158,9 @@ class BlocksMap {
   
   /** Get the capacity of the HashMap that stores blocks */
   int getCapacity(){
+    //FIXME XXX fix the capacity thing. not really applicable in our case
     EntityContext.log("GET_CAPACITY", EntityContext.CacheHitState.LOSS, "FIXME. CAPACITY OF MEMORY IS 1");
-    return 1;
+    return Integer.MAX_VALUE;
   }
 
   /**
