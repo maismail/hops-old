@@ -2590,11 +2590,12 @@ public class DFSClient implements java.io.Closeable {
           //so that it is not used again
           if(handle != null){
             LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            namenodeSelector.blackListNamenode(handle);
+            blackListedNamenodes.add(handle.getNamenode());
           }else{
               LOG.warn(thisFnID+") RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           }
-          namenodeSelector.blackListNamenode(handle);
-          blackListedNamenodes.add(handle.getNamenode());
+
           //Before retry wait for some random time.
           if(i <= MAX_RPC_RETRIES ){
               Random rand = new Random();
