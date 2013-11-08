@@ -34,6 +34,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
+import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
@@ -145,7 +147,11 @@ public class TestCorruptReplicaInfo {
      new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
+                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        return tla.acquire();
+                
       }
 
       @Override
@@ -160,7 +166,10 @@ public class TestCorruptReplicaInfo {
      new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
+                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override
