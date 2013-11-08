@@ -125,6 +125,7 @@ public class NamenodeSelector extends Thread {
         } else {
             policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
         }
+        LOG.debug("Client's namenode selection policy is "+policy);
 
         //get the list of Namenodes
         createNamenodeClinetsFromList();
@@ -199,7 +200,7 @@ public class NamenodeSelector extends Thread {
         return handle;
     }
 
-    private NamenodeSelector.NamenodeHandle getNextNNBasedOnPolicy() {
+    private synchronized NamenodeSelector.NamenodeHandle getNextNNBasedOnPolicy() {
         if (policy == NamenodeSelector.NNSelectionPolicy.RANDOM) {
             for (int i = 0; i < 10; i++) {
                 Random rand = new Random();
@@ -212,10 +213,11 @@ public class NamenodeSelector extends Thread {
             }
             return null;
         } else if (policy == NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN) {
-            for (int i = 0; i < nnList.size(); i++) {
+            for (int i = 0; i < nnList.size()+1; i++) {
                 rrIndex = (++rrIndex) % nnList.size();
                 NamenodeSelector.NamenodeHandle handle = nnList.get(rrIndex);
                 if (!this.blackListedNamenodes.contains(handle)) {
+                    //LOG.debug("rrIndex is "+rrIndex+" namenodes are "+printNamenodes());
                     return handle;
                 }
             }
@@ -424,6 +426,7 @@ public class NamenodeSelector extends Thread {
             this.blackListedNamenodes.add(handle);
         }
 
+        //LOG.debug(printNamenodes());
 
         //if a bad namenode is detected then update the list of Namenodes in the system
         synchronized (wiatObjectForUpdate) {

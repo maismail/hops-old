@@ -163,9 +163,11 @@ import com.google.common.net.InetAddresses;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.apache.hadoop.hdfs.NamenodeSelector.NamenodeHandle;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /********************************************************
@@ -2546,16 +2548,37 @@ public class DFSClient implements java.io.Closeable {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
   
+  private NamenodeHandle getNextNamenode(long thisFnID /*for debugging*/, List<ActiveNamenode> blist) throws IOException{
+      NamenodeSelector.NamenodeHandle handle = null;
+      for(int i = 0; i < 10; i++){
+        handle = namenodeSelector.getNextNamenode();  
+        if(!blist.contains(handle.getNamenode())){
+            return handle;
+        }
+        //LOG.debug(thisFnID+") Black listed descriptor returned");
+      }
+      return handle;
+  }
     private static AtomicLong fnID = new AtomicLong(); // for debuggin purpose
     private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException {
     long thisFnID = fnID.incrementAndGet();
+    //When a RPC call to NN fails then the client will put the NamenodeSelector.java
+    //will put the NN address in blacklist and send an RPC to NN to get a fresh list of NNs.
+    //After obtaining a fresh list from server, the NamenodeSector will wipe the NN balacklist.
+    //It is quite possible that the refesh list of NNs may again contain the descriptors
+    //for dead Namenodes (depends on the convergence rate of Leader Election). 
+    //To avoid contacting a dead node a list of black listed namenodes is also maintained on the 
+    //client side to avoid contacting dead NNs
+    List<ActiveNamenode> blackListedNamenodes = new ArrayList<ActiveNamenode>(); 
+    
     Exception exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
     boolean success = false;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
-        handle = namenodeSelector.getNextNamenode();
-        //LOG.debug(thisFnID+") sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        handle = getNextNamenode(thisFnID,blackListedNamenodes);
+        
+        LOG.debug(thisFnID+") sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
         //no exception 
@@ -2567,16 +2590,18 @@ public class DFSClient implements java.io.Closeable {
           //so that it is not used again
           if(handle != null){
             LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
-            namenodeSelector.blackListNamenode(handle);
           }else{
               LOG.warn(thisFnID+") RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           }
+          namenodeSelector.blackListNamenode(handle);
+          blackListedNamenodes.add(handle.getNamenode());
           //Before retry wait for some random time.
           if(i <= MAX_RPC_RETRIES ){
               Random rand = new Random();
               rand.setSeed(System.currentTimeMillis());
               int waitTime = rand.nextInt(dfsClientConf.dfsClientMaxRandomWaitOnRetry);
               try {
+                  //LOG.warn(thisFnID+") RPC failed. Rand Sleep "+waitTime);
                   Thread.sleep(waitTime);
               } catch (InterruptedException ex) {
               }
