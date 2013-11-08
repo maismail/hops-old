@@ -116,6 +116,9 @@ public class TransactionLockAcquirer {
     }
 
     blockResults = acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inodeId);
+    // sort the blocks. it is important as the ndb returns the blocks in random order and two
+    // txs trying to take locks on the blocks of a file will end up in dead lock 
+    Collections.sort((List<BlockInfo>)blockResults, BlockInfo.Order.ByBlockId);
 
     if (blockResults.isEmpty()) {
       BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockParam());
