@@ -44,7 +44,7 @@ public class TestWriteConfigurationToDFS {
       Path filePath = new Path("/testWriteConf.xml");
       os = fs.create(filePath);
       StringBuilder longString = new StringBuilder();
-      for (int i = 0; i < 100000; i++) {
+      for (int i = 0; i < 10000; i++) { //HOP: default value is 100000
         longString.append("hello");
       } // 500KB
       conf.set("foobar", longString.toString());
