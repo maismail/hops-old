@@ -24,7 +24,9 @@ import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.Leader;
@@ -82,7 +84,7 @@ public class TransactionLockAcquirer {
 
     acquireLeaseAndLpathLockNormal();
     acquireBlockRelatedLocksNormal();
-    acquireLeaderLock();
+    readINodeAttributes();
     return locks;
   }
 
@@ -130,6 +132,7 @@ public class TransactionLockAcquirer {
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
     acquireLeaseAndLpathLockNormal();
     acquireBlockRelatedLocksNormal();
+    readINodeAttributes();
     return locks;
   }
 
@@ -139,10 +142,12 @@ public class TransactionLockAcquirer {
     }
 
     inodeResult = acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
-
     if (inodeResult.length == 0) {
       return locks; // TODO: something is wrong, it should retry again.
     }
+        
+    blockResults = acquireBlockLock(locks.getBlockLock(), null);  
+
     leaseResults = new ArrayList<Lease>();
     Lease nnLease = acquireNameNodeLease(); // NameNode lease is always acquired first.
     if (nnLease != null) {
@@ -153,14 +158,14 @@ public class TransactionLockAcquirer {
       return locks; // Lease does not exist anymore.
     }
     leaseResults.add(lease);
-    blockResults = acquireBlockLock(locks.getBlockLock(), null);
-
+    
     List<LeasePath> lpResults = acquireLeasePathsLock();
     if (lpResults.size() > sortedPaths.size()) {
       return locks; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
 
     acquireBlockRelatedLocksNormal();
+    readINodeAttributes();
     return locks;
   }
 
@@ -235,7 +240,7 @@ public class TransactionLockAcquirer {
 
     acquireLeaseAndLpathLockNormal();
     acquireBlockRelatedLocksNormal();
-    acquireLeaderLock();
+    readINodeAttributes();
     return locks;
   }
 
@@ -381,20 +386,11 @@ public class TransactionLockAcquirer {
     return null;
   }
 
-  private void acquireLeaderLock() throws PersistanceException {
+  public TransactionLocks acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
-      if (locks.getLeaderIds().length == 0) {
-        acquireLockList(locks.getLeaderLock(), Leader.Finder.All);
-      } else {
-        for (long id : locks.getLeaderIds()) {
-          acquireLock(
-                  locks.getLeaderLock(),
-                  Leader.Finder.ById,
-                  id,
-                  Leader.DEFAULT_PARTITION_VALUE);
-        }
-      }
+          acquireLockList(locks.getLeaderLock(), Leader.Finder.All);
     }
+    return locks;
   }
 
   private void acquireLeaseAndLpathLockNormal() throws PersistanceException {
@@ -762,5 +758,17 @@ public class TransactionLockAcquirer {
         break;
       }
     }
+  }
+  
+  private  void readINodeAttributes() throws PersistanceException{
+      
+//       if (inodeResult != null) {
+//      for (INode inode : inodeResult) {
+//          LOG.debug("indode size is "+inodeResult.length);
+//        if (inode instanceof INodeDirectoryWithQuota) { 
+//          acquireLock(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKey, inode.getId());
+//        }
+//      }
+//    }
   }
 }

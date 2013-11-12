@@ -58,7 +58,6 @@ public class TransactionLocks {
   private LockType blockIdCounterLock = null;
   // Leader
   private LockType leaderLock = null;
-  private long[] leaderIds = null;
 
   public String[] getInodeParam() {
     return inodeParam;
@@ -221,7 +220,6 @@ public class TransactionLocks {
 
   public TransactionLocks addLeaderLock(LockType lock, long... ids) {
     this.leaderLock = lock;
-    this.leaderIds = ids;
     return this;
   }
 
@@ -297,10 +295,6 @@ public class TransactionLocks {
 
   public LockType getLeaderLock() {
     return leaderLock;
-  }
-
-  public long[] getLeaderIds() {
-    return leaderIds;
   }
 
   public void addLockedINodes(INode inode, INodeLockType lock) {

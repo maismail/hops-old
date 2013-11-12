@@ -179,7 +179,7 @@ public class InodeContext extends EntityContext<INode> {
         for(INode inode: removedInodes.values()){
             INodeLockType lock = lks.getLockedINodeLockType(inode);
             if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
-                throw new LockUpgradeException("Trying to remove inode id="+inode.getId()+" acquired lock was "+lock);
+                logError("Trying to remove inode id="+inode.getId()+" acquired lock was "+lock);
             }
                 
         }
@@ -190,7 +190,7 @@ public class InodeContext extends EntityContext<INode> {
         for(INode inode: modifiedInodes.values()){
             INodeLockType lock = lks.getLockedINodeLockType(inode);
             if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
-                throw new LockUpgradeException("Trying to update inode id="+inode.getId()+" acquired lock was "+lock);
+                logError("Trying to update inode id="+inode.getId()+" acquired lock was "+lock);
             }
                 
         }

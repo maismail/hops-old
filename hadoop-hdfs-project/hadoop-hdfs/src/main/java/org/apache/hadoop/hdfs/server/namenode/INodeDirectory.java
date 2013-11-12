@@ -389,15 +389,17 @@ public class INodeDirectory extends INode {
   //HOP: TODO: Mahmoud: need to revist this code for quota support
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
-    /*counts.nsCount += 1;
-     List<INode> children = getChildren();  
-    if (children != null) {
-      for (INode child : children) {
-        child.spaceConsumedInTree(counts);
+    counts.nsCount += 1;
+      if (getId() != INode.NON_EXISTING_ID) {
+          List<INode> children = getChildren();
+          if (children != null) {
+              for (INode child : children) {
+                  child.spaceConsumedInTree(counts);
+              }
+          }
       }
-    }
-    return counts;*/
-    throw new UnsupportedOperationException("Quota not supported yet");
+    return counts;
+    //throw new UnsupportedOperationException("Quota not supported yet");
   }
 
   @Override
@@ -443,6 +445,7 @@ public class INodeDirectory extends INode {
   }
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
+    //if(getId() == INode.NON_EXISTING_ID) return null;
     return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
   }
 

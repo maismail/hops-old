@@ -3519,7 +3519,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{path});
+                addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, INodeLockType.WRITE, new String[]{path})
+                .addBlock(LockType.READ_COMMITTED);
+                
         return tla.acquire();
       }
 

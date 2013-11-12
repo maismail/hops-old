@@ -1364,7 +1364,7 @@ public class FSDirectory implements Closeable {
    */
   private void updateCount(INode[] inodes, int numOfINodes, 
                            long nsDelta, long dsDelta, boolean checkQuota)
-                           throws QuotaExceededException {
+                           throws QuotaExceededException, PersistanceException {
     if(!isQuotaEnabled()) return;   //HOP
     
     assert hasWriteLock();
@@ -1391,7 +1391,7 @@ public class FSDirectory implements Closeable {
    * See {@link #updateCount(INode[], int, long, long, boolean)}
    */ 
   private void updateCountNoQuotaCheck(INode[] inodes, int numOfINodes, 
-                           long nsDelta, long dsDelta) {
+                           long nsDelta, long dsDelta) throws PersistanceException {
     assert hasWriteLock();
     try {
       updateCount(inodes, numOfINodes, nsDelta, dsDelta, false);
@@ -1409,7 +1409,7 @@ public class FSDirectory implements Closeable {
    * @param dsDelta
    */
    void unprotectedUpdateCount(INode[] inodes, int numOfINodes, 
-                                      long nsDelta, long dsDelta) {
+                                      long nsDelta, long dsDelta) throws PersistanceException {
      if(!isQuotaEnabled()) return;    //HOP
      
      assert hasWriteLock();

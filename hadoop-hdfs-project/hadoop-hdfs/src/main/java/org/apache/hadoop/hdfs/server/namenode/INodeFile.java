@@ -117,6 +117,7 @@ public class INodeFile extends INode implements BlockCollection {
   /** @return the blocks of the file. */
   @Override
   public BlockInfo[] getBlocks() throws PersistanceException {
+    if(getId() == INode.NON_EXISTING_ID) return BlockInfo.EMPTY_ARRAY;
     List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByInodeId, id);
     if (blocks != null) {
       Collections.sort(blocks, BlockInfo.Order.ByBlockIndex);

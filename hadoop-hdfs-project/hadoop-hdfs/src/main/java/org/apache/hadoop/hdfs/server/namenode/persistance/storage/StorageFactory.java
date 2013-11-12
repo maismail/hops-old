@@ -33,10 +33,11 @@ public class StorageFactory {
   private static ReplicaDataAccess replicaDataAccess;
   private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
   private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
-  private static  VariablesDataAccess variablesDataAccess;
+  private static VariablesDataAccess variablesDataAccess;
   private static LeaderDataAccess leaderDataAccess;
   private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
   private static StorageInfoDataAccess storageInfoDataAccess;
+  private static INodeAttributesDataAccess iNodeAttributesDataAccess;
   private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
   private static boolean isInitialized = false;
 
@@ -56,6 +57,7 @@ public class StorageFactory {
     dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
     dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
     dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
+    dataAccessMap.put(iNodeAttributesDataAccess.getClass().getSuperclass(), iNodeAttributesDataAccess);
   }
 
   public static StorageConnector getConnector() {
@@ -86,6 +88,7 @@ public class StorageFactory {
 //      // TODO[Hooman]: Add derby data access for block token key.
 //      // TODO[Hooman]: Add derby data access for block generation stamp.
 //      // TODO[Hooman]: Add derby data access for storage info
+//      // TODO[Salman]: Add derby data access for INodeAttributes
     } else if (storageType.equals("clusterj")) {
       defaultStorage = ClusterjConnector.INSTANCE;
       MysqlServerConnector.INSTANCE.setConfiguration(conf);
@@ -105,6 +108,7 @@ public class StorageFactory {
       leaderDataAccess = new LeaderClusterj();
       blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
       storageInfoDataAccess = new StorageInfoClusterj();
+      iNodeAttributesDataAccess = new INodeAttributesClusterj();
     }
 
     initDataAccessMap();
@@ -135,6 +139,7 @@ public class StorageFactory {
     entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
     entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
     entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
+    entityContexts.put(INodeAttributes.class, new INodeAttributesContext(iNodeAttributesDataAccess));
     return entityContexts;
   }
 

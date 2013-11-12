@@ -62,7 +62,7 @@ public class LeaderElection extends Thread {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer  tla = new TransactionLockAcquirer();
           tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-          return tla.acquire();
+          return tla.acquireLeaderLock();
         }
 
         @Override
@@ -113,7 +113,7 @@ public class LeaderElection extends Thread {
     public TransactionLocks acquireLock() throws PersistanceException, IOException {
       TransactionLockAcquirer  tla = new TransactionLockAcquirer();
       tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-      return tla.acquire();
+      return tla.acquireLeaderLock();
     }
 
     @Override

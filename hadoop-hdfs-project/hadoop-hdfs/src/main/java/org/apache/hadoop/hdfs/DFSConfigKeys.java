@@ -59,7 +59,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
   
   public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = false;
+  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = true;
   
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
@@ -81,7 +81,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 0; //min value is 0. Better set it >= 1
   
   public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
   public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;

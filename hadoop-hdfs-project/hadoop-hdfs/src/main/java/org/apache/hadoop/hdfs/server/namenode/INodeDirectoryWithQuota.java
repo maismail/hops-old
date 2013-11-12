@@ -89,9 +89,10 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param dsQuota diskspace quota to be set
    *                                
    */
-  void setQuota(long newNsQuota, long newDsQuota) {
+  void setQuota(long newNsQuota, long newDsQuota) throws PersistanceException {
     nsQuota = newNsQuota;
     dsQuota = newDsQuota;
+    save();
   }
   
   
@@ -99,17 +100,18 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   DirCounts spaceConsumedInTree(DirCounts counts) {
     counts.nsCount += nsCount;
     counts.dsCount += diskspace;
+    System.out.println("XXX dsCount is "+counts.dsCount);
     return counts;
   }
 
   /** Get the number of names in the subtree rooted at this directory
    * @return the size of the subtree rooted at this directory
    */
-  long numItemsInTree() {
+  public long numItemsInTree() {
     return nsCount;
   }
   
-  long diskspaceConsumed() {
+  public long diskspaceConsumed() {
     return diskspace;
   }
   
@@ -118,9 +120,11 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param nsDelta the change of the tree size
    * @param dsDelta change to disk space occupied
    */
-  void updateNumItemsInTree(long nsDelta, long dsDelta) {
+  void updateNumItemsInTree(long nsDelta, long dsDelta) throws PersistanceException {
     nsCount += nsDelta;
     diskspace += dsDelta;
+    save();
+    System.out.println("XXX diskspace is "+diskspace);
   }
   
   /** Update the size of the tree
@@ -128,9 +132,11 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param nsDelta the change of the tree size
    * @param dsDelta change to disk space occupied
    **/
-  void unprotectedUpdateNumItemsInTree(long nsDelta, long dsDelta) {
+  void unprotectedUpdateNumItemsInTree(long nsDelta, long dsDelta) throws PersistanceException {
     nsCount = nsCount + nsDelta;
     diskspace = diskspace + dsDelta;
+    save();
+    System.out.println("XXX diskspace2 is "+diskspace);
   }
   
   /** 
@@ -141,11 +147,15 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param namespace size of the directory to be set
    * @param diskspace disk space take by all the nodes under this directory
    */
-  void setSpaceConsumed(long namespace, long diskspace) {
+  public void setSpaceConsumed(long namespace, long diskspace) throws PersistanceException {
+    setSpaceConsumedNoPersistance(namespace, diskspace);
+    save();
+  }
+  
+  public void setSpaceConsumedNoPersistance(long namespace, long diskspace) throws PersistanceException {
     this.nsCount = namespace;
     this.diskspace = diskspace;
   }
-  
   /** Verify if the namespace count disk space satisfies the quota restriction 
    * @throws QuotaExceededException if the given quota is less than the count
    */
