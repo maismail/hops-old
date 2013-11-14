@@ -248,22 +248,20 @@ public class LeaseManager {
   /**
    * Finds the pathname for the specified pendingFile
    */
-  public String findPath(INodeFileUnderConstruction pendingFile)
-      throws IOException, PersistanceException {
-     assert pendingFile.isUnderConstruction();
+    public String findPath(INodeFileUnderConstruction pendingFile)
+          throws IOException {
+    assert pendingFile.isUnderConstruction();
     Lease lease = getLease(pendingFile.getClientName());
     if (lease != null) {
       String src = null;
-      try { 
-        for (LeasePath lpath : lease.getPaths()) {
-          if (fsnamesystem.dir.getINode(lpath.getPath()).getFullPathName().equals(pendingFile.getFullPathName())) {
-            src = lpath.getPath();
-            break;
-          }
+
+      for (LeasePath lpath : lease.getPaths()) {
+        if (lpath.getPath().equals(pendingFile.getFullPathName())) {
+          src = lpath.getPath();
+          break;
         }
-      } catch (UnresolvedLinkException e) {
-        throw new AssertionError("Lease files should reside on this FS");
       }
+
       if (src != null) {
         return src;
       }
