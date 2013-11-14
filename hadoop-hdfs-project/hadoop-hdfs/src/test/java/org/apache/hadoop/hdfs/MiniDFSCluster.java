@@ -105,6 +105,8 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.mysql.clusterj.Session;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
@@ -1683,6 +1685,14 @@ public class MiniDFSCluster {
         DataNode.createDataNode(args, conf, secureResources),
         newconf, args, secureResources));
     numDataNodes++;
+    try {
+      //START_HOP_CODE
+      //[S] figure out which thread has slowed down
+      Thread.sleep(1000);
+    } catch (InterruptedException ex) {
+      Logger.getLogger(MiniDFSCluster.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    //END_HOP_CODE
     return true;
   }
 
