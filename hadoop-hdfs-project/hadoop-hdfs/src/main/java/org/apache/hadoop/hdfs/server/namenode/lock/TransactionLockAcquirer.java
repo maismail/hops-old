@@ -47,14 +47,15 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
 /**
  *
  * @author Hooman <hooman@sics.se>
+ * @author Salman <salman@sics.se>
  */
 public class TransactionLockAcquirer {
 
   private final static Log LOG = LogFactory.getLog(TransactionLockAcquirer.class);
   private final TransactionLocks locks;
-  private INode[] inodeResult = null;
-  private Collection<Lease> leaseResults = null;
-  private Collection<BlockInfo> blockResults = null;
+  private LinkedList<LinkedList<INode>> allResolvedINodes = new LinkedList<LinkedList<INode>>(); //linked lists are important. we need to perserv insertion order
+  private LinkedList<Lease> leaseResults = new LinkedList<Lease>();
+  private LinkedList<BlockInfo> blockResults = new LinkedList<BlockInfo>();
 
   public TransactionLockAcquirer() {
     this.locks = new TransactionLocks();
@@ -71,15 +72,14 @@ public class TransactionLockAcquirer {
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      inodeResult = acquireInodeLocks(locks.getInodeParam());
+      acquireInodeLocks(locks.getInodeParam());
     }
 
     if (locks.getBlockLock() != null) {
       if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
         throw new RuntimeException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
       }
-
-      blockResults = acquireBlockLock(locks.getBlockLock(), locks.getBlockParam());
+      blockResults.addAll(acquireBlockLock());
     }
 
     acquireLeaseAndLpathLockNormal();
@@ -113,14 +113,15 @@ public class TransactionLockAcquirer {
       if (!(inode instanceof INodeFile)) {
         return locks; //it should abort the transaction and retry at this stage. Cause something is changed in the storage.
       }
-      inodeResult = new INode[1];
-      inodeResult[0] = inode;
+      LinkedList<INode> resolvedINodeForBlk = new LinkedList<INode>();
+      resolvedINodeForBlk.add(inode);
+      allResolvedINodes.add(resolvedINodeForBlk);
     }
 
-    blockResults = acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inodeId);
+    blockResults.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inodeId));
     // sort the blocks. it is important as the ndb returns the blocks in random order and two
     // txs trying to take locks on the blocks of a file will end up in dead lock 
-    Collections.sort((List<BlockInfo>)blockResults, BlockInfo.Order.ByBlockId);
+    Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
 
     if (blockResults.isEmpty()) {
       BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockParam());
@@ -141,14 +142,10 @@ public class TransactionLockAcquirer {
       return locks;
     }
 
-    inodeResult = acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
-    if (inodeResult.length == 0) {
-      return locks; // TODO: something is wrong, it should retry again.
-    }
-        
-    blockResults = acquireBlockLock(locks.getBlockLock(), null);  
+    acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
-    leaseResults = new ArrayList<Lease>();
+    blockResults.addAll(acquireBlockLock());
+
     Lease nnLease = acquireNameNodeLease(); // NameNode lease is always acquired first.
     if (nnLease != null) {
       leaseResults.add(nnLease);
@@ -158,7 +155,7 @@ public class TransactionLockAcquirer {
       return locks; // Lease does not exist anymore.
     }
     leaseResults.add(lease);
-    
+
     List<LeasePath> lpResults = acquireLeasePathsLock();
     if (lpResults.size() > sortedPaths.size()) {
       return locks; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
@@ -188,26 +185,23 @@ public class TransactionLockAcquirer {
   }
 
   public TransactionLocks acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
-    // TODO[H]: Sort before taking locks.
-    // acuires lock in order
-
     byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      INode[] inodeResult1 = null;
-      INode[] inodeResult2 = null;
+      //INode[] inodeResult1 = null;
+      //INode[] inodeResult2 = null;
       //[S] consider src = /a/b/c and dst = /d
       //during the acquire lock of src write locks will be acquired on parent of c and c
       //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
       //layer will not let the request go to the db as it has already cached the root inode
       //one simple solution is that to acquire lock on the short path first
       if (srcComponents.length <= dstComponents.length) {
-        inodeResult1 = acquireInodeLocks(locks.getInodeParam()[0]);
-        inodeResult2 = acquireInodeLocks(locks.getInodeParam()[1]);
+        acquireInodeLocks(locks.getInodeParam()[0]);
+        acquireInodeLocks(locks.getInodeParam()[1]);
       } else {
-        inodeResult2 = acquireInodeLocks(locks.getInodeParam()[1]);
-        inodeResult1 = acquireInodeLocks(locks.getInodeParam()[0]);
+        acquireInodeLocks(locks.getInodeParam()[1]);
+        acquireInodeLocks(locks.getInodeParam()[0]);
       }
 
       if (allowExistingDir) // In deprecated rename, it allows to move a dir to an existing destination.
@@ -225,17 +219,13 @@ public class TransactionLockAcquirer {
 //        }
         }
       }
-      inodeResult = new INode[inodeResult1.length + inodeResult2.length];
-      System.arraycopy(inodeResult1, 0, inodeResult, 0, inodeResult1.length);
-      System.arraycopy(inodeResult2, 0, inodeResult, inodeResult1.length, inodeResult2.length);
     }
 
     if (locks.getBlockLock() != null) {
       if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
         throw new RuntimeException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
       }
-
-      blockResults = acquireBlockLock(locks.getBlockLock(), locks.getBlockParam());
+      blockResults.addAll(acquireBlockLock());
     }
 
     acquireLeaseAndLpathLockNormal();
@@ -244,7 +234,7 @@ public class TransactionLockAcquirer {
     return locks;
   }
 
-  private List<Lease> acquireLeaseLock() throws PersistanceException {
+  private LinkedList<Lease> acquireLeaseLock() throws PersistanceException {
 
     checkStringParam(locks.getLeaseParam());
     SortedSet<String> holders = new TreeSet<String>();
@@ -252,15 +242,15 @@ public class TransactionLockAcquirer {
       holders.add((String) locks.getLeaseParam());
     }
 
-    if (inodeResult != null) {
-      for (INode f : inodeResult) {
+    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
+      for (INode f : resolvedINodes) {
         if (f instanceof INodeFileUnderConstruction) {
           holders.add(((INodeFileUnderConstruction) f).getClientName());
         }
       }
     }
 
-    List<Lease> leases = new ArrayList<Lease>();
+    LinkedList<Lease> leases = new LinkedList<Lease>();
     for (String h : holders) {
       Lease lease = acquireLock(locks.getLeaseLock(), Lease.Finder.ByPKey, h);
       if (lease != null) {
@@ -317,33 +307,23 @@ public class TransactionLockAcquirer {
     }
   }
 
-  private INode[] findImmediateChildren(INode[] inodes) throws PersistanceException {
-    ArrayList<INode> children = new ArrayList<INode>();
-    if (inodes != null) {
-      for (INode dir : inodes) {
-        if (dir instanceof INodeDirectory) {
-          children.addAll(((INodeDirectory) dir).getChildren());
-        } else {
-          // immediate children of  INodeFile is the inode itself.
-          children.add(dir);
-        }
+  private LinkedList<INode> findImmediateChildren(INode lastINode) throws PersistanceException {
+    LinkedList<INode> children = new LinkedList<INode>();
+    if (lastINode != null) {
+      if (lastINode instanceof INodeDirectory) {
+        lockINode(locks.getInodeLock());
+        children.addAll(((INodeDirectory) lastINode).getChildren());
       }
     }
-    //if(child)
-    inodes = new INode[children.size()];
-    return children.toArray(inodes);
+    return children;
   }
 
-  private INode[] findChildrenRecursively(INode[] inodes) throws PersistanceException {
-    ArrayList<INode> children = new ArrayList<INode>();
+  private LinkedList<INode> findChildrenRecursively(INode lastINode) throws PersistanceException {
+    LinkedList<INode> children = new LinkedList<INode>();
     LinkedList<INode> unCheckedDirs = new LinkedList<INode>();
-    if (inodes != null) {
-      for (INode inode : inodes) {
-        if (inode instanceof INodeDirectory) {
-          unCheckedDirs.add(inode);
-        } else {
-          children.add(inode);
-        }
+    if (lastINode != null) {
+      if (lastINode instanceof INodeDirectory) {
+        unCheckedDirs.add(lastINode);
       }
     }
 
@@ -351,14 +331,13 @@ public class TransactionLockAcquirer {
     while (!unCheckedDirs.isEmpty()) {
       INode next = unCheckedDirs.poll();
       if (next instanceof INodeDirectory) {
+        lockINode(locks.getInodeLock());
         unCheckedDirs.addAll(((INodeDirectory) next).getChildren());
       } else if (next instanceof INodeFile) {
         children.add(next); // We only need INodeFiles later to get the blocks.
       }
     }
-
-    inodes = new INode[children.size()];
-    return children.toArray(inodes);
+    return children;
   }
 
   private String buildPath(String path, int size) {
@@ -388,14 +367,14 @@ public class TransactionLockAcquirer {
 
   public TransactionLocks acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
-          acquireLockList(locks.getLeaderLock(), Leader.Finder.All);
+      acquireLockList(locks.getLeaderLock(), Leader.Finder.All);
     }
     return locks;
   }
 
   private void acquireLeaseAndLpathLockNormal() throws PersistanceException {
     if (locks.getLeaseLock() != null) {
-      leaseResults = acquireLeaseLock();
+      leaseResults.addAll(acquireLeaseLock());
     }
 
     if (locks.getLpLock() != null) {
@@ -464,32 +443,28 @@ public class TransactionLockAcquirer {
     }
   }
 
-  private INode[] acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {
-    INode[] inodes = new INode[params.length];
+  private void acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {
     switch (locks.getInodeResolveType()) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
       case PATH_AND_ALL_CHILDREN_RECURESIVELY:
         for (int i = 0; i < params.length; i++) {
-          // TODO - MemcacheD Lookup of path
-          // On
-          LinkedList<INode> resolvedInodes =
-                  acquireInodeLockByPath(locks, params[i]);
+          LinkedList<INode> resolvedInodes = acquireInodeLockByPath(locks, params[i]);
           if (resolvedInodes.size() > 0) {
-            inodes[i] = resolvedInodes.peekLast();
+            INode lastINode = resolvedInodes.peekLast();
+            if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
+              resolvedInodes.addAll(findImmediateChildren(lastINode));
+            } else if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
+              resolvedInodes.addAll(findChildrenRecursively(lastINode));
+            }
           }
-        }
-        if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
-          inodes = findImmediateChildren(inodes);
-        } else if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
-          inodes = findChildrenRecursively(inodes);
+          allResolvedINodes.add(resolvedInodes);
         }
         break;
       // e.g. mkdir -d /opt/long/path which creates subdirs.
       // That is, the HEAD and some ancestor inodes might not exist yet.
       case PATH_WITH_UNKNOWN_HEAD: // Can try and use memcached for this case.
         for (int i = 0; i < params.length; i++) {
-          // TODO Test this in all different possible scenarios
           String fullPath = params[i];
           checkPathIsResolved();
           int resolvedSize = locks.getPreTxResolvedInodes().size();
@@ -499,15 +474,13 @@ public class TransactionLockAcquirer {
           LinkedList<INode> rest = acquireLockOnRestOfPath(locks.getInodeLock(), baseDir,
                   fullPath, existingPath, locks.isResolveLink());
           locks.getPreTxResolvedInodes().addAll(rest);
-          inodes[i] = locks.getPreTxResolvedInodes().peekLast();
+          allResolvedINodes.add(locks.getPreTxResolvedInodes());
         }
         break;
 
       default:
         throw new IllegalArgumentException("Unknown type " + locks.getInodeLock().name());
     }
-
-    return inodes;
   }
 
   private void checkPathIsResolved() throws INodeResolveException {
@@ -518,21 +491,23 @@ public class TransactionLockAcquirer {
     }
   }
 
-  private List<BlockInfo> acquireBlockLock(LockType lock, Long param) throws PersistanceException {
+  private LinkedList<BlockInfo> acquireBlockLock() throws PersistanceException {
 
-    List<BlockInfo> blocks = new ArrayList<BlockInfo>();
+    LinkedList<BlockInfo> blocks = new LinkedList<BlockInfo>();
 
     if (locks.getBlockParam() != null) {
-      long bid = (Long) param;
+      long bid = (Long) locks.getBlockParam();
 
-      BlockInfo result = acquireLock(lock, BlockInfo.Finder.ById, bid);
+      BlockInfo result = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, bid);
       if (result != null) {
         blocks.add(result);
       }
-    } else if (inodeResult != null) {
-      for (INode inode : inodeResult) {
-        if (inode instanceof INodeFile) {
-          blocks.addAll(acquireLockList(lock, BlockInfo.Finder.ByInodeId, inode.getId()));
+    } else {
+      for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
+        for (INode inode : resolvedINodes) {
+          if (inode instanceof INodeFile) {
+            blocks.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId()));
+          }
         }
       }
     }
@@ -759,16 +734,14 @@ public class TransactionLockAcquirer {
       }
     }
   }
-  
-  private  void readINodeAttributes() throws PersistanceException{
-      
-//       if (inodeResult != null) {
-//      for (INode inode : inodeResult) {
-//          LOG.debug("indode size is "+inodeResult.length);
-//        if (inode instanceof INodeDirectoryWithQuota) { 
-//          acquireLock(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKey, inode.getId());
-//        }
-//      }
-//    }
+
+  private void readINodeAttributes() throws PersistanceException {
+    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
+      for (INode inode : resolvedINodes) {
+        if (inode instanceof INodeDirectoryWithQuota) {
+          acquireLock(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKey, inode.getId());
+        }
+      }
+    }
   }
 }
