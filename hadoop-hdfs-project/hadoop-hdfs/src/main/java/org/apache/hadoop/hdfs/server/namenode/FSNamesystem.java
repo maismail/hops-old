@@ -203,6 +203,7 @@ import org.mortbay.util.ajax.JSON;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.mysql.clusterj.ClusterJException;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
@@ -3748,8 +3749,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         try {
           String path = leaseManager.findPath(fileINode);
           dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
-        } catch (IOException e) {
+        } catch (Exception e) {
           LOG.warn("Unexpected exception while updating disk space.", e);
+          //START_HOP_CODE
+          if(e instanceof StorageException ){
+            throw (IOException)e;
+          }
+          else if(e instanceof ClusterJException){ //RuntimeException
+            throw (ClusterJException)e;
+          }
+          //END_HOP_CODE
         }
       }
     }
