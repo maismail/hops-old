@@ -651,7 +651,7 @@ public class DFSClient implements java.io.Closeable {
                return null;
             }
         };
-        doClientActionWithRetry(handler);            
+        doClientActionWithRetry(handler, "renewLease");            
         
         updateLastLeaseRenewal();
         return true;
@@ -757,7 +757,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getPreferredBlockSize(f);
         }
       };
-      return (Long) doClientActionWithRetry(handler);
+      return (Long) doClientActionWithRetry(handler, "getBlockSize");
         
     } catch (IOException ie) {
       LOG.warn("Problem getting block size", ie);
@@ -778,7 +778,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getServerDefaults();
         }
       };
-      serverDefaults = (FsServerDefaults)doClientActionWithRetry(handler);   
+      serverDefaults = (FsServerDefaults)doClientActionWithRetry(handler, "getServerDefaults");   
       serverDefaultsLastUpdate = now;
     }
     return serverDefaults;
@@ -807,7 +807,7 @@ public class DFSClient implements java.io.Closeable {
       }
     };       
     Token<DelegationTokenIdentifier> token =
-      (Token<DelegationTokenIdentifier>)doClientActionWithRetry(handler);
+      (Token<DelegationTokenIdentifier>)doClientActionWithRetry(handler, "getDelegationToken");
     token.setService(this.dtService);
 
     LOG.info("Created " + DelegationTokenIdentifier.stringifyToken(token));
@@ -1020,7 +1020,7 @@ public class DFSClient implements java.io.Closeable {
         return null;
       }
     };
-    doClientActionWithRetry(handler);
+    doClientActionWithRetry(handler, "reportBadBlocks");
   }
   
   public short getDefaultReplication() {
@@ -1040,7 +1040,7 @@ public class DFSClient implements java.io.Closeable {
         return callGetBlockLocations(namenode, src, start, length);
       }
     };
-    return (LocatedBlocks) doClientActionWithRetry(handler);
+    return (LocatedBlocks) doClientActionWithRetry(handler, "getLocatedBlocks");
   }
 
   /**
@@ -1073,7 +1073,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.recoverLease(src, clientName);
         }
       };
-      return (Boolean) doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler, "recoverLease");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(FileNotFoundException.class,
                                      AccessControlException.class);
@@ -1413,7 +1413,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "createSymlink");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileAlreadyExistsException.class, 
@@ -1439,7 +1439,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getLinkTarget(path);
         }
       };
-      return (String) doClientActionWithRetry(handler);
+      return (String) doClientActionWithRetry(handler, "getLinkTarget");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
               FileNotFoundException.class);
@@ -1457,7 +1457,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.append(src, clientName);
         }
       };
-      lastBlock = (LocatedBlock) doClientActionWithRetry(handler);
+      lastBlock = (LocatedBlock) doClientActionWithRetry(handler, "callAppend");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1517,7 +1517,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.setReplication(src, replication);
         }
       };
-      return (Boolean) doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler, "setReplication");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1542,7 +1542,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.rename(src, dst);
         }
       };
-      return (Boolean) doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler, "rename");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      NSQuotaExceededException.class,
@@ -1565,7 +1565,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "concat");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
               UnresolvedPathException.class);
@@ -1586,7 +1586,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);      
+      doClientActionWithRetry(handler, "rename");      
           } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      DSQuotaExceededException.class,
@@ -1612,7 +1612,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.delete(src, true);
       }
     };
-    return (Boolean) doClientActionWithRetry(handler);
+    return (Boolean) doClientActionWithRetry(handler, "delete");
   }
 
   /**
@@ -1631,7 +1631,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.delete(src, recursive);
         }
       };
-      return (Boolean) doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler, "delete");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1676,7 +1676,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getListing(src, startAfter, needLocation);
         }
       };
-      return (DirectoryListing) doClientActionWithRetry(handler);
+      return (DirectoryListing) doClientActionWithRetry(handler, "listPaths");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1701,7 +1701,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getFileInfo(src);
         }
       };
-      return (HdfsFileStatus) doClientActionWithRetry(handler);
+      return (HdfsFileStatus) doClientActionWithRetry(handler, "getFileInfo");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -1726,7 +1726,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getFileLinkInfo(src);
         }
       };
-      return (HdfsFileStatus) doClientActionWithRetry(handler);
+      return (HdfsFileStatus) doClientActionWithRetry(handler, "getFileLinkInfo");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      UnresolvedPathException.class);
@@ -1778,7 +1778,7 @@ public class DFSClient implements java.io.Closeable {
               return namenode.getDataEncryptionKey();
             }
           };
-          encryptionKey = (DataEncryptionKey) doClientActionWithRetry(handler);
+          encryptionKey = (DataEncryptionKey) doClientActionWithRetry(handler, "getDataEncryptionKey");
         }
         return encryptionKey;
       }
@@ -2070,7 +2070,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);          
+      doClientActionWithRetry(handler,"setPermission");          
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2098,7 +2098,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "setOwner");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2117,7 +2117,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.getStats();
       }
     };
-    long rawNums[] = (long[]) doClientActionWithRetry(handler);
+    long rawNums[] = (long[]) doClientActionWithRetry(handler, "getDiskStatus");
     return new FsStatus(rawNums[0], rawNums[1], rawNums[2]);
   }
 
@@ -2133,7 +2133,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.getStats()[ClientProtocol.GET_STATS_MISSING_BLOCKS_IDX];
       }
     };
-    return (Long) doClientActionWithRetry(handler);
+    return (Long) doClientActionWithRetry(handler, "getMissingBlocksCount");
   }
   
   /**
@@ -2147,7 +2147,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.getStats()[ClientProtocol.GET_STATS_UNDER_REPLICATED_IDX];
       }
     };
-    return (Long) doClientActionWithRetry(handler);
+    return (Long) doClientActionWithRetry(handler, "getUnderReplicatedBlocksCount");
   }
   
   /**
@@ -2161,7 +2161,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.getStats()[ClientProtocol.GET_STATS_CORRUPT_BLOCKS_IDX];
       }
     };
-    return (Long) doClientActionWithRetry(handler);
+    return (Long) doClientActionWithRetry(handler, "getCorruptBlocksCount");
   }
   
   /**
@@ -2177,7 +2177,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.listCorruptFileBlocks(path, cookie);
       }
     };
-    return (CorruptFileBlocks) doClientActionWithRetry(handler);
+    return (CorruptFileBlocks) doClientActionWithRetry(handler, "listCorruptFileBlocks");
   }
 
   public DatanodeInfo[] datanodeReport(final DatanodeReportType type)
@@ -2188,7 +2188,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.getDatanodeReport(type);
       }
     };
-    return (DatanodeInfo[]) doClientActionWithRetry(handler);
+    return (DatanodeInfo[]) doClientActionWithRetry(handler, "datanodeReport");
   }
     
   /**
@@ -2218,7 +2218,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.setSafeMode(action, isChecked);
       }
     };
-    return (Boolean) doClientActionWithRetry(handler);
+    return (Boolean) doClientActionWithRetry(handler, "setSafeMode");
   }
 
   /**
@@ -2235,7 +2235,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "saveNamespace");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class);
     }
@@ -2255,7 +2255,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.rollEdits();
         }
       };
-      return (Long) doClientActionWithRetry(handler);
+      return (Long) doClientActionWithRetry(handler, "rollEdits");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class);
     }
@@ -2274,7 +2274,7 @@ public class DFSClient implements java.io.Closeable {
         return namenode.restoreFailedStorage(arg);
       }
     };
-    return (Boolean) doClientActionWithRetry(handler);
+    return (Boolean) doClientActionWithRetry(handler, "restoreFailedStorage");
   }
 
   /**
@@ -2292,7 +2292,7 @@ public class DFSClient implements java.io.Closeable {
         return null;
       }
     };
-    doClientActionWithRetry(handler);
+    doClientActionWithRetry(handler, "refreshNodes");
   }
 
   /**
@@ -2308,7 +2308,7 @@ public class DFSClient implements java.io.Closeable {
         return null;
       }
     };
-    doClientActionWithRetry(handler);
+    doClientActionWithRetry(handler, "metaSave");
   }
 
   /**
@@ -2327,7 +2327,7 @@ public class DFSClient implements java.io.Closeable {
         return null;
       }
     };
-    doClientActionWithRetry(handler);
+    doClientActionWithRetry(handler, "setBalancerBandwidth");
   }
     
   /**
@@ -2341,7 +2341,7 @@ public class DFSClient implements java.io.Closeable {
         return null;
       }
     };
-    doClientActionWithRetry(handler);
+    doClientActionWithRetry(handler, "finalizeUpgrade");
   }
 
   /**
@@ -2409,7 +2409,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.mkdirs(src, finalPermission, createParent);
         }
       };
-      return (Boolean) doClientActionWithRetry(handler);
+      return (Boolean) doClientActionWithRetry(handler, "primitiveMkdir");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      InvalidPathException.class,
@@ -2437,7 +2437,7 @@ public class DFSClient implements java.io.Closeable {
           return namenode.getContentSummary(src);
         }
       };
-      return (ContentSummary) doClientActionWithRetry(handler);
+      return (ContentSummary) doClientActionWithRetry(handler, "getContentSummary");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2469,7 +2469,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "setQuota");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2494,7 +2494,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler);
+      doClientActionWithRetry(handler, "setTimes");
     } catch (RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2560,7 +2560,8 @@ public class DFSClient implements java.io.Closeable {
       return handle;
   }
     private static AtomicLong fnID = new AtomicLong(); // for debuggin purpose
-    private Object doClientActionWithRetry(ClientActionHandler handler) throws RemoteException, IOException {
+    private Object doClientActionWithRetry(ClientActionHandler handler, String callerID) throws RemoteException, IOException {
+    callerID = callerID.toUpperCase();
     long thisFnID = fnID.incrementAndGet();
     //When a RPC call to NN fails then the client will put the NamenodeSelector.java
     //will put the NN address in blacklist and send an RPC to NN to get a fresh list of NNs.
@@ -2578,7 +2579,7 @@ public class DFSClient implements java.io.Closeable {
       try {
         handle = getNextNamenode(thisFnID,blackListedNamenodes);
         
-        LOG.debug(thisFnID+") sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        LOG.debug(thisFnID+") "+callerID+" sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
         //no exception 
@@ -2589,11 +2590,11 @@ public class DFSClient implements java.io.Closeable {
           //black list the namenode 
           //so that it is not used again
           if(handle != null){
-            LOG.warn(thisFnID+") RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            LOG.warn(thisFnID+") "+callerID+" RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
             namenodeSelector.blackListNamenode(handle);
             blackListedNamenodes.add(handle.getNamenode());
           }else{
-              LOG.warn(thisFnID+") RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+              LOG.warn(thisFnID+") "+callerID+" RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           }
 
           //Before retry wait for some random time.
@@ -2616,10 +2617,10 @@ public class DFSClient implements java.io.Closeable {
     if (!success) {
       //print the fn call trace to figure out with RPC failed
       for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-          LOG.debug(thisFnID+") Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
+          LOG.debug(thisFnID+") "+callerID+" Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
       }
       
-      LOG.warn(thisFnID+") Exception was "+exception);
+      LOG.warn(thisFnID+") "+callerID+" Exception was "+exception);
       exception.printStackTrace();
       if (exception != null) {
         if (exception instanceof RemoteException) {
@@ -2645,7 +2646,7 @@ public class DFSClient implements java.io.Closeable {
                return null;
            }
        } ;
-       doClientActionWithRetry(handler);
+       doClientActionWithRetry(handler,"pingNamenode");
     }
     catch (Exception ex) {
       ex.printStackTrace();
@@ -2663,7 +2664,7 @@ public class DFSClient implements java.io.Closeable {
             return namenode.getActiveNamenodesForClient();
         }
     };
-    return (SortedActiveNamenodeList) doClientActionWithRetry(handler);
+    return (SortedActiveNamenodeList) doClientActionWithRetry(handler, "getActiveNamenodes");
   }
 
     public LocatedBlock getAdditionalDatanode(final String src, final ExtendedBlock blk,
@@ -2676,7 +2677,7 @@ public class DFSClient implements java.io.Closeable {
                 return namenode.getAdditionalDatanode(src, blk, existings, excludes, numAdditionalNodes, clientName);
             }
         };
-        return (LocatedBlock) doClientActionWithRetry(handler);
+        return (LocatedBlock) doClientActionWithRetry(handler, "getAdditionalDatanode");
     }
 
     public LocatedBlock updateBlockForPipeline(final ExtendedBlock block,
@@ -2687,7 +2688,7 @@ public class DFSClient implements java.io.Closeable {
                 return namenode.updateBlockForPipeline(block, clientName);
             }
         };
-        return (LocatedBlock) doClientActionWithRetry(handler);
+        return (LocatedBlock) doClientActionWithRetry(handler, "updateBlockForPipeline");
     }
 
     public void updatePipeline(final String clientName, final ExtendedBlock oldBlock,
@@ -2700,7 +2701,7 @@ public class DFSClient implements java.io.Closeable {
                 return null;
             }
         };
-        doClientActionWithRetry(handler);
+        doClientActionWithRetry(handler, "updatePipeline");
     }
 
     public void abandonBlock(final ExtendedBlock b, final String src, final String holder)
@@ -2713,7 +2714,7 @@ public class DFSClient implements java.io.Closeable {
                 return null;
             }
         };
-        doClientActionWithRetry(handler);
+        doClientActionWithRetry(handler, "abandonBlock");
     }
 
     public LocatedBlock addBlock(final String src, final String clientName,
@@ -2727,7 +2728,7 @@ public class DFSClient implements java.io.Closeable {
                 return namenode.addBlock(src, clientName, previous, excludeNodes);
             }
         };
-        return (LocatedBlock) doClientActionWithRetry(handler);
+        return (LocatedBlock) doClientActionWithRetry(handler, "addBlock");
     }
 
     public void create(final String src, final FsPermission masked, final String clientName,
@@ -2744,7 +2745,7 @@ public class DFSClient implements java.io.Closeable {
                 return null;
             }
         };
-        doClientActionWithRetry(handler);
+        doClientActionWithRetry(handler, "create");
     }
 
     public void fsync(final String src, final String client, final long lastBlockLength)
@@ -2757,7 +2758,7 @@ public class DFSClient implements java.io.Closeable {
                 return null;
             }
         };
-        doClientActionWithRetry(handler);
+        doClientActionWithRetry(handler, "fsync");
     }
 
     public boolean complete(final String src, final String clientName, final ExtendedBlock last)
@@ -2769,7 +2770,7 @@ public class DFSClient implements java.io.Closeable {
                 return namenode.complete(src, clientName, last);
             }
         };
-        return (Boolean) doClientActionWithRetry(handler);
+        return (Boolean) doClientActionWithRetry(handler, "complete");
     }
   //END_HOP_CODE
 }
