@@ -112,37 +112,40 @@ public enum ClusterjConnector implements StorageConnector<Session> {
     Session session = obtainSession();
     Transaction tx = session.currentTransaction();
     session.setLockMode(LockMode.READ_COMMITTED);
-    try {
-      tx.begin();
-      session.deletePersistentAll(InodeClusterj.InodeDTO.class);
-      session.deletePersistentAll(BlockInfoClusterj.BlockInfoDTO.class);
-      session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-      session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-      session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-      session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-      session.deletePersistentAll(InvalidatedBlockClusterj.InvalidateBlocksDTO.class);
-      session.deletePersistentAll(ExcessReplicaClusterj.ExcessReplicaDTO.class);
-      session.deletePersistentAll(PendingBlockClusterj.PendingBlockDTO.class);
-      session.deletePersistentAll(CorruptReplicaClusterj.CorruptReplicaDTO.class);
-      session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
-      session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
-      session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
-      session.deletePersistentAll(StorageInfoClusterj.StorageInfoDTO.class);
-      session.deletePersistentAll(VariablesClusterj.VariableDTO.class);
-      for(Variable.Finder varType : Variable.Finder.values()){
-        VariablesClusterj.VariableDTO vd = session.newInstance(VariablesClusterj.VariableDTO.class);
-        vd.setId(varType.getId());
-        vd.setValue(varType.getDefaultValue());
-        session.savePersistent(vd);
-      }
-      tx.commit();
-      session.flush();
-      return true;
-    } catch (ClusterJException ex) {
-      LOG.error(ex.getMessage(), ex);
-      tx.rollback();
-    }
+    final int RETRIES = 5; // in test 
+    for (int i = 0; i < RETRIES; i++) {
+      try {
+        tx.begin();
+        session.deletePersistentAll(InodeClusterj.InodeDTO.class);
+        session.deletePersistentAll(BlockInfoClusterj.BlockInfoDTO.class);
+        session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+        session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+        session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+        session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+        session.deletePersistentAll(InvalidatedBlockClusterj.InvalidateBlocksDTO.class);
+        session.deletePersistentAll(ExcessReplicaClusterj.ExcessReplicaDTO.class);
+        session.deletePersistentAll(PendingBlockClusterj.PendingBlockDTO.class);
+        session.deletePersistentAll(CorruptReplicaClusterj.CorruptReplicaDTO.class);
+        session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
+        session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
+        session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
+        session.deletePersistentAll(StorageInfoClusterj.StorageInfoDTO.class);
+        session.deletePersistentAll(VariablesClusterj.VariableDTO.class);
+        for (Variable.Finder varType : Variable.Finder.values()) {
+          VariablesClusterj.VariableDTO vd = session.newInstance(VariablesClusterj.VariableDTO.class);
+          vd.setId(varType.getId());
+          vd.setValue(varType.getDefaultValue());
+          session.savePersistent(vd);
+        }
+        tx.commit();
+        session.flush();
+        return true;
 
+      } catch (ClusterJException ex) {
+        LOG.error(ex.getMessage(), ex);
+        tx.rollback();
+      }
+    } // end retry loop
     return false;
   }
 
