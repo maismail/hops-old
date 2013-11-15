@@ -3749,17 +3749,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         try {
           String path = leaseManager.findPath(fileINode);
           dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
-        } catch (Exception e) {
+        } catch (IOException e) {
           LOG.warn("Unexpected exception while updating disk space.", e);
           //START_HOP_CODE
           if(e instanceof StorageException ){
             throw (IOException)e;
           }
-          else if(e instanceof ClusterJException){ //RuntimeException
-            throw (ClusterJException)e;
-          }
-          //END_HOP_CODE
+        }catch (ClusterJException e){
+          throw e;
         }
+        //END_HOP_CODE
       }
     }
   }

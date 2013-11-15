@@ -168,12 +168,6 @@ public class InodeContext extends EntityContext<INode> {
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
 
-//        if ((removedInodes.values().size() != 0
-//                || modifiedInodes.values().size() != 0)
-//                && (lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE
-//                &&  lks.getInodeLock() != TransactionLockTypes.INodeLockType.WRITE_ON_PARENT)) {
-//            throw new LockUpgradeException("Trying to upgrade inode locks");
-//        }
     if(removedInodes.values().size() != 0)
     {
         for(INode inode: removedInodes.values()){

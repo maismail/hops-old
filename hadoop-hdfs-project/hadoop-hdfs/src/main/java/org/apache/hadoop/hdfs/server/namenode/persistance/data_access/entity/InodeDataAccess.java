@@ -19,8 +19,6 @@ public abstract class InodeDataAccess extends EntityDataAccess {
   public static final String MODIFICATION_TIME = "modification_time";
   public static final String ACCESS_TIME = "access_time";
   public static final String PERMISSION = "permission";
-  public static final String NSQUOTA = "nsquota";
-  public static final String DSQUOTA = "dsquota";
   public static final String IS_UNDER_CONSTRUCTION = "is_under_construction";
   public static final String CLIENT_NAME = "client_name";
   public static final String CLIENT_MACHINE = "client_machine";
@@ -28,8 +26,6 @@ public abstract class InodeDataAccess extends EntityDataAccess {
   public static final String IS_CLOSED_FILE = "is_closed_file";
   public static final String HEADER = "header";
   public static final String IS_DIR_WITH_QUOTA = "is_dir_with_quota";
-  public static final String NSCOUNT = "nscount";
-  public static final String DSCOUNT = "dscount";
   public static final String SYMLINK = "symlink";
 
   public abstract INode findInodeById(long inodeId) throws StorageException;

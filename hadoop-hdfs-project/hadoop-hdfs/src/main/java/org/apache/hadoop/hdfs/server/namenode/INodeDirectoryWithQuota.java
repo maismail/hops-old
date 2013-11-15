@@ -28,59 +28,41 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
  * Directory INode class that has a quota restriction
  */
 public class INodeDirectoryWithQuota extends INodeDirectory {
-  private long nsQuota; /// NameSpace quota
-  private long nsCount;
-  private long dsQuota; /// disk space quota
-  private long diskspace;
-  
+ 
   /** Convert an existing directory inode to one with the given quota
    * 
    * @param nsQuota Namespace quota to be assigned to this inode
    * @param dsQuota Diskspace quota to be assigned to this indoe
    * @param other The other inode from which all other properties are copied
    */
-  INodeDirectoryWithQuota(long nsQuota, long dsQuota,
+  INodeDirectoryWithQuota(Long nsQuota, Long dsQuota,
       INodeDirectory other) throws PersistanceException {
     super(other);
     INode.DirCounts counts = new INode.DirCounts();
     other.spaceConsumedInTree(counts);
-    this.nsCount = counts.getNsCount();
-    this.diskspace = counts.getDsCount();
+    createINodeAttributes(nsQuota, counts.getNsCount(), dsQuota, counts.getDsCount());
     setQuota(nsQuota, dsQuota);
   }
   
   /** constructor with no quota verification */
-  INodeDirectoryWithQuota(PermissionStatus permissions, long modificationTime,
-      long nsQuota, long dsQuota) {
-    super(permissions, modificationTime);
-    this.nsQuota = nsQuota;
-    this.dsQuota = dsQuota;
-    this.nsCount = 1;
-  }
-  
-  /** constructor with no quota verification */
-  public INodeDirectoryWithQuota(String name, PermissionStatus permissions,
-      long nsQuota, long dsQuota) {
+  public INodeDirectoryWithQuota(String name, PermissionStatus permissions) {
     super(name, permissions);
-    this.nsQuota = nsQuota;
-    this.dsQuota = dsQuota;
-    this.nsCount = 1;
   }
   
   /** Get this directory's namespace quota
    * @return this directory's namespace quota
    */
   @Override
-  public long getNsQuota() {
-    return nsQuota;
+  public long getNsQuota() throws PersistanceException{
+    return getINodeAttributes().getNsQuota();
   }
   
   /** Get this directory's diskspace quota
    * @return this directory's diskspace quota
    */
   @Override
-  public long getDsQuota() {
-    return dsQuota;
+  public long getDsQuota()throws PersistanceException {
+    return getINodeAttributes().getDsQuota();
   }
   
   /** Set this directory's quota
@@ -89,30 +71,28 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param dsQuota diskspace quota to be set
    *                                
    */
-  void setQuota(long newNsQuota, long newDsQuota) throws PersistanceException {
-    nsQuota = newNsQuota;
-    dsQuota = newDsQuota;
-    save();
+  void setQuota(Long newNsQuota, Long newDsQuota) throws PersistanceException {
+    getINodeAttributes().setNsQuota(newNsQuota);
+    getINodeAttributes().setDsQuota(newDsQuota);
   }
   
   
   @Override
-  DirCounts spaceConsumedInTree(DirCounts counts) {
-    counts.nsCount += nsCount;
-    counts.dsCount += diskspace;
-    System.out.println("XXX dsCount is "+counts.dsCount);
+  DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException{
+    counts.nsCount += getINodeAttributes().getNsCount();
+    counts.dsCount += getINodeAttributes().getDiskspace();
     return counts;
   }
 
   /** Get the number of names in the subtree rooted at this directory
    * @return the size of the subtree rooted at this directory
    */
-  public long numItemsInTree() {
-    return nsCount;
+  public Long numItemsInTree() throws PersistanceException{
+    return getINodeAttributes().getNsCount();
   }
   
-  public long diskspaceConsumed() {
-    return diskspace;
+  public Long diskspaceConsumed() throws PersistanceException{
+    return getINodeAttributes().getDiskspace();
   }
   
   /** Update the size of the tree
@@ -120,11 +100,9 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param nsDelta the change of the tree size
    * @param dsDelta change to disk space occupied
    */
-  void updateNumItemsInTree(long nsDelta, long dsDelta) throws PersistanceException {
-    nsCount += nsDelta;
-    diskspace += dsDelta;
-    save();
-    System.out.println("XXX diskspace is "+diskspace);
+  void updateNumItemsInTree(Long nsDelta, Long dsDelta) throws PersistanceException {
+    getINodeAttributes().setNsCount(getINodeAttributes().getNsCount() + nsDelta);
+    getINodeAttributes().setDiskspace(getINodeAttributes().getDiskspace() + dsDelta);
   }
   
   /** Update the size of the tree
@@ -132,11 +110,9 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param nsDelta the change of the tree size
    * @param dsDelta change to disk space occupied
    **/
-  void unprotectedUpdateNumItemsInTree(long nsDelta, long dsDelta) throws PersistanceException {
-    nsCount = nsCount + nsDelta;
-    diskspace = diskspace + dsDelta;
-    save();
-    System.out.println("XXX diskspace2 is "+diskspace);
+  void unprotectedUpdateNumItemsInTree(Long nsDelta, Long dsDelta) throws PersistanceException {
+    getINodeAttributes().setNsCount(getINodeAttributes().getNsCount() + nsDelta);
+    getINodeAttributes().setDiskspace(getINodeAttributes().getDiskspace() + dsDelta);
   }
   
   /** 
@@ -147,42 +123,59 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
    * @param namespace size of the directory to be set
    * @param diskspace disk space take by all the nodes under this directory
    */
-  public void setSpaceConsumed(long namespace, long diskspace) throws PersistanceException {
-    setSpaceConsumedNoPersistance(namespace, diskspace);
-    save();
+  public void setSpaceConsumed(Long namespace, Long diskspace) throws PersistanceException {
+    getINodeAttributes().setNsCount(namespace);
+    getINodeAttributes().setDiskspace(diskspace);
   }
   
-  public void setSpaceConsumedNoPersistance(long namespace, long diskspace) throws PersistanceException {
-    this.nsCount = namespace;
-    this.diskspace = diskspace;
+  public void setSpaceConsumedNoPersistance(Long namespace, Long diskspace) throws PersistanceException{
+    getINodeAttributes().setNsCountNoPersistance(namespace);
+    getINodeAttributes().setDiskspaceNoPersistance(diskspace);
   }
   /** Verify if the namespace count disk space satisfies the quota restriction 
    * @throws QuotaExceededException if the given quota is less than the count
    */
-  void verifyQuota(long nsDelta, long dsDelta) throws QuotaExceededException {
-    long newCount = nsCount + nsDelta;
-    long newDiskspace = diskspace + dsDelta;
+  void verifyQuota(Long nsDelta, Long dsDelta) throws QuotaExceededException , PersistanceException{
+    Long newCount = getINodeAttributes().getNsCount() + nsDelta;
+    Long newDiskspace = getINodeAttributes().getDiskspace() + dsDelta;
+
     if (nsDelta>0 || dsDelta>0) {
-      if (nsQuota >= 0 && nsQuota < newCount) {
-        throw new NSQuotaExceededException(nsQuota, newCount);
+      if (getINodeAttributes().getNsQuota() >= 0 && getINodeAttributes().getNsQuota() < newCount) {
+        throw new NSQuotaExceededException(getINodeAttributes().getNsQuota(), newCount);
       }
-      if (dsQuota >= 0 && dsQuota < newDiskspace) {
-        throw new DSQuotaExceededException(dsQuota, newDiskspace);
+      if (getINodeAttributes().getDsQuota() >= 0 && getINodeAttributes().getDsQuota() < newDiskspace) {
+        throw new DSQuotaExceededException(getINodeAttributes().getDsQuota(), newDiskspace);
       }
     }
   }
  
   //START_HOP_CODE
-  public static INodeDirectoryWithQuota createRootDir(PermissionStatus permissions,
-          long nsQuota, long dsQuota) {
-    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(ROOT_NAME, permissions, nsQuota, dsQuota);
+  public static INodeDirectoryWithQuota createRootDir(PermissionStatus permissions) throws PersistanceException {
+    INodeDirectoryWithQuota newRootINode = new INodeDirectoryWithQuota(ROOT_NAME, permissions);
     newRootINode.setIdNoPersistance(ROOT_ID);
     newRootINode.setParentIdNoPersistance(ROOT_PARENT_ID);
     return newRootINode;
   }
 
   public static INodeDirectoryWithQuota getRootDir() throws PersistanceException {
-    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByNameAndParentId, ROOT_NAME, ROOT_PARENT_ID);
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByPKey, ROOT_ID);
+  }
+  
+  public INodeAttributes getINodeAttributes() throws PersistanceException{
+    return EntityManager.find(INodeAttributes.Finder.ByPKey, (Long)id);
+  }
+  
+  private void createINodeAttributes(Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) throws PersistanceException{
+    INodeAttributes attr = new INodeAttributes(id, nsQuota, nsCount, dsQuota, diskspace);
+    EntityManager.add(attr);
+  }
+  
+  protected void persistAttributes() throws PersistanceException{
+    getINodeAttributes().save();
+  }
+  
+  protected void changeAttributesPkNoPersistance(Long id)throws PersistanceException{
+    getINodeAttributes().setInodeIdNoPersistance(id);
   }
   //END_HOP_CODE
 }

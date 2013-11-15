@@ -15,70 +15,124 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 
 /**
  *
- * @author salman
- * right now it holds quota info. later we can add more information like access time ( if we want to remove locks from the parent dirs )
+ * @author salman right now it holds quota info. later we can add more
+ * information like access time ( if we want to remove locks from the parent
+ * dirs )
  */
 public class INodeAttributes {
 
-    public static enum Finder implements FinderType<INodeAttributes> {
-        ByPKey;
-        @Override
-        public Class getType() {
-            return INodeAttributes.class;
-        }
-    }
-    
-    private long inodeId;
-    private long nsQuota; /// NameSpace quota
-    private long nsCount;
-    private long dsQuota; /// disk space quota
-    private long diskspace;
+  public static enum Finder implements FinderType<INodeAttributes> {
 
-    public INodeAttributes(long inodeId, long nsQuota, long nsCount, long dsQuota, long diskspace) {
-        this.inodeId = inodeId;
-        this.nsQuota = nsQuota;
-        this.nsCount = nsCount;
-        this.dsQuota = dsQuota;
-        this.diskspace = diskspace;
-    }
+    ByPKey;
 
-    public long getInodeId() {
-        return inodeId;
+    @Override
+    public Class getType() {
+      return INodeAttributes.class;
     }
+  }
+  private Long inodeId;
+  private Long nsQuota; /// NameSpace quota
+  private Long nsCount;
+  private Long dsQuota; /// disk space quota
+  private Long diskspace;
 
-    public long getNsQuota() {
-        return nsQuota;
+  public INodeAttributes(Long inodeId, Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) {
+    this.inodeId = inodeId;
+    if (nsQuota != null) {
+      this.nsQuota = nsQuota;
+    } else {
+      this.nsQuota = FSDirectory.UNKNOWN_DISK_SPACE;
     }
-
-    public long getNsCount() {
-        return nsCount;
+    if (nsCount != null) {
+      this.nsCount = nsCount;
+    } else {
+      this.nsCount = 1L;
     }
-
-    public long getDsQuota() {
-        return dsQuota;
+    if (dsQuota != null) {
+      this.dsQuota = dsQuota;
+    } else {
+      this.dsQuota = Long.MAX_VALUE;
     }
-
-    public long getDiskspace() {
-        return diskspace;
+    if (diskspace != null) {
+      this.diskspace = diskspace;
+    } else {
+      throw new IllegalStateException("default value for diskspace is not defined");
     }
 
-    public void setNsQuota(long nsQuota) {
-        this.nsQuota = nsQuota;
-    }
+  }
 
-    public void setNsCount(long nsCount) {
-        this.nsCount = nsCount;
-    }
+  public Long getInodeId() {
+    return inodeId;
+  }
 
-    public void setDsQuota(long dsQuota) {
-        this.dsQuota = dsQuota;
-    }
+  public Long getNsQuota() {
+    return nsQuota;
+  }
 
-    public void setDiskspace(long diskspace) {
-        this.diskspace = diskspace;
-    }
+  public Long getNsCount() {
+    return nsCount;
+  }
+
+  public Long getDsQuota() {
+    return dsQuota;
+  }
+
+  public Long getDiskspace() {
+    return diskspace;
+  }
+
+  public void setInodeId(Long inodeId) throws PersistanceException {
+    setInodeIdNoPersistance(inodeId);
+    save();
+  }
+  
+  public void setNsQuota(Long nsQuota) throws PersistanceException {
+    setNsQuotaNoPersistance(nsQuota);
+    save();
+  }
+
+  public void setNsCount(Long nsCount) throws PersistanceException {
+    setNsCountNoPersistance(nsCount);
+    save();
+  }
+
+  public void setDsQuota(Long dsQuota) throws PersistanceException {
+    setDsQuotaNoPersistance(dsQuota);
+    save();
+  }
+
+  public void setDiskspace(Long diskspace) throws PersistanceException {
+    setDiskspaceNoPersistance(diskspace);
+    save();
+  }
+
+  public void setNsQuotaNoPersistance(Long nsQuota) {
+    this.nsQuota = nsQuota;
+  }
+
+  public void setNsCountNoPersistance(Long nsCount) {
+    this.nsCount = nsCount;
+  }
+
+  public void setDsQuotaNoPersistance(Long dsQuota) {
+    this.dsQuota = dsQuota;
+  }
+
+  public void setDiskspaceNoPersistance(Long diskspace) {
+    this.diskspace = diskspace;
+  }
+
+  public void setInodeIdNoPersistance(Long inodeId) {
+    this.inodeId = inodeId;
+  }
+  
+  protected void save() throws PersistanceException {
+    EntityManager.update(this);
+  }
 }

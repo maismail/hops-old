@@ -189,8 +189,6 @@ public class TransactionLockAcquirer {
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
-      //INode[] inodeResult1 = null;
-      //INode[] inodeResult2 = null;
       //[S] consider src = /a/b/c and dst = /d
       //during the acquire lock of src write locks will be acquired on parent of c and c
       //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
@@ -207,7 +205,7 @@ public class TransactionLockAcquirer {
       if (allowExistingDir) // In deprecated rename, it allows to move a dir to an existing destination.
       {
         LinkedList<INode> dstINodes = acquireInodeLockByPath(locks, locks.getInodeParam()[1]); // reads from snapshot.  
-        if (dstINodes.size() == dstComponents.length - 1 && dstINodes.getLast().isDirectory()) {
+        if (dstINodes.size() == dstComponents.length && dstINodes.getLast().isDirectory()) {
           //the dst exist and is a directory.
           INode existingInode = acquireINodeLockByNameAndParentId(
                   locks.getInodeLock(),
@@ -332,11 +330,12 @@ public class TransactionLockAcquirer {
       INode next = unCheckedDirs.poll();
       if (next instanceof INodeDirectory) {
         lockINode(locks.getInodeLock());
-        unCheckedDirs.addAll(((INodeDirectory) next).getChildren());
-      } else if (next instanceof INodeFile) {
-        children.add(next); // We only need INodeFiles later to get the blocks.
-      }
+        List<INode> clist = ((INodeDirectory) next).getChildren();
+        unCheckedDirs.addAll(clist);
+        children.addAll(clist);
+      } 
     }
+    LOG.debug("Added "+children.size()+" childern.");
     return children;
   }
 
@@ -607,7 +606,8 @@ public class TransactionLockAcquirer {
     } else {
       curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITED, locks);
     }
-
+    resolvedInodes.add(curNode[0]);
+    
     while (count[0] < components.length && curNode[0] != null) {
 
       INodeLockType curInodeLock = null;
@@ -742,6 +742,6 @@ public class TransactionLockAcquirer {
           acquireLock(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKey, inode.getId());
         }
       }
-    }
+    }   
   }
 }

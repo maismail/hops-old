@@ -296,6 +296,10 @@ public class INodeDirectory extends INode {
       node.setIdNoPersistance(Math.abs(DFSUtil.getRandom().nextLong()));
       node.setParentNoPersistance(this);
       EntityManager.add(node);
+      //add the INodeAttributes if it is Directory with Quota
+      if( this instanceof INodeDirectoryWithQuota){
+        ((INodeDirectoryWithQuota)this).persistAttributes();
+      }
     } else {
       node.setParent(this);
     }
@@ -386,7 +390,7 @@ public class INodeDirectory extends INode {
     INodeDirectory parent = getParent(pathComponents);
     return parent.addChild(newNode, propagateModTime) == null? null: parent;
   }
-  //HOP: TODO: Mahmoud: need to revist this code for quota support
+
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
     counts.nsCount += 1;
@@ -445,7 +449,7 @@ public class INodeDirectory extends INode {
   }
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
-    //if(getId() == INode.NON_EXISTING_ID) return null;
+    if(getId() == INode.NON_EXISTING_ID) return null;
     return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
   }
 

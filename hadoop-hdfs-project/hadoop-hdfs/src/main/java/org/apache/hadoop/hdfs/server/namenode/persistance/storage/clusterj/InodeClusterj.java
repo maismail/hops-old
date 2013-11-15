@@ -19,7 +19,6 @@ import java.util.logging.Logger;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.*;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
@@ -89,30 +88,6 @@ public class InodeClusterj extends InodeDataAccess {
     byte[] getPermission();
 
     void setPermission(byte[] permission);
-
-    // InodeDirectoryWithQuota
-    @Column(name = NSCOUNT)
-    long getNSCount();
-
-    void setNSCount(long nsCount);
-
-    // InodeDirectoryWithQuota
-    @Column(name = DSCOUNT)
-    long getDSCount();
-
-    void setDSCount(long dsCount);
-
-    // InodeDirectoryWithQuota
-    @Column(name = NSQUOTA)
-    long getNSQuota();
-
-    void setNSQuota(long nsQuota);
-
-    // InodeDirectoryWithQuota
-    @Column(name = DSQUOTA)
-    long getDSQuota();
-
-    void setDSQuota(long dsQuota);
 
     //  marker for InodeFileUnderConstruction
     @Column(name = IS_UNDER_CONSTRUCTION)
@@ -290,19 +265,14 @@ public class InodeClusterj extends InodeDataAccess {
 
     if (persistable.getIsDir()==1) {
       if (persistable.getIsDirWithQuota()==1) {
-        inode = new INodeDirectoryWithQuota(persistable.getName(), ps, persistable.getNSQuota(), persistable.getDSQuota());
-        ((INodeDirectoryWithQuota) (inode)).setSpaceConsumedNoPersistance(persistable.getNSCount(), persistable.getDSCount());
-        System.out.println("TestXXX is quota enable dir "+persistable.getName());
+        inode = new INodeDirectoryWithQuota(persistable.getName(), ps);
       } else {
         String iname = (persistable.getName().length() == 0) ? INodeDirectory.ROOT_NAME : persistable.getName();
         inode = new INodeDirectory(iname, ps);
-        System.out.println("TestXXX is quota disabled dir "+persistable.getName());
       }
 
       inode.setAccessTimeNoPersistance(persistable.getATime());
       inode.setModificationTimeNoPersistance(persistable.getModificationTime());
-      //HOP: Mahmoud: FIXME: just comment the counting stuff until we find a better solution for quota
-      //((INodeDirectory) (inode)).setSpaceConsumed(persistable.getNSCount(), persistable.getDSCount()); 
     } else if (persistable.getSymlink() != null) {
       inode = new INodeSymlink(persistable.getSymlink(), persistable.getModificationTime(),
               persistable.getATime(), ps);
@@ -352,25 +322,16 @@ public class InodeClusterj extends InodeDataAccess {
     persistable.setPermission(permissionString.getData());
     persistable.setParentId(inode.getParentId());
     persistable.setId(inode.getId());
-    persistable.setNSQuota(inode.getNsQuota());
-    persistable.setDSQuota(inode.getDsQuota());
 
     if (inode instanceof INodeDirectory) {
       persistable.setIsUnderConstruction(0);
       persistable.setIsDirWithQuota(0);
       persistable.setIsDir(1);
-      //HOP: Mahmoud: FIXME: just comment the counting stuff until we find a better solution for quota
-      //persistable.setNSCount(((INodeDirectory) inode).numItemsInTree());
-      //persistable.setDSCount(((INodeDirectory) inode).diskspaceConsumed());
     }
     if (inode instanceof INodeDirectoryWithQuota) {
       persistable.setIsDir(1); //why was it false earlier?	    	
       persistable.setIsUnderConstruction(0);
       persistable.setIsDirWithQuota(1);
-      persistable.setNSQuota(((INodeDirectoryWithQuota) inode).getNsQuota());
-      persistable.setNSCount(((INodeDirectoryWithQuota) inode).numItemsInTree());
-      persistable.setDSQuota(((INodeDirectoryWithQuota) inode).getDsQuota());
-      persistable.setDSCount(((INodeDirectoryWithQuota) inode).diskspaceConsumed());
     }
     if (inode instanceof INodeFile) {
       persistable.setIsDir(0);

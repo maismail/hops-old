@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
 import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
@@ -96,7 +97,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
                     return cachedRows.get(inodeId).getAttributes();
                 } else {
                     log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Long.toString(inodeId)});
-                    aboutToAccessStorage();
+                    aboutToAccessStorage(" id = "+inodeId);
                     INodeAttributes quota = da.findAttributesByPk(inodeId);
                     //dont worry if it is null. 
                     AttributeWrapper wrapper = new AttributeWrapper(quota, CacheRowStatus.UN_MODIFIED);
@@ -149,9 +150,14 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
 
     @Override
     public void update(INodeAttributes var) throws PersistanceException {
-        cachedRows.get(var.getInodeId()).setStatus(CacheRowStatus.MODIFIED);
-        cachedRows.get(var.getInodeId()).setAttributes(var);
+      
+      if(var.getInodeId() == INode.NON_EXISTING_ID){
+        log("updated-attributes -- IGNORED as id is not set");
+      }
+      else{
+        AttributeWrapper attrWrapper = new AttributeWrapper(var, CacheRowStatus.MODIFIED);        
+        cachedRows.put(var.getInodeId(), attrWrapper);
         log("updated-attributes", CacheHitState.NA, new String[]{"id", Long.toString(var.getInodeId())});
-
+      }
     }
 }

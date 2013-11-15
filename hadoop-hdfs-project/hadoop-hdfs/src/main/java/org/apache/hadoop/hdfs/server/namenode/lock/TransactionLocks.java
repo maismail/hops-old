@@ -310,7 +310,6 @@ public class TransactionLocks {
     //then there is no need to update the map
     if (!allLockedInodesInTx.containsKey(inode)) {
       allLockedInodesInTx.put(inode, lock);
-      System.out.println("TX Locks inode id = " + inode.getId() + " has lock " + lock);
     }
   }
 

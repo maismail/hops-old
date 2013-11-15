@@ -262,15 +262,15 @@ public abstract class INode implements Comparable<byte[]> {
    * Get the quota set for this inode
    * @return the quota if it is set; -1 otherwise
    */
-  public long getNsQuota() {
+  public long getNsQuota() throws PersistanceException{
     return -1;
   }
 
-  public long getDsQuota() {
+  public long getDsQuota() throws PersistanceException{
     return -1;
   }
   
-  boolean isQuotaSet() {
+  boolean isQuotaSet() throws PersistanceException{
     return getNsQuota() >= 0 || getDsQuota() >= 0;
   }
   
@@ -542,7 +542,7 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  public final void setIdNoPersistance(long id) {
+  public final void setIdNoPersistance(long id) throws PersistanceException {
     this.id = id;
   }
   public long getId() {

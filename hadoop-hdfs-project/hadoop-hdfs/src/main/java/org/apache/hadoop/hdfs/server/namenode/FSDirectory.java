@@ -67,6 +67,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHand
 import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.INodeAttributesDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -143,7 +144,7 @@ public class FSDirectory implements Closeable {
 //HOP     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
 //        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
-    createRootInode(ns, false /*dont overwrite if root inode already existes*/);
+    createRootInode(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), false /*dont overwrite if root inode already existes*/);
 
     int configuredLimit = conf.getInt(
         DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
@@ -572,6 +573,7 @@ public class FSDirectory implements Closeable {
     }
     
     byte[][] dstComponents = INode.getPathComponents(dst);
+    LOG.debug("destination is "+dst);
     INode[] dstInodes = new INode[dstComponents.length];
     getRootDir().getExistingPathINodes(dstComponents, dstInodes, false);
     if (dstInodes[dstInodes.length-1] != null) {
@@ -1620,7 +1622,7 @@ public class FSDirectory implements Closeable {
    * @throws QuotaExceededException if quota limit is exceeded.
    */
   private void verifyQuota(INode[] inodes, int pos, long nsDelta, long dsDelta,
-      INode commonAncestor) throws QuotaExceededException {
+      INode commonAncestor) throws QuotaExceededException, PersistanceException {
     if (!ready) {
       // Do not check quota if edits log is still being processed
       return;
@@ -2077,7 +2079,7 @@ public class FSDirectory implements Closeable {
     writeLock();
     try {
       setReady(false);
-      createRootInode(namesystem, true);
+      createRootInode(namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), true);
 //      rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //          getFSNamesystem().createFsOwnerPermissions(new FsPermission((short)0755)),
 //          Integer.MAX_VALUE, -1);
@@ -2243,23 +2245,30 @@ public class FSDirectory implements Closeable {
   }
   
   //add root inode if its not there
-   public void createRootInode(final FSNamesystem ns, final boolean overwrite) throws IOException{
+   public static INodeDirectoryWithQuota createRootInode(final PermissionStatus ps, final boolean overwrite) throws IOException{
      LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
        @Override
        public Object performTask() throws PersistanceException {
+          INodeDirectoryWithQuota newRootINode = null;
          InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
          INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
          if (rootInode == null || overwrite == true) {
-           INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
+           newRootINode = INodeDirectoryWithQuota.createRootDir(ps);
            List<INode> newINodes = new ArrayList();
            newINodes.add(newRootINode);
            da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
+           
+           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
+           INodeAttributesDataAccess ida = (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
+           List<INodeAttributes> attrList = new ArrayList();
+           attrList.add(inodeAttributes);
+           ida.prepare(attrList, null);
            LOG.info("Added new root inode");
          }
-         return null;
+         return (Object)newRootINode;
        }
      };
-     addRootINode.handle(null);
+     return (INodeDirectoryWithQuota)addRootINode.handle(null);
   }
   //END_HOP_CODE
 }

@@ -75,20 +75,23 @@ public class INodeAttributesClusterj extends INodeAttributesDataAccess {
 
     @Override
     public void prepare(Collection<INodeAttributes> modified, Collection<INodeAttributes> removed) throws StorageException {
-        Session session = connector.obtainSession();
-        try {
-            for (INodeAttributes attr : removed) {
-                INodeAttributesDTO persistable = session.newInstance(INodeAttributesDTO.class, attr.getInodeId());
-                session.deletePersistent(persistable);
-            }
-
-            for (INodeAttributes attr : modified) {
-                INodeAttributesDTO persistable = persistable = createPersistable(attr, session);
-                session.savePersistent(persistable);
-            }
-        } catch (Exception e) {
-            throw new StorageException(e);
+      Session session = connector.obtainSession();
+      try {
+        if (removed != null) {
+          for (INodeAttributes attr : removed) {
+            INodeAttributesDTO persistable = session.newInstance(INodeAttributesDTO.class, attr.getInodeId());
+            session.deletePersistent(persistable);
+          }
         }
+        if (modified != null) {
+          for (INodeAttributes attr : modified) {
+            INodeAttributesDTO persistable = persistable = createPersistable(attr, session);
+            session.savePersistent(persistable);
+          }
+        }
+      } catch (Exception e) {
+        throw new StorageException(e);
+      }
     }
 
     private INodeAttributesDTO createPersistable(INodeAttributes attribute, Session session) {
