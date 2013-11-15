@@ -162,32 +162,28 @@ public class InodeContext extends EntityContext<INode> {
 
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
-      // if the list is not empty then check for the lock types
-        // lock type is checked after when list lenght is checked 
-        // because some times in the tx handler the acquire lock 
-        // function is empty and in that case tlm will throw 
-        // null pointer exceptions
+    // if the list is not empty then check for the lock types
+    // lock type is checked after when list lenght is checked 
+    // because some times in the tx handler the acquire lock 
+    // function is empty and in that case tlm will throw 
+    // null pointer exceptions
 
-    if(removedInodes.values().size() != 0)
-    {
-        for(INode inode: removedInodes.values()){
-            INodeLockType lock = lks.getLockedINodeLockType(inode);
-            if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
-                throw new LockUpgradeException("Trying to remove inode id="+inode.getId()+" acquired lock was "+lock);
-            }
-                
+    if (removedInodes.values().size() != 0) {
+      for (INode inode : removedInodes.values()) {
+        INodeLockType lock = lks.getLockedINodeLockType(inode);
+        if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+          throw new LockUpgradeException("Trying to remove inode id=" + inode.getId() + " acquired lock was " + lock);
         }
+      }
     }
-    
-    if(modifiedInodes.values().size() != 0)
-    {
-        for(INode inode: modifiedInodes.values()){
-            INodeLockType lock = lks.getLockedINodeLockType(inode);
-            if(lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT){
-                throw new LockUpgradeException("Trying to update inode id="+inode.getId()+" acquired lock was "+lock);
-            }
-                
+
+    if (modifiedInodes.values().size() != 0) {
+      for (INode inode : modifiedInodes.values()) {
+        INodeLockType lock = lks.getLockedINodeLockType(inode);
+        if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+          throw new LockUpgradeException("Trying to update inode id=" + inode.getId() + " acquired lock was " + lock);
         }
+      }
     }
     dataAccess.prepare(removedInodes.values(), newInodes.values(), modifiedInodes.values());
   }
