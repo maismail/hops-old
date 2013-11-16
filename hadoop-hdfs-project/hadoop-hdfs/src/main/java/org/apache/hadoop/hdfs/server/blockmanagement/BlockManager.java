@@ -2860,8 +2860,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public void setUp() throws StorageException {
-
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
+        LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
         if (rdbi.getBlock() instanceof BlockInfo) {
           inodeId = ((BlockInfo) rdbi.getBlock()).getInodeId();
         } else {
@@ -2869,7 +2869,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         }
         if (inodeId == INodeFile.NON_EXISTING_ID) {
           LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
-          throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
+          //throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
           // dont throw the exception. the cached is changed in a way that
           // it will bring in null values a the block will not be processed by the 
           // process perfom task because of the null values
