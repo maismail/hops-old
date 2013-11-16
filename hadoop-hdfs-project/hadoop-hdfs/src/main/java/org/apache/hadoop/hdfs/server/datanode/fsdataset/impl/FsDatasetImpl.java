@@ -976,10 +976,14 @@ class FsDatasetImpl implements FsDatasetSpi<FsVolumeImpl> {
   @Override
   public synchronized List<Block> getFinalizedBlocks(String bpid) {
     ArrayList<Block> finalized = new ArrayList<Block>(volumeMap.size(bpid));
+    //START_HOP_CODE
+    if(volumeMap.replicas(bpid) != null ){
+    //END_HOP_CODE
     for (ReplicaInfo b : volumeMap.replicas(bpid)) {
       if(b.getState() == ReplicaState.FINALIZED) {
         finalized.add(new Block(b));
       }
+    }
     }
     return finalized;
   }
