@@ -11,10 +11,7 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License. See accompanying LICENSE file.
--->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+--><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.apache.hadoop</groupId>
   <artifactId>hadoop-main</artifactId>
@@ -52,6 +49,13 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
   </distributionManagement>
 
   <repositories>
+        <repository>
+<!-- START_HOP_CODE -->
+            <id>sics-release</id>
+            <name>SICS Release Repository</name>
+            <url>http://kompics.sics.se/maven/repository</url>
+        </repository>
+<!-- END_HOP_CODE -->
     <repository>
       <id>${distMgmtSnapshotsId}</id>
       <name>${distMgmtSnapshotsName}</name>
@@ -100,6 +104,7 @@ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xs
     <module>hadoop-dist</module>
     <module>hadoop-client</module>
     <module>hadoop-minicluster</module>
+    <module>hops-docs</module>
   </modules>
 
   <build>
