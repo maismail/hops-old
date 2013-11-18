@@ -12,24 +12,40 @@
     <volumenum>1</volumenum>
   </info>
 
+
+
   <chapter>
     <title>This is a chapter</title>
-
-    <section>
-      <title>This is a section</title>
-
-      <para>This is a paragraph.</para>
-    </section>
-
     <xi:include href="architecture.xml" />
-    <xi:include href="getting_started.xml" />
-    <xi:include href="run_aws.xml" />
-    <xi:include href="run_openstack.xml" />
-    <xi:include href="run_baremetal.xml" />
-    <xi:include href="howto_dashboard.xml" />
-    <xi:include href="howto_paas_config.xml" />
-    <xi:include href="howto_ndb.xml" />
-    
-    
   </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="getting_started.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="run_aws.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="run_openstack.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="run_baremetal.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="howto_dashboard.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="howto_paas_config.xml" />
+  </chapter>
+  <chapter>
+    <title>This is a chapter</title>
+    <xi:include href="howto_ndb.xml" />
+  </chapter>
+    
+    
 </book>
