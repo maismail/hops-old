@@ -21,6 +21,15 @@
       <para>This is a paragraph.</para>
     </section>
 
-    <xi:include href="included_section.xml" />
+    <xi:include href="architecture.xml" />
+    <xi:include href="getting_started.xml" />
+    <xi:include href="run_aws.xml" />
+    <xi:include href="run_openstack.xml" />
+    <xi:include href="run_baremetal.xml" />
+    <xi:include href="howto_dashboard.xml" />
+    <xi:include href="howto_paas_config.xml" />
+    <xi:include href="howto_ndb.xml" />
+    
+    
   </chapter>
 </book>
