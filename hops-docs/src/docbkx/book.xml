@@ -19,7 +19,7 @@
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Getting Started with HOPS</title>
     <xi:include href="getting_started.xml" />
   </chapter>
   <chapter>

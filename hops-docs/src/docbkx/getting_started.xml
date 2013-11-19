@@ -6,8 +6,88 @@
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook">
-  <title>Getting Started</title>
+    <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
+        hadoop platform focusing in improving its scalability, availability and reliability. This section describes
+        the information and materials you need in order to start working with our data platform by making use
+        of our Hadoop Open PaaS dashboard. HOPS dashboard provides an end-to-end management and 
+        monitoring application of our Hadoop distribution operating in the datacenter of your choice. With our
+        dashboard, thanks to its graphical user interface (GUI); you will be able to manage your cluster, 
+        define the cluster infrastructure of your choice, monitor services and alerts through a centralized application
+        You will find here all the necessary information in order to easily deploy our solution in the 
+        infrastructure of your choice.
+    </para>
 
-  <para>This is an included paragraph.</para>
-
+    <section>
+        <title>Basics:</title>
+        <para>Hadoop Open Platform-as-a-Service consists of multiple services:
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        <emphasis>Core Platform:</emphasis> The basic components of our Hadoop distribution.
+                        <orderedlist>
+                            <listitem>
+                                <para>
+                                    <emphasis>Hadoop Distributed File System (HDFS):</emphasis>
+                                    Hadoop provides high-throughput access to data in a highly distributed environment. 
+                                    In our case our distribution is based on Hadoop version 2 release modified in order to offer 
+                                    extended mechanism for more scalable and available namenode.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>MySQL Cluster:</emphasis>
+                                    MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
+                                    Designed around a distributed, multi-master architecture with no single point of failure;
+                                    MySQL Cluster's real-time design delivers predictable, milisecond response times with 
+                                    the ability to service millions of operations per second. In the case of our data platform, it is
+                                    used to handle and manage the state of our multi-namenode solution of our architecture.                                    
+                                </para>
+                            </listitem>
+                        </orderedlist>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Open Platform-as-a-Service:</emphasis> 
+                        The key components behind our Open Platform-as-a-Service solution.
+                        <orderedlist>
+                            <listitem>
+                                <para>
+                                    <emphasis>Chef:</emphasis>
+                                    Chef is a systems and cloud infrastructure automation framework based on Ruby 
+                                    that simplifies deployment of servers and applications to any physical, virtual or cloud location
+                                    no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
+                                    (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
+                                    With each definition, we describe how a specific part should be built and managed, which then; the chef-client
+                                    applies these definitions to deploy and configure servers and applications as specified.
+                                    In most of the cases, it is simple enough to let chef-client know which cookbooks and recipes
+                                    it needs to apply.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>JClouds:</emphasis>
+                                    JClouds is an open source multi-api interface which allows easy interaction with multiple cloud providers   
+                                    and cloud software stacks. This open source api gives support around 30 providers which include Amazon,
+                                    Azure, OpenStack and Rackspace. JClouds offers api implementations both in Java or Clojure.            
+                                </para>
+                            </listitem>
+                        </orderedlist>
+                    </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </section>
+    <section>
+        <title>Requirements:</title>
+        <para></para>
+    </section>
+    <section>
+        <title>Hadoop Open Platform-as-a-Service Portal:</title>
+        <para></para>
+    </section>
+    <section>
+        <title>How to launch a HOPS Dashboard:</title>
+        <para></para>
+    </section>
 </section>
