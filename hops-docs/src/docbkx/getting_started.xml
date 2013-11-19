@@ -43,6 +43,15 @@
                                     used to handle and manage the state of our multi-namenode solution of our architecture.                                    
                                 </para>
                             </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>YARN:</emphasis>
+                                    Resource negotiator for managing high volume distributed data processing tasks against
+                                    HDFS. This allows user to process data intensive task like MapReduce jobs or in our case
+                                    our future support for bioinformatic workflow tasks engine which will make use of YARN
+                                    to handle and negotiate the scheduling of this type of jobs.                                     
+                                </para>
+                            </listitem>
                         </orderedlist>
                     </para>
                 </listitem>
@@ -66,21 +75,68 @@
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>JClouds:</emphasis>
-                                    JClouds is an open source multi-api interface which allows easy interaction with multiple cloud providers   
-                                    and cloud software stacks. This open source api gives support around 30 providers which include Amazon,
-                                    Azure, OpenStack and Rackspace. JClouds offers api implementations both in Java or Clojure.            
+                                    <emphasis>Apache JClouds:</emphasis>
+                                    Apache JClouds is an open source multi-api interface which allows easy interaction 
+                                    with multiple cloud providers and cloud software stacks. This open source api gives 
+                                    support around 30 providers which include Amazon, Azure, OpenStack and 
+                                    Rackspace. JClouds offers api implementations both in Java or Clojure.
+                                    Through they simple interface, it is very simple to deploy and port your application
+                                    over different cloud environments.            
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>SnakeYAML and YAML:</emphasis>
+                                    YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
+                                    programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
+                                    allows easy mappings of common data types found in high level languages like list, 
+                                    associative arrays and scalar. It makes it suitable for tasks where humans are likely to
+                                    view or edit data structures, such as configuration files or in our case, cluster
+                                    definition files. Additionally, we make use of the open source parser SnakeYAML to parse
+                                    the contents of our cluster definition files.
                                 </para>
                             </listitem>
                         </orderedlist>
                     </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Hadoop Support:</emphasis> 
+                        Set of components that allow easy monitoring your hadoop installation.
+                        <orderedlist>
+                            <listitem>
+                                <para>
+                                    <emphasis>Collectd:</emphasis>
+                                    Collectd is a daemon which collects system performance statistics periodically and 
+                                    provides mechanisms to store values in a variety of ways like RRD files. Collectd 
+                                    gathers statistics about the system it is running and stores this information. With 
+                                    these statistics, we can keep track of the performance of your cluster and detect
+                                    possible failures and performance bottlenecks that might be needed to be address.
+                                </para>
+                            </listitem>
+                        </orderedlist>
                 </listitem>
             </itemizedlist>
         </para>
     </section>
     <section>
         <title>Requirements:</title>
-        <para></para>
+        <para>
+            In order to make use of our data platform, it is essential that you have a running a copy of our
+            dashboard application running in your main machine through one of the supported environments
+            we offer, and that machine is has connectivity both to the rest of your cluster or 
+            cloud Infrastructure. The following environments are currently fully supported:
+        </para>
+        <unorderedlist>
+            <listitem>
+                <para>
+                    <emphasis>Amazon Web Services:</emphasis>
+                    In order to make use of our platform in this cloud Infrastructure, it is necessary that you provide
+                    the credentials for you EC2 account in order to deploy our dashboard application in a Amazon
+                    Instance.
+                </para>
+            </listitem>
+        </unorderedlist>
     </section>
     <section>
         <title>Hadoop Open Platform-as-a-Service Portal:</title>
