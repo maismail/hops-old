@@ -6,16 +6,28 @@
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook">
-  <title>Run on </title>
+    <title>Installation on AWS</title>
 
-  <para>Now we will run HOP on .</para>
+    <para>
+        In this section, we will explain furthers steps that are required to deploy a whole functional
+        cluster running our data platform through the dashboard. Also we refer to recommendations and aspects you
+        should consider before deploying a cluster.
+    </para>
 
+<section>
+    <title>Pre-requisites:</title>
+    <para>
+        Before starting, make sure that you have access to a functional and running Dashboard in a virtual
+        machine in an accessible Amazon EC2 region. If you have not done so, please refer back to the 
+        section Getting Started for further information.
+    </para>
+</section>
 
-<programlisting> do, do while loop, do while loop (Ramstein)</programlisting>
+    <programlisting> do, do while loop, do while loop (Ramstein)</programlisting>
 
-<note>
-<title>This is a title</title>
-<para>Lalala </para>
-</note> 
+    <note>
+        <title>This is a title</title>
+        <para>Lalala </para>
+    </note> 
 
 </section>

@@ -34,11 +34,11 @@
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
-    <title>Getting Started with HOPS</title>
+    
     <xi:include href="getting_started.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    
     <xi:include href="run_aws.xml" />
   </chapter>
   <chapter>
