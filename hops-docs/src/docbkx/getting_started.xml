@@ -270,6 +270,105 @@
                 </listitem>
                 <listitem>
                     <para>
+                        <emphasis>OpenStack:</emphasis>
+                        In order to deploy our dashboard in OpenStack of your choice follow these 
+                        simple steps, note this is in alpha state:
+                        <itemizedlist>
+                            <listitem>
+                                <para>
+                                    Login into the HOPS Portal with your user name and password.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    In the new page, select from the providers the Amazon EC2 option. A form will be 
+                                    generated were you need to fill in the following:
+                                    <itemizedlist>
+                                        <listitem>
+                                            <para>
+                                                Dashboard credential, were you specify the admin username and password 
+                                                in order to access your newly created dashboard.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                OpenStack credentials, the user name to access the OpenStack project and 
+                                                its password. The username should be a concatenation of the OpenStack 
+                                                project name and the user for that project. For example "projectName:user"
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                Configuration parameters that we need to in order to deploy a virtual 
+                                                machine in OpenStack with default values that you may want to change:
+                                                <orderedlist>
+                                                    <listitem>
+                                                        <para>
+                                                            Security group where the machine will be deployed. If it does not exist,
+                                                            we will create it and open the ports needed for our application.
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                                        <para>
+                                                            The hardware ID of the instance type we want to use in OpenStack. 
+                                                            This is a number which corresponds to the type of instance you want 
+                                                            to deploy and is supported by your OpenStack infrastructure 
+                                                            We recommended using a configuration similar to a m1.large in EC2.
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                                        <para>
+                                                            Image ID corresponding to the id of the image located in the openstack
+                                                            project you want to deploy the dashboard.
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                                        <para>
+                                                            Location ID of the project you want to deploy the dashboard.
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                                        <para>
+                                                            Selecting the option to authorize the public key, it will open a new option
+                                                            were you can insert your desired public key so you can access the virtual
+                                                            machine as by default we generate random key pairs for the machine
+                                                            through OpenStack key pair service, and it is not possible to access the machine
+                                                            internally without this option.
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                                        <para>
+                                                            Selecting the override login user. This is necessary for OpenStack if you
+                                                            are going to use a custom based ubuntu image.
+                                                        </para>
+                                                    </listitem>
+                                                </orderedlist>
+                                            </para>
+                                        </listitem>
+                                    </itemizedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    To start the process after filling up the form, press the launch instance button. 
+                                    The whole process will probably take between 10-15 minutes on average. In the end,
+                                    you will receive a notification showing the address were you can access the Dashboard
+                                    in your browser and its private ip address.
+                                </para>
+                            </listitem>
+                        </itemizedlist>
+                    </para>
+                    <note>
+                        <title>IP pools in OpenStack</title>
+                        <para>
+                            In order to deploy successfully a dashboard in OpenStack, it is necessary that you have allocated
+                            at least 1 public IP in that project. During the deployment phase we will query the OpenStack
+                            project and link the public ip to the created VM.
+                        </para>
+                    </note>
+                </listitem>
+                <listitem>
+                    <para>
                         <emphasis>Baremetal Physical Machine:</emphasis>
                         In order to deploy our dashboard in a physical machine of your choice follow these 
                         simple steps:
@@ -323,7 +422,9 @@
                             <listitem>
                                 <para>
                                     To start the process after filling up the form, press the launch instance button. 
-                                    The whole process will probably take between 10-15 minutes on average.
+                                    The whole process will probably take between 10-15 minutes on average. In the end,
+                                    you will receive a notification showing the address were you can access the Dashboard
+                                    in your browser and its private ip address.
                                 </para>
                             </listitem>
                         </itemizedlist>
