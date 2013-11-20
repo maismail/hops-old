@@ -11,12 +11,25 @@
 	<surname>Dowling</surname>
       </author>
       <author>
+	<firstname>Salman</firstname>
+	<surname>Niazi</surname>
+      </author>
+      <author>
 	<firstname>Kamal</firstname>
 	<surname>Hakimzadeh</surname>
       </author>
+      <author>
+	<firstname>Mahmoud</firstname>
+	<surname>Ismail</surname>
+      </author>
+      <author>
+	<firstname>Alberto</firstname>
+	<surname>Lorente</surname>
+      </author>
     </authorgroup>
+
     <volumenum>1</volumenum>
-    <edition>HOP User Guide version 1.0</edition>
+    <edition>HOPS User Guide version 1.0</edition>
     <copyright>
       <year>2013</year>
       <holder>KTH</holder>
@@ -38,31 +51,35 @@
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Getting Started with HOPS</title>
     <xi:include href="getting_started.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on AWS</title>
     <xi:include href="run_aws.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on OpenStack</title>
     <xi:include href="run_openstack.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on a Cluster (Bare Metal)</title>
     <xi:include href="run_baremetal.xml" />
   </chapter>
   <chapter>
-    <title>Dashboard</title>
+    <title>Dashboard Adminstration</title>
     <xi:include href="howto_dashboard.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Defining a Cluster</title>
     <xi:include href="howto_paas_config.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Configuring HDFS</title>
+    <xi:include href="howto_hdfs.xml" />
+  </chapter>
+  <chapter>
+    <title>Configuring MySQL Cluster</title>
     <xi:include href="howto_ndb.xml" />
   </chapter>
     
