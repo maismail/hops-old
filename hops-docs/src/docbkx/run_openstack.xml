@@ -20,7 +20,7 @@
             Note please that this option is currently in development phase and from our tests we managed
             to deploy functional testing clusters. 
             Still due to issues we encountered during our tests in our personal OpenStack, we cannot guarantee 
-            the same level of performance as deploying for example a cluster in EC.
+            the same level of performance as deploying for example a cluster in EC2.
             This is due to the fact that our deployment system depends greatly on how effectively OpenStack 
             behaves with your hardware and so unexpected behaviour might take place.
             If you have a very good OpenStack infrastructure, we invite you test it.
