@@ -6,8 +6,137 @@
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook">
-  <title>Run on </title>
+    <title>Installation on OpenStack</title>
 
-  <para>Now we will run HOP on .</para>
+    <para>
+        In this section, we will explain furthers steps that are required to deploy a whole functional
+        cluster running our data platform through the dashboard. Also we refer to recommendations and aspects you
+        should consider before deploying a cluster in OpenStack.
+    </para>
+    
+    <note>
+        <title>OpenStack Deployment</title>
+        <para>
+            Note please that this option is currently in development phase and from our tests we managed
+            to deploy functional testing clusters. 
+            Still due to issues we encountered during our tests in our personal OpenStack, we cannot guarantee 
+            the same level of performance as deploying for example a cluster in EC.
+            This is due to the fact that our deployment system depends greatly on how effectively OpenStack 
+            behaves with your hardware and so unexpected behaviour might take place.
+            If you have a very good OpenStack infrastructure, we invite you test it.
+        </para>
+    </note>
+
+    <section>
+        <title>Pre-requisites:</title>
+        <para>
+            Before starting, make sure that you have access to a functional and running Dashboard in a virtual
+            machine accesible from you OpenStack Infrastructure. If you have not done so, please refer back to the 
+            section Getting Started for further information.
+        </para>
+    </section>
+
+    <section>
+        <title>Requirements:</title>
+        <para>
+            In order to install and deploy a cluster, you need to define before the structure of the cluster which
+            includes specifying the number of machines to create in OpenStack with the specific instance type with the 
+            specific software. This can be done using a cluster definition file that can be done from scratch or 
+            using the embedded wizard available on the dashboard. Further information about describing a cluster
+            can be found on the cluster configuration section. Before continuing make sure that you have the 
+            following.
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        Cluster definition for OpenStack (see related section) in a file or loaded from the dashboard 
+                        database.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        OpenStack credentials to deploy the cluster your OpenStack infrastructure, configured in the dashboard. 
+                        In order to do it, select the option setup credentials found in you user icon to specify the 
+                        OpenStack credentials to be used by the dashboard.
+                    </para>
+                </listitem>
+            </itemizedlist>
+            <note>
+                <title>Additional dashboard credentials</title>
+                <para>
+                    It is possible to include other options when deploying a OpenStack cluster, for example; for
+                    maintanance purposes you might want to authorize extra public keys to the virtual machines.
+                    This is possible to set in the credential section of the dashboard
+                </para>
+            </note>
+        </para>
+    </section>
+    
+    <section>
+        <title>Launching the cluster</title>
+        <para>
+            Once we have the dashboard configured with the OpenStack credentials, you can proceed to 
+            launch a cluster:
+            <orderedlist>
+                <listitem>
+                    <para>
+                        Select the manage cluster option available in the dashboard.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        In this new view, you can manage available clusters that you may have defined 
+                        previously. You can select a previous cluster, create a new one with the only wizard or
+                        load a cluster from a cluster definition file. For further information on managing cluster files, 
+                        see the cluster configuration section. To continue, select a cluster from the table or load a
+                        cluster from a file.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        The file is loaded and the launcher view should appear. Here you can view the contents
+                        of the cluster to be deployed before launch.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        Pressing the start cluster will start the deployment process. A status bar will appear giving
+                        information of the current process. Also a progress table on the background will be generated
+                        with information of the configuration state of the nodes. The process is long and it depends
+                        on the number of nodes you deploy. On average, for 8 nodes it takes around 35 minutes.
+                    </para>
+                    <note>
+                        <title>Error Nodes</title>
+                        <para>
+                            It is possible that some nodes will have issues during the deployment of our software (package configuration problem,
+                            erratic behaviour) which in this case our system will detect and will retry to relaunch the software
+                            on that specific machine automatically. The maximum number of retries specified for each node
+                            is 5, after that; the node will be tagged as an error node and it is possible to do a manual retry
+                            after the whole process has finished.
+                        </para>
+                    </note>
+                </listitem>
+                <listitem>
+                    <para>
+                        When the process completes, it will take you back to the progress view where you can see
+                        details of the cluster deployment. If nodes failed, you can select those nodes and try to recover
+                        them using the retry nodes option.
+                    </para>
+                    <note>
+                        <title>Retrying Nodes</title>
+                        <para>
+                            Retrying node is an option that helps bringing back nodes that had minor issues when installing packages,
+                            were to slow to finish the configuration phase or the default number of retries we use were not enough. 
+                            It will not bring back nodes which had a 
+                            critical configuration failure, which in this case it will be necessary to log in directly through SSH
+                            to the specific machine in order to fix it.
+                        </para>
+                    </note>
+                </listitem>
+            </orderedlist>
+        </para>
+        <para>
+            Congratulations, if everything went okay; you have succesfully deployed a complete cluster ready to use!
+        </para>
+    </section>
 
 </section>

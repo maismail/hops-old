@@ -6,7 +6,7 @@
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook">
-    <title>Getting Started with HOPS</title>
+    <title>Hands on</title>
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
         hadoop platform focusing in improving its scalability, availability and reliability. This section describes
         the information and materials you need in order to start working with our data platform by making use
@@ -262,7 +262,10 @@
                             <listitem>
                                 <para>
                                     To start the process after filling up the form, press the launch instance button. 
-                                    The whole process will probably take between 10-15 minutes on average.
+                                    The whole process will probably take between 10-15 minutes on average. In the end,
+                                    you will receive a notification showing the address were you can access the Dashboard
+                                    in your browser and its private ip address. To login, use the credentials you specified
+                                    previously in the portal.
                                 </para>
                             </listitem>
                         </itemizedlist>
@@ -353,7 +356,8 @@
                                     To start the process after filling up the form, press the launch instance button. 
                                     The whole process will probably take between 10-15 minutes on average. In the end,
                                     you will receive a notification showing the address were you can access the Dashboard
-                                    in your browser and its private ip address.
+                                    in your browser and its private ip address. To login, use the credentials you specified
+                                    previously in the portal.
                                 </para>
                             </listitem>
                         </itemizedlist>
@@ -424,7 +428,8 @@
                                     To start the process after filling up the form, press the launch instance button. 
                                     The whole process will probably take between 10-15 minutes on average. In the end,
                                     you will receive a notification showing the address were you can access the Dashboard
-                                    in your browser and its private ip address.
+                                    in your browser and its private ip address. To login, use the credentials you specified
+                                    previously in the portal.
                                 </para>
                             </listitem>
                         </itemizedlist>

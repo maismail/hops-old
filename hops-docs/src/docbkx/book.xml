@@ -3,85 +3,86 @@
       xmlns:xlink="http://www.w3.org/1999/xlink"
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
-  <info>
-    <title>Hadoop Open Platform-as-a-Service</title>
-    <authorgroup>
-      <author>
-	<firstname>Jim</firstname>
-	<surname>Dowling</surname>
-      </author>
-      <author>
-	<firstname>Salman</firstname>
-	<surname>Niazi</surname>
-      </author>
-      <author>
-	<firstname>Kamal</firstname>
-	<surname>Hakimzadeh</surname>
-      </author>
-      <author>
-	<firstname>Mahmoud</firstname>
-	<surname>Ismail</surname>
-      </author>
-      <author>
-	<firstname>Alberto</firstname>
-	<surname>Lorente</surname>
-      </author>
-    </authorgroup>
+    <info>
+        <title>Hadoop Open Platform-as-a-Service</title>
+        <authorgroup>
+            <author>
+                <firstname>Jim</firstname>
+                <surname>Dowling</surname>
+            </author>
+            <author>
+                <firstname>Salman</firstname>
+                <surname>Niazi</surname>
+            </author>
+            <author>
+                <firstname>Kamal</firstname>
+                <surname>Hakimzadeh</surname>
+            </author>
+            <author>
+                <firstname>Mahmoud</firstname>
+                <surname>Ismail</surname>
+            </author>
+            <author>
+                <firstname>Alberto</firstname>
+                <surname>Lorente</surname>
+            </author>
+        </authorgroup>
 
-    <volumenum>1</volumenum>
-    <edition>HOPS User Guide version 1.0</edition>
-    <copyright>
-      <year>2013</year>
-      <holder>KTH</holder>
-    </copyright>
+        <volumenum>1</volumenum>
+        <edition>HOPS User Guide version 1.0</edition>
+        <copyright>
+            <year>2013</year>
+            <holder>KTH</holder>
+        </copyright>
 
-    <legalnotice>
-      <para>Permission to use, copy, modify and distribute
-      this DocBook DTD and its accompanying documentation for any purpose and
-      without fee is hereby granted in perpetuity, provided that the above
-      copyright notice and this paragraph appear in all copies.</para>
-    </legalnotice>
+        <legalnotice>
+            <para>Permission to use, copy, modify and distribute
+                this DocBook DTD and its accompanying documentation for any purpose and
+                without fee is hereby granted in perpetuity, provided that the above
+                copyright notice and this paragraph appear in all copies.
+            </para>
+        </legalnotice>
 
-  </info>
+    </info>
 
 
 
-  <chapter>
-    <title>Architecture</title>
-    <xi:include href="architecture.xml" />
-  </chapter>
-  <chapter>
-    
-    <xi:include href="getting_started.xml" />
-  </chapter>
-  <chapter>
-
-    <xi:include href="run_aws.xml" />
-  </chapter>
-  <chapter>
-    <title>Run on OpenStack</title>
-    <xi:include href="run_openstack.xml" />
-  </chapter>
-  <chapter>
-    <title>Run on a Cluster (Bare Metal)</title>
-    <xi:include href="run_baremetal.xml" />
-  </chapter>
-  <chapter>
-    <title>Dashboard Adminstration</title>
-    <xi:include href="howto_dashboard.xml" />
-  </chapter>
-  <chapter>
-    <title>Defining a Cluster</title>
-    <xi:include href="howto_paas_config.xml" />
-  </chapter>
-  <chapter>
-    <title>Configuring HDFS</title>
-    <xi:include href="howto_hdfs.xml" />
-  </chapter>
-  <chapter>
-    <title>Configuring MySQL Cluster</title>
-    <xi:include href="howto_ndb.xml" />
-  </chapter>
+    <chapter>
+        <title>Architecture</title>
+        <xi:include href="architecture.xml" />
+    </chapter>
+    <chapter>
+        <title>Getting Started</title>
+        <xi:include href="getting_started.xml" />
+    </chapter>
+    <chapter>
+        <title>Run on AWS</title>
+        <xi:include href="run_aws.xml" />
+    </chapter>
+    <chapter>
+        <title>Run on OpenStack</title>
+        <xi:include href="run_openstack.xml" />
+    </chapter>
+    <chapter>
+        <title>Run on a Cluster (Bare Metal)</title>
+        <xi:include href="run_baremetal.xml" />
+    </chapter>
+    <chapter>
+        <title>Dashboard Adminstration</title>
+        <xi:include href="howto_dashboard.xml" />
+    </chapter>
+    <chapter>
+        <title>Defining a Cluster</title>
+        <xi:include href="howto_paas_config.xml" />
+    </chapter>
+    <chapter>
+        <title>Configuring HDFS</title>
+        <xi:include href="howto_hdfs.xml" />
+    </chapter>
+    <chapter>
+        <title>Configuring MySQL Cluster</title>
+        <xi:include href="howto_ndb.xml" />
+    </chapter>
     
     
 </book>
