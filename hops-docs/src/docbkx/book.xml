@@ -4,7 +4,7 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
   <info>
-    <title>Hadoop Open Platform-as-a-Service</title>
+    <title>Hadoop Open Platform-as-a-Service User Guide</title>
     <author>
       <firstname>Jim</firstname>
       <surname>Dowling</surname>
@@ -15,35 +15,39 @@
 
 
   <chapter>
-    <title>This is a chapter</title>
+    <title>Architecture</title>
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Getting Started</title>
     <xi:include href="getting_started.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on AWS</title>
     <xi:include href="run_aws.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on OpenStack</title>
     <xi:include href="run_openstack.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Run on a Cluster (Bare Metal)</title>
     <xi:include href="run_baremetal.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Dashboard Adminstration</title>
     <xi:include href="howto_dashboard.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Defining a Cluster</title>
     <xi:include href="howto_paas_config.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Configuring HDFS</title>
+    <xi:include href="howto_hdfs.xml" />
+  </chapter>
+  <chapter>
+    <title>Configuring MySQL Cluster</title>
     <xi:include href="howto_ndb.xml" />
   </chapter>
     
