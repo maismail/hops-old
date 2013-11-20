@@ -10,6 +10,10 @@
 	<firstname>Jim</firstname>
 	<surname>Dowling</surname>
       </author>
+      <author>
+	<firstname>Kamal</firstname>
+	<surname>Hakimzadeh</surname>
+      </author>
     </authorgroup>
     <volumenum>1</volumenum>
     <edition>HOP User Guide version 1.0</edition>
@@ -30,7 +34,7 @@
 
 
   <chapter>
-    <title>This is a chapter</title>
+    <title>Architecture</title>
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
@@ -50,7 +54,7 @@
     <xi:include href="run_baremetal.xml" />
   </chapter>
   <chapter>
-    <title>This is a chapter</title>
+    <title>Dashboard</title>
     <xi:include href="howto_dashboard.xml" />
   </chapter>
   <chapter>
