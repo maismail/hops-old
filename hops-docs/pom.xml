@@ -43,6 +43,8 @@
               <value>value</value>
             </parameter>
           </customizationParameters>
+          <highlightSource>1</highlightSource>
+	  <htmlStylesheet>http://www.sabi.co.uk/Proj/DocBook/docbook.css</htmlStylesheet>
         </configuration>
       </plugin>
     </plugins>

@@ -4,12 +4,44 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
   <info>
-    <title>Hadoop Open Platform-as-a-Service User Guide</title>
-    <author>
-      <firstname>Jim</firstname>
-      <surname>Dowling</surname>
-    </author>
+    <title>Hadoop Open Platform-as-a-Service</title>
+    <authorgroup>
+      <author>
+	<firstname>Jim</firstname>
+	<surname>Dowling</surname>
+      </author>
+      <author>
+	<firstname>Salman</firstname>
+	<surname>Niazi</surname>
+      </author>
+      <author>
+	<firstname>Kamal</firstname>
+	<surname>Hakimzadeh</surname>
+      </author>
+      <author>
+	<firstname>Mahmoud</firstname>
+	<surname>Ismail</surname>
+      </author>
+      <author>
+	<firstname>Alberto</firstname>
+	<surname>Lorente</surname>
+      </author>
+    </authorgroup>
+
     <volumenum>1</volumenum>
+    <edition>HOPS User Guide version 1.0</edition>
+    <copyright>
+      <year>2013</year>
+      <holder>KTH</holder>
+    </copyright>
+
+    <legalnotice>
+      <para>Permission to use, copy, modify and distribute
+      this DocBook DTD and its accompanying documentation for any purpose and
+      without fee is hereby granted in perpetuity, provided that the above
+      copyright notice and this paragraph appear in all copies.</para>
+    </legalnotice>
+
   </info>
 
 
@@ -19,7 +51,7 @@
     <xi:include href="architecture.xml" />
   </chapter>
   <chapter>
-    <title>Getting Started</title>
+    <title>Getting Started with HOPS</title>
     <xi:include href="getting_started.xml" />
   </chapter>
   <chapter>
