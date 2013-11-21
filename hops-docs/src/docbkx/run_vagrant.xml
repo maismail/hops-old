@@ -20,8 +20,8 @@
             git, vagrant. You will also need to download the vagrant virtual machine image
             for Ubuntu 12.04 "precise".
             <programlisting>
-            apt-get install git-core vagrant
-            vagrant box add "precise64" http://files.vagrantup.com/precise64.box
+                apt-get install git-core vagrant
+                vagrant box add "precise64" http://files.vagrantup.com/precise64.box
             </programlisting>
         </para>
     </section>
@@ -44,6 +44,11 @@
             https://localhost:9191/hops-dashboard/
             user: admin
             password: admin
+        </programlisting>
+        You can log into the VM and then get root access using:
+        <programlisting>
+            vagrant ssh
+            sudo su
         </programlisting>
     </section>
 </section>
