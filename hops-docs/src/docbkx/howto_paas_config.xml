@@ -322,7 +322,7 @@
                 In this case it is much simpler but you need to watch out for minor details like in this case
                 the class tag needs to be different for this types of clusters as we will see. Also in this case, you
                 need to provide the IP addresses of the machines to connect to. An example is as follows:
-            </para>
+            
             <programlisting>
                !!se.kth.kthfsdashboard.virtualization.clusterparser.Baremetal
                     name: baremetal
@@ -367,6 +367,219 @@
             With this configuration file, it is possible to deploy the same cluster we defined in Amazon EC2
             without any major changes. You only need to change the provider specifications to match the
             details of your OpenStack Infrastructure.
+            </para>
         </section>
+        <section>
+            <title>Cluster Generator on Dashboard</title>
+            <para>
+                Apart of offering a mechanism were users can upload their clusters written in YAML to the system
+                and later on deploy them, we also have a cluster wizard which allows the user to define a
+                cluster step by step quite easily. To make use of this feature, follow these steps:
+                <orderedlist>
+                    <listitem>
+                        <para>
+                            Go to the manage cluster section from the main bar in the dashboard. Select the create cluster
+                            option.
+                            <para>
+                            <menuchoice>
+                            <guimenu>Main Menu Bar</guimenu> 
+                            <guisubmenu>Manage Cluster</guisubmenu>
+                            <guimenuitem>Create cluster</guimenuitem>
+                        </menuchoice>
+                        </para>
+                        </para>
+                    </listitem>
+                    <listitem>
+                        <para>
+                            A dialog appears allowing you to select which type of cluster you want to use:
+                            <itemizedlist>
+                                <listitem>
+                                    <para>
+                                        <emphasis>Virtualized:</emphasis> Choose this option if you want to deploy
+                                        a cluster in Amazon EC2 or OpenStack.
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        <emphasis>Baremetal:</emphasis> Choose this option if you want to deploy
+                                        a cluster in physical machines.
+                                    </para>
+                                </listitem>
+                            </itemizedlist>
+                        </para>
+                    </listitem>
+                    <listitem>
+                        <para>
+                            Selecting an option, will bring you to the cluster generator wizard. Here you can select
+                            the same options like if you where writing your own file from scratch. You will go through different
+                            phases.
+                        </para>
+                        <para>
+                            <menuchoice>
+                            <guimenu>Cluster Wizard</guimenu>
+                            <guisubmenu>Common</guisubmenu>
+                            <guisubmenu>Provider (not for Baremetal)</guisubmenu>
+                            <guisubmenu>Groups</guisubmenu>
+                            <guisubmenu>Confirmation</guisubmenu>
+                            </menuchoice>
+                        </para>
+                        <itemizedlist>
+                            <listitem>
+                                <para>
+                                    <emphasis>Common Section:</emphasis>
+                                    In this section, a form appears were you can select the following options:
+                                    <orderedlist>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Name:</emphasis>Name of the cluster
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Provider:</emphasis>Select the type provider between Amazon EC2 or OpenStack, this option is 
+                                                available if we create a virtualized cluster.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Git parameters:</emphasis>
+                                                Git repository section where you can specify as an option your own git 
+                                                repository based on our code. This way you can customize  our recipes or even 
+                                                add your own.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Global Recipes:</emphasis>
+                                                You can specify chef recipes that you want to execute in all
+                                                the nodes
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Global Ports:</emphasis>
+                                                Additional Ports to open for your cluster, this option is only available for 
+                                                virtualized clusters.
+                                            </para>
+                                        </listitem>
+                                    </orderedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>Provider Section:</emphasis>
+                                    This form enables you to define the parameters for OpenStack or Amazon EC2.
+                                    Some values appear by default in the case of Amazon EC2 where you can use them
+                                    directly if you want.
+                                    <orderedlist>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Instance Type:</emphasis>
+                                                The type of instance you want to use in Amazon EC2 or in OpenStack. Note
+                                                that in OpenStack we use the id number of the type of instance, not the name.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Image:</emphasis>
+                                                The name of the image we want to use the in Amazon EC2 or in OpenStack
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Login user:</emphasis>
+                                                Here you include the user name with sudo access to access the instances
+                                                in Amazon EC2 or OpenStack. Note that this value is necessary if you use a 
+                                                custom AMI in Amazon EC2 or using OpenStack.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Region:</emphasis>
+                                                Here you include the region you want to deploy in Amazon EC2 or the project
+                                                to use in your OpenStack infrastructure.
+                                            </para>
+                                        </listitem>
+                                    </orderedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                            <para>
+                                                <emphasis>Group Section:</emphasis>
+                                                In this section you can specify the group of nodes for you cluster with the
+                                                their services and ip addresses (if you are deploying a baremetal cluster)
+                                                <orderedlist>
+                                                    <listitem>
+                                                        <para>
+                                                            <emphasis>Main Service:</emphasis>
+                                                            The main service you want to deploy in this group of nodes
+                                                        </para>
+                                                    </listitem>
+                                                    <listitem>
+                                            <para>
+                                                <emphasis>Bittorrent Support:</emphasis>
+                                                If you want to enable bittorrent sync of binaries from the dashboard.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Number of nodes:</emphasis>
+                                                Number of nodes that will contain the same set of services.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Extra Services:</emphasis>
+                                                Other services you may want to run which can be also your own services.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Chef Attributes:</emphasis>
+                                                In this section, you would include a chef json which will contain the attributes
+                                                you may want to override from your recipes.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Ports:</emphasis>
+                                                Extra ports that you may want to enable in that group, in this case this only
+                                                affect virtualized clusters.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Hosts:</emphasis>
+                                                List of hosts IP addresses for the nodes that will be part of this group of nodes.
+                                                In this case this option is only available for Baremetal clusters.
+                                            </para>
+                                        </listitem>
+                                                </orderedlist>
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>
+                                                <emphasis>Confirmation Section:</emphasis>
+                                                In this section you will see a summary of the details of you cluster file.
+                                                When you press the submit button, your cluster file will be stored in the dashboard
+                                                and it will proceed to the cluster launcher.
+                                            </para>
+                                        </listitem>
+                        </itemizedlist>
+                    </listitem>
+                    
+                </orderedlist>
+            </para>
+        </section>
+        
+    </section>
+    <section>
+        <title>Wrap up</title>
+        <para>
+            To summarize this section, in here we have seen the main abstractions that consist our 
+            cluster domain specific language. We also explained how you can define your clusters by writing your
+            own cluster file through multiple examples or by using the provided cluster generator wizard which
+            is accessible from the dashboard.
+        </para>
     </section>
 </section>
