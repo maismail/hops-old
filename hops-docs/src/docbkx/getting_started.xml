@@ -144,10 +144,20 @@
                 </listitem>
                 <listitem>
                     <para>
+                        <emphasis>OpenStack</emphasis>
+                        In order to make use of our platform in OpenStack, it is necessary that you provide the 
+                        credentials and configuration parameters to connect to you OpenStack end-point. The recommend
+                        instance to use in you OpenStack infrastructure should be equivalent to a m1.large instance
+                        type or greater with a ubuntu based image (our default testing bed used ubuntu 12.04 cloud guest edition)
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
                         <emphasis>Baremetal Physical Machine:</emphasis>
                         It is possible deploy our solution on a physical machine, and; in order to do it you only need
                         to provide us the security credentials and access to the specific machine so we can deploy our 
-                        software through SSH with an account with sudo access. 
+                        software through SSH with an account with sudo access. The recommended OS for deploying
+                        should be ubuntu based (our default testing bed used ubuntu 12.04)
                     </para>
                 </listitem>
                 <listitem>
@@ -297,7 +307,9 @@
                                             <para>
                                                 OpenStack credentials, the user name to access the OpenStack project and 
                                                 its password. The username should be a concatenation of the OpenStack 
-                                                project name and the user for that project. For example "projectName:user"
+                                                project name and the user for that project. For example "projectName:user".
+                                                Also you should indicate the url of your OpenStack Nova end-point in order 
+                                                to send the requests to your OpenStack infrastructure.
                                             </para>
                                         </listitem>
                                         <listitem>

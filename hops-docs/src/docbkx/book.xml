@@ -81,7 +81,7 @@
         <xi:include href="howto_dashboard.xml" />
     </chapter>
     <chapter>
-        <title>Defining a Cluster</title>
+        <title>Cluster Configuration</title>
         <xi:include href="howto_paas_config.xml" />
     </chapter>
     <chapter>
