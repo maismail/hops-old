@@ -8,12 +8,16 @@
          xmlns:db="http://docbook.org/ns/docbook">
   <title>Configuring MySQL NDB Cluster</title>
 
-  <para>MySQL NDB Cluster enables users to meet the database challenges of next generation web, cloud, and communications services with uncompromising scalability, uptime and agility. [1]
-    It provides auto-sharding for write-scalability, real time performance, SQL and NoSQL APIs and 99.999% availability</para>
+  <para>MySQL NDB Cluster enables users to meet the database challenges of next generation web, cloud, and communications services with uncompromising scalability, uptime and agility
+    <footnote>
+      <para>
+        <ulink url="http://www.mysql.com/products/cluster/">MySQL NDB Cluster</ulink></para>
+    </footnote>.
+    It provides auto-sharding for write-scalability, real time performance, SQL &amp; NoSQL APIs and 99.999% availability</para>
   
   <section>
     <title>MySQL Cluster Setup Recommendations</title>
-    <para>For higher performance and availability we recommend following NDB Cluster setup.</para>
+    <para>For higher performance and availability we recommend following MySQL NDB Cluster setup.</para>
     <itemizedlist>
       <listitem>
         <para>
@@ -33,7 +37,7 @@
       <listitem>
         <para>
           <emphasis>Number of datanodes:</emphasis> 
-          Number of datanodes in the MySQL cluster depends on two factors. 1) Amount of available RAM and  2) Amount of metadata.
+          Number of datanodes in the MySQL cluster depends on two factors. 1) Amount of available RAM in the cluster and  2) Amount of metadata.
           MySQL is in-memory database. For large filesystem metadata, we must add more memory or new datanodes to the NDB Cluster. 
           Currently in HOP an inode (file/directory) takes 450 bytes, and a block with 3 replicas takes up to 500 bytes. In HDFS default block size is 64 MB.  
           If on average all files in the file system consist of 100 blocks, then MySQL Cluster capable of storing 100 GB of data can store metadata for HDFS Cluster of 125 PB.
@@ -50,12 +54,12 @@
       <listitem>
         <para>
           <emphasis>TransactionInactiveTimeout:</emphasis> 
-          In HOP parent directory is locked before a mutation a applied to a file. 
+          In HOP the parent directory is locked before a mutation a applied to a file. 
           Upon successful application of the mutation the locks are released.
-          In scenarios where hundreds of clients are writing to same directory some thread will 
+          In scenarios where hundreds of clients are writing to same directory some threads will 
           starve as they will not be able to acquire lock on the parent directory in ‘TransactionInactiveTimeout’ seconds. 
           In such scenarios is it recommended to increase the value of ‘TransactionInactiveTimeout’ parameter. 
-          However this  situation can also be handled by increasing the transaction retry counter as described in the previous section. 
+          However this  situation can also be handled by increasing the <emphasis><link linkend="dfs.clinet.max.retires.on.failure">dfs.clinet.max.retires.on.failure</link></emphasis> counter as described in the previous section. 
         </para>
       </listitem>  
     </itemizedlist>

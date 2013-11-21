@@ -156,7 +156,7 @@
       </listitem>
       
       
-      <listitem>
+      <listitem id="dfs.clinet.max.retires.on.failure">
         <para>
           <emphasis>dfs.clinet.max.retires.on.failure:</emphasis> 
           The client will retry the RPC call if the RPC fails due to the failure of the NameNode. 
