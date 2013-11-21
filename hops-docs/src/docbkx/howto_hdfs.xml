@@ -9,7 +9,8 @@
   
 
   <title>Configuring HDFS</title>
-  <para>HOP introduces some new configuration parameters to HDFS. These parameters can be specified in hdfs-site.xml file. Detailed list of new configuration parameters is given below 
+  <para>HOP introduces few new configuration parameters to HDFS. These parameters can be specified in hdfs-site.xml file. 
+    Detailed list of new configuration parameters is given below 
   </para>
   
   <section>
@@ -19,9 +20,9 @@
       <listitem>
         <para>
           <emphasis>dfs.storage.type:</emphasis> 
-          All the namenodes in HOPS are stateless. 
+          In HOP all the NameNodes in the system are stateless. 
           All the file system metadata is stored in a relational database. 
-          We have chosen MySQL Cluster NDB for high performance and availability for the storage of the metadata. 
+          We have chosen MySQL NDB Cluster for its high performance and availability for the storage of the metadata. 
           However the metadata can be stored in any relational database. Default value is this parameter is ‘clusterj’. 
           By default HOPS uses ClusterJ libraries to connect to MySQL NDB Cluster. Later we will provide support of other DBMSs.
         </para>
@@ -30,7 +31,7 @@
       <listitem>
         <para>
           <emphasis>dfs.dbconnector.string:</emphasis> 
-          Host name of management server of MySQL Cluster NDB. 
+          Host name of management server of MySQL NDB Cluster. 
         </para>
       </listitem>
       
@@ -58,7 +59,8 @@
       <listitem>
         <para>
           <emphasis>dfs.storage.mysql.user:</emphasis> 
-          A valid user name to access MySQL Server. For higher performance we use MySQL Server to perform a aggregate queries.
+          A valid user name to access MySQL Server. 
+          For higher performance we use MySQL Server to perform a aggregate queries on the file system metadata.
         </para>
       </listitem>
       
@@ -90,14 +92,14 @@
       <listitem>
         <para>
           <emphasis>dfs.namenodes.rpc.address:</emphasis>
-          HOPS support multiple active NameNodes. 
+          HOP support multiple active NameNodes. 
           A client can send a RPC request to any of the active NameNodes. 
           This parameter specifies a list of active NameNodes in the system. 
           The list has following format [ip:port, ip:port, … ]. 
           It is not necessary that this list contain all the active NameNodes in the system. 
           Only one valid reference to an active NameNode is sufficient. 
-          The client will obtain the updated list of all the NameNodes in the system from the given NameNode at the time of start up. 
-          If this list is empty then the client will connect to fs.default.name. 
+          At the time of startup the client will obtain the updated list of all the NameNodes in the system from the given NameNode. 
+          If this list is empty then the client will connect to 'fs.default.name'. 
         </para>
       </listitem>
       
@@ -119,8 +121,9 @@
         <para>
           <emphasis>dfs.leader.check.interval:</emphasis>
           One of the active NameNodes is chosen as a leader to perform housekeeping operations. 
-          All NameNodes periodically send a HeartBeat and check for changes in the membership of NameNodes. 
-          By default the HeartBeat is sent after every second. Increasing the time interval would lead to slow failure detection.
+          All NameNodes periodically send a HeartBeat and check for changes in the membership of the NameNodes. 
+          By default the HeartBeat is sent after every second. 
+          Increasing the time interval would lead to slow failure detection.
         </para>
       </listitem>
       
@@ -129,7 +132,7 @@
         <para>
           <emphasis>dfs.leader.missed.hb:</emphasis> 
           This property specifies when a NameNode is pronounced dead. 
-          By default if a NameNode is pronounced dead if it misses a HeatBeat. 
+          By default a NameNode is pronounced dead if it misses a HeatBeat. 
           Higher values of this property would lead to slow failure detection.
         </para>
       </listitem>
@@ -138,9 +141,8 @@
       <listitem>
         <para>
           <emphasis>dfs.block.pool.id:</emphasis> 
-          Due to shared state among the NameNodes, HOPS only support one block pool. 
-          Set this property to set custom value for block pool. 
-          If this property is not set then the default value is set to HOP_BLOCK_POOL_123
+          Due to shared state among the NameNodes, HOP only support one block pool. 
+          Set this property to set custom value for block pool. Default block pood is is HOP_BLOCK_POOL_123.
         </para>
       </listitem>
       
@@ -149,8 +151,7 @@
         <para>
           <emphasis>dfs.name.space.id:</emphasis> 
           Due to shared state among NameNodes, HOPS only support one name space. 
-          Set this property to set custom value for name space. 
-          If this property is not set then the default value is set to 911 :)
+          Set this property to set custom value for name space. Default name space id is 911 :)
         </para>
       </listitem>
       
@@ -160,7 +161,7 @@
           <emphasis>dfs.clinet.max.retires.on.failure:</emphasis> 
           The client will retry the RPC call if the RPC fails due to the failure of the NameNode. 
           This property specifies how many times the client would retry the RPC before throwing an exception. 
-          This property is directly related to number of simultaneous failures of NameNodes. 
+          This property is directly related to number of expected simultaneous failures of NameNodes. 
           Set this value to ‘1’ in case of low failure rates such as one dead NameNode at any given time. 
           It is recommended that this property must be set to value >= 1.
         </para>
@@ -182,7 +183,7 @@
         <para>
           <emphasis>dsf.client.refresh.namenode.list:</emphasis> 
           All clients periodically refresh the list of active NameNodes in the system. 
-          By default after every minute the client checks for changes in the membership of Namenodes. 
+          By default after every minute the client checks for changes in the membership of the NameNodes. 
           Higher values can be chosen for scenarios where the membership does not change frequently
         </para>
       </listitem>
