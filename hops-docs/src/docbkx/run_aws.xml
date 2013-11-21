@@ -68,6 +68,13 @@
                     <para>
                         Select the manage cluster option available in the dashboard.
                     </para>
+                    <para>
+                        <menuchoice>
+                            <guimenu>Main Menu Bar</guimenu> 
+                            <guisubmenu>Manage Cluster</guisubmenu>
+                            <guimenuitem>Load File</guimenuitem>
+                        </menuchoice>
+                    </para>
                 </listitem>
                 <listitem>
                     <para>

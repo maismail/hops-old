@@ -223,22 +223,20 @@
                 Lets imagine that we want to define a complete HOPstart which will contain a basic minimal setup.
                 In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
                 datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
-                manager and 2 node managers. How we could map the services using only 8 machines?
+                manager and 2 node managers. How we could map the services using only 7 machines?
                 A very simple configuration could be as follows:
                 <programlisting>
                     !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
-                    name: test2
-                    installPhase: true
-                    
+                    name: test2                 
                     provider:
                         name: aws-ec2
                         instanceType: m1.large
                         loginUser: ubuntu
                         image: eu-west-1/ami-35667941 
-                         ##image: eu-west-1/ami-ffcdce8b
                         region: eu-west-1
                     
-                    ##lists of groups, with the roles the nodes will have and open ports 
+                    ##lists of groups, with the roles the nodes 
+                    ##will have and open ports 
                     nodes:
                     - service: 
                         - ndb
@@ -264,7 +262,111 @@
                         - spark
                       number: 2
                 </programlisting>
+                 With this configuration file, we will create 5 security groups which will have as a name the first
+                 service defined in the list. This will also open the ports for those security groups. It will install
+                 the defined services for each of the nodes in that specific group of nodes.
             </para>
+        </section>
+        <section>
+            <title>Cluster in OpenStack</title>
+            <para>
+                Taking the previous case for Amazon EC2, we can easily the same cluster description using the
+                same cluster definition file. In this the only section we need to change is related to the provider
+                we want to use which in this case is OpenStack. The file will look as follows:
+                <programlisting>
+                    !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
+                    name: nova             
+                    provider:
+                        name: openstack-nova
+                        instanceType: 7
+                        loginUser: ubuntu
+                        image: 0190f9c4-d64e-4412-ab88-4f9fd1d7c2e3 
+                        region: RegionSICS
+                    
+                    ##lists of groups, with the roles the nodes 
+                    ##will have and open ports 
+                    nodes:
+                    - service: 
+                        - ndb
+                      number: 2
+    
+                    - service: 
+                        - mgm
+                      number: 1
+    
+                    - service:
+                        - mysqld
+                        - namenode
+                      number: 1
+                    
+                    - service: 
+                        - namenode
+                        - resourcemanager
+                      number: 1
+                    
+                    - service: 
+                        - datanode
+                        - nodemanager
+                        - spark
+                      number: 2
+                </programlisting>
+                With this configuration file, it is possible to deploy the same cluster we defined in Amazon EC2
+                without any major changes. You only need to change the provider specifications to match the
+                details of your OpenStack Infrastructure.
+            </para>
+        </section>
+        <section>
+            <title>Cluster on Baremetal Machines</title>
+            <para>
+                How would we describe the same cluster for Amazon EC2 in a cluster of physical machines?
+                In this case it is much simpler but you need to watch out for minor details like in this case
+                the class tag needs to be different for this types of clusters as we will see. Also in this case, you
+                need to provide the IP addresses of the machines to connect to. An example is as follows:
+            </para>
+            <programlisting>
+               !!se.kth.kthfsdashboard.virtualization.clusterparser.Baremetal
+                    name: baremetal
+                    loginUser: ubuntu
+                    totalHosts: 7
+                    nodes:
+                        - service: ndb
+                          number: 2
+                          hosts: 
+                            - 10.20.0.8 
+                            - 10.20.0.11
+    
+                        - service: mgm
+                          number: 1
+                          hosts: 
+                            - 10.20.0.6
+    
+                        - service: 
+                            - mysqld 
+                            - namenode
+                          number: 1
+                          hosts: 
+                            - 10.20.0.7
+    
+                        - service: 
+                            - namenode
+                            - resourcemanager
+                          number: 1
+                          hosts: 
+                            - 10.20.0.12 
+                            - 10.20.0.14
+    
+                        - service: 
+                            - datanode
+                            - nodemanager
+                            - spark
+                          number: 2
+                          hosts: 
+                            - 10.20.0.16 
+                            - 10.20.0.17
+            </programlisting>
+            With this configuration file, it is possible to deploy the same cluster we defined in Amazon EC2
+            without any major changes. You only need to change the provider specifications to match the
+            details of your OpenStack Infrastructure.
         </section>
     </section>
 </section>
