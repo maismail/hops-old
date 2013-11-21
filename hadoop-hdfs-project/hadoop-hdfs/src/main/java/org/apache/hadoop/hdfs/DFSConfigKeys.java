@@ -35,22 +35,22 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
    
   public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
-  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "cloud1.sics.se";
+  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "*** MYSQL CLUSTER HOST NAME HERE ****";
   
   public static final String DFS_DB_DATABASE_NAME_KEY = "dfs.dbconnector.database";
-  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "hop_salman";
+  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "*** YOUR_DATABASE_NAME_HERE ***";
   
   public static final String DFS_DB_NUM_SESSION_FACTORIES_KEY = "dfs.dbconnector.num-session-factories";
   public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
   
   public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
-  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "hop";
+  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "***  YOUR MYSQL USER NAME HERE ***";
   
   public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_KEY = "dfs.storage.mysql.user.password";
-  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "hop";  
+  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "*** YOUR MYSQL USER PASSWORD HERE ***";  
   
   public static final String DFS_STORAGE_MYSQL_PORT_KEY = "dfs.storage.mysql.port";
-  public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3307"; //3308
+  public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3306"; //3308
   
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
@@ -81,7 +81,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 0; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
   
   public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
   public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
