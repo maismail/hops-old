@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/1999/xhtml"
+         xmlns:db="http://docbook.org/ns/docbook">
+    <title>Installation on a Single Machine</title>
+
+    <para>
+        In this section, we describe the steps required to deploy a whole cluster 
+        on your laptop with the support of Git, Vagrant, Virtualbox, and Chef.
+    </para>
+
+    <section>
+        <title>Pre-requisites:</title>
+        <para>
+            You should have the following programs installed:
+            git, vagrant. You will also need to download the vagrant virtual machine image
+            for Ubuntu 12.04 "precise".
+            <programlisting>
+            apt-get install git-core vagrant
+            vagrant box add "precise64" http://files.vagrantup.com/precise64.box
+            </programlisting>
+        </para>
+    </section>
+    
+    <section>
+        <title>Launching Vagrant</title>
+        <para>
+            You now need to clone our chef recipes, and launch vagrant.
+        </para>
+        <programlisting>
+            <screen>
+                git clone https://github.com/hopstart/hop-chef.git
+                cd hop-chef
+                vagrant up
+            </screen>
+        </programlisting>
+        If vagrant successfully launched the cluster, you can now point your
+        browser at the following URL to open the Hop Dashboard:
+        <programlisting>
+            https://localhost:9191/hops-dashboard/
+            user: admin
+            password: admin
+        </programlisting>
+    </section>
+</section>

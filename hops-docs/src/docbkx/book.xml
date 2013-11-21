@@ -56,6 +56,10 @@
         <xi:include href="getting_started.xml" />
     </chapter>
     <chapter>
+        <title>Deploy on your desktop/laptop</title>
+        <xi:include href="run_vagrant.xml" />
+    </chapter>
+    <chapter>
         <title>Run on AWS</title>
         <xi:include href="run_aws.xml" />
     </chapter>
