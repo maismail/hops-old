@@ -33,6 +33,39 @@
                         the software they run. Also you need to provide the specific class tag of the type of cluster
                         you want to deploy apart from other properties of interest like extra services you want to deploy
                         in all of the nodes of the cluster.
+                        <programlisting>
+                            !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
+                            ##name of your cluster
+                            name: test2
+                            ##enable install phase
+                            installPhase: true
+                            ##global parameters
+                            global:
+                            ##user defined recipes
+                                recipes: 
+                                - ssh 
+                                - chefClient
+                            ## extra ports you want to open
+                                authorizePorts: 
+                                - 3306
+                                - 4343 
+                                - 3321
+                        </programlisting>
+                        <note>
+                            <title>Git Repositories</title>
+                            <para>
+                                If you want further customization, it is possible to fork our git repository and 
+                                customize our chef recipes if you want to modify some parameters of our cluster. Also
+                                you can add your own recipes if you decide to launch other services on your code.
+                                Simply add this snippet of code under global parameters.
+                                <programlisting>
+                                    git:
+                                    user: Jim Dowling
+                                    repository: https://ghetto.sics.se/jdowling/hops-chef.git
+                                    key: notNull
+                                </programlisting>
+                            </para>
+                        </note>
                     </para>
                 </listitem>
                 <listitem>
@@ -40,7 +73,14 @@
                         <emphasis>Services:</emphasis>
                         We identify multiple services, in our case related to HOPstart platform. You can spread this
                         services quite easily among different nodes just indicating that information when grouping
-                        them.
+                        them. Also you may indicate further services to be deployed on them.
+                        <programlisting>
+                            service: 
+                                - datanode 
+                                - nodemanager
+                            number: 2
+
+                        </programlisting>
                     </para>
                 </listitem>
                 <listitem>
@@ -50,6 +90,21 @@
                         Amazon EC2 infrastructure or an OpenStack environment, you can give information of
                         the image you want to use, the type of instance to request, login credentials in case you
                         are using custom images.
+                        <programlisting>
+                            provider:
+                                ##name of the provider, use aws-ec2 or openstack-nova  
+                                name: aws-ec2
+                                ##if EC2 use a value to one of EC2 types, in OpenStack this is an id number of the 
+                                ##type of instance you want to use
+                                instanceType: m1.large
+                                ## indicate the login user of the machine with sudo access, necessary for custom images
+                                ## or openstack image
+                                loginUser: ubuntu
+                                ## image you want in EC2 or OpenStack
+                                image: eu-west-1/ami-35667941 
+                                ##region of EC2 or project name in OpenStack
+                                region: eu-west-1
+                        </programlisting>
                     </para>
                 </listitem>
             </itemizedlist>
@@ -154,6 +209,62 @@
             and OpenStack or in a physical baremetal environment.
         </para>
     </section>
-  
-
+    <section>
+        <title>Building your cluster:</title>
+        <para>
+            In this section, we will explain through a couple of complete examples how to define your cluster 
+            for Amazon EC2, OpenStack or Baremetal. We will show you how to write your cluster from scratch
+            using your own YAML file or you can use the available cluster wizard in order to generate your 
+            desired cluster. 
+        </para>
+        <section>
+            <title>Cluster in AWS</title>
+            <para>
+                Lets imagine that we want to define a complete HOPstart which will contain a basic minimal setup.
+                In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
+                datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
+                manager and 2 node managers. How we could map the services using only 8 machines?
+                A very simple configuration could be as follows:
+                <programlisting>
+                    !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
+                    name: test2
+                    installPhase: true
+                    
+                    provider:
+                        name: aws-ec2
+                        instanceType: m1.large
+                        loginUser: ubuntu
+                        image: eu-west-1/ami-35667941 
+                         ##image: eu-west-1/ami-ffcdce8b
+                        region: eu-west-1
+                    
+                    ##lists of groups, with the roles the nodes will have and open ports 
+                    nodes:
+                    - service: 
+                        - ndb
+                      number: 2
+    
+                    - service: 
+                        - mgm
+                      number: 1
+    
+                    - service:
+                        - mysqld
+                        - namenode
+                      number: 1
+                    
+                    - service: 
+                        - namenode
+                        - resourcemanager
+                      number: 1
+                    
+                    - service: 
+                        - datanode
+                        - nodemanager
+                        - spark
+                      number: 2
+                </programlisting>
+            </para>
+        </section>
+    </section>
 </section>
