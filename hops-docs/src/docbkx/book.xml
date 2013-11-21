@@ -26,6 +26,11 @@
                 <firstname>Alberto</firstname>
                 <surname>Lorente</surname>
             </author>
+            <author>
+                <firstname>Hamidzera</firstname>
+                <surname>Afzali</surname>
+            </author>
+            
         </authorgroup>
 
         <volumenum>1</volumenum>
@@ -84,7 +89,7 @@
         <xi:include href="howto_hdfs.xml" />
     </chapter>
     <chapter>
-        <title>Configuring MySQL Cluster</title>
+        <title>Configuring MySQL NDB Cluster</title>
         <xi:include href="howto_ndb.xml" />
     </chapter>
     
