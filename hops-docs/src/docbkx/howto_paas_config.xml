@@ -19,6 +19,23 @@
         of a virtual environment) or a simple SSH client for your baremetal machines.
     </para>
     <section>
+        <title>Orchestration Stack</title>
+        <para>
+            Our orchestration architecture makes use of multiple technologies in order to simplify the process
+            of configuring and deploying a large cluster in the environment of their choice. This can be displayed
+            as stack of technologies that interact between each other in order to succesfully configure a 
+            cluster in the cloud.
+        </para>
+        <figure id="Orch-Stack">
+            <title>Orchestration Stack</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/stack.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
+    </section>
+    <section>
         <title>Cluster Domain Specific Language:</title>
         <para>
             We will start first by presenting our cluster DSL with which you will be capable of defining in a simple
