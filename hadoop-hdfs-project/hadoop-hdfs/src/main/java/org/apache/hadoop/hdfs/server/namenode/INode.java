@@ -639,6 +639,10 @@ public abstract class INode implements Comparable<byte[]> {
 
   protected void remove(INode node) throws PersistanceException {
     EntityManager.remove(node);
+    //if This inode is of type INodeDirectoryWithQuota then also delete the INode Attribute table
+    if(node instanceof INodeDirectoryWithQuota){
+      ((INodeDirectoryWithQuota)node).removeAttributes();
+    }
   }
   //END_HOP_CODE:
 }

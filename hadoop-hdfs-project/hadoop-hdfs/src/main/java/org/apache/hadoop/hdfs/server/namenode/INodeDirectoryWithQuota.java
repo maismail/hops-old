@@ -171,7 +171,11 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   }
   
   protected void persistAttributes() throws PersistanceException{
-    getINodeAttributes().save();
+    getINodeAttributes().saveAttributes();
+  }
+  
+  protected void removeAttributes() throws PersistanceException{
+    getINodeAttributes().removeAttributes();
   }
   
   protected void changeAttributesPkNoPersistance(Long id)throws PersistanceException{

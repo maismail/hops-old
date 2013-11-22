@@ -89,27 +89,27 @@ public class INodeAttributes {
 
   public void setInodeId(Long inodeId) throws PersistanceException {
     setInodeIdNoPersistance(inodeId);
-    save();
+    saveAttributes();
   }
   
   public void setNsQuota(Long nsQuota) throws PersistanceException {
     setNsQuotaNoPersistance(nsQuota);
-    save();
+    saveAttributes();
   }
 
   public void setNsCount(Long nsCount) throws PersistanceException {
     setNsCountNoPersistance(nsCount);
-    save();
+    saveAttributes();
   }
 
   public void setDsQuota(Long dsQuota) throws PersistanceException {
     setDsQuotaNoPersistance(dsQuota);
-    save();
+    saveAttributes();
   }
 
   public void setDiskspace(Long diskspace) throws PersistanceException {
     setDiskspaceNoPersistance(diskspace);
-    save();
+    saveAttributes();
   }
 
   public void setNsQuotaNoPersistance(Long nsQuota) {
@@ -132,7 +132,11 @@ public class INodeAttributes {
     this.inodeId = inodeId;
   }
   
-  protected void save() throws PersistanceException {
+  protected void saveAttributes() throws PersistanceException {
     EntityManager.update(this);
+  }
+  
+  protected void removeAttributes() throws PersistanceException {
+    EntityManager.remove(this);
   }
 }
