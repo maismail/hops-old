@@ -9,11 +9,14 @@
     
     <para>Dasahboar is the web based administration site that user can define, setup, monitor and report your cluster. After getting into the dashboard you need to register your
         creadentials of the cloud your choise.As first step, the cluster could be defined either by using YML file or through GUI wizard. The major part of dashboard is the 
-        monitoring tool set and graphs. User can always take a back up of dashboard and restore it later.</para>
+        monitoring tool set and graphs. User can always take a back up of dashboard and restore it later.
+    </para>
     <section>
         <title>Setup Credential</title>
         <para>To give dashboard access to your cloud provider, you must supply credentials for it first. To do that go to the rightmost upside bar (perspective bar) and select 
-            "Setup Credentials". There you would see <xref linkend="dash-credentials"/>, it that page you activate settings for the provider you wanna use and fill in the creadential information.</para>
+            "Setup Credentials". There you would see 
+            <xref linkend="dash-credentials"/>, it that page you activate settings for the provider you wanna use and fill in the creadential information.
+        </para>
         <figure id="dash-credentials">
             <title>Cloud Credentials</title>
             <mediaobject>
@@ -28,53 +31,74 @@
         <title>Cluster Definition</title>
         <para>In each cluster, top level stuff that are defined are services, each service consists of a few roles and each role is played by a one or number of machines. In the 
             dashboard if you step into "Manage Clusters" you will see table of available clusters if you have already something defined, besides, you can define your own cluster. 
-            You can either choose to restore cluster definition from YML file or you can start defning new one by using GUI wizard as in /ref-def-cluster0.</para>
-        <figure id="dash-cloud-cluster">
-            <title>Define Cloud Cluster</title>
+            You can either choose to restore cluster definition from YML file or you can start defning new one by using GUI wizard as in /ref-def-cluster0.
+        </para>
+        <figure id="dash-manage-cluster">
+            <title>Manage Cluster</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-manage-cluster.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure id="dash-common-cluster">
+            <title>Common Cluster Options</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-cluster-common.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure id="dash-provider-cluster">
+            <title>Cluster Provider Options</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-cluster-provider.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure id="dash-groups-cluster">
+            <title>Cluster Group</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-cluster-groups.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>       
+        <figure id="dash-cluster-confirmation">
+            <title>Common Cluster Options</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-cluster-confirmation.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
-                    </figure>   
+        </figure>   
         <figure id="dash-bare-cluster">
             <title>Bare Metal Cluster</title>
-
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-bare-common.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure>
+            <title>Bare Metal Groups</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-bare-groups.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure>
+            <title>Bare Metal Group Detail</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-bare-group-detail.png" scale="50"></imagedata>
                 </imageobject>
             </mediaobject>
+        </figure>
+        <figure>
+            <title>Bare Metal Confirmation</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/dash-bare-confirmation.png" scale="50"></imagedata>
@@ -83,9 +107,11 @@
 
         </figure>   
         <para>In the cloud provider wizard choose your cloud provider, git repository of installation recepiet code, the global recepiet and global ports. In the second page you
-            need to define your providers detail which proceeds to group nodes in the third page. After you finish this you will see summary of your cluster in last page.</para>
+            need to define your providers detail which proceeds to group nodes in the third page. After you finish this you will see summary of your cluster in last page.
+        </para>
         <para>If you choose to setup your cluster on bare metal machines, after you specifying intial stuff in the first page you must define your node groups and the machines 
-            blonging into each group in the second page and finally you will see defnition of your cluster in the latest page.</para>
+            blonging into each group in the second page and finally you will see defnition of your cluster in the latest page.
+        </para>
         <para>Having clusters defined, you can choose one and modify its defintion in "Modify Cluster" page.</para>    
 
     </section>
@@ -93,15 +119,18 @@
     <section>
         <title>Monitoring</title>
         <para>Dashboard supplies you with number of views and graphs to watch status of the resources in your clusters. You can browes your physical resources, services that are 
-            functioning, status of the processes that are run on each machine and performance of all resources.</para>
+            functioning, status of the processes that are run on each machine and performance of all resources.
+        </para>
         <para>To begin with, as you step into the "Clusters" page, you will see table of available cluster with the short summary of your cluster. This summary displays all the 
             services, it they are active or stopped processing, its availabale roles and aggregated availabe of memory, cores and disk space. If you click on one of the services 
             you will get into service page with its health summary. By selecting one role, you will be lead into the detail page of that role wich shows all instances of the role and
             machines that have that role running. After all, you can get into detail of each machine, number cores it has, its ip address, its failure status, the average load, amount 
-            of memory and disk space. There is also another section that you can find tail of the logs of each machine that could be useful in case of failuer and malfunctioning.</para>
+            of memory and disk space. There is also another section that you can find tail of the logs of each machine that could be useful in case of failuer and malfunctioning.
+        </para>
         <para>It is also possible to have some graphs for the cluster, in the perspective bar if you select "Edit Graphs", you will see that you can import graph definitions or 
             define your own. Graphs are defined in a JSON format, they are defined for a service or a role, therefore you need to specify type of the graph at the time of importing or
-            defining new one. In case you import/define graphs in the dashboard, they will show up in the bottom page of the related views such as services, roles oir hosts.</para>
+            defining new one. In case you import/define graphs in the dashboard, they will show up in the bottom page of the related views such as services, roles oir hosts.
+        </para>
     </section>
     
     <section>
