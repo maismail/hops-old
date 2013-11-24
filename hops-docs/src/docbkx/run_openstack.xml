@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<sect1 version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
@@ -27,16 +27,16 @@
         </para>
     </note>
 
-    <section>
+    <sect2>
         <title>Pre-requisites:</title>
         <para>
             Before starting, make sure that you have access to a functional and running Dashboard in a virtual
             machine accesible from you OpenStack Infrastructure. If you have not done so, please refer back to the 
             section Getting Started for further information.
         </para>
-    </section>
+    </sect2>
 
-    <section>
+    <sect2>
         <title>Requirements:</title>
         <para>
             In order to install and deploy a cluster, you need to define before the structure of the cluster which
@@ -69,9 +69,9 @@
                 </para>
             </note>
         </para>
-    </section>
+    </sect2>
     
-    <section>
+    <sect2>
         <title>Launching the cluster</title>
         <para>
             Once we have the dashboard configured with the OpenStack credentials, you can proceed to 
@@ -144,6 +144,6 @@
         <para>
             Congratulations, if everything went okay; you have succesfully deployed a complete cluster ready to use!
         </para>
-    </section>
+    </sect2>
 
-</section>
+</sect1>

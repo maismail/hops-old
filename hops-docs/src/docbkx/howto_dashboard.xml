@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
@@ -114,7 +114,7 @@
             "Setup Credentials". There you would see 
             <xref linkend="dash-credentials"/>, it that page you activate settings for the provider you wanna use and fill in the creadential information.
         </para>
-        <figure id="dash-credentials">
+        <figure xml:id="dash-credentials">
             <title>Cloud Credentials</title>
             <mediaobject>
                 <imageobject>
@@ -122,15 +122,15 @@
                 </imageobject>
             </mediaobject>
         </figure>   
-    </section>
+    </sect1>
     
-    <section>
+    <sect1>
         <title>Cluster Definition</title>
         <para>In each cluster, top level stuff that are defined are services, each service consists of a few roles and each role is played by a one or number of machines. In the 
             dashboard if you step into "Manage Clusters" you will see table of available clusters if you have already something defined, besides, you can define your own cluster. 
             You can either choose to restore cluster definition from YML file or you can start defning new one by using GUI wizard as in /ref-def-cluster0.
         </para>
-        <figure id="dash-manage-cluster">
+        <figure xml:id="dash-manage-cluster">
             <title>Manage Cluster</title>
             <mediaobject>
                 <imageobject>
@@ -138,7 +138,7 @@
                 </imageobject>
             </mediaobject>
         </figure>
-        <figure id="dash-common-cluster">
+        <figure xml:id="dash-common-cluster">
             <title>Common Cluster Options</title>
             <mediaobject>
                 <imageobject>
@@ -146,7 +146,7 @@
                 </imageobject>
             </mediaobject>
         </figure>
-        <figure id="dash-provider-cluster">
+        <figure xml:id="dash-provider-cluster">
             <title>Cluster Provider Options</title>
             <mediaobject>
                 <imageobject>
@@ -154,7 +154,7 @@
                 </imageobject>
             </mediaobject>
         </figure>
-        <figure id="dash-groups-cluster">
+        <figure xml:id="dash-groups-cluster">
             <title>Cluster Group</title>
             <mediaobject>
                 <imageobject>
@@ -162,7 +162,7 @@
                 </imageobject>
             </mediaobject>
         </figure>       
-        <figure id="dash-cluster-confirmation">
+        <figure xml:id="dash-cluster-confirmation">
             <title>Common Cluster Options</title>
             <mediaobject>
                 <imageobject>
@@ -170,7 +170,7 @@
                 </imageobject>
             </mediaobject>
         </figure>   
-        <figure id="dash-bare-cluster">
+        <figure xml:id="dash-bare-cluster">
             <title>Bare Metal Cluster</title>
             <mediaobject>
                 <imageobject>
@@ -211,9 +211,9 @@
         </para>
         <para>Having clusters defined, you can choose one and modify its defintion in "Modify Cluster" page.</para>    
 
-    </section>
+    </sect1>
     
-    <section>
+    <sect1>
         <title>Monitoring</title>
         <para>Dashboard supplies you with number of views and graphs to watch status of the resources in your clusters. You can browes your physical resources, services that are 
             functioning, status of the processes that are run on each machine and performance of all resources.
@@ -228,10 +228,10 @@
             define your own. Graphs are defined in a JSON format, they are defined for a service or a role, therefore you need to specify type of the graph at the time of importing or
             defining new one. In case you import/define graphs in the dashboard, they will show up in the bottom page of the related views such as services, roles oir hosts.
         </para>
-    </section>
+    </sect1>
     
-    <section>
+    <sect1>
         <title>Backup</title>
         <para>Your dashboard setup can be always backed up or restored to/from a file presentation. You can find it under the perspective bar, which is "Backup/Restore".</para>
-    </section>
-</section>
+    </sect1>
+</chapter>

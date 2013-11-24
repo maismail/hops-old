@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch04">
     <title>Defining Clusters</title>
 
     <para>
@@ -18,7 +19,7 @@
         like Chef that will be in charge of orchestrating the nodes while we provision them with Jclouds (in the case
         of a virtual environment) or a simple SSH client for your baremetal machines.
     </para>
-    <section>
+    <sect1>
         <title>Cluster Definition Language</title>
         <para>
             We will start first by presenting our Cluster Definition Language (CDL) with 
@@ -126,8 +127,8 @@ provider:
             virtualized environment or a physical environment. In the following sections, we will go through 
             detailed examples for both types of clusters.
         </para>
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Structuring your Cluster:</title>
         <para>
             Before using our tools, it is important that you have at least an idea of how you want to structure
@@ -220,8 +221,8 @@ provider:
             we will describe how you can define the structure for virtualized cloud providers like Amazon EC2 
             and OpenStack or in a physical baremetal environment.
         </para>
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Building your cluster:</title>
         <para>
             In this section, we will explain through a couple of complete examples how to define your cluster 
@@ -229,7 +230,7 @@ provider:
             using your own YAML file or you can use the available cluster wizard in order to generate your 
             desired cluster. 
         </para>
-        <section>
+        <sect2>
             <title>Cluster in AWS</title>
             <para>
                 Lets imagine that we want to define a complete HOPstart which will contain a basic minimal setup.
@@ -281,8 +282,8 @@ nodes:
                 service defined in the list. This will also open the ports for those security groups. It will install
                 the defined services for each of the nodes in that specific group of nodes.
             </para>
-        </section>
-        <section>
+        </sect2>
+        <sect2>
             <title>Cluster in OpenStack</title>
             <para>
                 Taking the previous case for Amazon EC2, we can easily the same cluster description using the
@@ -332,8 +333,8 @@ nodes:
                 without any major changes. You only need to change the provider specifications to match the
                 details of your OpenStack Infrastructure.
             </para>
-        </section>
-        <section>
+        </sect2>
+        <sect2>
             <title>Cluster on Baremetal Machines</title>
             <para>
                 How would we describe the same cluster for Amazon EC2 in a cluster of physical machines?
@@ -388,8 +389,8 @@ nodes:
                 without any major changes. You only need to change the provider specifications to match the
                 details of your OpenStack Infrastructure.
             </para>
-        </section>
-        <section>
+        </sect2>
+        <sect2>
             <title>Cluster Generator on Dashboard</title>
             <para>
                 Apart of offering a mechanism were users can upload their clusters written in YAML to the system
@@ -400,13 +401,11 @@ nodes:
                         <para>
                             Go to the manage cluster section from the main bar in the dashboard. Select the create cluster
                             option.
-                            <para>
                                 <menuchoice>
                                     <guimenu>Main Menu Bar</guimenu> 
                                     <guisubmenu>Manage Cluster</guisubmenu>
                                     <guimenuitem>Create cluster</guimenuitem>
                                 </menuchoice>
-                            </para>
                         </para>
                     </listitem>
                     <listitem>
@@ -590,10 +589,10 @@ nodes:
           
                 </orderedlist>
             </para>
-        </section>
+        </sect2>
     
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Wrap up</title>
         <para>
             To summarize this section, in here we have seen the main building blocks that we need to define
@@ -601,5 +600,5 @@ nodes:
             own cluster file through multiple examples and also showed an alternative way of defining cluster
             through the cluster generator wizard which is accessible from the dashboard.
         </para>
-    </section>
-</section>
+    </sect1>
+</chapter>
