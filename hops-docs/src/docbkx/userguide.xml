@@ -26,13 +26,14 @@
                 <personname>Hamidzera Afzali</personname>
             </author>
         </authorgroup>
-
         <volumenum>0.1</volumenum>
+        <orgname>Kungliga Tekniska högskolan</orgname>
         <edition>HOP User Guide version</edition>
         <copyright>
             <year>2013</year>
             <holder>KTH</holder>
         </copyright>
+        
 
         <legalnotice>
             <para>Permission to use, copy, modify and distribute
