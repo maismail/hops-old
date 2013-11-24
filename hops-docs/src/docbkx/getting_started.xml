@@ -18,109 +18,19 @@
         infrastructure of your choice.
     </para>
 
-    <section>
-        <title>Basics:</title>
-        <para>Hadoop Open Platform-as-a-Service consists of multiple services:
-            <itemizedlist>
-                <listitem>
-                    <para>
-                        <emphasis>Core Platform:</emphasis> The basic components of our Hadoop distribution.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Hadoop Distributed File System (HDFS):</emphasis>
-                                    Hadoop provides high-throughput access to data in a highly distributed environment. 
-                                    In our case our distribution is based on Hadoop version 2 release modified in order to offer 
-                                    extended mechanism for more scalable and available namenode.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>MySQL Cluster:</emphasis>
-                                    MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
-                                    Designed around a distributed, multi-master architecture with no single point of failure;
-                                    MySQL Cluster's real-time design delivers predictable, milisecond response times with 
-                                    the ability to service millions of operations per second. In the case of our data platform, it is
-                                    used to handle and manage the state of our multi-namenode solution of our architecture.                                    
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>YARN:</emphasis>
-                                    Resource negotiator for managing high volume distributed data processing tasks against
-                                    HDFS. This allows user to process data intensive task like MapReduce jobs or in our case
-                                    our future support for bioinformatic workflow tasks engine which will make use of YARN
-                                    to handle and negotiate the scheduling of this type of jobs.                                     
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Open Platform-as-a-Service:</emphasis> 
-                        The key components behind our Open Platform-as-a-Service solution.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Chef:</emphasis>
-                                    Chef is a systems and cloud infrastructure automation framework based on Ruby 
-                                    that simplifies deployment of servers and applications to any physical, virtual or cloud location
-                                    no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
-                                    (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
-                                    With each definition, we describe how a specific part should be built and managed, which then; the chef-client
-                                    applies these definitions to deploy and configure servers and applications as specified.
-                                    In most of the cases, it is simple enough to let chef-client know which cookbooks and recipes
-                                    it needs to apply.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>Apache JClouds:</emphasis>
-                                    Apache JClouds is an open source multi-api interface which allows easy interaction 
-                                    with multiple cloud providers and cloud software stacks. This open source api gives 
-                                    support around 30 providers which include Amazon, Azure, OpenStack and 
-                                    Rackspace. JClouds offers api implementations both in Java or Clojure.
-                                    Through they simple interface, it is very simple to deploy and port your application
-                                    over different cloud environments.            
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>SnakeYAML and YAML:</emphasis>
-                                    YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
-                                    programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
-                                    allows easy mappings of common data types found in high level languages like list, 
-                                    associative arrays and scalar. It makes it suitable for tasks where humans are likely to
-                                    view or edit data structures, such as configuration files or in our case, cluster
-                                    definition files. Additionally, we make use of the open source parser SnakeYAML to parse
-                                    the contents of our cluster definition files.
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Hadoop Support:</emphasis> 
-                        Set of components that allow easy monitoring your hadoop installation.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Collectd:</emphasis>
-                                    Collectd is a daemon which collects system performance statistics periodically and 
-                                    provides mechanisms to store values in a variety of ways like RRD files. Collectd 
-                                    gathers statistics about the system it is running and stores this information. With 
-                                    these statistics, we can keep track of the performance of your cluster and detect
-                                    possible failures and performance bottlenecks that might be needed to be address.
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-            </itemizedlist>
-        </para>
-    </section>
+    <example>
+        <title>Hop Portal</title>
+        <programlisting>https://snurran.sics.se:8181/hop-dashboard</programlisting>
+    </example>
+
+        <figure id="portal-login">
+            <title>Hop Portal</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/portal.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>   
     <section>
         <title>Requirements:</title>
         <para>

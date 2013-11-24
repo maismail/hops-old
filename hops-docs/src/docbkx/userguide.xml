@@ -30,11 +30,10 @@
                 <firstname>Hamidzera</firstname>
                 <surname>Afzali</surname>
             </author>
-            
         </authorgroup>
 
-        <volumenum>1</volumenum>
-        <edition>HOPS User Guide version 1.0</edition>
+        <volumenum>0.1</volumenum>
+        <edition>HOP User Guide version</edition>
         <copyright>
             <year>2013</year>
             <holder>KTH</holder>
@@ -52,46 +51,37 @@
 
 
 
-    <chapter>
-        <title>Architecture</title>
-        <xi:include href="architecture.xml" />
-    </chapter>
-    <chapter>
-        <title>Getting Started</title>
-        <xi:include href="getting_started.xml" />
-    </chapter>
-    <chapter>
-        <title>Deploy on your desktop/laptop</title>
+    <chapter xml:id="ch01" xreflabel="Chapter 1">
+        <title>Quickstart with Vagrant</title>
         <xi:include href="run_vagrant.xml" />
     </chapter>
-    <chapter>
-        <title>Run on AWS</title>
-        <xi:include href="run_aws.xml" />
+    <chapter xml:id="ch02" xreflabel="Chapter 2">
+        <title>HOP Portal</title>
+        <xi:include href="getting_started.xml" />
+        <section>
+            <title>Deploy on AWS</title>
+            <xi:include href="run_aws.xml" />
+        </section>
+        <section>
+            <title>Deploy on OpenStack</title>
+            <xi:include href="run_openstack.xml" />
+        </section>
+        <section>
+            <title>Deploy on a Cluster</title>
+            <xi:include href="run_baremetal.xml" />
+        </section>
     </chapter>
-    <chapter>
-        <title>Run on OpenStack</title>
-        <xi:include href="run_openstack.xml" />
-    </chapter>
-    <chapter>
-        <title>Run on a Cluster (Bare Metal)</title>
-        <xi:include href="run_baremetal.xml" />
-    </chapter>
-    <chapter>
+    <chapter xml:id="ch03" xreflabel="Chapter 3">
         <title>Dashboard Adminstration</title>
         <xi:include href="howto_dashboard.xml" />
     </chapter>
-    <chapter>
-        <title>Cluster Configuration</title>
+    <chapter xml:id="ch04" xreflabel="Chapter 4">
+        <title>Define a Cluster</title>
         <xi:include href="howto_paas_config.xml" />
     </chapter>
-    <chapter>
-        <title>Configuring HDFS</title>
+    <chapter xml:id="ch05" xreflabel="Chapter 5">
+        <title>HDFS Configuration</title>
         <xi:include href="howto_hdfs.xml" />
     </chapter>
-    <chapter>
-        <title>Configuring MySQL NDB Cluster</title>
-        <xi:include href="howto_ndb.xml" />
-    </chapter>
-    
     
 </book>
