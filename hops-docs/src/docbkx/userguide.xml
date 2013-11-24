@@ -72,7 +72,7 @@
         </section>
     </chapter>
     <chapter xml:id="ch03" xreflabel="Chapter 3">
-        <title>Dashboard Adminstration</title>
+        <title>Dashboard Administration</title>
         <xi:include href="howto_dashboard.xml" />
     </chapter>
     <chapter xml:id="ch04" xreflabel="Chapter 4">

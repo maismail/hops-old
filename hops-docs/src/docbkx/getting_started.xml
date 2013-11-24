@@ -10,7 +10,7 @@
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
         hadoop platform focusing in improving its scalability, availability and reliability. This section describes
         the information and materials you need in order to start working with our data platform by making use
-        of our Hadoop Open PaaS dashboard. HOPS dashboard provides an end-to-end management and 
+        of our Hadoop Open PaaS dashboard. HOPStart dashboard provides an end-to-end management and 
         monitoring application of our Hadoop distribution operating in the datacenter of your choice. With our
         dashboard, thanks to its graphical user interface (GUI); you will be able to manage your cluster, 
         define the cluster infrastructure of your choice, monitor services and alerts through a centralized application
@@ -23,14 +23,14 @@
         <programlisting>https://snurran.sics.se:8181/hop-dashboard</programlisting>
     </example>
 
-        <figure id="portal-login">
-            <title>Hop Portal</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/portal.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>   
+    <figure id="portal-login">
+        <title>Hop Portal</title>
+        <mediaobject>
+            <imageobject>
+                <imagedata fileref="media/portal.png" scale="30"></imagedata>
+            </imageobject>
+        </mediaobject>
+    </figure>   
     <section>
         <title>Requirements:</title>
         <para>
@@ -58,7 +58,7 @@
                         In order to make use of our platform in OpenStack, it is necessary that you provide the 
                         credentials and configuration parameters to connect to you OpenStack end-point. The recommend
                         instance to use in you OpenStack infrastructure should be equivalent to a m1.large instance
-                        type or greater with a ubuntu based image (our default testing bed used ubuntu 12.04 cloud guest edition)
+                        type or greater with an ubuntu based image (our default testing bed used ubuntu 12.04 cloud guest edition)
                     </para>
                 </listitem>
                 <listitem>
@@ -84,7 +84,7 @@
     <section>
         <title>Hadoop Open Platform-as-a-Service Portal:</title>
         <para>
-            The HOPS web portal, is an entry point were users can test our platform in one of our
+            The HOPStart web portal, is an entry point were users can test our platform in one of our
             supported environments. It is a simple web application that can deploy our dashboard in Amazon or in
             a private machine of your choice with external connectivity. With our dashboard, later on you can 
             deploy and configure the rest of your cluster using our solution. Once you have the dashboard on 
@@ -93,9 +93,9 @@
         </para>
     </section>
     <section>
-        <title>How to launch a HOPS Dashboard:</title>
+        <title>How to launch a HOPStart Dashboard:</title>
         <para>
-            Launching a HOPS Dashboard is quite simple and takes a couple of minutes, here you may find
+            Launching a HOPStart Dashboard is quite simple and takes a couple of minutes, here you may find
             instructions on how to use the dashboard for Amazon EC2 and Baremetal Machine:
             <orderedlist>
                 <listitem>
@@ -112,7 +112,8 @@
                             <listitem>
                                 <para>
                                     In the new page, select from the providers the Amazon EC2 option. A form will be 
-                                    generated were you need to fill in the following:
+                                    generated
+                                    
                                     <itemizedlist>
                                         <listitem>
                                             <para>
@@ -177,6 +178,14 @@
                                         </listitem>
                                        
                                     </itemizedlist>
+                                    <figure id="portal-aws">
+                                        <title>Portal AWS</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-AWS.png" scale="30"></imagedata>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure> 
                                 </para>
                             </listitem>
                             <listitem>
@@ -199,13 +208,14 @@
                         <itemizedlist>
                             <listitem>
                                 <para>
-                                    Login into the HOPS Portal with your user name and password.
+                                    Login into the HOPStart Portal with your user name and password.
                                 </para>
                             </listitem>
                             <listitem>
                                 <para>
                                     In the new page, select from the providers the Amazon EC2 option. A form will be 
-                                    generated were you need to fill in the following:
+                                    generated.
+                                    
                                     <itemizedlist>
                                         <listitem>
                                             <para>
@@ -271,6 +281,14 @@
                                             </para>
                                         </listitem>
                                     </itemizedlist>
+                                    <figure id="portal-openstack">
+                                        <title>Portal OpenStack</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-OpenStack.png" scale="30"></imagedata>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure> 
                                 </para>
                             </listitem>
                             <listitem>
@@ -301,7 +319,7 @@
                         <itemizedlist>
                             <listitem>
                                 <para>
-                                    Login into the HOPS Portal with your user name and password.
+                                    Login into the HOPStart Portal with your user name and password.
                                 </para>
                             </listitem>
                             <listitem>
@@ -343,6 +361,14 @@
                                         </listitem>
                                        
                                     </itemizedlist>
+                                    <figure id="portal-baremetal">
+                                        <title>Portal OpenStack</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-Baremetal.png" scale="30"></imagedata>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure> 
                                 </para>
                             </listitem>
                             <listitem>
