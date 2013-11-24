@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
-    <title>Hands on</title>
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch02">
+    <title>HOP Portal</title>
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
         hadoop platform focusing in improving its scalability, availability and reliability. This section describes
         the information and materials you need in order to start working with our data platform by making use
@@ -23,7 +24,7 @@
         <programlisting>https://snurran.sics.se:8181/hop-dashboard</programlisting>
     </example>
 
-    <figure id="portal-login">
+    <figure xml:id="portal-login">
         <title>Hop Portal</title>
         <mediaobject>
             <imageobject>
@@ -31,7 +32,7 @@
             </imageobject>
         </mediaobject>
     </figure>   
-    <section>
+    <sect1>
         <title>Requirements:</title>
         <para>
             In order to make use of our data platform, it is essential that you have a running a copy of our
@@ -80,8 +81,8 @@
                 </listitem>
             </itemizedlist>
         </para>
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Hadoop Open Platform-as-a-Service Portal:</title>
         <para>
             The HOPStart web portal, is an entry point were users can test our platform in one of our
@@ -92,7 +93,7 @@
             in the desired environment.
         </para>
     
-        <section>
+        <sect2>
             <title>How to launch a HOPStart Dashboard:</title>
             <para>
                 Launching a HOPStart Dashboard is quite simple and takes a couple of minutes, here you may find
@@ -178,7 +179,7 @@
                                             </listitem>
                                        
                                         </itemizedlist>
-                                        <figure id="portal-aws">
+                                        <figure xml:id="portal-aws">
                                             <title>Portal AWS</title>
                                             <mediaobject>
                                                 <imageobject>
@@ -281,7 +282,7 @@
                                                 </para>
                                             </listitem>
                                         </itemizedlist>
-                                        <figure id="portal-openstack">
+                                        <figure xml:id="portal-openstack">
                                             <title>Portal OpenStack</title>
                                             <mediaobject>
                                                 <imageobject>
@@ -361,7 +362,7 @@
                                             </listitem>
                                        
                                         </itemizedlist>
-                                        <figure id="portal-baremetal">
+                                        <figure xml:id="portal-baremetal">
                                             <title>Portal OpenStack</title>
                                             <mediaobject>
                                                 <imageobject>
@@ -385,6 +386,6 @@
                     </listitem>
                 </orderedlist>
             </para>
-        </section>
-    </section>
-</section>
+        </sect2>
+    </sect1>
+</chapter>

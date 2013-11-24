@@ -7,28 +7,23 @@
         <title>Hadoop Open Platform-as-a-Service</title>
         <authorgroup>
             <author>
-                <firstname>Jim</firstname>
-                <surname>Dowling</surname>
+                <personname>Jim Dowling</personname>
+                
             </author>
             <author>
-                <firstname>Salman</firstname>
-                <surname>Niazi</surname>
+                <personname>Salman Niazi</personname>
             </author>
             <author>
-                <firstname>Kamal</firstname>
-                <surname>Hakimzadeh</surname>
+                <personname>Kamal Hakimzadeh</personname>
             </author>
             <author>
-                <firstname>Mahmoud</firstname>
-                <surname>Ismail</surname>
+                <personname>Mahmoud Ismail</personname>
             </author>
             <author>
-                <firstname>Alberto</firstname>
-                <surname>Lorente</surname>
+                <personname>Alberto Lorente</personname>
             </author>
             <author>
-                <firstname>Hamidzera</firstname>
-                <surname>Afzali</surname>
+                <personname>Hamidzera Afzali</personname>
             </author>
         </authorgroup>
 
@@ -49,44 +44,11 @@
 
     </info>
 
-
-
-    <chapter xml:id="ch01" xreflabel="Chapter 1">
-        <title>Quickstart with Vagrant</title>
-        <xi:include href="run_vagrant.xml" />
-    </chapter>
-    <chapter xml:id="ch02" xreflabel="Chapter 2">
-        <title>HOP Portal</title>
-        <xi:include href="getting_started.xml" />
-        
-    </chapter>
-    <chapter xml:id="ch03" xreflabel="Chapter 3">
-        <title>Dashboard Administration</title>
-        <xi:include href="howto_dashboard.xml" />
-    </chapter>
-    <chapter xml:id="ch04" xreflabel="Chapter 4">
-        <title>Define a Cluster</title>
-        <xi:include href="howto_paas_config.xml" />
-    </chapter>
-    <chapter xml:id="ch05" xreflabel="Chapter 5">
-        <title>Launching a HOPStart Cluster</title>
-        <section>
-            <title>Deploy on AWS</title>
-            <xi:include href="run_aws.xml" />
-        </section>
-        <section>
-            <title>Deploy on OpenStack</title>
-            <xi:include href="run_openstack.xml" />
-        </section>
-        <section>
-            <title>Deploy on a Cluster</title>
-            <xi:include href="run_baremetal.xml" />
-        </section>
-    </chapter>
-    
-    <chapter xml:id="ch06" xreflabel="Chapter 6">
-        <title>HDFS Configuration</title>
-        <xi:include href="howto_hdfs.xml" />
-    </chapter>
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_vagrant.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="getting_started.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_dashboard.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_paas_config.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
     
 </book>

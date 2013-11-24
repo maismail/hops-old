@@ -1,19 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
-         xmlns:xlink="http://www.w3.org/1999/xlink"
-         xmlns:xi="http://www.w3.org/2001/XInclude"
-         xmlns:ns5="http://www.w3.org/2000/svg"
-         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
-         xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
+<chapter  version="5.0" xmlns="http://docbook.org/ns/docbook"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+  xmlns:xi="http://www.w3.org/2001/XInclude"
+  xmlns:ns5="http://www.w3.org/2000/svg"
+  xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+  xmlns:ns3="http://www.w3.org/1999/xhtml"
+  xmlns:db="http://docbook.org/ns/docbook"
+  xml:id="ch06">
   
-
+  
   <title>Configuring HDFS</title>
   <para>HOP introduces few new configuration parameters to HDFS. These parameters can be specified in hdfs-site.xml file. 
     Detailed list of new configuration parameters is given below 
   </para>
   
-  <section>
+  
+  <sect1>
     <title>Configuration Parameters</title>
     <itemizedlist>
       
@@ -79,7 +81,7 @@
           MySQL Server port. If not specified then default value of 3306 is chosen.
         </para>
       </listitem>
-          
+      
       
       <listitem>
         <para>
@@ -107,10 +109,10 @@
       <listitem>
         <para>
           <emphasis>dfs.namenode.selector-policy:</emphasis> 
-          For a RPC call client will choose an active NameNode based on the following policies. 
+          For a RPC call client will choose an active NameNode based on the following policies.
           <orderedlist>
-            <listitem>ROUND_ROBIN</listitem>
-            <listitem>RANDOM</listitem>
+            <listitem><para>ROUND_ROBIN</para></listitem>
+            <listitem><para>RANDOM</para></listitem>
           </orderedlist>
           By default NameNode selection policy is set of ROUND_ROBIN
         </para>
@@ -156,7 +158,7 @@
       </listitem>
       
       
-      <listitem id="dfs.clinet.max.retires.on.failure">
+      <listitem>
         <para>
           <emphasis>dfs.clinet.max.retires.on.failure:</emphasis> 
           The client will retry the RPC call if the RPC fails due to the failure of the NameNode. 
@@ -188,6 +190,5 @@
         </para>
       </listitem>
     </itemizedlist>    
-  </section>
-
-</section>
+  </sect1>
+</chapter>

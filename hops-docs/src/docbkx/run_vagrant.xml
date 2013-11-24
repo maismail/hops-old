@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
+         xmlns:db="http://docbook.org/ns/docbook" xml:id="ch01">
 
+    <title>Quickstart with Vagrant</title>
     <para>
         This section describes the steps required to deploy a whole cluster 
         on a single machine using git, vagrant, and chef.
     </para>
 
-    <section>
+    <sect1>
         <title>Pre-requisites:</title>
         <para>
             You should have the following programs installed:
@@ -23,9 +24,9 @@
         vagrant box add "precise64" http://files.vagrantup.com/precise64.box
             </programlisting>
         </para>
-    </section>
+    </sect1>
 
-    <section>
+    <sect1>
         <title>Launching Vagrant</title>
         <para>
             You now need to clone our chef recipes, and then launch a vagrant instance.
@@ -38,30 +39,37 @@
         vagrant up
                 <!--</screen>-->
             </programlisting>
-        </informalexample>        
+        </informalexample>
+<para>        
         Now grab a coffee, assuming you have a good network connection, 
         it will take around 15 minutes to provision vagrant instance.
         When vagrant successfully completes provisioning using chef, 
         you can point your browser at the following URL to open the Hop Dashboard:
+</para>
         <programlisting>
             
             https://localhost:9191/hops-dashboard/
             user: admin
             password: jim
         </programlisting>
+        <para>
         You can log into the VM and then get root access using:
+        </para>
         <programlisting>
             vagrant ssh
             sudo su
         </programlisting>
-
+        <para>
         If needed, you can configure the glassfish webserver here:
+        </para>
         <programlisting>
             https://localhost:5858
             user: admin
             password: admin
         </programlisting>        
 
-        You can now jump to <xref linkend="ch03"/>.
-    </section>
-</section>
+        <para>
+        You can now jump to <xref linkend="ch03">Chapter 3</xref>
+        </para>
+    </sect1>
+</chapter>
