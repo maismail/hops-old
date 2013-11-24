@@ -36,14 +36,14 @@
         </itemizedlist>
         We will go over this options in detail in the following sections.
     </para>
-    <section>
+    <sect1>
         <title>Change Password</title>
         <para>
             This option will give the user the functionality to change their password if they need to do it. For 
             now this functionality is not implemented.
         </para>
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Edit Graphs</title>
         <para>
             HOPStart Dashboard offers great customization of how you want to display the data retrieved
@@ -107,8 +107,8 @@
                             </imageobject>
                         </mediaobject>
                     </figure> 
-    </section>
-    <section>
+    </sect1>
+    <sect1>
         <title>Setup Credential</title>
         <para>To give dashboard access to your cloud provider, you must supply credentials for it first. To do that go to the rightmost upside bar (perspective bar) and select 
             "Setup Credentials". There you would see 
