@@ -5,7 +5,9 @@
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch03">
+    <title>HOPStart Dashboard</title>
     
     <para>In this section we will give an overview of our HOPStart Dashboard web based application.
         This web application was design with Hadoop administrators in mind so they can easily monitor, 
@@ -22,16 +24,24 @@
         Once you login, if you press your user icon you will have a menu with the following options:
         <itemizedlist>
             <listitem>
-                Change password
+                <para>
+                    Change password
+                </para>
             </listitem>
             <listitem>
-                Edit Graphs
+                <para>
+                    Edit Graphs
+                </para>
             </listitem>
             <listitem>
-                Backup/Restore
+                <para>
+                    Backup/Restore
+                </para>
             </listitem>
             <listitem>
-                Setup Credentials
+                <para>
+                    Setup Credentials
+                </para>    
             </listitem>
         </itemizedlist>
         We will go over this options in detail in the following sections.
@@ -51,7 +61,7 @@
             option will bring you to a new view where you can define the graphs for the different services
             of HOPstart.
         </para>
-        <figure id="dash-graphs">
+        <figure xml:id="dash-graphs">
             <title>Edit Graphs</title>
             <mediaobject>
                 <imageobject>
@@ -69,7 +79,7 @@
                         Selecting this option will open a new dialog where you can define the main specifications
                         of your graph for a certain type of element monitored by the dashboard.
                     </para>
-                    <figure id="dash-new-graphs">
+                    <figure xml:id="dash-new-graphs">
                         <title>New Graph Editor</title>
                         <mediaobject>
                             <imageobject>
@@ -84,7 +94,7 @@
                         It is also to import the graphs from a graph file written in JSON, this is the quickest way
                         if you want to load a large number of graphs very quickly
                     </para>
-                    <figure id="dash-import-graphs">
+                    <figure xml:id="dash-import-graphs">
                         <title>Import Graphs</title>
                         <mediaobject>
                             <imageobject>
@@ -99,7 +109,7 @@
             When graphs are generated in the table, you can select a graph of the table and get further 
             details of the graph in a new dialog box by selecting the zoom icon on one of the entries.
         </para>
-        <figure id="dash-selected-graphs">
+        <figure xml:id="dash-selected-graphs">
                         <title>Graph Selection Detail</title>
                         <mediaobject>
                             <imageobject>
