@@ -58,6 +58,18 @@
     <chapter xml:id="ch02" xreflabel="Chapter 2">
         <title>HOP Portal</title>
         <xi:include href="getting_started.xml" />
+        
+    </chapter>
+    <chapter xml:id="ch03" xreflabel="Chapter 3">
+        <title>Dashboard Administration</title>
+        <xi:include href="howto_dashboard.xml" />
+    </chapter>
+    <chapter xml:id="ch04" xreflabel="Chapter 4">
+        <title>Define a Cluster</title>
+        <xi:include href="howto_paas_config.xml" />
+    </chapter>
+    <chapter xml:id="ch05" xreflabel="Chapter 5">
+        <title>Launching a HOPStart Cluster</title>
         <section>
             <title>Deploy on AWS</title>
             <xi:include href="run_aws.xml" />
@@ -71,15 +83,8 @@
             <xi:include href="run_baremetal.xml" />
         </section>
     </chapter>
-    <chapter xml:id="ch03" xreflabel="Chapter 3">
-        <title>Dashboard Administration</title>
-        <xi:include href="howto_dashboard.xml" />
-    </chapter>
-    <chapter xml:id="ch04" xreflabel="Chapter 4">
-        <title>Define a Cluster</title>
-        <xi:include href="howto_paas_config.xml" />
-    </chapter>
-    <chapter xml:id="ch05" xreflabel="Chapter 5">
+    
+    <chapter xml:id="ch06" xreflabel="Chapter 6">
         <title>HDFS Configuration</title>
         <xi:include href="howto_hdfs.xml" />
     </chapter>

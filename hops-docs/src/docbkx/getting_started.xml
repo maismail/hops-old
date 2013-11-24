@@ -91,299 +91,300 @@
             environment of your choice, proceed to one of the installation guides found in this manual 
             in the desired environment.
         </para>
-    </section>
-    <section>
-        <title>How to launch a HOPStart Dashboard:</title>
-        <para>
-            Launching a HOPStart Dashboard is quite simple and takes a couple of minutes, here you may find
-            instructions on how to use the dashboard for Amazon EC2 and Baremetal Machine:
-            <orderedlist>
-                <listitem>
-                    <para>
-                        <emphasis>Amazon EC2:</emphasis>
-                        In order to deploy our dashboard in Amazon EC2 in the region of your choice follow these 
-                        simple steps:
-                        <itemizedlist>
-                            <listitem>
-                                <para>
-                                    Login into the HOPS Portal with your user name and password.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    In the new page, select from the providers the Amazon EC2 option. A form will be 
-                                    generated
-                                    
-                                    <itemizedlist>
-                                        <listitem>
-                                            <para>
-                                                Dashboard credential, were you specify the admin username and password 
-                                                in order to access your newly created dashboard.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                EC2 credentials which include the Access Key id from you AWS account with 
-                                                its related Secret key.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                Configuration parameters that we need to in order to deploy a virtual 
-                                                machine in Amazon with default values that you may want to change:
-                                                <orderedlist>
-                                                    <listitem>
-                                                        <para>
-                                                            Security group where the machine will be deployed. If it does not exist,
-                                                            we will create it and open the ports needed for our application.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            The hardware ID of the instance type we want to use from Amazon EC2. 
-                                                            For example, m1.small, t1.micro. The recommended instance type is
-                                                            m1.large.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Image ID which includes the region of that image and the ami id tag.
-                                                            We only support ubuntu based images.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Location ID of the region you want to deploy the dashboard.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the option to authorize the public key, it will open a new option
-                                                            were you can insert your desired public key so you can access the virtual
-                                                            machine as by default we generate random key pairs for the machine
-                                                            through EC2 key pair service, and it is not possible to access the machine
-                                                            internally without this option.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the override login user, will override the default user for ubuntu
-                                                            AMI images with the login user of your choice. This is necessary if you
-                                                            are going to use a custom based ubuntu image which are not one 
-                                                            of the Ubuntu images that canonical offer in Amazon by default.
-                                                        </para>
-                                                    </listitem>
-                                                </orderedlist>
-                                            </para>
-                                        </listitem>
-                                       
-                                    </itemizedlist>
-                                    <figure id="portal-aws">
-                                        <title>Portal AWS</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-AWS.png" scale="30"></imagedata>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure> 
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    To start the process after filling up the form, press the launch instance button. 
-                                    The whole process will probably take between 10-15 minutes on average. In the end,
-                                    you will receive a notification showing the address were you can access the Dashboard
-                                    in your browser and its private ip address. To login, use the credentials you specified
-                                    previously in the portal.
-                                </para>
-                            </listitem>
-                        </itemizedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>OpenStack:</emphasis>
-                        In order to deploy our dashboard in OpenStack of your choice follow these 
-                        simple steps, note this is in alpha state:
-                        <itemizedlist>
-                            <listitem>
-                                <para>
-                                    Login into the HOPStart Portal with your user name and password.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    In the new page, select from the providers the Amazon EC2 option. A form will be 
-                                    generated.
-                                    
-                                    <itemizedlist>
-                                        <listitem>
-                                            <para>
-                                                Dashboard credential, were you specify the admin username and password 
-                                                in order to access your newly created dashboard.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                OpenStack credentials, the user name to access the OpenStack project and 
-                                                its password. The username should be a concatenation of the OpenStack 
-                                                project name and the user for that project. For example "projectName:user".
-                                                Also you should indicate the url of your OpenStack Nova end-point in order 
-                                                to send the requests to your OpenStack infrastructure.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                Configuration parameters that we need to in order to deploy a virtual 
-                                                machine in OpenStack with default values that you may want to change:
-                                                <orderedlist>
-                                                    <listitem>
-                                                        <para>
-                                                            Security group where the machine will be deployed. If it does not exist,
-                                                            we will create it and open the ports needed for our application.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            The hardware ID of the instance type we want to use in OpenStack. 
-                                                            This is a number which corresponds to the type of instance you want 
-                                                            to deploy and is supported by your OpenStack infrastructure 
-                                                            We recommended using a configuration similar to a m1.large in EC2.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Image ID corresponding to the id of the image located in the openstack
-                                                            project you want to deploy the dashboard.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Location ID of the project you want to deploy the dashboard.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the option to authorize the public key, it will open a new option
-                                                            were you can insert your desired public key so you can access the virtual
-                                                            machine as by default we generate random key pairs for the machine
-                                                            through OpenStack key pair service, and it is not possible to access the machine
-                                                            internally without this option.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the override login user. This is necessary for OpenStack if you
-                                                            are going to use a custom based ubuntu image.
-                                                        </para>
-                                                    </listitem>
-                                                </orderedlist>
-                                            </para>
-                                        </listitem>
-                                    </itemizedlist>
-                                    <figure id="portal-openstack">
-                                        <title>Portal OpenStack</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-OpenStack.png" scale="30"></imagedata>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure> 
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    To start the process after filling up the form, press the launch instance button. 
-                                    The whole process will probably take between 10-15 minutes on average. In the end,
-                                    you will receive a notification showing the address were you can access the Dashboard
-                                    in your browser and its private ip address. To login, use the credentials you specified
-                                    previously in the portal.
-                                </para>
-                            </listitem>
-                        </itemizedlist>
-                    </para>
-                    <note>
-                        <title>IP pools in OpenStack</title>
+    
+        <section>
+            <title>How to launch a HOPStart Dashboard:</title>
+            <para>
+                Launching a HOPStart Dashboard is quite simple and takes a couple of minutes, here you may find
+                instructions on how to use the dashboard for Amazon EC2 and Baremetal Machine:
+                <orderedlist>
+                    <listitem>
                         <para>
-                            In order to deploy successfully a dashboard in OpenStack, it is necessary that you have allocated
-                            at least 1 public IP in that project. During the deployment phase we will query the OpenStack
-                            project and link the public ip to the created VM.
-                        </para>
-                    </note>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Baremetal Physical Machine:</emphasis>
-                        In order to deploy our dashboard in a physical machine of your choice follow these 
-                        simple steps:
-                        <itemizedlist>
-                            <listitem>
-                                <para>
-                                    Login into the HOPStart Portal with your user name and password.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    In the new page, select from the providers the Amazon EC2 option. A form will be 
-                                    generated were you need to fill in the following:
-                                    <itemizedlist>
-                                        <listitem>
-                                            <para>
-                                                Dashboard credential, were you specify the admin username and password 
-                                                in order to access your newly created dashboard.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                SSH credentials which include the host address of the machine we want to
-                                                connect to and the private key to connect.
-                                            </para>
-                                        </listitem>
-                                        <listitem>
-                                            <para>
-                                                Extra parameters that we might need:
-                                                <orderedlist>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the option to authorize the public key, it will open a new option
-                                                            were you can insert your desired public key to allow extra access to the 
-                                                            machine.
-                                                        </para>
-                                                    </listitem>
-                                                    <listitem>
-                                                        <para>
-                                                            Selecting the override login user, here you fill the name of the sudo user
-                                                            to use to deploy our dashboard on the machine.
-                                                        </para>
-                                                    </listitem>
-                                                </orderedlist>
-                                            </para>
-                                        </listitem>
+                            <emphasis>Amazon EC2:</emphasis>
+                            In order to deploy our dashboard in Amazon EC2 in the region of your choice follow these 
+                            simple steps:
+                            <itemizedlist>
+                                <listitem>
+                                    <para>
+                                        Login into the HOPS Portal with your user name and password.
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        In the new page, select from the providers the Amazon EC2 option. A form will be 
+                                        generated
+                                    
+                                        <itemizedlist>
+                                            <listitem>
+                                                <para>
+                                                    Dashboard credential, were you specify the admin username and password 
+                                                    in order to access your newly created dashboard.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    EC2 credentials which include the Access Key id from you AWS account with 
+                                                    its related Secret key.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    Configuration parameters that we need to in order to deploy a virtual 
+                                                    machine in Amazon with default values that you may want to change:
+                                                    <orderedlist>
+                                                        <listitem>
+                                                            <para>
+                                                                Security group where the machine will be deployed. If it does not exist,
+                                                                we will create it and open the ports needed for our application.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                The hardware ID of the instance type we want to use from Amazon EC2. 
+                                                                For example, m1.small, t1.micro. The recommended instance type is
+                                                                m1.large.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Image ID which includes the region of that image and the ami id tag.
+                                                                We only support ubuntu based images.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Location ID of the region you want to deploy the dashboard.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the option to authorize the public key, it will open a new option
+                                                                were you can insert your desired public key so you can access the virtual
+                                                                machine as by default we generate random key pairs for the machine
+                                                                through EC2 key pair service, and it is not possible to access the machine
+                                                                internally without this option.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the override login user, will override the default user for ubuntu
+                                                                AMI images with the login user of your choice. This is necessary if you
+                                                                are going to use a custom based ubuntu image which are not one 
+                                                                of the Ubuntu images that canonical offer in Amazon by default.
+                                                            </para>
+                                                        </listitem>
+                                                    </orderedlist>
+                                                </para>
+                                            </listitem>
                                        
-                                    </itemizedlist>
-                                    <figure id="portal-baremetal">
-                                        <title>Portal OpenStack</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-Baremetal.png" scale="30"></imagedata>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure> 
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    To start the process after filling up the form, press the launch instance button. 
-                                    The whole process will probably take between 10-15 minutes on average. In the end,
-                                    you will receive a notification showing the address were you can access the Dashboard
-                                    in your browser and its private ip address. To login, use the credentials you specified
-                                    previously in the portal.
-                                </para>
-                            </listitem>
-                        </itemizedlist>
-                    </para>
-                </listitem>
-            </orderedlist>
-        </para>
+                                        </itemizedlist>
+                                        <figure id="portal-aws">
+                                            <title>Portal AWS</title>
+                                            <mediaobject>
+                                                <imageobject>
+                                                    <imagedata fileref="media/portal-AWS.png" scale="30"></imagedata>
+                                                </imageobject>
+                                            </mediaobject>
+                                        </figure> 
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        To start the process after filling up the form, press the launch instance button. 
+                                        The whole process will probably take between 10-15 minutes on average. In the end,
+                                        you will receive a notification showing the address were you can access the Dashboard
+                                        in your browser and its private ip address. To login, use the credentials you specified
+                                        previously in the portal.
+                                    </para>
+                                </listitem>
+                            </itemizedlist>
+                        </para>
+                    </listitem>
+                    <listitem>
+                        <para>
+                            <emphasis>OpenStack:</emphasis>
+                            In order to deploy our dashboard in OpenStack of your choice follow these 
+                            simple steps, note this is in alpha state:
+                            <itemizedlist>
+                                <listitem>
+                                    <para>
+                                        Login into the HOPStart Portal with your user name and password.
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        In the new page, select from the providers the Amazon EC2 option. A form will be 
+                                        generated.
+                                    
+                                        <itemizedlist>
+                                            <listitem>
+                                                <para>
+                                                    Dashboard credential, were you specify the admin username and password 
+                                                    in order to access your newly created dashboard.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    OpenStack credentials, the user name to access the OpenStack project and 
+                                                    its password. The username should be a concatenation of the OpenStack 
+                                                    project name and the user for that project. For example "projectName:user".
+                                                    Also you should indicate the url of your OpenStack Nova end-point in order 
+                                                    to send the requests to your OpenStack infrastructure.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    Configuration parameters that we need to in order to deploy a virtual 
+                                                    machine in OpenStack with default values that you may want to change:
+                                                    <orderedlist>
+                                                        <listitem>
+                                                            <para>
+                                                                Security group where the machine will be deployed. If it does not exist,
+                                                                we will create it and open the ports needed for our application.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                The hardware ID of the instance type we want to use in OpenStack. 
+                                                                This is a number which corresponds to the type of instance you want 
+                                                                to deploy and is supported by your OpenStack infrastructure 
+                                                                We recommended using a configuration similar to a m1.large in EC2.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Image ID corresponding to the id of the image located in the openstack
+                                                                project you want to deploy the dashboard.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Location ID of the project you want to deploy the dashboard.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the option to authorize the public key, it will open a new option
+                                                                were you can insert your desired public key so you can access the virtual
+                                                                machine as by default we generate random key pairs for the machine
+                                                                through OpenStack key pair service, and it is not possible to access the machine
+                                                                internally without this option.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the override login user. This is necessary for OpenStack if you
+                                                                are going to use a custom based ubuntu image.
+                                                            </para>
+                                                        </listitem>
+                                                    </orderedlist>
+                                                </para>
+                                            </listitem>
+                                        </itemizedlist>
+                                        <figure id="portal-openstack">
+                                            <title>Portal OpenStack</title>
+                                            <mediaobject>
+                                                <imageobject>
+                                                    <imagedata fileref="media/portal-OpenStack.png" scale="30"></imagedata>
+                                                </imageobject>
+                                            </mediaobject>
+                                        </figure> 
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        To start the process after filling up the form, press the launch instance button. 
+                                        The whole process will probably take between 10-15 minutes on average. In the end,
+                                        you will receive a notification showing the address were you can access the Dashboard
+                                        in your browser and its private ip address. To login, use the credentials you specified
+                                        previously in the portal.
+                                    </para>
+                                </listitem>
+                            </itemizedlist>
+                        </para>
+                        <note>
+                            <title>IP pools in OpenStack</title>
+                            <para>
+                                In order to deploy successfully a dashboard in OpenStack, it is necessary that you have allocated
+                                at least 1 public IP in that project. During the deployment phase we will query the OpenStack
+                                project and link the public ip to the created VM.
+                            </para>
+                        </note>
+                    </listitem>
+                    <listitem>
+                        <para>
+                            <emphasis>Baremetal Physical Machine:</emphasis>
+                            In order to deploy our dashboard in a physical machine of your choice follow these 
+                            simple steps:
+                            <itemizedlist>
+                                <listitem>
+                                    <para>
+                                        Login into the HOPStart Portal with your user name and password.
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        In the new page, select from the providers the Amazon EC2 option. A form will be 
+                                        generated were you need to fill in the following:
+                                        <itemizedlist>
+                                            <listitem>
+                                                <para>
+                                                    Dashboard credential, were you specify the admin username and password 
+                                                    in order to access your newly created dashboard.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    SSH credentials which include the host address of the machine we want to
+                                                    connect to and the private key to connect.
+                                                </para>
+                                            </listitem>
+                                            <listitem>
+                                                <para>
+                                                    Extra parameters that we might need:
+                                                    <orderedlist>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the option to authorize the public key, it will open a new option
+                                                                were you can insert your desired public key to allow extra access to the 
+                                                                machine.
+                                                            </para>
+                                                        </listitem>
+                                                        <listitem>
+                                                            <para>
+                                                                Selecting the override login user, here you fill the name of the sudo user
+                                                                to use to deploy our dashboard on the machine.
+                                                            </para>
+                                                        </listitem>
+                                                    </orderedlist>
+                                                </para>
+                                            </listitem>
+                                       
+                                        </itemizedlist>
+                                        <figure id="portal-baremetal">
+                                            <title>Portal OpenStack</title>
+                                            <mediaobject>
+                                                <imageobject>
+                                                    <imagedata fileref="media/portal-Baremetal.png" scale="30"></imagedata>
+                                                </imageobject>
+                                            </mediaobject>
+                                        </figure> 
+                                    </para>
+                                </listitem>
+                                <listitem>
+                                    <para>
+                                        To start the process after filling up the form, press the launch instance button. 
+                                        The whole process will probably take between 10-15 minutes on average. In the end,
+                                        you will receive a notification showing the address were you can access the Dashboard
+                                        in your browser and its private ip address. To login, use the credentials you specified
+                                        previously in the portal.
+                                    </para>
+                                </listitem>
+                            </itemizedlist>
+                        </para>
+                    </listitem>
+                </orderedlist>
+            </para>
+        </section>
     </section>
 </section>
