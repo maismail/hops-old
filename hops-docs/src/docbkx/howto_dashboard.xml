@@ -74,7 +74,7 @@
             <itemizedlist>
                 <listitem>
                     <para>
-                    <emphasis>New:</emphasis>
+                        <emphasis>New:</emphasis>
                     
                         Selecting this option will open a new dialog where you can define the main specifications
                         of your graph for a certain type of element monitored by the dashboard.
@@ -91,8 +91,8 @@
                 <listitem>
                     <para>
                         <emphasis>Import:</emphasis>
-                        It is also to import the graphs from a graph file written in JSON, this is the quickest way
-                        if you want to load a large number of graphs very quickly
+                        It is also possible to import the graphs from a graph file written in JSON, this is the quickest way
+                        if you want to load a large number of graphs quite easily
                     </para>
                     <figure xml:id="dash-import-graphs">
                         <title>Import Graphs</title>
@@ -106,17 +106,28 @@
             </itemizedlist>
         </para>  
         <para>
-            When graphs are generated in the table, you can select a graph of the table and get further 
-            details of the graph in a new dialog box by selecting the zoom icon on one of the entries.
+            When graphs are generated, they are stored in the graph database and running in the dashboard.
+            In the graph tables, it is possible to view all the graphs for a specific type of service or component 
+            the dashboard is capable of monitoring. Choosing a entry with the zoom icon, will generate a dialog
+            box where you can see more details of the graph entry.
         </para>
         <figure xml:id="dash-selected-graphs">
-                        <title>Graph Selection Detail</title>
-                        <mediaobject>
-                            <imageobject>
-                                <imagedata fileref="media/dash-detail-graphs.png" scale="30"></imagedata>
-                            </imageobject>
-                        </mediaobject>
-                    </figure> 
+            <title>Graph Selection Detail</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-detail-graphs.png" scale="30"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure> 
+    </sect1>
+     <sect1>
+        <title>Backup/Restore</title>
+        <para>
+            The Backup/Restore option allows the user to do 2 things, one is to do a whole backup of the
+            dashboard state stored in the database in case of failure, maintenance or any other reasons.
+            The other option is to restore the dashboard's state from a previous backup which was obtained
+            from the dashboard.
+        </para>
     </sect1>
     <sect1>
         <title>Setup Credential</title>
@@ -133,6 +144,7 @@
             </mediaobject>
         </figure>   
     </sect1>
+   
     
     <sect1>
         <title>Cluster Definition</title>
