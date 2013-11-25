@@ -65,7 +65,7 @@
             <title>Edit Graphs</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-edit-graphs.png" scale="30"></imagedata>
+                    <imagedata fileref="media/dash-edit-graphs.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -83,7 +83,8 @@
                         <title>Graph Editor</title>
                         <mediaobject>
                             <imageobject>
-                                <imagedata fileref="media/dash-new-graphs.png" scale="30"></imagedata>
+                                <imagedata fileref="media/dash-new-graphs.png" scale="30"
+                                    align="center"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
@@ -98,7 +99,8 @@
                         <title>Import Graphs</title>
                         <mediaobject>
                             <imageobject>
-                                <imagedata fileref="media/dash-import-graphs.png" scale="30"></imagedata>
+                                <imagedata fileref="media/dash-import-graphs.png" scale="30"
+                                    align="center"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
@@ -115,7 +117,7 @@
             <title>Graph Selection Detail</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-detail-graphs.png" scale="30"></imagedata>
+                    <imagedata fileref="media/dash-detail-graphs.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure> 
@@ -132,7 +134,7 @@
             <title>Backup/Restore</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-backup-restore.png" scale="30"></imagedata>
+                    <imagedata fileref="media/dash-backup-restore.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure> 
@@ -150,7 +152,7 @@
             <title>Setup Credentials</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-credentials.png" scale="30"></imagedata>
+                    <imagedata fileref="media/dash-credentials.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -172,7 +174,7 @@
             <title>Manage Cluster</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-manage-cluster.png" scale="50"></imagedata>
+                    <imagedata fileref="media/dash-manage-cluster.png" scale="50" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -301,7 +303,8 @@
                 <title>Clusters Progress:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters-progress.png" scale="50"></imagedata>
+                        <imagedata fileref="media/dash-clusters-progress.png" scale="50"
+                            align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure> 
@@ -373,7 +376,7 @@
                 <title>Hosts:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-hosts.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-hosts.png" scale="30" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>   
