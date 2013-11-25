@@ -425,6 +425,14 @@ nodes:
                                     </para>
                                 </listitem>
                             </itemizedlist>
+                            <figure xml:id="dash-clusterType">
+            <title>Select Cluster Type:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-clusterType.png" scale="30"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
                         </para>
                     </listitem>
                     <listitem>
@@ -482,6 +490,22 @@ nodes:
                                             </para>
                                         </listitem>
                                     </orderedlist>
+                                    <figure xml:id="dash-common-cluster">
+            <title>Common Cluster Options:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-cluster-common.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        <figure xml:id="dash-bare-cluster">
+            <title>Bare Metal Common Cluster Options:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-bare-common.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
                                 </para>
                             </listitem>
                             <listitem>
@@ -520,6 +544,14 @@ nodes:
                                             </para>
                                         </listitem>
                                     </orderedlist>
+                                    <figure xml:id="dash-provider-cluster">
+            <title>Cluster Provider Options:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-cluster-provider.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
                                 </para>
                             </listitem>
                             <listitem>
@@ -574,6 +606,22 @@ nodes:
                                             </para>
                                         </listitem>
                                     </orderedlist>
+                                    <figure xml:id="dash-groups-cluster">
+            <title>Cluster Group:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-cluster-groups.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        <figure>
+            <title>Bare Metal Groups:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-bare-groups.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>    
                                 </para>
                             </listitem>
                             <listitem>
@@ -582,6 +630,14 @@ nodes:
                                     In this section you will see a summary of the details of you cluster file.
                                     When you press the submit button, your cluster file will be stored in the dashboard
                                     and it will proceed to the cluster launcher.
+                                     <figure xml:id="dash-cluster-confirmation">
+            <title>Confirmation:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-cluster-confirmation.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>   
                                 </para>
                             </listitem>
                         </itemizedlist>

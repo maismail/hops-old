@@ -80,7 +80,7 @@
                         of your graph for a certain type of element monitored by the dashboard.
                     </para>
                     <figure xml:id="dash-new-graphs">
-                        <title>New Graph Editor</title>
+                        <title>Graph Editor</title>
                         <mediaobject>
                             <imageobject>
                                 <imagedata fileref="media/dash-new-graphs.png" scale="30"></imagedata>
@@ -120,7 +120,7 @@
             </mediaobject>
         </figure> 
     </sect1>
-     <sect1>
+    <sect1>
         <title>Backup/Restore</title>
         <para>
             The Backup/Restore option allows the user to do 2 things, one is to do a whole backup of the
@@ -128,18 +128,29 @@
             The other option is to restore the dashboard's state from a previous backup which was obtained
             from the dashboard.
         </para>
+        <figure xml:id="dash-backup">
+            <title>Backup/Restore</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-backup-restore.png" scale="30"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure> 
     </sect1>
     <sect1>
         <title>Setup Credential</title>
-        <para>To give dashboard access to your cloud provider, you must supply credentials for it first. To do that go to the rightmost upside bar (perspective bar) and select 
-            "Setup Credentials". There you would see 
-            <xref linkend="dash-credentials"/>, it that page you activate settings for the provider you wanna use and fill in the creadential information.
+        <para>
+            This option allows the user to setup the credentials that will be used when the dashboard deploys
+            a cluster. You can select between Amazon EC2, OpenStack or Baremetal, depending on what option
+            you select; it will enable or disable sections of the form. This is important as not setting up this
+            credentials, will make the deployment architecture to fail when querying the cloud providers for
+            the necessary resources for your clusters.
         </para>
         <figure xml:id="dash-credentials">
-            <title>Cloud Credentials</title>
+            <title>Setup Credentials</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-credentials.png" scale="50"></imagedata>
+                    <imagedata fileref="media/dash-credentials.png" scale="30"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -147,10 +158,15 @@
    
     
     <sect1>
-        <title>Cluster Definition</title>
-        <para>In each cluster, top level stuff that are defined are services, each service consists of a few roles and each role is played by a one or number of machines. In the 
-            dashboard if you step into "Manage Clusters" you will see table of available clusters if you have already something defined, besides, you can define your own cluster. 
-            You can either choose to restore cluster definition from YML file or you can start defning new one by using GUI wizard as in /ref-def-cluster0.
+        <title>Cluster Management</title>
+        <para>
+            One of the options in the main Dashboard toolbar which will be of interest for Hadoop Administrators 
+            is the Manage Cluster option. This will bring a new view were users will be able to do a series of
+            basic operations with their stored clusters. The Dashboard will keep track of all the users clusters in a table that will be 
+            visible when the user accesses this view. Also in this view, users are able of uploading clusters easily with the
+            provided uploader. In the next chapter, we will explain in detail how users can create their clusters
+            using our cluster definition language or the provided cluster generator wizard, see 
+            <xref linkend="ch04">Chapter 4: Defining Clusters</xref>.
         </para>
         <figure xml:id="dash-manage-cluster">
             <title>Manage Cluster</title>
@@ -160,81 +176,108 @@
                 </imageobject>
             </mediaobject>
         </figure>
-        <figure xml:id="dash-common-cluster">
-            <title>Common Cluster Options</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-cluster-common.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <figure xml:id="dash-provider-cluster">
-            <title>Cluster Provider Options</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-cluster-provider.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <figure xml:id="dash-groups-cluster">
-            <title>Cluster Group</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-cluster-groups.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>       
-        <figure xml:id="dash-cluster-confirmation">
-            <title>Common Cluster Options</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-cluster-confirmation.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>   
-        <figure xml:id="dash-bare-cluster">
-            <title>Bare Metal Cluster</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-bare-common.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <figure>
-            <title>Bare Metal Groups</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-bare-groups.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <figure>
-            <title>Bare Metal Group Detail</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-bare-group-detail.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <figure>
-            <title>Bare Metal Confirmation</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-bare-confirmation.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-
-        </figure>   
-        <para>In the cloud provider wizard choose your cloud provider, git repository of installation recepiet code, the global recepiet and global ports. In the second page you
-            need to define your providers detail which proceeds to group nodes in the third page. After you finish this you will see summary of your cluster in last page.
+        <para>
+            From the previous image we can see that the following options are available for a user:
+            <itemizedlist>
+                <listitem>
+                    <emphasis>Create Cluster:</emphasis>
+                    Selecting this option it will take you to the cluster generation wizard where a user will be able
+                    of generate its own cluster for HOPstart. We will explain in detail how this process works in the
+                    next chapter 
+                    <xref linkend="ch04">Chapter 4: Defining Clusters</xref>.
+                </listitem>
+                <listitem>
+                    <emphasis>Delete Clusters:</emphasis>
+                    This option will delete a selected cluster from the table. It is possible to delete multiple entries
+                    at once by shift clicking multiple entries before selecting this option.
+                </listitem>
+                <listitem>
+                    <emphasis>Edit Selected Cluster:</emphasis>
+                    This option will allow a user to edit an existing cluster from the stored clusters. This will bring
+                    the cluster generation wizard with the values of the selected cluster so the user can modify
+                    their cluster.
+                </listitem>
+                <listitem>
+                    <emphasis>Load Selected Cluster:</emphasis>
+                    This option will allow the user to load one of the stored clusters into the cluster launcher. From
+                    there the user can deploy the cluster on the environment of defined in that cluster.
+                </listitem>
+                <listitem>
+                    <emphasis>Export Cluster:</emphasis>
+                    This option allows the user to download, in a YAML file; a stored cluster in the dashboard.
+                </listitem>
+            </itemizedlist>
         </para>
-        <para>If you choose to setup your cluster on bare metal machines, after you specifying intial stuff in the first page you must define your node groups and the machines 
-            blonging into each group in the second page and finally you will see defnition of your cluster in the latest page.
-        </para>
-        <para>Having clusters defined, you can choose one and modify its defintion in "Modify Cluster" page.</para>    
-
     </sect1>
-    
+    <sect1>
+        <title>Clusters Progress:</title>
+        <para>
+            Another interesting feature for Hadoop administrators, is the option available in the main Dashboard
+            toolbar for tracking the progress of the nodes deployed for your multiple clusters. Selecting this
+            option will bring you a view where you will have all the history of all the nodes through multiple phases
+            of the deployment cycle. A progress bar will appear over each of the entries in the table to see the
+            deployment progress of the nodes and an information tag with the current phase. Here you will be 
+            notified of succesfully configured nodes or nodes that had an error during the deployment phase 
+            of your cluster which will require of special maintenance. A node entry will go through the following
+            phases during a cluster deployment.
+            
+            <itemizedlist>
+                <listitem>
+                    <emphasis>Waiting:</emphasis>
+                    A node in this phase means, that; the entry has been generated in the node scheduler but
+                    no node creation query has been generated to the cloud provider. It will wait until the query
+                    is submitted against the cloud provider.
+                </listitem>
+                <listitem>
+                    <emphasis>Creation:</emphasis>
+                    A node in this phse means, that; the scheduler has submitted the query against the cloud 
+                    provider and it is waiting for the cloud provider to finish deploying the virtual instance. After
+                    succesfully getting back the information of the specific instance, an initialization script is executed
+                    to do a preliminary configuration on that node.
+                </listitem>
+                <listitem>
+                    <emphasis>Install:</emphasis>
+                    A node in this phase means, that; the node is already created and we are running the install
+                    script which will execute chef install recipes for HOPStart services to fetch the necessary binaries
+                    from the different repositories. This phase is optional in case of using prebuilt virtual instances
+                    which contain HOPStart binaries inside.
+                </listitem>
+                <listitem>
+                    <emphasis>Configure:</emphasis>
+                    A node in this phase means, that; the node is receiving the configuration script which will
+                    execute chef with the selected recipes for the services defined for that node.
+                </listitem>
+                <listitem>
+                    <emphasis>Complete:</emphasis>
+                    A node in this phase means, that; the node has succesfully finished executing the configuration
+                    script with chef and it is now working as part of the cluster.
+                </listitem>
+                <listitem>
+                    <emphasis>Retrying:</emphasis>
+                    A node in this phase means, that; the deployment system has detected a problem during 
+                    a previous node phase and it is triggering the retrying mechanism. It will retry submitting the
+                    previous phase script for 5 retries which will stop when the number of retries finish or we manage
+                    to recover the node.
+                </listitem>
+                <listitem>
+                    <emphasis>Error:</emphasis>
+                    A node in this phase means, that; the deployment system failed to recover the node through
+                    the retrying mechanism. This will be shown as a Red entry in the progress table and further actions
+                    will be needed by the Hadoop administrator in order to recover that node, for example; SSH to
+                    the failed node in order to get more information of the type of error it got.
+                </listitem>
+            </itemizedlist>
+        </para>
+        <figure>
+            <title>Clusters Progress:</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-clusters-progress.png" scale="50"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>   
+        
+    </sect1>
     <sect1>
         <title>Monitoring</title>
         <para>Dashboard supplies you with number of views and graphs to watch status of the resources in your clusters. You can browes your physical resources, services that are 
