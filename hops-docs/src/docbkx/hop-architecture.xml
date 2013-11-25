@@ -33,7 +33,7 @@
         </authorgroup>
 
         <volumenum>1</volumenum>
-        <edition>HOP Architecture Guide version 0.1</edition>
+        <edition>Hop Architecture Guide version 0.1</edition>
         <copyright>
             <year>2013</year>
             <holder>KTH</holder>
@@ -51,10 +51,6 @@
     <chapter>
         <title>Hop Architectue</title>
         <xi:include href="architecture.xml" />
-    </chapter>
-    <chapter>
-        <title>Getting Started</title>
-        <xi:include href="getting_started.xml" />
     </chapter>
     
     

@@ -10,13 +10,74 @@
   
   
   <title>Configuring HDFS</title>
-  <para>HOP introduces few new configuration parameters to HDFS. These parameters can be specified in hdfs-site.xml file. 
-    Detailed list of new configuration parameters is given below 
+  <para>We introduce a few new configuration parameters to HDFS, due to our
+      support for multiple NameNodes and use of MySQL Cluster for metadata storage. 
+      These parameters are specified in <emphasis>hdfs-site.xml</emphasis>. 
+      The configuration parameters listed below are additional to the 
+      <link xlink:href="http://hadoop.apache.org/docs/current/hadoop-project-dist/hadoop-hdfs/hdfs-default.xml">
+          configuration parameters for vanilla HDFS</link>.
   </para>
   
-  
   <sect1>
-    <title>Configuration Parameters</title>
+    <title>HDFS Configuration Parameters not used by Hop</title>
+    <para>
+    We have replaced HDFS 2.x's Primary-Secondary Replication model with shared atomic transactional
+    memory. This means that we no longer use the parameters in HDFS that are based on the (eventually
+    consistent) replication of <emphasis>edit log entries</emphasis> from the Primary NameNode 
+    to the Secondary NameNode using a set of quorum-based replication servers. 
+    Here are the parameters that are not used in the HOP version of HDFS 2.x:
+    
+    <itemizedlist>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.secondary.*:</emphasis> None of the secondary NameNode attributes used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.checkpoint.*:</emphasis> None of the checkpoint attributes used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.image.*:</emphasis> None of the FSImage attributes used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.journalnode.*:</emphasis> None of the hadoop's journaling attributes are used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.ha.*:</emphasis> None of the hadoop high availability attributes are used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.num.extra.edits.*:</emphasis> None of the edit logs attributes used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.name.dir>*</emphasis> FSImage is not supported anymore.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.edits.*</emphasis> None of the edit log attributes are used.
+        </para>
+      </listitem>
+      <listitem>
+        <para>
+          <emphasis>dfs.namenode.shared.edits.*</emphasis> None of the edit log attributes are used.
+        </para>
+      </listitem>
+      </itemizedlist>
+    </para>
+  </sect1>
+  <sect1>
+    <title>Additional HDFS Configuration Parameters</title>
     <itemizedlist>
       
       <listitem>
