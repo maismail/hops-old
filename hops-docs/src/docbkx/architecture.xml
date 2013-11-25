@@ -8,7 +8,7 @@
          xmlns:db="http://docbook.org/ns/docbook">
     
     <section>
-        <title>Hop Stack</title>
+        <title>Hop Architecture</title>
         <para>Hops, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
             Cross-layer aspects like Security and PaaS services are also included.</para>
