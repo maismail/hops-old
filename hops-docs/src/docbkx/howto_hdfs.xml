@@ -247,7 +247,7 @@
           <emphasis>dsf.client.refresh.namenode.list:</emphasis> 
           All clients periodically refresh the list of active NameNodes in the system. 
           By default after every minute the client checks for changes in the membership of the NameNodes. 
-          Higher values can be chosen for scenarios where the membership does not change frequently
+          Higher values can be chosen for scenarios where the membership does not change frequently.
         </para>
       </listitem>
     </itemizedlist>    

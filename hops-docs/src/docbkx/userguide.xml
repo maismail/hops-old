@@ -26,15 +26,7 @@
                 <personname>Hamidzera Afzali</personname>
             </author>
         </authorgroup>
-        
-        <revhistory>
-            <revision>
-                <revnumber>0.1</revnumber>
-                <date>2013-11-01</date>
-                <revremark>First draft</revremark>
-            </revision>
-        </revhistory>
-        
+        <volumenum>0.1</volumenum>
         <orgname>Kungliga Tekniska högskolan</orgname>
         <edition>HOP User Guide version</edition>
         <copyright>
@@ -42,8 +34,7 @@
             <holder>KTH</holder>
         </copyright>
         
-    
-            
+
         <legalnotice>
             <para>Permission to use, copy, modify and distribute
                 this DocBook DTD and its accompanying documentation for any purpose and
