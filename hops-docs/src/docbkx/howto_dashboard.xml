@@ -7,7 +7,7 @@
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch03">
-    <title>HOPStart Dashboard</title>
+    <title>Dashboard</title>
     
     <para>In this section we will give an overview of our HOPStart Dashboard web based application.
         This web application was design with Hadoop administrators in mind so they can easily monitor, 

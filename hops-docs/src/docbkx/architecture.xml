@@ -8,136 +8,66 @@
          xmlns:db="http://docbook.org/ns/docbook">
     
     <section>
-        <title>Hop Stack</title>
+        <title>Hop Architecture</title>
         <para>Hops, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
             Cross-layer aspects like Security and PaaS services are also included.</para>
 
         <figure id="arch-stack">
-            <title>Big Data stack</title>
+            <title>Hop stack</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-stack.png" width="6in" depth="5.5in" contentwidth="4in" contentdepth="3in"></imagedata>
+                    <imagedata fileref="media/arch-stack.png" scale="70" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>    
-        <para>At the bottom layer of big data stack, there is a new version of Hadoop Distributed File System, HOPSFS, with distributed NameNode. NameNodes' metadata has 
-            relational representation which is stored in shared nothing, in-memory and replicated database, MySQL-Cluster. State-less NameNodes makes HOPS-FS highly available
-            highly performant with the capacity of petabytes storage.</para>
-        <para>YARN, new version of Hadoop, which is meant to support different processing models other that Map-Reduce by separating its Resource Manager from Scheduler and 
-            Application Master. Application Master gives us flexibility to accommodate heterogeneous processes by implementing a wrapper for each kind of application so it could 
-            manage any kind of processing resources that is defined for it. It enables HOPS platform to not be able to support end to end big workflow of big data, containing 
-            map-reduce jobs or any other kind of jobs. </para>
-        <para>On top of YARN, HOPS workflow engine parses workflows into an execution model of arbitrary tasks. For each task, it asks YARN for a containter, then for each
-            container allocated task based on the scheduling policy it stages in data into HOPSFS, launches the task and stages out the result back to HOPSFS.</para>
+        <para>.</para>
+        <orderedlist>
+            <listitem>
+                <para>
+                    <emphasis>HOP File System (HOP-FS):</emphasis>
+                    At the bottom layer of big data stack is HOP-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
+                    representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
+                    of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
+                    maintaining the consistency of the metadata, while providing high performance. HOP-FS also guarantees freedom from deadlock and progress.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <emphasis>MySQL Cluster:</emphasis>
+                    MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
+                    Designed around a distributed, multi-master architecture with no single point of failure;
+                    MySQL Cluster's real-time design delivers predictable, milisecond response times with 
+                    the ability to service millions of operations per second. In the case of our data platform, it is
+                    used to handle and manage the state of our multi-namenode solution of our architecture.                                    
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <emphasis>YARN:</emphasis>
+                    Resource negotiator for managing high volume distributed data processing tasks against HDFS. 
+                    It supports different processing models other that Map-Reduce by separating its Resource 
+                    Manager from Scheduler and Application Master. Application Master gives us flexibility to 
+                    accommodate heterogeneous processes by implementing a wrapper for each kind of application 
+                    so it could manage any kind of processing resources that is defined for it. This allows user 
+                    to process data intensive task like MapReduce jobs or in our case our future support for 
+                    bioinformatic workflow tasks engine which will make use of YARN to handle and negotiate the 
+                    scheduling of this type of jobs.                                 
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <emphasis>Workflow Engine:</emphasis>
+                    On top of YARN, HOPS workflow engine parses workflows into an execution model of arbitrary tasks. 
+                    For each task, it asks YARN for a containter, then for each container allocated task based on 
+                    the scheduling policy it stages in data into HOPSFS, launches the task and stages out the result 
+                    back to HOPSFS                                     
+                </para>
+            </listitem>
+        </orderedlist>
     </section>
 
   
-    <section>
-        <title>Hop Basics</title>
-        <para>Hop consists of multiple services:
-            <itemizedlist>
-                <listitem>
-                    <para>
-                        <emphasis>Core Platform:</emphasis> The basic components of our Hadoop distribution.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Hadoop Distributed File System (HDFS):</emphasis>
-                                    Hadoop provides high-throughput access to data in a highly distributed environment. 
-                                    In our case our distribution is based on Hadoop version 2 release modified in order to offer 
-                                    extended mechanism for more scalable and available namenode.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>MySQL Cluster:</emphasis>
-                                    MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
-                                    Designed around a distributed, multi-master architecture with no single point of failure;
-                                    MySQL Cluster's real-time design delivers predictable, milisecond response times with 
-                                    the ability to service millions of operations per second. In the case of our data platform, it is
-                                    used to handle and manage the state of our multi-namenode solution of our architecture.                                    
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>YARN:</emphasis>
-                                    Resource negotiator for managing high volume distributed data processing tasks against
-                                    HDFS. This allows user to process data intensive task like MapReduce jobs or in our case
-                                    our future support for bioinformatic workflow tasks engine which will make use of YARN
-                                    to handle and negotiate the scheduling of this type of jobs.                                     
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Open Platform-as-a-Service:</emphasis> 
-                        The key components behind our Open Platform-as-a-Service solution.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Chef:</emphasis>
-                                    Chef is a systems and cloud infrastructure automation framework based on Ruby 
-                                    that simplifies deployment of servers and applications to any physical, virtual or cloud location
-                                    no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
-                                    (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
-                                    With each definition, we describe how a specific part should be built and managed, which then; the chef-client
-                                    applies these definitions to deploy and configure servers and applications as specified.
-                                    In most of the cases, it is simple enough to let chef-client know which cookbooks and recipes
-                                    it needs to apply.
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>Apache JClouds:</emphasis>
-                                    Apache JClouds is an open source multi-api interface which allows easy interaction 
-                                    with multiple cloud providers and cloud software stacks. This open source api gives 
-                                    support around 30 providers which include Amazon, Azure, OpenStack and 
-                                    Rackspace. JClouds offers api implementations both in Java or Clojure.
-                                    Through they simple interface, it is very simple to deploy and port your application
-                                    over different cloud environments.            
-                                </para>
-                            </listitem>
-                            <listitem>
-                                <para>
-                                    <emphasis>SnakeYAML and YAML:</emphasis>
-                                    YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
-                                    programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
-                                    allows easy mappings of common data types found in high level languages like list, 
-                                    associative arrays and scalar. It makes it suitable for tasks where humans are likely to
-                                    view or edit data structures, such as configuration files or in our case, cluster
-                                    definition files. Additionally, we make use of the open source parser SnakeYAML to parse
-                                    the contents of our cluster definition files.
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Hadoop Support:</emphasis> 
-                        Set of components that allow easy monitoring your hadoop installation.
-                        <orderedlist>
-                            <listitem>
-                                <para>
-                                    <emphasis>Collectd:</emphasis>
-                                    Collectd is a daemon which collects system performance statistics periodically and 
-                                    provides mechanisms to store values in a variety of ways like RRD files. Collectd 
-                                    gathers statistics about the system it is running and stores this information. With 
-                                    these statistics, we can keep track of the performance of your cluster and detect
-                                    possible failures and performance bottlenecks that might be needed to be address.
-                                </para>
-                            </listitem>
-                        </orderedlist>
-                    </para>
-                </listitem>
-            </itemizedlist>
-        </para>
-    </section>        
-
-    
     <section>
         <title>Deployment model</title>
         <para>At the moment HOPS supports Amazon Cloud, Open Stack and Bare Metal. Based on the chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment 
@@ -150,53 +80,91 @@
             <title>Deployment Model</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="50"></imagedata>
+                    <imagedata fileref="media/arch-deploy.png" scale="35" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>
     </section>
 
-  
     <section>
         <title>Helper Stack</title>
-        <para>Helpers are the intial set up on every machine that provide basics for cloud installation and configiration. On top of them, HOPML is an expressive, extendible 
-            markup language that enables definition of the could platform. Its parser transforms the given cluster definition into consecutive stages such as defining security 
-            groups, virtual machine allocation, bittorent, installation, validation and retry. All communications with cloud provider happens through JCloud service, each single
-            configuration in HOPML may result in multiple JCloud instructions. After machines are allocated in cloud, with the metadata information that JCloud returns, dashboard
-            tries to open a ssh connection into every single machine and install Chef agent for installations. Before installation starts, software libraries is replicated in all
-            machines from dashboard, though the process could overflow the bandwidth to dashboard if all machines try to download from dashboard. To handle this situation HOPS run
-            a bittorent in which dashboard machine is the seeder, then all machnies could contribute to download process which is both faster and anti-bottleneck. After download 
-            Chef agent starts installation based on the required packages in each machine and with the order of dependencies between packages. 
+        <para>Helpers are the intial set up on every machine that provide basics for cloud installation and configiration. 
+            <figure id="arch-helper">
+                <title>Helper stack</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/arch-layers.png" scale="50" align="center"></imagedata>
+                    </imageobject>
+                    <caption>
+                        <para>Helper Stack</para>
+                    </caption>
+                </mediaobject>
+            </figure>
+            <orderedlist>
+                <listitem>
+                    <para>
+                        <emphasis>SnakeYAML and YAML:</emphasis>
+                        YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
+                        programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
+                        allows easy mappings of common data types found in high level languages like list, 
+                        associative arrays and scalar. It makes it suitable for tasks where humans are likely to
+                        view or edit data structures, such as configuration files or in our case, cluster
+                        definition files. Additionally, we make use of the open source parser SnakeYAML to parse
+                        the contents of our cluster definition files. Parser transforms the given cluster 
+                        definition into consecutive stages such as defining security groups, virtual machine 
+                        allocation, bittorent, installation, validation and retry.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Apache JClouds:</emphasis>
+                        Apache JClouds is an open source multi-api interface which allows easy interaction 
+                        with multiple cloud providers and cloud software stacks. This open source api gives 
+                        support around 30 providers which include Amazon, Azure, OpenStack and Rackspace. 
+                        JClouds offers api implementations both in Java or Clojure. Through they simple 
+                        interface, it is very simple to deploy and port your application over different cloud 
+                        environments. Each single configuration in YAML may result in multiple JCloud instructions.         
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Chef:</emphasis>
+                        Chef is a systems and cloud infrastructure automation framework based on Ruby 
+                        that simplifies deployment of servers and applications to any physical, virtual or cloud location
+                        no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
+                        (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
+                        With each definition, we describe how a specific part should be built and managed, which then; the chef-client
+                        applies these definitions to deploy and configure servers and applications as specified.
+                        In most of the cases, it is simple enough to let chef-client know which cookbooks and recipes
+                        it needs to apply.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>BoitTorent:</emphasis>
+                        After machines are allocated in cloud, with the metadata information that JCloud returns, dashboard
+                        tries to open a ssh connection into every single machine and install Chef agent for installations. 
+                        Before installation starts, software libraries is replicated in all machines from dashboard, though 
+                        the process could overflow the bandwidth to dashboard if all machines try to download from dashboard. 
+                        To handle this situation HOPS run a bittorent in which dashboard machine is the seeder, then all 
+                        machnies could contribute to download process which is both faster and anti-bottleneck. After download 
+                        Chef agent starts installation based on the required packages in each machine and with the order of 
+                        dependencies between packages. 
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Collectd:</emphasis>
+                        Collectd is a daemon which collects system performance statistics periodically and 
+                        provides mechanisms to store values in a variety of ways like RRD files. Collectd 
+                        gathers statistics about the system it is running and stores this information. With 
+                        these statistics, we can keep track of the performance of your cluster and detect
+                        possible failures and performance bottlenecks that might be needed to be address.
+                    </para>
+                </listitem>
+            </orderedlist>
         </para>
-        <figure id="arch-helper">
-            <title>Helper stack</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/arch-layers.png" scale="50"></imagedata>
-                </imageobject>
-                <caption>
-                    <para>Helper Stack</para>
-                </caption>
-            </mediaobject>
-        </figure>
-    </section>
-    
-    <section>
-        <title>Orchestration Stack</title>
-        <para>
-            Our orchestration architecture makes use of multiple technologies in order to simplify the process
-            of configuring and deploying a large cluster in the environment of their choice. This can be displayed
-            as stack of technologies that interact between each other in order to succesfully configure a 
-            cluster in the cloud.
-        </para>
-        <figure id="Orch-Stack">
-            <title>Orchestration Stack</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/stack.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>
+
     </section>
 
 </section>

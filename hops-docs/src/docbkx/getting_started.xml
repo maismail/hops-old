@@ -7,7 +7,7 @@
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch02">
-    <title>HOP Portal</title>
+    <title>Portal</title>
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
         hadoop platform focusing in improving its scalability, availability and reliability. This section describes
         the information and materials you need in order to start working with our data platform by making use

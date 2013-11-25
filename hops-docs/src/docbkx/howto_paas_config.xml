@@ -7,7 +7,7 @@
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch04">
-    <title>Defining Clusters</title>
+    <title>Defining a Cluster</title>
 
     <para>
         In this section, we describe the tools we offer in order to easily define and structure your clusters
