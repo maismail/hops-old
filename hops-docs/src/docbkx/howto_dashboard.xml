@@ -196,10 +196,12 @@
                     </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Edit Selected Cluster:</emphasis>
                     This option will allow a user to edit an existing cluster from the stored clusters. This will bring
                     the cluster generation wizard with the values of the selected cluster so the user can modify
                     their cluster.
+                    </para>
                 </listitem>
                 <listitem>
                     <para>
@@ -290,29 +292,32 @@
                     </para>
                 </listitem>
             </itemizedlist>
+            
         </para>
-        <figure>
-            <title>Clusters Progress:</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-clusters-progress.png" scale="50"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>   
+  
         
         <para>
+            <figure>
+                <title>Clusters Progress:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-clusters-progress.png" scale="50"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure> 
+            
             From the previous figure, we get an overview of the cluster progress table. In here, the user is 
             capable of executing the following actions:
             <itemizedlist>
-                <itemlist>
+                <listitem>
                     <para>
                     <emphasis>Delete Nodes:</emphasis>
                     A user can select multiple node entries by shift click and later delete their progress history
                     by executing this command. Note that this option will delete node entries which are registered
                     with a node complete phase.
                     </para>
-                </itemlist>
-                <itemlist>
+                </listitem>
+                <listitem>
                     <para>
                     <emphasis>Retry Nodes:</emphasis>
                     A user can do make use of this option in order to execute further retry procedures on nodes
@@ -321,7 +326,7 @@
                     configuration script by executing only chef in that node. It is possible to retry multiple nodes
                     at once by selecting multiple entries by shift click.
                     </para>
-                </itemlist>
+                </listitem>
             </itemizedlist>
         </para>
     </sect1>
