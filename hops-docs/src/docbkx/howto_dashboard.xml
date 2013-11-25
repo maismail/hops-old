@@ -382,6 +382,22 @@
                 with the graphs that are available for the Hosts components. See the previous Edit Graphs section,
                 where we explained how users can create graphs for the dashboards monitoring components.
             </para>
+            <figure>
+                <title>Hosts Details-Services:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-host-detail.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <figure>
+                <title>Hosts Details Graphs:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-host-detail-2.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>     
         </sect2>
         <sect2>
             <title>Alerts:</title>
@@ -393,6 +409,14 @@
                 with the alert like the source that originated the alert and other parameters that help to track
                 the source of the alert.
             </para>
+            <figure>
+                <title>Alerts:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-alerts.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>    
         </sect2>
         <sect2>
             <title>Clusters:</title>
@@ -405,6 +429,148 @@
                 graphs defined by the user. See the previous Edit Graphs section, for information on how to generate
                 graphs for the Dashboard.                
             </para>
+            <figure>
+                <title>Clusters:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-clusters.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <para>
+                From the previous image, we can see a top level overview of each cluster with general information
+                on the status of that cluster. This contains information on the number of nodes that compose that
+                cluster, the current health of the cluster and the number of hosts involved in the cluster. Also it
+                keeps track of the resources allocated on that cluster like the total number of cores which compose
+                the overall computing power of the cluster, the total disk capacity and the total physical memory 
+                capacity. Selecting a cluster entry will bring a more detailed view of that cluster.
+            </para>   
+            <figure>
+                <title>Cluster Detail:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-cluster-detail.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <para>
+                In this new view, we can see that we have gone further inside the services the cluster consists of
+                and here the user can identify the status of each of the services that are part of the current cluster
+                instance. Selecting one of the services will show greater detail of information of the service. We will
+                see how it looks like each view for each of the services of th HOPStart service. Note that in order
+                for the graphs to appear, a user needs to configure the specific graph for the specific component, refer to
+                the Edit Graph section found in this chapter.
+            </para>
+            <sect3>
+                <title>YARN monitoring:</title>
+                <para>
+                    If YARN is enabled in your cluster, you can get highly detailed information of YARN like the total
+                    amount of resource managers and node managers, and resource metrics of interest for YARN
+                    monitoring.
+                    </para>
+                    <figure>
+                <title>YARN Metrics:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-YARN-metrics.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <para>
+                If you select one of the components that form part of the YARN ecosystem, you will get more
+                information on that specific component.
+            </para>
+            <figure>
+                <title>Resource Manager Metrics:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-YARN-resource.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <figure>
+                <title>Node Manager Metrics:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-YARN-manager.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <para>
+                If you select the corresponding web UI link that appears in one of the YARN components, it will
+                load the respective Hadoop information Web ui with more detailed information of that component.
+            </para>
+            
+            <figure>
+                <title>Resource Manager UI:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-YARN-resourceUI.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+               <figure>
+                <title>Node Manager UI:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-YARN-managerUI.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure> 
+            </sect3>
+            <sect3>
+                <title>MySQL Cluster</title>
+                <para>
+                    You can get a highly detailed view of what is happening in MySQL cluster after deploying a 
+                    HOPStart cluster. You can keep track of statistics of interest in order to keep the performance
+                    of your MySQL Cluster in good shape. If you select the MySQL you can obtain the following information
+                    if the graphs are configured accordingly, see Edit Graph section in this chapter.
+                </para>
+                 <figure>
+                <title>MySQL overall graphs:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-MYSQL-graphs.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+                 <para>
+                     We also offer additional functionality for users to maintain and manage the status of their
+                     MySQL cluster without the need to connecting directly to the machine. We provide an online
+                     terminal where users can execute mysql commands directly to the MySQL cluster without any
+                     delay.
+                 </para>
+                  <figure>
+                <title>MySQL console:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-MYSQL-console.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            </sect3>
+            <sect3>
+                <title>HOPS File System</title>
+                <para>
+                   You can get a highly detailed view of what is happening in the HOPStart file system after deploying a 
+                    HOPStart cluster. You can keep track of statistics of interest in order to keep the performance
+                    of your HOPStart system in good shape. If you select the HOPStart option you can obtain information
+                    from the graphs previously configured in the Edit Graph section.
+                </para>
+                <para>
+                    We also offer additional functionality for users to manage the file system without the need to 
+                    connecting directly to the machine. We provide an online terminal where users can execute 
+                    hdfs commands directly to the file system without any delay.
+                </para>
+                <figure>
+                <title>HOP console:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-HOP-console.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            </sect3>
         </sect2>
     </sect1>
     
