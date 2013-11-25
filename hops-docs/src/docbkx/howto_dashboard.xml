@@ -180,16 +180,20 @@
             From the previous image we can see that the following options are available for a user:
             <itemizedlist>
                 <listitem>
+                    <para>
                     <emphasis>Create Cluster:</emphasis>
                     Selecting this option it will take you to the cluster generation wizard where a user will be able
                     of generate its own cluster for HOPstart. We will explain in detail how this process works in the
                     next chapter 
                     <xref linkend="ch04">Chapter 4: Defining Clusters</xref>.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Delete Clusters:</emphasis>
                     This option will delete a selected cluster from the table. It is possible to delete multiple entries
                     at once by shift clicking multiple entries before selecting this option.
+                    </para>
                 </listitem>
                 <listitem>
                     <emphasis>Edit Selected Cluster:</emphasis>
@@ -198,13 +202,17 @@
                     their cluster.
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Load Selected Cluster:</emphasis>
                     This option will allow the user to load one of the stored clusters into the cluster launcher. From
                     there the user can deploy the cluster on the environment of defined in that cluster.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Export Cluster:</emphasis>
                     This option allows the user to download, in a YAML file; a stored cluster in the dashboard.
+                    </para>
                 </listitem>
             </itemizedlist>
         </para>
@@ -223,49 +231,63 @@
             
             <itemizedlist>
                 <listitem>
+                    <para>
                     <emphasis>Waiting:</emphasis>
                     A node in this phase means, that; the entry has been generated in the node scheduler but
                     no node creation query has been generated to the cloud provider. It will wait until the query
                     is submitted against the cloud provider.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Creation:</emphasis>
                     A node in this phse means, that; the scheduler has submitted the query against the cloud 
                     provider and it is waiting for the cloud provider to finish deploying the virtual instance. After
                     succesfully getting back the information of the specific instance, an initialization script is executed
                     to do a preliminary configuration on that node.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Install:</emphasis>
                     A node in this phase means, that; the node is already created and we are running the install
                     script which will execute chef install recipes for HOPStart services to fetch the necessary binaries
                     from the different repositories. This phase is optional in case of using prebuilt virtual instances
                     which contain HOPStart binaries inside.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Configure:</emphasis>
                     A node in this phase means, that; the node is receiving the configuration script which will
                     execute chef with the selected recipes for the services defined for that node.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Complete:</emphasis>
                     A node in this phase means, that; the node has succesfully finished executing the configuration
                     script with chef and it is now working as part of the cluster. Additionally, the nodes in this phase
                     will appear green in the progress history.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Retrying:</emphasis>
                     A node in this phase means, that; the deployment system has detected a problem during 
                     a previous node phase and it is triggering the retrying mechanism. It will retry submitting the
                     previous phase script for 5 retries which will stop when the number of retries finish or we manage
                     to recover the node.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Error:</emphasis>
                     A node in this phase means, that; the deployment system failed to recover the node through
                     the retrying mechanism. This will be shown as a Red entry in the progress table and further actions
                     will be needed by the Hadoop administrator in order to recover that node, for example; SSH to
                     the failed node in order to get more information of the type of error it got.
+                    </para>
                 </listitem>
             </itemizedlist>
         </para>
@@ -283,18 +305,22 @@
             capable of executing the following actions:
             <itemizedlist>
                 <itemlist>
+                    <para>
                     <emphasis>Delete Nodes:</emphasis>
                     A user can select multiple node entries by shift click and later delete their progress history
                     by executing this command. Note that this option will delete node entries which are registered
                     with a node complete phase.
+                    </para>
                 </itemlist>
                 <itemlist>
+                    <para>
                     <emphasis>Retry Nodes:</emphasis>
                     A user can do make use of this option in order to execute further retry procedures on nodes
                     that failed to deploy correctly. This will make the deployment system to execute a recovery 
                     script on the selected nodes in an error state. For now, this script simply tries to rerun the nodes
                     configuration script by executing only chef in that node. It is possible to retry multiple nodes
                     at once by selecting multiple entries by shift click.
+                    </para>
                 </itemlist>
             </itemizedlist>
         </para>
@@ -306,18 +332,24 @@
             the main Dashboard toolbar:
             <itemizedlist>
                 <listitem>
+                    <para>
                     <emphasis>Hosts:</emphasis>
                     Information and data analytics of all the nodes this dashboard is monitoring.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Alerts:</emphasis>
                     Information of possible alerts the HOPStart agents will be sending the dasboard in order
                     to notify the current state of the nodes.
+                    </para>
                 </listitem>
                 <listitem>
+                    <para>
                     <emphasis>Clusters:</emphasis>
                     A dropdown list with the available clusters been monitored by the dashboard. Selecting an 
                     entry will give further information of the state of that cluster.
+                    </para>
                 </listitem>
             </itemizedlist>
            
