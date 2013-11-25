@@ -250,7 +250,8 @@
                 <listitem>
                     <emphasis>Complete:</emphasis>
                     A node in this phase means, that; the node has succesfully finished executing the configuration
-                    script with chef and it is now working as part of the cluster.
+                    script with chef and it is now working as part of the cluster. Additionally, the nodes in this phase
+                    will appear green in the progress history.
                 </listitem>
                 <listitem>
                     <emphasis>Retrying:</emphasis>
@@ -277,26 +278,98 @@
             </mediaobject>
         </figure>   
         
+        <para>
+            From the previous figure, we get an overview of the cluster progress table. In here, the user is 
+            capable of executing the following actions:
+            <itemizedlist>
+                <itemlist>
+                    <emphasis>Delete Nodes:</emphasis>
+                    A user can select multiple node entries by shift click and later delete their progress history
+                    by executing this command. Note that this option will delete node entries which are registered
+                    with a node complete phase.
+                </itemlist>
+                <itemlist>
+                    <emphasis>Retry Nodes:</emphasis>
+                    A user can do make use of this option in order to execute further retry procedures on nodes
+                    that failed to deploy correctly. This will make the deployment system to execute a recovery 
+                    script on the selected nodes in an error state. For now, this script simply tries to rerun the nodes
+                    configuration script by executing only chef in that node. It is possible to retry multiple nodes
+                    at once by selecting multiple entries by shift click.
+                </itemlist>
+            </itemizedlist>
+        </para>
     </sect1>
     <sect1>
         <title>Monitoring</title>
-        <para>Dashboard supplies you with number of views and graphs to watch status of the resources in your clusters. You can browes your physical resources, services that are 
-            functioning, status of the processes that are run on each machine and performance of all resources.
+        <para>The HOPStart Dashboard offers multiple ways in how you can monitor the state of your
+            current HOPStart clusters. The following options related to monitoring features can be found in
+            the main Dashboard toolbar:
+            <itemizedlist>
+                <listitem>
+                    <emphasis>Hosts:</emphasis>
+                    Information and data analytics of all the nodes this dashboard is monitoring.
+                </listitem>
+                <listitem>
+                    <emphasis>Alerts:</emphasis>
+                    Information of possible alerts the HOPStart agents will be sending the dasboard in order
+                    to notify the current state of the nodes.
+                </listitem>
+                <listitem>
+                    <emphasis>Clusters:</emphasis>
+                    A dropdown list with the available clusters been monitored by the dashboard. Selecting an 
+                    entry will give further information of the state of that cluster.
+                </listitem>
+            </itemizedlist>
+           
         </para>
-        <para>To begin with, as you step into the "Clusters" page, you will see table of available cluster with the short summary of your cluster. This summary displays all the 
-            services, it they are active or stopped processing, its availabale roles and aggregated availabe of memory, cores and disk space. If you click on one of the services 
-            you will get into service page with its health summary. By selecting one role, you will be lead into the detail page of that role wich shows all instances of the role and
-            machines that have that role running. After all, you can get into detail of each machine, number cores it has, its ip address, its failure status, the average load, amount 
-            of memory and disk space. There is also another section that you can find tail of the logs of each machine that could be useful in case of failuer and malfunctioning.
-        </para>
-        <para>It is also possible to have some graphs for the cluster, in the perspective bar if you select "Edit Graphs", you will see that you can import graph definitions or 
-            define your own. Graphs are defined in a JSON format, they are defined for a service or a role, therefore you need to specify type of the graph at the time of importing or
-            defining new one. In case you import/define graphs in the dashboard, they will show up in the bottom page of the related views such as services, roles oir hosts.
-        </para>
+        <sect2>
+            <title>Hosts:</title>
+            <para>
+                This view allows a user to get a general overview of the state of all the nodes in all the clusters,
+                you will be able to track information of great interest like the allocated ip's for that node, its 
+                hostname, host ID, its current health in the system, when the last heartbeat was received. Also
+                it shows information about the nodes available resources like the number of cores that machine
+                has, the load average in that instance in the last 1, 5 15 min, disk usage and physical memory
+                in use.               
+            </para>
+            <figure>
+                <title>Hosts:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-hosts.png" scale="30"></imagedata>
+                    </imageobject>
+                </mediaobject>
+            </figure>   
+            <para>
+                By clicking in one of the host ID's entries, it will show a detailed view of the hosts monitoring analytics
+                with the graphs that are available for the Hosts components. See the previous Edit Graphs section,
+                where we explained how users can create graphs for the dashboards monitoring components.
+            </para>
+        </sect2>
+        <sect2>
+            <title>Alerts:</title>
+            <para>
+                This view allows a user to keep track of the whole history of alerts submitted by the
+                HOPStart agents. Here you will see for each entry an alert submitted by one of the agents
+                containing the message provided by that alert plus the date the message was generated,
+                the severity of the alert and the host ID that triggered the alert. Also further information is provided
+                with the alert like the source that originated the alert and other parameters that help to track
+                the source of the alert.
+            </para>
+        </sect2>
+        <sect2>
+            <title>Clusters:</title>
+            <para>
+                Selecting this option from the main Dashboard toolbar, it will create a dropdown list with all the 
+                available clusters been actually monitored by the dashboard. From here you can navigate and get
+                further detail of the cluster and the current status of the services running in that cluster. This 
+                allows a user to navigate through the different HOPStart services and sub roles allowing the user
+                to grasp a deep understanding of what is currently going on each of the services based on the 
+                graphs defined by the user. See the previous Edit Graphs section, for information on how to generate
+                graphs for the Dashboard.                
+            </para>
+        </sect2>
     </sect1>
     
-    <sect1>
-        <title>Backup</title>
-        <para>Your dashboard setup can be always backed up or restored to/from a file presentation. You can find it under the perspective bar, which is "Backup/Restore".</para>
-    </sect1>
+   
 </chapter>
