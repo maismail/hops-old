@@ -1,13 +1,87 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
-    
-    <section>
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch07">
+    <title>Hop Architecture</title>
+    <sect1>
+        <title>Highly Available Hadoop Filesystem (HDFS)</title>
+        HDFS is a distributed, fault-tolerant file system designed to run on 
+        low-cost commodity hardware.
+        HDFS v2 introduced a new highly available metadata architecture, where 
+        the entire filesystem's metadata is stored in memory on a single node, and
+        changes to the metadata (edit log entries) are also replicated 
+        (using a quorum-based algorithm) to a distributed set of log servers. In HDFS v2,
+        there is typically a Primary and Secondary NameNode configured, where the 
+        Secondary NameNode pulls an eventually consistent copy of the metadata by applying
+        edit log entries stored at the log servers.
+        <figure id="hadoop2">
+            <title>Hadoop v2</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hadoop2.png" scale="70" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+        
+        In contrast, Hop HDFS replaces the Primary-Secondary metadata model with a 
+        shared atomic transactional memory, implemented using MySQL Cluster.
+        In our new model, the size of HDFS' metadata is no longer limited 
+        to the amount of memory that can be managed on the JVM of a single node.
+        Our solution involves storing the metadata in a replicated, distributed, in-memory
+        database that can scale up to several tens of nodes, all while maintaining 
+        the consistency semantics of HDFS.  We show how to maintain the consistency of the metadata, 
+        while providing high performance. We guarantee freedom from deadlock and progress by, 
+        respectively, logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
+        agree on a global order for acquiring both explicit locks and implicit locks on subtrees 
+        in the hierarchy. We improve performance by introducing a snapshotting mechanism 
+        that minimizes the number of roundtrips to the database and implementing row-level locking
+        when updating files and directories. 
+
+        <figure id="hop-hdfs">
+            <title>Hop HDFS</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+    </sect1>
+
+    <sect1>                                
+        <title>Early performance measurements for Hop HDFS</title>
+        Our early performance figures show that Hop HDFS can scale to handle a similar
+        number of read and write requests per unit time as Apache HDFS. We have
+        introduced a number of features to enable this high level of performance, including
+        a snapshot layer at NameNodes and row-level locking at the database level, rather than
+        a system level lock for update operations as is done in Apache HDFS.
+        Our snapshotting layer involves a transaction acquiring all resources it requires at
+        the start of a primitive filesystem operation, and performing local read/write operations
+        on the snapshot copy, and then finally committing or rolling back on transaction commit.
+        <figure id="hdfs-snapshot">
+            <title>Reduction in number of database roundtrips by introducing snapshotting at NameNodes.</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="70" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+        <figure id="hdfs-locking">
+            <title>Effect of replacing a global lock with row-level locks.</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-locking.png" scale="70" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>            
+    </sect1>    
+        
+    <sect1>
         <title>Hop Architecture</title>
         <para>Hops, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
@@ -25,7 +99,7 @@
         <orderedlist>
             <listitem>
                 <para>
-                    <emphasis>HOP File System (HOP-FS):</emphasis>
+                    <emphasis>HOP File System (HOP-FS)</emphasis>
                     At the bottom layer of big data stack is HOP-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
                     representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
                     of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
@@ -34,7 +108,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>MySQL Cluster:</emphasis>
+                    <emphasis>MySQL Cluster</emphasis>
                     MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
                     Designed around a distributed, multi-master architecture with no single point of failure;
                     MySQL Cluster's real-time design delivers predictable, milisecond response times with 
@@ -44,7 +118,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>YARN:</emphasis>
+                    <emphasis>YARN</emphasis>
                     Resource negotiator for managing high volume distributed data processing tasks against HDFS. 
                     It supports different processing models other that Map-Reduce by separating its Resource 
                     Manager from Scheduler and Application Master. Application Master gives us flexibility to 
@@ -57,7 +131,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>Workflow Engine:</emphasis>
+                    <emphasis>Workflow Engine</emphasis>
                     On top of YARN, HOPS workflow engine parses workflows into an execution model of arbitrary tasks. 
                     For each task, it asks YARN for a containter, then for each container allocated task based on 
                     the scheduling policy it stages in data into HOPSFS, launches the task and stages out the result 
@@ -65,10 +139,10 @@
                 </para>
             </listitem>
         </orderedlist>
-    </section>
+    </sect1>
 
   
-    <section>
+    <sect1>
         <title>Deployment model</title>
         <para>At the moment HOPS supports Amazon Cloud, Open Stack and Bare Metal. Based on the chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment 
             model consist of Hops-Dashboard plus other machines either virtual in cloud or bare metal. Dashboard is the point of administration with web access through which customer 
@@ -84,26 +158,28 @@
                 </imageobject>
             </mediaobject>
         </figure>
-    </section>
+    </sect1>
 
-    <section>
-        <title>Helper Stack</title>
-        <para>Helpers are the intial set up on every machine that provide basics for cloud installation and configiration. 
+    <sect1>
+        <title>Platform-as-a-Service Stack</title>
+        <para>The Platform-as-a-Service stack describes the set of frameworks and tools
+            that we use to deploy a Hadoop cluster on both cloud and bare-metal
+            clusters.
             <figure id="arch-helper">
-                <title>Helper stack</title>
+                <title>Hop PaaS stack</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/arch-layers.png" scale="50" align="center"></imagedata>
                     </imageobject>
                     <caption>
-                        <para>Helper Stack</para>
+                        <para>Hop PaaS Stack</para>
                     </caption>
                 </mediaobject>
             </figure>
             <orderedlist>
                 <listitem>
                     <para>
-                        <emphasis>SnakeYAML and YAML:</emphasis>
+                        <emphasis>SnakeYAML and YAML</emphasis>
                         YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
                         programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
                         allows easy mappings of common data types found in high level languages like list, 
@@ -117,7 +193,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Apache JClouds:</emphasis>
+                        <emphasis>Apache JClouds</emphasis>
                         Apache JClouds is an open source multi-api interface which allows easy interaction 
                         with multiple cloud providers and cloud software stacks. This open source api gives 
                         support around 30 providers which include Amazon, Azure, OpenStack and Rackspace. 
@@ -128,7 +204,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Chef:</emphasis>
+                        <emphasis>Chef</emphasis>
                         Chef is a systems and cloud infrastructure automation framework based on Ruby 
                         that simplifies deployment of servers and applications to any physical, virtual or cloud location
                         no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
@@ -141,7 +217,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>BoitTorent:</emphasis>
+                        <emphasis>BitTorrent</emphasis>
                         After machines are allocated in cloud, with the metadata information that JCloud returns, dashboard
                         tries to open a ssh connection into every single machine and install Chef agent for installations. 
                         Before installation starts, software libraries is replicated in all machines from dashboard, though 
@@ -152,19 +228,17 @@
                         dependencies between packages. 
                     </para>
                 </listitem>
-                <listitem>
+                <!--                <listitem>
                     <para>
-                        <emphasis>Collectd:</emphasis>
+                        <emphasis>Collectd</emphasis>
                         Collectd is a daemon which collects system performance statistics periodically and 
                         provides mechanisms to store values in a variety of ways like RRD files. Collectd 
                         gathers statistics about the system it is running and stores this information. With 
                         these statistics, we can keep track of the performance of your cluster and detect
                         possible failures and performance bottlenecks that might be needed to be address.
                     </para>
-                </listitem>
+                </listitem>-->
             </orderedlist>
         </para>
-
-    </section>
-
-</section>
+    </sect1>
+</chapter>

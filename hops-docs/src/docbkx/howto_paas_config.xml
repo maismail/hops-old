@@ -81,7 +81,7 @@ git:
                 <listitem>
                     <para>
                         <emphasis>Services:</emphasis>
-                        We identify multiple services, in our case related to HOPstart platform. You can spread this
+                        We identify multiple services, in our case related to Hop platform. You can spread this
                         services quite easily among different nodes just indicating that information when grouping
                         them. Also you may indicate further services to be deployed on them.
                         <programlisting>
@@ -162,7 +162,7 @@ provider:
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>HOPStart</emphasis>
+                        <emphasis>Hop</emphasis>
                         <itemizedlist>
                             <listitem>
                                 <para>
@@ -210,7 +210,7 @@ provider:
                 <title>Multiple Services per Node</title>
                 <para> 
                     The previous structure gave a very simple overview of the components that are needed for
-                    a HOPstart cluster to work correctly. It is viable to allocate various services in one machine or
+                    a Hop cluster to work correctly. It is viable to allocate various services in one machine or
                     group of machines as we will see in the following sections.
                 </para>
             </note>
@@ -233,7 +233,7 @@ provider:
         <sect2>
             <title>Cluster in AWS</title>
             <para>
-                Lets imagine that we want to define a complete HOPstart which will contain a basic minimal setup.
+                Lets imagine that we want to define a complete Hop which will contain a basic minimal setup.
                 In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
                 datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
                 manager and 2 node managers. How we could map the services using only 7 machines?

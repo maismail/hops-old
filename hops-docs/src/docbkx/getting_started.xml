@@ -11,7 +11,7 @@
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
         hadoop platform focusing in improving its scalability, availability and reliability. This section describes
         the information and materials you need in order to start working with our data platform by making use
-        of our Hadoop Open PaaS dashboard. HOPStart dashboard provides an end-to-end management and 
+        of our Hadoop Open PaaS dashboard. Hop dashboard provides an end-to-end management and 
         monitoring application of our Hadoop distribution operating in the datacenter of your choice. With our
         dashboard, thanks to its graphical user interface (GUI); you will be able to manage your cluster, 
         define the cluster infrastructure of your choice, monitor services and alerts through a centralized application
@@ -83,9 +83,9 @@
         </para>
     </sect1>
     <sect1>
-        <title>Hadoop Open Platform-as-a-Service Portal:</title>
+        <title>Hop Portal</title>
         <para>
-            The HOPStart web portal, is an entry point were users can test our platform in one of our
+            The Hop web portal, is an entry point were users can test our platform in one of our
             supported environments. It is a simple web application that can deploy our dashboard in Amazon or in
             a private machine of your choice with external connectivity. With our dashboard, later on you can 
             deploy and configure the rest of your cluster using our solution. Once you have the dashboard on 
@@ -94,9 +94,9 @@
         </para>
     
         <sect2>
-            <title>How to launch a HOPStart Dashboard:</title>
+            <title>How to launch a Hop Dashboard</title>
             <para>
-                Launching a HOPStart Dashboard is quite simple and takes a couple of minutes, here you may find
+                Launching a Hop Dashboard is quite simple and takes a couple of minutes, here you may find
                 instructions on how to use the dashboard for Amazon EC2 and Baremetal Machine:
                 <orderedlist>
                     <listitem>
@@ -210,7 +210,7 @@
                             <itemizedlist>
                                 <listitem>
                                     <para>
-                                        Login into the HOPStart Portal with your user name and password.
+                                        Login into the Hop Portal with your user name and password.
                                     </para>
                                 </listitem>
                                 <listitem>
@@ -322,7 +322,7 @@
                             <itemizedlist>
                                 <listitem>
                                     <para>
-                                        Login into the HOPStart Portal with your user name and password.
+                                        Login into the Hop Portal with your user name and password.
                                     </para>
                                 </listitem>
                                 <listitem>

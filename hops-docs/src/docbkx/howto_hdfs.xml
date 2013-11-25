@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<chapter  version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
   xmlns:xlink="http://www.w3.org/1999/xlink"
   xmlns:xi="http://www.w3.org/2001/XInclude"
   xmlns:ns5="http://www.w3.org/2000/svg"
@@ -19,7 +19,7 @@
   </para>
   
   <sect1>
-    <title>HDFS Configuration Parameters not used by HOP</title>
+    <title>HDFS Configuration Parameters not used</title>
     <para>
     We have replaced HDFS 2.x's Primary-Secondary Replication model with shared atomic transactional
     memory. This means that we no longer use the parameters in HDFS that are based on the (eventually
