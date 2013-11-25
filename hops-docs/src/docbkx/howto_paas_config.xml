@@ -429,8 +429,9 @@ nodes:
             <title>Select Cluster Type:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-clusterType.png" scale="30"></imagedata>
-                </imageobject>
+                                        <imagedata fileref="media/dash-clusterType.png" scale="30"
+                                            align="center"/>
+                                    </imageobject>
             </mediaobject>
         </figure>
                         </para>
@@ -494,16 +495,18 @@ nodes:
             <title>Common Cluster Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-common.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-common.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
         <figure xml:id="dash-bare-cluster">
             <title>Bare Metal Common Cluster Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-bare-common.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-bare-common.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
                                 </para>
@@ -548,8 +551,9 @@ nodes:
             <title>Cluster Provider Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-provider.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-provider.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
                                 </para>
@@ -610,16 +614,18 @@ nodes:
             <title>Cluster Group:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-groups.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-groups.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
         <figure>
             <title>Bare Metal Groups:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-bare-groups.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-bare-groups.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>    
                                 </para>
@@ -634,8 +640,10 @@ nodes:
             <title>Confirmation:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-confirmation.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata
+                                                  fileref="media/dash-cluster-confirmation.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>   
                                 </para>
