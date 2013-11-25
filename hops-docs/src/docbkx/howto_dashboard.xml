@@ -389,7 +389,7 @@
                 <title>Hosts Details-Services:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-host-detail.png" scale="30" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -397,7 +397,8 @@
                 <title>Hosts Details Graphs:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail-2.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-host-detail-2.png" scale="30" align="center"
+                        />
                     </imageobject>
                 </mediaobject>
             </figure>     
@@ -416,7 +417,7 @@
                 <title>Alerts:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-alerts.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-alerts.png" scale="30" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>    
@@ -436,7 +437,7 @@
                 <title>Clusters:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-clusters.png" scale="30" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -452,7 +453,8 @@
                 <title>Cluster Detail:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-cluster-detail.png" scale="30"></imagedata>
+                        <imagedata fileref="media/dash-cluster-detail.png" scale="30" align="center"
+                        />
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -475,8 +477,9 @@
                 <title>YARN Metrics:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-metrics.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-YARN-metrics.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
             <para>
@@ -487,16 +490,18 @@
                 <title>Resource Manager Metrics:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-resource.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-YARN-resource.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
             <figure>
                 <title>Node Manager Metrics:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-manager.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-YARN-manager.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
             <para>
@@ -508,16 +513,18 @@
                 <title>Resource Manager UI:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-resourceUI.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-YARN-resourceUI.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
                <figure>
                 <title>Node Manager UI:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-managerUI.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-YARN-managerUI.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure> 
             </sect3>
@@ -533,8 +540,9 @@
                 <title>MySQL overall graphs:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-MYSQL-graphs.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-MYSQL-graphs.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
                  <para>
@@ -547,8 +555,9 @@
                 <title>MySQL console:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-MYSQL-console.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-MYSQL-console.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
             </sect3>
@@ -569,8 +578,9 @@
                 <title>HOP console:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-HOP-console.png" scale="30"></imagedata>
-                    </imageobject>
+                            <imagedata fileref="media/dash-HOP-console.png" scale="30"
+                                align="center"/>
+                        </imageobject>
                 </mediaobject>
             </figure>
             </sect3>

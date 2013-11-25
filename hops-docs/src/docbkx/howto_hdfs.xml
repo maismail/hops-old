@@ -60,7 +60,7 @@
       </listitem>
       <listitem>
         <para>
-          <emphasis>dfs.namenode.name.dir>*</emphasis> FSImage is not supported anymore.
+          <emphasis>dfs.namenode.name.dir.*</emphasis> FSImage is not supported anymore.
         </para>
       </listitem>
       <listitem>
