@@ -8,16 +8,13 @@
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch02">
     <title>Portal</title>
-    <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next
-        generation hadoop platform focusing in improving its scalability, availability and
-        reliability. This section describes the information and materials you need in order to start
-        working with our data platform by making use of our Hadoop Open PaaS dashboard. Hop
-        dashboard provides an end-to-end management and monitoring application of our Hadoop
-        distribution operating in the datacenter of your choice. With our dashboard, thanks to its
-        graphical user interface (GUI); you will be able to manage your cluster, define the cluster
-        infrastructure of your choice, monitor services and alerts through a centralized application
-        You will find here all the necessary information in order to easily deploy our solution in
-        the infrastructure of your choice i.e. OpenStack, AWS and Baremetal. </para>
+    <para>Hadoop Open Platform-as-a-service (HOP) is an effort to offer a high performance next
+        generation hadoop platform focusing on high scalability, availability and
+        reliability. This section describes the information needed to start HOP cluster using the Dashboard application.
+        HOP Dashboard provides a centralized end-to-end management and monitoring application for HOP
+        distribution operating in a datacenter of your choice i.e. AWS, OpenStack and Baremetal Machines.
+	Using HOP Dashboard's graphical user interface (GUI) you can define, monitor and manage your clusters in the data centres.
+    </para>
 
     <example>
         <title>Hop Portal</title>
