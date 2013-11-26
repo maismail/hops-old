@@ -41,7 +41,7 @@
                 copyright notice and this paragraph appear in all copies.
             </para>
         </legalnotice>
-
+    
     </info>
 
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_vagrant.xml" />
@@ -51,5 +51,11 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="architecture.xml" />
-    
+
+    <chapter>
+    <section>
+        <title>Conclusions</title>
+        
+    </section>    
+    </chapter>
 </book>
