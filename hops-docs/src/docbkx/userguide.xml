@@ -52,10 +52,8 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="architecture.xml" />
 
-    <chapter>
-    <section>
+    <!--chapter>
         <title>Conclusions</title>
-        
-    </section>    
-    </chapter>
+        <para>To be added</para>
+    </chapter-->
 </book>

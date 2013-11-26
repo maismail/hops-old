@@ -162,7 +162,7 @@
                                             <mediaobject>
                                                 <imageobject>
                                                   <imagedata fileref="media/portal-AWS.png"
-                                                  scalefit="1" align="center" scale="50"/>
+                                                  scalefit="1" align="center" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>
@@ -258,7 +258,7 @@
                                             <mediaobject>
                                                 <imageobject>
                                                   <imagedata fileref="media/portal-OpenStack.png"
-                                                  align="center" scalefit="1" scale="50"/>
+                                                  align="center" scalefit="1" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>
@@ -327,7 +327,7 @@
                                             <mediaobject>
                                                 <imageobject>
                                                   <imagedata fileref="media/portal-Baremetal.png"
-                                                  align="center" scale="50"/>
+                                                  align="center" scalefit="1" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>

@@ -20,12 +20,12 @@
         there is typically a Primary and Secondary NameNode configured, where the 
         Secondary NameNode pulls an eventually consistent copy of the metadata by applying
         edit log entries stored at the log servers.
-        <figure id="hadoop2">
+        <figure xml:id="hadoop2">
             <title>Hadoop v2</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hadoop2.png" scale="70" align="center"></imagedata>
-                </imageobject>
+                        <imagedata fileref="media/hadoop2.png" scale="40" align="center"/>
+                    </imageobject>
             </mediaobject>
         </figure>
         </para>
@@ -44,11 +44,11 @@
         that minimizes the number of roundtrips to the database and implementing row-level locking
         when updating files and directories. 
         </para>
-        <figure id="hop-hdfs">
+        <figure xml:id="hop-hdfs">
             <title>Hop HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"></imagedata>
+                    <imagedata fileref="media/hop-hdfs.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -67,7 +67,7 @@
         the start of a primitive filesystem operation, and performing local read/write operations
         on the snapshot copy, and then finally committing or rolling back on transaction commit.
         </para>
-        <figure id="hdfs-snapshot">
+        <figure xml:id="hdfs-snapshot">
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
                 <imageobject>
@@ -75,7 +75,7 @@
                 </imageobject>
             </mediaobject>
         </figure>    
-        <figure id="hdfs-locking">
+        <figure xml:id="hdfs-locking">
             <title>Effect of replacing a global lock with row-level locks.</title>
             <mediaobject>
                 <imageobject>
@@ -91,7 +91,7 @@
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
             Cross-layer aspects like Security and PaaS services are also included.</para>
 
-        <figure id="arch-stack">
+        <figure xml:id="arch-stack">
             <title>Hop stack</title>
             <mediaobject>
                 <imageobject>
@@ -154,11 +154,11 @@
             into security node-groups, machines inside each node-group basically have the same security credentials and could communicate with each other; however, communication 
             between machnies from different security group is not possible. All the machins inside the cluster have the same infrastructure and basic stack of softwares, althoug based 
             on the services each machine shoul provide, arbitrary platform softwares are installed.</para>
-        <figure id="arch-deploy">
+        <figure xml:id="arch-deploy">
             <title>Deployment Model</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="35" align="center"></imagedata>
+                    <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -169,7 +169,7 @@
         <para>The Platform-as-a-Service stack describes the set of frameworks and tools
             that we use to deploy a Hadoop cluster on both cloud and bare-metal
             clusters.
-            <figure id="arch-helper">
+            <figure xml:id="arch-helper">
                 <title>Hop PaaS stack</title>
                 <mediaobject>
                     <imageobject>
