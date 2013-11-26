@@ -10,6 +10,7 @@
     <title>Hop Architecture</title>
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
+        <para>
         HDFS is a distributed, fault-tolerant file system designed to run on 
         low-cost commodity hardware.
         HDFS v2 introduced a new highly available metadata architecture, where 
@@ -26,8 +27,9 @@
                     <imagedata fileref="media/hadoop2.png" scale="70" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
-        </figure>    
-        
+        </figure>
+        </para>
+        <para>
         In contrast, Hop HDFS replaces the Primary-Secondary metadata model with a 
         shared atomic transactional memory, implemented using MySQL Cluster.
         In our new model, the size of HDFS' metadata is no longer limited 
@@ -41,7 +43,7 @@
         in the hierarchy. We improve performance by introducing a snapshotting mechanism 
         that minimizes the number of roundtrips to the database and implementing row-level locking
         when updating files and directories. 
-
+        </para>
         <figure id="hop-hdfs">
             <title>Hop HDFS</title>
             <mediaobject>
@@ -55,6 +57,7 @@
 
     <sect1>                                
         <title>Early performance measurements for Hop HDFS</title>
+        <para>
         Our early performance figures show that Hop HDFS can scale to handle a similar
         number of read and write requests per unit time as Apache HDFS. We have
         introduced a number of features to enable this high level of performance, including
@@ -63,8 +66,9 @@
         Our snapshotting layer involves a transaction acquiring all resources it requires at
         the start of a primitive filesystem operation, and performing local read/write operations
         on the snapshot copy, and then finally committing or rolling back on transaction commit.
+        </para>
         <figure id="hdfs-snapshot">
-            <title>Reduction in number of database roundtrips by introducing snapshotting at NameNodes.</title>
+            <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/hdfs-snapshot.png" scale="70" align="center"></imagedata>
