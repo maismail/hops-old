@@ -9,43 +9,30 @@
          xml:id="ch03">
     <title>Dashboard</title>
     
-    <para>In this section we will give an overview of our Hop Dashboard web based application.
-        This web application was design with Hadoop administrators in mind so they can easily monitor, 
-        define and maintain your Hop cluster through only one endpoint. This simplifies hadoop 
-        administrator's job by having all the necessary information of the hadoop cluster gathered in one
-        place and presented in an effective manner. Also it is possible to execute maintanance commands
-        through the different terminals available for services like MySQL, HDFS or Spark.
-    </para>
-    <para>
-        When you launch the dashboard for the first time, you will need to configure some parameters to 
-        get starting with Hop. In order to access the dashboard, use the credentials you specified in the
-        Hop Portal when you where preparing to launch the dashboard 
-        <xref linkend="ch02"/>. 
-        Once you login, if you press your user icon you will have a menu with the following options:
-        <itemizedlist>
+    <para>In this section we will give an overview of our HOP Dashboard web based application. This
+        web application is design with Hadoop administrators in mind so they can easily monitor,
+        define and maintain  HOP cluster through an endpoint. This simplifies Hadoop administrator's
+        job by having all the necessary information of the hadoop cluster gathered in one place and
+        presented in an effective manner. Also it is possible to execute maintanance commands
+        through the different terminals available for services like MySQL, HDFS or Spark. </para>
+    <para> When you launch the HOP Dashboard for the first time, you will need to configure some
+        parameters to get starting with Hop. In order to access the dashboard, use the credentials
+        you specified in the Hop Portal when you where preparing to launch the dashboard <xref
+            linkend="ch02"/>. After login, if you press your user icon you will have a menu with the
+        following options: <itemizedlist>
             <listitem>
-                <para>
-                    Change password
-                </para>
+                <para> Change password </para>
             </listitem>
             <listitem>
-                <para>
-                    Edit Graphs
-                </para>
+                <para> Edit Graphs </para>
             </listitem>
             <listitem>
-                <para>
-                    Backup/Restore
-                </para>
+                <para> Backup/Restore </para>
             </listitem>
             <listitem>
-                <para>
-                    Setup Credentials
-                </para>    
+                <para> Setup Credentials </para>
             </listitem>
-        </itemizedlist>
-        We will go over this options in detail in the following sections.
-    </para>
+        </itemizedlist> We will go over this options in detail in the following sections. </para>
     <sect1>
         <title>Change Password</title>
         <para>
