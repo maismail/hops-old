@@ -11,44 +11,98 @@
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
         <para>
-        HDFS is a distributed, fault-tolerant file system designed to run on 
-        low-cost commodity hardware.
-        HDFS v2 introduced a new highly available metadata architecture, where 
-        the entire filesystem's metadata is stored in memory on a single node, and
-        changes to the metadata (edit log entries) are also replicated 
-        (using a quorum-based algorithm) to a distributed set of log servers. In HDFS v2,
-        there is typically a Primary and Secondary NameNode configured, where the 
-        Secondary NameNode pulls an eventually consistent copy of the metadata by applying
-        edit log entries stored at the log servers.
-        <figure xml:id="hadoop2">
-            <title>Hadoop v2</title>
-            <mediaobject>
-                <imageobject>
+            Due to the rapid growth of data in recent years, distributed file systems have
+            gained widespread adoption. The new breed of distributed file systems reliably store
+            petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
+            The Hadoop Distributed File System (HDFS) is a 
+            distributed, fault-tolerant file system designed to run on 
+            low-cost commodity hardware, and is the file storage component of the Hadoop
+            platform. The Hadoop Distributed File System (HDFS)
+            provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
+            YARN applications, see <xref linkend="hadoop2"/>.
+            <figure xml:id="hadoop2">
+                <title>Hadoop v2</title>
+                <mediaobject>
+                    <imageobject>
                         <imagedata fileref="media/hadoop2.png" scale="40" align="center"/>
                     </imageobject>
-            </mediaobject>
-        </figure>
+                </mediaobject>
+            </figure>
+            
+            In 2013, HDFS v2 introduced a new highly available metadata architecture, where 
+            the entire filesystem's metadata is stored in memory on a single node, and
+            changes to the metadata (<emphasis>edit log entries</emphasis>) are also replicated 
+            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm
+            . In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
+            responsible for managing the metadata, and the Secondary NameNode 
+            keeps an eventually consistent copy of the metadata. The Secondary NameNode 
+            is kept in sync with the Primary by two mechanisms: firstly, by eventually applying all 
+            edit log entries that were applied at the Primary, and 
+            secondly, receiving the same set of heartbeats from Data Nodes that are 
+            received by the Primary.
+            The Primary/Secondary replication model derives from the Active/Standy or 
+            Master/Slave replication models popularized by databases in the 1990s. In HDFS' take 
+            on this eventually consistent replication model, the Primary receives all read and write requests.
+            All write requests are sent to the Primary to ensure a single consistent copy of the metadata,
+            and updates are also applied to the Secondary. Read requests are also sent to the Primary.
+            Although, in principle, read requests could also be sent to the Secondary (as is the case in
+            many Master/Slave database setups), this could potentially result in operations being executed
+            on stale metadata. This is a bigger problem for a filesystem than it may be for a Web 2.0 
+            social media application using a Master/Slave database setup.
+            Thus, reads are only sent to the Primary. If the Primary fails, however, 
+            the Secondary needs to take over as Primary. Before it can take over, it first has to 
+            catch up with the set of edit log entries applied to Primary before it failed. 
+            The period of time before all outstanding edit log entries are applied at the Secondary before
+            it can take over may be up to tens of seconds, depending on the current load of the system and
+            the hardware and software setup.
+            Another limitation of the Primary/Secondary model, is that client and Data Nodes from 
+            HDFS need to have a consistent view of who the current Primary NameNode is. They do this by 
+            asking a Zookeeper coordination service that needs to run on at least 3 nodes to provide a fault
+            tolerant reliable service. Finally, the concurrency model supported by HDFS v2 is still 
+            multiple-readers, single-writer.
+            <figure xml:id="hdfsv2">
+                <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/hdfsv2.png" scale="50" align="center"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
         </para>
         <para>
-        In contrast, Hop HDFS replaces the Primary-Secondary metadata model with a 
-        shared atomic transactional memory, implemented using MySQL Cluster.
-        In our new model, the size of HDFS' metadata is no longer limited 
-        to the amount of memory that can be managed on the JVM of a single node.
-        Our solution involves storing the metadata in a replicated, distributed, in-memory
-        database that can scale up to several tens of nodes, all while maintaining 
-        the consistency semantics of HDFS.  We show how to maintain the consistency of the metadata, 
-        while providing high performance. We guarantee freedom from deadlock and progress by, 
-        respectively, logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
-        agree on a global order for acquiring both explicit locks and implicit locks on subtrees 
-        in the hierarchy. We improve performance by introducing a snapshotting mechanism 
-        that minimizes the number of roundtrips to the database and implementing row-level locking
-        when updating files and directories. 
+            In contrast, our implementation of HDFS, called Hop HDFS, replaces the 
+            Primary-Secondary metadata model with shared, transactional memory, 
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster, 
+            see figure <xref linkend="hop-hdfs"/>.
+            In our new model, the size of HDFS' metadata is no longer limited 
+            to the amount of memory that can be managed on the JVM of a single node.
+            Our solution involves storing the metadata in a replicated, distributed, in-memory
+            database that can scale up to several tens of nodes, all while maintaining 
+            the consistency semantics of HDFS.  We maintain the consistency of the metadata, 
+            while providing high performance, all within a multiple-writer, multiple-reader
+            concurrency model. Multiple concurrent writers are now supported for the filesystem
+            as a whole, but single-writer concurrency is enforced at the inode level.
+            Our solution guarantees freedom from deadlock and progress by
+            logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
+            defining on a global order for transactions acquiring both explicit locks and 
+            implicit locks on subtrees in the hierarchy. 
+            The use of a database, however, also has its drawbacks. As the data now resides
+            on remote hosts on the network, an excessive number of roundtrips to 
+            the database harms system scalability and increases per-operation latencies.
+            We ameliorate these problems by introducing a snapshotting mechanism 
+            for transactions, where, at the beginning of a transaction, 
+            all the resources it needs are aquired in the defined global order, while
+            simulatenously taking row-level locks for those resources. On transaction
+            commit or abort, the resources are freed. This solution enables NameNodes
+            to perform operations on a local copy (or snapshot) of the transactions
+            state until such time as the transaction is completed, thus reducing
+            the number the number of roundtrips to the database, see <xref linkend="hdfs-snapshot"/> . 
         </para>
         <figure xml:id="hop-hdfs">
             <title>Hop HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hop-hdfs.png" scale="30" align="center"/>
+                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -58,31 +112,31 @@
     <sect1>                                
         <title>Early performance measurements for Hop HDFS</title>
         <para>
-        Our early performance figures show that Hop HDFS can scale to handle a similar
-        number of read and write requests per unit time as Apache HDFS. We have
-        introduced a number of features to enable this high level of performance, including
-        a snapshot layer at NameNodes and row-level locking at the database level, rather than
-        a system level lock for update operations as is done in Apache HDFS.
-        Our snapshotting layer involves a transaction acquiring all resources it requires at
-        the start of a primitive filesystem operation, and performing local read/write operations
-        on the snapshot copy, and then finally committing or rolling back on transaction commit.
+            Our early performance figures show that Hop HDFS can scale to handle a similar
+            number of read and write requests per unit time as Apache HDFS. We have
+            introduced a number of features to enable this high level of performance, including
+            a snapshot layer at NameNodes and row-level locking at the database level, rather than
+            a system level lock for update operations as is done in Apache HDFS.
+            Our snapshotting layer involves a transaction acquiring all resources it requires at
+            the start of a primitive filesystem operation, and performing local read/write operations
+            on the snapshot copy, and then finally committing or rolling back on transaction commit.
         </para>
         <figure xml:id="hdfs-snapshot">
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="70" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="75" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>    
-        <figure xml:id="hdfs-locking">
+<!--        <figure xml:id="hdfs-locking">
             <title>Effect of replacing a global lock with row-level locks.</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-locking.png" scale="70" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-locking.png" scale="100" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
-        </figure>            
+        </figure>            -->
     </sect1>    
         
     <sect1>
@@ -165,12 +219,11 @@
     </sect1>
 
     <sect1>
-        <title>Platform-as-a-Service Stack</title>
-        <para>The Platform-as-a-Service stack describes the set of frameworks and tools
-            that we use to deploy a Hadoop cluster on both cloud and bare-metal
-            clusters.
+        <title>HDFS Platform-as-a-Service</title>
+        <para>Our Platform-as-a-Service model describes the set of frameworks and tools
+            that we use to deploy a Hadoop cluster on both cloud and bare-metal clusters.
             <figure xml:id="arch-helper">
-                <title>Hop PaaS stack</title>
+                <title>Hop PaaS </title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/arch-layers.png" scale="50" align="center"></imagedata>

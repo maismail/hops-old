@@ -94,10 +94,10 @@
             <title>Graph Selection Detail</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-detail-graphs.png" align="center" scalefit="1" width="650"/>
+                    <imagedata fileref="media/dash-detail-graphs.png" align="center" scalefit="1.5" width="650"/>
                 </imageobject>
             </mediaobject>
-        </figure> 
+        </figure>
     </sect1>
     <sect1>
         <title>Backup/Restore</title>
@@ -111,7 +111,7 @@
             <title>Backup/Restore</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-backup-restore.png" align="center" scalefit="1" width="650"/>
+                    <imagedata fileref="media/dash-backup-restore.png" align="center" scalefit="1" width="500"/>
                 </imageobject>
             </mediaobject>
         </figure> 
