@@ -19,8 +19,8 @@
     </para>
 
     <example>
-        <title>Hop Portal</title>
-        <programlisting>https://snurran.sics.se:8181/hop-dashboard</programlisting>
+        <title>HOP Portal</title>
+        <programlisting>https://snurran.sics.se:8181/hop-portal</programlisting>
     </example>
 
     <figure xml:id="portal-login">
@@ -53,7 +53,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>OpenStack</emphasis> For using HOPStart on OpenStack, it is
+                        <emphasis>OpenStack</emphasis> For using HOP on OpenStack, it is
                         necessary that you provide the credentials and configuration parameters to
                         connect to you OpenStack end-point. The recommended instance to use in
                         OpenStack infrastructure should be equivalent to a m1.large instance type or
@@ -80,8 +80,8 @@
         </para>
     </sect1>
     <sect1>
-        <title>HOPStart Portal</title>
-        <para>HOPStart web portal, is an entry point were users can test our platform in one of our
+        <title>HOP Portal</title>
+        <para>HOP web portal, is an entry point were users can test our platform in one of our
             supported environments. It is a simple web application that can deploy the HOP dashboard
             in AWS or in a private cloud with external connectivity. Using the HOP dashboard you can
             deploy and configure the rest of the cluster. Following are the step by step
@@ -100,13 +100,13 @@
                             Amazon EC2 in the region of your choice follow these simple steps: 
                             <itemizedlist>
                                 <listitem>
-                                    <para> Login into the HOPS Portal with your user name and
+                                    <para> Login into the HOP Portal with your user name and
                                         password. 
                                     </para>
                                 </listitem>
                                 <listitem>
-                                    <para> Select from the providers the Amazon EC2 option. A form
-                                        will be generated 
+                                    <para> Select from the providers option in the maintoolbar, the Amazon EC2 option.
+                                        A form will be generated 
                                         <itemizedlist>
                                             <listitem>
                                                 <para> Dashboard credential, were you specify the
@@ -121,7 +121,7 @@
                                                 </para>
                                             </listitem>
                                             <listitem>
-                                                <para> Configuration parameters that we need to in
+                                                <para>Instance configuration parameters that we need in
                                                     order to deploy a virtual machine in Amazon with
                                                     default values that you may want to change: 
                                                     <orderedlist>
@@ -178,7 +178,7 @@
                                             <mediaobject>
                                                 <imageobject>
                                                     <imagedata fileref="media/portal-AWS.png"
-                                                             scalefit="1" align="center" width="650"/>
+                                                               scalefit="1" align="center" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>
@@ -200,7 +200,7 @@
                     <listitem>
                         <para>
                             <emphasis>OpenStack:</emphasis> In order to deploy our dashboard in
-                            OpenStack follow these simple steps. Note this is in alpha state: 
+                            OpenStack follow these simple steps. Note, this is in alpha state: 
                             <itemizedlist>
                                 <listitem>
                                     <para> Login into the HOP Portal with your user name and
@@ -284,14 +284,14 @@
                                             <mediaobject>
                                                 <imageobject>
                                                     <imagedata fileref="media/portal-OpenStack.png"
-                                                             align="center" scalefit="1" width="650"/>
+                                                               align="center" scalefit="1" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>
                                     </para>
                                 </listitem>
                                 <listitem>
-                                    <para> To start the process after filling up the form, press the
+                                    <para>To start the process after filling up the form, press the
                                         launch instance button. On average the whole process will
                                         probably take between 10-15 minutes. In the end, you will
                                         receive a notification showing the address were you can
@@ -304,7 +304,7 @@
                         </para>
                         <note>
                             <title>IP pools in OpenStack</title>
-                            <para> In order to deploy successfully the dashboard in OpenStack, it is
+                            <para>In order to deploy successfully the dashboard in OpenStack, it is
                                 necessary that you have allocated at least 1 public IP in that
                                 project. During the deployment phase we will query the OpenStack
                                 project and link the public ip to the VM. 
@@ -363,7 +363,7 @@
                                             <mediaobject>
                                                 <imageobject>
                                                     <imagedata fileref="media/portal-Baremetal.png"
-                                                             align="center" scalefit="1" width="650"/>
+                                                               align="center" scalefit="1" width="650"/>
                                                 </imageobject>
                                             </mediaobject>
                                         </figure>

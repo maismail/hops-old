@@ -71,7 +71,7 @@
                     <para>
                         <emphasis>Import</emphasis>
                         It is also possible to import the graphs from a graph file written in JSON, this is the quickest way
-                        if you want to load a large number of graphs quite easily
+                        if you want to load a large number of graphs
                     </para>
                     <figure xml:id="dash-import-graphs">
                         <title>Import Graphs</title>
@@ -85,7 +85,7 @@
             </itemizedlist>
         </para>  
         <para>
-            When graphs are generated, they are stored in the graph database and running in the dashboard.
+            When graphs are generated, they are stored in the graph database and loaded in the dashboard.
             In the graph tables, it is possible to view all the graphs for a specific type of service or component 
             the dashboard is capable of monitoring. Choosing a entry with the zoom icon, will generate a dialog
             box where you can see more details of the graph entry.
@@ -117,7 +117,7 @@
         </figure> 
     </sect1>
     <sect1>
-        <title>Setup Credential</title>
+        <title>Setup Credentials</title>
         <para>
             This option allows the user to setup the credentials that will be used when the dashboard deploys
             a cluster. You can select between Amazon EC2, OpenStack or Baremetal, depending on what option
@@ -161,8 +161,8 @@
                 <listitem>
                     <para>
                     <emphasis>Create Cluster</emphasis>
-                    Selecting this option it will take you to the cluster generation wizard where a user will be able
-                    of generate its own cluster for HOPstart. We will explain in detail how this process works in the
+                    Selecting this option it will take you to the cluster generation wizard where a user will be capable
+                    of generating its own cluster for HOP. We will explain in detail how this process works in the
                     next chapter 
                     <xref linkend="ch04">Chapter 4</xref>.
                     </para>
@@ -222,9 +222,9 @@
                 <listitem>
                     <para>
                     <emphasis>Creation</emphasis>
-                    A node in this phse means, that; the scheduler has submitted the query against the cloud 
+                    A node in this phase means, that; the scheduler has submitted the query against the cloud 
                     provider and it is waiting for the cloud provider to finish deploying the virtual instance. After
-                    succesfully getting back the information of the specific instance, an initialization script is executed
+                    successfully getting back the information of the specific instance, an initialization script is executed
                     to do a preliminary configuration on that node.
                     </para>
                 </listitem>
@@ -257,8 +257,8 @@
                     <emphasis>Retrying</emphasis>
                     A node in this phase means, that; the deployment system has detected a problem during 
                     a previous node phase and it is triggering the retrying mechanism. It will retry submitting the
-                    previous phase script for 5 retries which will stop when the number of retries finish or we manage
-                    to recover the node.
+                    previous phase script for 5 retries. This process ends when the number of retries finish or 
+                    we manage to successfully execute the script.
                     </para>
                 </listitem>
                 <listitem>
@@ -343,7 +343,7 @@
             <para>
                 This view allows a user to get a general overview of the state of all the nodes in all the clusters,
                 you will be able to track information of great interest like the allocated ip's for that node, its 
-                hostname, host ID, its current health in the system, when the last heartbeat was received. Also
+                hostname, host ID, its current health in the system, and when the last heartbeat was received. Also
                 it shows information about the nodes available resources like the number of cores that machine
                 has, the load average in that instance in the last 1, 5 15 min, disk usage and physical memory
                 in use.               
@@ -400,13 +400,11 @@
         <sect2>
             <title>Clusters</title>
             <para>
-                Selecting this option from the main Dashboard toolbar, it will create a dropdown list with all the 
+                Selecting this option from the main Dashboard toolbar, will generate a dropdown list with all the 
                 available clusters been actually monitored by the dashboard. From here you can navigate and get
                 further detail of the cluster and the current status of the services running in that cluster. This 
                 allows a user to navigate through the different Hop services and sub roles allowing the user
-                to grasp a deep understanding of what is currently going on each of the services based on the 
-                graphs defined by the user. See the previous Edit Graphs section, for information on how to generate
-                graphs for the Dashboard.                
+                to grasp a deep understanding of what is currently going on each of the services.               
             </para>
             <figure>
                 <title>Clusters</title>
@@ -436,7 +434,7 @@
                 In this new view, we can see that we have gone further inside the services the cluster consists of
                 and here the user can identify the status of each of the services that are part of the current cluster
                 instance. Selecting one of the services will show greater detail of information of the service. We will
-                see how it looks like each view for each of the services of th Hop service. Note that in order
+                see how it looks like each view for each of the services that form the HOP. Note that in order
                 for the graphs to appear, a user needs to configure the specific graph for the specific component, refer to
                 the Edit Graph section found in this chapter.
             </para>
@@ -444,7 +442,7 @@
                 <title>YARN monitoring</title>
                 <para>
                     If YARN is enabled in your cluster, you can get highly detailed information of YARN like the total
-                    amount of resource managers and node managers, and resource metrics of interest for YARN
+                    amount of resource managers and node managers, and metrics of interest for YARN
                     monitoring.
                     </para>
                     <figure>
@@ -477,7 +475,7 @@
             </figure>
             <para>
                 If you select the corresponding web UI link that appears in one of the YARN components, it will
-                load the respective Hadoop information Web ui with more detailed information of that component.
+                load the respective Hadoop information Web UI with more detailed information of that component.
             </para>
             
             <figure>
