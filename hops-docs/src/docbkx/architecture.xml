@@ -1,19 +1,151 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<section version="5.0" xmlns="http://docbook.org/ns/docbook"
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
          xmlns:xlink="http://www.w3.org/1999/xlink"
          xmlns:xi="http://www.w3.org/2001/XInclude"
          xmlns:ns5="http://www.w3.org/2000/svg"
          xmlns:ns4="http://www.w3.org/1998/Math/MathML"
          xmlns:ns3="http://www.w3.org/1999/xhtml"
-         xmlns:db="http://docbook.org/ns/docbook">
-    
-    <section>
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch07">
+    <title>Hop Architecture</title>
+    <sect1>
+        <title>Highly Available Hadoop Filesystem (HDFS)</title>
+        <para>
+            Due to the rapid growth of data in recent years, distributed file systems have
+            gained widespread adoption. The new breed of distributed file systems reliably store
+            petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
+            The Hadoop Distributed File System (HDFS) is a 
+            distributed, fault-tolerant file system designed to run on 
+            low-cost commodity hardware, and is the file storage component of the Hadoop
+            platform. The Hadoop Distributed File System (HDFS)
+            provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
+            YARN applications, see <xref linkend="hadoop2"/>.
+            <figure xml:id="hadoop2">
+                <title>Hadoop v2</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/hadoop2.png" scale="40" align="center"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            
+            In 2013, HDFS v2 introduced a new highly available metadata architecture, where 
+            the entire filesystem's metadata is stored in memory on a single node, and
+            changes to the metadata (<emphasis>edit log entries</emphasis>) are also replicated 
+            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm
+            . In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
+            responsible for managing the metadata, and the Secondary NameNode 
+            keeps an eventually consistent copy of the metadata. The Secondary NameNode 
+            is kept in sync with the Primary by two mechanisms: firstly, by eventually applying all 
+            edit log entries that were applied at the Primary, and 
+            secondly, receiving the same set of heartbeats from Data Nodes that are 
+            received by the Primary.
+            The Primary/Secondary replication model derives from the Active/Standy or 
+            Master/Slave replication models popularized by databases in the 1990s. In HDFS' take 
+            on this eventually consistent replication model, the Primary receives all read and write requests.
+            All write requests are sent to the Primary to ensure a single consistent copy of the metadata,
+            and updates are also applied to the Secondary. Read requests are also sent to the Primary.
+            Although, in principle, read requests could also be sent to the Secondary (as is the case in
+            many Master/Slave database setups), this could potentially result in operations being executed
+            on stale metadata. This is a bigger problem for a filesystem than it may be for a Web 2.0 
+            social media application using a Master/Slave database setup.
+            Thus, reads are only sent to the Primary. If the Primary fails, however, 
+            the Secondary needs to take over as Primary. Before it can take over, it first has to 
+            catch up with the set of edit log entries applied to Primary before it failed. 
+            The period of time before all outstanding edit log entries are applied at the Secondary before
+            it can take over may be up to tens of seconds, depending on the current load of the system and
+            the hardware and software setup.
+            Another limitation of the Primary/Secondary model, is that client and Data Nodes from 
+            HDFS need to have a consistent view of who the current Primary NameNode is. They do this by 
+            asking a Zookeeper coordination service that needs to run on at least 3 nodes to provide a fault
+            tolerant reliable service. Finally, the concurrency model supported by HDFS v2 is still 
+            multiple-readers, single-writer.
+            <figure xml:id="hdfsv2">
+                <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/hdfsv2.png" scale="50" align="center"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+        </para>
+        <para>
+            In contrast, our implementation of HDFS, called Hop HDFS, replaces the 
+            Primary-Secondary metadata model with shared, transactional memory, 
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster, 
+            see figure <xref linkend="hop-hdfs"/>.
+            In our new model, the size of HDFS' metadata is no longer limited 
+            to the amount of memory that can be managed on the JVM of a single node.
+            Our solution involves storing the metadata in a replicated, distributed, in-memory
+            database that can scale up to several tens of nodes, all while maintaining 
+            the consistency semantics of HDFS.  We maintain the consistency of the metadata, 
+            while providing high performance, all within a multiple-writer, multiple-reader
+            concurrency model. Multiple concurrent writers are now supported for the filesystem
+            as a whole, but single-writer concurrency is enforced at the inode level.
+            Our solution guarantees freedom from deadlock and progress by
+            logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
+            defining on a global order for transactions acquiring both explicit locks and 
+            implicit locks on subtrees in the hierarchy. 
+            The use of a database, however, also has its drawbacks. As the data now resides
+            on remote hosts on the network, an excessive number of roundtrips to 
+            the database harms system scalability and increases per-operation latencies.
+            We ameliorate these problems by introducing a snapshotting mechanism 
+            for transactions, where, at the beginning of a transaction, 
+            all the resources it needs are aquired in the defined global order, while
+            simulatenously taking row-level locks for those resources. On transaction
+            commit or abort, the resources are freed. This solution enables NameNodes
+            to perform operations on a local copy (or snapshot) of the transactions
+            state until such time as the transaction is completed, thus reducing
+            the number the number of roundtrips to the database, see <xref linkend="hdfs-snapshot"/> . 
+        </para>
+        <figure xml:id="hop-hdfs">
+            <title>Hop HDFS</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+    </sect1>
+
+    <sect1>                                
+        <title>Early performance measurements for Hop HDFS</title>
+        <para>
+            Our early performance figures show that Hop HDFS can scale to handle a similar
+            number of read and write requests per unit time as Apache HDFS. We have
+            introduced a number of features to enable this high level of performance, including
+            a snapshot layer at NameNodes and row-level locking at the database level, rather than
+            a system level lock for update operations as is done in Apache HDFS.
+            Our snapshotting layer involves a transaction acquiring all resources it requires at
+            the start of a primitive filesystem operation, and performing local read/write operations
+            on the snapshot copy, and then finally committing or rolling back on transaction commit.
+        </para>
+        <figure xml:id="hdfs-snapshot">
+            <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="75" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+<!--        <figure xml:id="hdfs-locking">
+            <title>Effect of replacing a global lock with row-level locks.</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-locking.png" scale="100" align="center"></imagedata>
+                </imageobject>
+            </mediaobject>
+        </figure>            -->
+    </sect1>    
+        
+    <sect1>
         <title>Hop Architecture</title>
         <para>Hops, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
             Cross-layer aspects like Security and PaaS services are also included.</para>
 
-        <figure id="arch-stack">
+        <figure xml:id="arch-stack">
             <title>Hop stack</title>
             <mediaobject>
                 <imageobject>
@@ -25,7 +157,7 @@
         <orderedlist>
             <listitem>
                 <para>
-                    <emphasis>HOP File System (HOP-FS):</emphasis>
+                    <emphasis>HOP File System (HOP-FS)</emphasis>
                     At the bottom layer of big data stack is HOP-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
                     representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
                     of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
@@ -34,7 +166,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>MySQL Cluster:</emphasis>
+                    <emphasis>MySQL Cluster</emphasis>
                     MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
                     Designed around a distributed, multi-master architecture with no single point of failure;
                     MySQL Cluster's real-time design delivers predictable, milisecond response times with 
@@ -44,7 +176,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>YARN:</emphasis>
+                    <emphasis>YARN</emphasis>
                     Resource negotiator for managing high volume distributed data processing tasks against HDFS. 
                     It supports different processing models other that Map-Reduce by separating its Resource 
                     Manager from Scheduler and Application Master. Application Master gives us flexibility to 
@@ -57,7 +189,7 @@
             </listitem>
             <listitem>
                 <para>
-                    <emphasis>Workflow Engine:</emphasis>
+                    <emphasis>Workflow Engine</emphasis>
                     On top of YARN, HOPS workflow engine parses workflows into an execution model of arbitrary tasks. 
                     For each task, it asks YARN for a containter, then for each container allocated task based on 
                     the scheduling policy it stages in data into HOPSFS, launches the task and stages out the result 
@@ -65,10 +197,10 @@
                 </para>
             </listitem>
         </orderedlist>
-    </section>
+    </sect1>
 
   
-    <section>
+    <sect1>
         <title>Deployment model</title>
         <para>At the moment HOPS supports Amazon Cloud, Open Stack and Bare Metal. Based on the chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment 
             model consist of Hops-Dashboard plus other machines either virtual in cloud or bare metal. Dashboard is the point of administration with web access through which customer 
@@ -76,34 +208,35 @@
             into security node-groups, machines inside each node-group basically have the same security credentials and could communicate with each other; however, communication 
             between machnies from different security group is not possible. All the machins inside the cluster have the same infrastructure and basic stack of softwares, althoug based 
             on the services each machine shoul provide, arbitrary platform softwares are installed.</para>
-        <figure id="arch-deploy">
+        <figure xml:id="arch-deploy">
             <title>Deployment Model</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="35" align="center"></imagedata>
+                    <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
-    </section>
+    </sect1>
 
-    <section>
-        <title>Helper Stack</title>
-        <para>Helpers are the intial set up on every machine that provide basics for cloud installation and configiration. 
-            <figure id="arch-helper">
-                <title>Helper stack</title>
+    <sect1>
+        <title>HDFS Platform-as-a-Service</title>
+        <para>Our Platform-as-a-Service model describes the set of frameworks and tools
+            that we use to deploy a Hadoop cluster on both cloud and bare-metal clusters.
+            <figure xml:id="arch-helper">
+                <title>Hop PaaS </title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/arch-layers.png" scale="50" align="center"></imagedata>
                     </imageobject>
                     <caption>
-                        <para>Helper Stack</para>
+                        <para>Hop PaaS Stack</para>
                     </caption>
                 </mediaobject>
             </figure>
             <orderedlist>
                 <listitem>
                     <para>
-                        <emphasis>SnakeYAML and YAML:</emphasis>
+                        <emphasis>SnakeYAML and YAML</emphasis>
                         YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
                         programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
                         allows easy mappings of common data types found in high level languages like list, 
@@ -117,7 +250,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Apache JClouds:</emphasis>
+                        <emphasis>Apache JClouds</emphasis>
                         Apache JClouds is an open source multi-api interface which allows easy interaction 
                         with multiple cloud providers and cloud software stacks. This open source api gives 
                         support around 30 providers which include Amazon, Azure, OpenStack and Rackspace. 
@@ -128,7 +261,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Chef:</emphasis>
+                        <emphasis>Chef</emphasis>
                         Chef is a systems and cloud infrastructure automation framework based on Ruby 
                         that simplifies deployment of servers and applications to any physical, virtual or cloud location
                         no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
@@ -141,7 +274,7 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>BoitTorent:</emphasis>
+                        <emphasis>BitTorrent</emphasis>
                         After machines are allocated in cloud, with the metadata information that JCloud returns, dashboard
                         tries to open a ssh connection into every single machine and install Chef agent for installations. 
                         Before installation starts, software libraries is replicated in all machines from dashboard, though 
@@ -152,19 +285,17 @@
                         dependencies between packages. 
                     </para>
                 </listitem>
-                <listitem>
+                <!--                <listitem>
                     <para>
-                        <emphasis>Collectd:</emphasis>
+                        <emphasis>Collectd</emphasis>
                         Collectd is a daemon which collects system performance statistics periodically and 
                         provides mechanisms to store values in a variety of ways like RRD files. Collectd 
                         gathers statistics about the system it is running and stores this information. With 
                         these statistics, we can keep track of the performance of your cluster and detect
                         possible failures and performance bottlenecks that might be needed to be address.
                     </para>
-                </listitem>
+                </listitem>-->
             </orderedlist>
         </para>
-
-    </section>
-
-</section>
+    </sect1>
+</chapter>

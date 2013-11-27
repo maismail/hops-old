@@ -4,11 +4,12 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
     <info>
-        <title>Hadoop Open Platform-as-a-Service</title>
+        <contractnum>Project number: 317871</contractnum>
+        <contractsponsor>EU FP7 - BiobankCloud Project</contractsponsor>
+        <title>Hadoop Open Platform Userguide</title>
         <authorgroup>
             <author>
                 <personname>Jim Dowling</personname>
-                
             </author>
             <author>
                 <personname>Salman Niazi</personname>
@@ -27,14 +28,12 @@
             </author>
         </authorgroup>
         <volumenum>0.1</volumenum>
-        <orgname>Kungliga Tekniska högskolan</orgname>
-        <edition>HOP User Guide version</edition>
+        <orgname>Kungliga Tekniska Högskolan</orgname>
+        <edition>Hadoop Open Platform User Guide</edition>
         <copyright>
             <year>2013</year>
             <holder>KTH</holder>
         </copyright>
-        
-
         <legalnotice>
             <para>Permission to use, copy, modify and distribute
                 this DocBook DTD and its accompanying documentation for any purpose and
@@ -42,14 +41,15 @@
                 copyright notice and this paragraph appear in all copies.
             </para>
         </legalnotice>
-
+    
     </info>
 
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="architecture.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_vagrant.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="getting_started.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_dashboard.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_paas_config.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
-    
+
 </book>

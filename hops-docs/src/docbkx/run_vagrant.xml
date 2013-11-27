@@ -9,15 +9,32 @@
 
     <title>Quickstart with Vagrant</title>
     <para>
-        This section describes the steps required to deploy a whole cluster 
-        on a single machine using git, vagrant, and chef.
+        This section describes the steps required to deploy a HOP cluster 
+        on a single machine using git, vagrant
+        <footnote>
+            <para>
+                <link  xlink:href="http://www.vagrantup.com">Vagrant is a tool for building complete development environments.
+                    With an easy-to-use workflow and focus on automation,
+                    Vagrant lowers development environment setup time, increases development/production parity,
+                    and makes the "works on my machine" excuse a relic of the past.</link> 
+            </para>
+        </footnote>
+        , and chef
+        <footnote>
+            <para>
+                <link  xlink:href="http://docs.opscode.com/">Chef is a systems and cloud infrastructure automation framework that makes it 
+                    easy to deploy servers and applications to any physical, virtual, 
+                    or cloud location, no matter the size of the infrastructure.</link> 
+            </para>
+        </footnote>
+        .
     </para>
 
     <sect1>
         <title>Pre-requisites:</title>
         <para>
             You should have the following programs installed:
-            git, vagrant. You will also need to download the vagrant virtual machine image
+            git and vagrant. You will also need to download the vagrant virtual machine image
             for Ubuntu 12.04 "precise".
             <programlisting>
     apt-get install git-core vagrant
@@ -29,7 +46,7 @@
     <sect1>
         <title>Launching Vagrant</title>
         <para>
-            You now need to clone our chef recipes, and then launch a vagrant instance.
+            You are ready to clone the chef recipes, and launch a vagrant instance.
         </para>
         <informalexample>
             <programlisting>
@@ -40,14 +57,14 @@
         </informalexample>
 <para>        
         Now grab a coffee, assuming you have a good network connection, 
-        it will take around 15 minutes to provision vagrant instance.
+        it will take around 15 minutes to provision a vagrant instance.
         When vagrant successfully completes provisioning using chef, 
-        you can point your browser at the following URL to open the Hop Dashboard:
+        use the following URL and default user credentials to access the Hop Dashboard:
 </para>
         <programlisting>
     https://localhost:9191/hops-dashboard/
     user: admin
-    password: jim
+    password: admin
         </programlisting>
         <para>
         You can log into the VM and then get root access using:

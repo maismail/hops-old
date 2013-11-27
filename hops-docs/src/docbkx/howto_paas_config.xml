@@ -9,35 +9,27 @@
          xml:id="ch04">
     <title>Defining a Cluster</title>
 
-    <para>
-        In this section, we describe the tools we offer in order to easily define and structure your clusters
-        for their deployment through our orchestration architecture from the  dashboard. In here, we will introduce
-        you to our definition language to define clusters for cloud providers like Amazon EC2 and OpenStack
-        or Baremetal clusters based on physical machines. Also we will give you hints and aspects you
-        should consider when structuring your cluster with our language. With our cluster definition language,
-        you will see that you will easily have a cluster deployed in a matter of minutes by making use of technologies
-        like Chef that will be in charge of orchestrating the nodes while we provision them with Jclouds (in the case
-        of a virtual environment) or a simple SSH client for your baremetal machines.
-    </para>
+    <para>In this section, we describe the tools we offer in order to easily define and structure
+        HOP clusters for their deployment through our orchestration architecture from the dashboard.
+        In here, we will introduce you to our definition language to define clusters for cloud
+        providers like Amazon EC2 and OpenStack or Baremetal clusters based on physical machines.
+        With our cluster definition language, you will see that you will easily have a cluster
+        deployed in a matter of minutes by making use of technologies like Chef that will be in
+        charge of orchestrating the nodes while we provision them with Jclouds (in the case of a
+        virtual environment) or a simple SSH client for your baremetal machines. </para>
     <sect1>
         <title>Cluster Definition Language</title>
-        <para>
-            We will start first by presenting our Cluster Definition Language (CDL) with 
-            which you will be capable of defining in a simple
-            manner the structure of your clusters while including extra information in 
-            relation to the type of environment you want to deploy your cluster. 
-            In general, we handle the following abstractions:
-            <itemizedlist>
+        <para>We will start first by presenting our Cluster Definition Language (CDL) with which you
+            can defining your clusters with ease. In general, we handle the following abstractions: <itemizedlist>
                 <listitem>
-                    <para>
-                        <emphasis>Cluster:</emphasis>
-                        A cluster is an entity that defines a whole system based on a heterogenous structure composed
-                        of multiple nodes. In most of the cases, we can classify the nodes into groups depending of
-                        the software they run. Also you need to provide the specific class tag of the type of cluster for our
-                        software to identify which type of cluster you want to deploy. To allow further customization of your
-                        cluster, we allow interesting options like the possibility of running chef recipes globally on all the
-                        nodes and open ports that you may want to be open.
-                        <example>
+                    <para><emphasis>Cluster:</emphasis> A cluster is an entity that defines a whole
+                        system based on a heterogenous structure composed of multiple nodes. In most
+                        of the cases, we can classify the nodes into groups depending of the
+                        software they run. Also you need to provide the specific class tag of the
+                        type of cluster for our software to identify which type of cluster you want
+                        to deploy. To allow further customization of your cluster, we allow
+                        interesting options like the possibility of running chef recipes globally on
+                        all the nodes and open ports that you may want to be open. <example>
                             <title>Defining Global Properties</title>
                             <programlisting>
 !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
@@ -60,12 +52,11 @@ global:
                         </example>
                         <note>
                             <title>Git Repositories</title>
-                            <para>
-                                If you want further customization, it is possible to fork our git repository and 
-                                customize our chef recipes if you want to modify some parameters of our cluster. Also
-                                you can add your own recipes if you decide to launch other services on your code.
-                                Simply add this snippet of code under global parameters.
-                                <example>
+                            <para>If you want further customization, it is possible to fork our git
+                                repository and customize our chef recipes if you want to modify some
+                                parameters of our cluster. Also you can add your own recipes if you
+                                decide to launch other services on your code. Simply add this
+                                snippet of code under global parameters. <example>
                                     <title>Defining Git repository</title>
                                     <programlisting>
 git:
@@ -80,10 +71,10 @@ git:
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Services:</emphasis>
-                        We identify multiple services, in our case related to HOPstart platform. You can spread this
-                        services quite easily among different nodes just indicating that information when grouping
-                        them. Also you may indicate further services to be deployed on them.
+                        <emphasis>Services:</emphasis> We identify multiple services, in our case
+                        related to Hop platform. You can spread this services quite easily among
+                        different nodes just indicating that information when grouping them. Also
+                        you may indicate further services to be deployed on them.
                         <programlisting>
 service: 
   - datanode 
@@ -95,12 +86,11 @@ service:
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Provider:</emphasis>
-                        In the case of defining a cluster to be deployed in a virtualized environment through an
-                        Amazon EC2 infrastructure or an OpenStack environment, you can give information of
-                        the image you want to use, the type of instance to request, login credentials in case you
-                        are using custom images.
-                        <example>
+                        <emphasis>Provider:</emphasis> In the case of defining a cluster to be
+                        deployed in a virtualized environment through an Amazon EC2 infrastructure
+                        or an OpenStack environment, you can give information of the image you want
+                        to use, the type of instance to request, login credentials in case you are
+                        using custom images. <example>
                             <title>Defining Cloud Providers</title>
                             <programlisting>
 provider:
@@ -130,51 +120,45 @@ provider:
     </sect1>
     <sect1>
         <title>Structuring your Cluster:</title>
-        <para>
-            Before using our tools, it is important that you have at least an idea of how you want to structure
-            the services of our data platform among the different machines that will be part of the cluster.
-            In our case, a fully functional cluster requires the following services deployed in different machines:
-            <orderedlist>
+        <para> Before using our tools, it is important that you have at least an idea of how you
+            want to structure the services of our data platform among the different machines that
+            will be part of the cluster. In our case, a fully functional cluster requires the
+            following services deployed in different machines: <orderedlist>
                 <listitem>
                     <para>
                         <emphasis>MySQL Cluster:</emphasis>
                         <itemizedlist>
                             <listitem>
                                 <para>
-                                    <emphasis>MySQL-NDB:</emphasis>
-                                    Your cluster should contain at least 2 instances of NDB
-                                </para>
+                                    <emphasis>MySQL-NDB:</emphasis> Your cluster should contain at
+                                    least 2 instances of NDB </para>
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>MySQL-MGM:</emphasis>
-                                    Your cluster should contain at least 1 instance of a Management Server.
-                                </para>
+                                    <emphasis>MySQL-MGM:</emphasis> Your cluster should contain at
+                                    least 1 instance of a Management Server. </para>
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>MySQL-Mysqld:</emphasis>
-                                    Your cluster should contain at least 1 instance of a MySQL Server.
-                                </para>
+                                    <emphasis>MySQL-Mysqld:</emphasis> Your cluster should contain
+                                    at least 1 instance of a MySQL Server. </para>
                             </listitem>
                         </itemizedlist>
                     </para>
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>HOPStart</emphasis>
+                        <emphasis>Hop</emphasis>
                         <itemizedlist>
                             <listitem>
                                 <para>
-                                    <emphasis>Namenode:</emphasis>
-                                    Your cluster should contain at least 2 namenode instances of our Hadoop Solution.
-                                </para>
+                                    <emphasis>Namenode:</emphasis> Your cluster should contain at
+                                    least 2 namenode instances of our Hadoop Solution. </para>
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>Datanode:</emphasis>
-                                    Your cluster should contain at least 2 datanode instances of our Hadoop Solution.
-                                </para>
+                                    <emphasis>Datanode:</emphasis> Your cluster should contain at
+                                    least 2 datanode instances of our Hadoop Solution. </para>
                             </listitem>
                         </itemizedlist>
                     </para>
@@ -185,42 +169,34 @@ provider:
                         <itemizedlist>
                             <listitem>
                                 <para>
-                                    <emphasis>ResourceManager:</emphasis>
-                                    Your cluster should contain at least 1 resource manager instances of YARN.
-                                </para>
+                                    <emphasis>ResourceManager:</emphasis> Your cluster should
+                                    contain at least 1 resource manager instances of YARN. </para>
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>NodeManager:</emphasis>
-                                    Your cluster should contain at least 2 node manager instances of YARN.
-                                </para>
+                                    <emphasis>NodeManager:</emphasis> Your cluster should contain at
+                                    least 2 node manager instances of YARN. </para>
                             </listitem>
                             <listitem>
                                 <para>
-                                    <emphasis>Spark:</emphasis>
-                                    Your cluster should contain at least one instance of Spark if you want to do data
-                                    processing through Spark to submit your jobs to the system.
-                                </para>
+                                    <emphasis>Spark:</emphasis> Your cluster should contain at least
+                                    one instance of Spark if you want to do data processing through
+                                    Spark to submit your jobs to the system. </para>
                             </listitem>
-                        </itemizedlist>
-                    </para>
+                        </itemizedlist></para>
                 </listitem>
-            </orderedlist>
-            <note>
+            </orderedlist><note>
                 <title>Multiple Services per Node</title>
-                <para> 
-                    The previous structure gave a very simple overview of the components that are needed for
-                    a HOPstart cluster to work correctly. It is viable to allocate various services in one machine or
-                    group of machines as we will see in the following sections.
-                </para>
+                <para>The previous section gave a very simple overview of the components that are
+                    needed for a HOP cluster to work correctly. It is possible to allocate various
+                    services in one machine or group of machines as we will see in the following
+                    sections. </para>
             </note>
         </para>
-        <para>
-            Now that we have a general perspective of how a cluster looks like, the next step is to identify
-            the environment of your choice for the cluster you want to work with. In the following sections,
-            we will describe how you can define the structure for virtualized cloud providers like Amazon EC2 
-            and OpenStack or in a physical baremetal environment.
-        </para>
+        <para>Now that we have a general perspective of how a cluster looks like, the next step is
+            to identify the environment of your choice for the cluster you want to work with. In the
+            following sections, we will describe how you can define the structure for virtualized
+            cloud providers like Amazon EC2 and OpenStack or in a physical Baremetal environment. </para>
     </sect1>
     <sect1>
         <title>Building your cluster:</title>
@@ -233,7 +209,7 @@ provider:
         <sect2>
             <title>Cluster in AWS</title>
             <para>
-                Lets imagine that we want to define a complete HOPstart which will contain a basic minimal setup.
+                Lets imagine that we want to define a complete Hop which will contain a basic minimal setup.
                 In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
                 datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
                 manager and 2 node managers. How we could map the services using only 7 machines?
@@ -429,8 +405,9 @@ nodes:
             <title>Select Cluster Type:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-clusterType.png" scale="30"></imagedata>
-                </imageobject>
+                                        <imagedata fileref="media/dash-clusterType.png" scale="30"
+                                            align="center"/>
+                                    </imageobject>
             </mediaobject>
         </figure>
                         </para>
@@ -494,16 +471,18 @@ nodes:
             <title>Common Cluster Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-common.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-common.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
         <figure xml:id="dash-bare-cluster">
             <title>Bare Metal Common Cluster Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-bare-common.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-bare-common.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
                                 </para>
@@ -548,8 +527,9 @@ nodes:
             <title>Cluster Provider Options:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-provider.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-provider.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
                                 </para>
@@ -610,16 +590,18 @@ nodes:
             <title>Cluster Group:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-groups.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-cluster-groups.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>
         <figure>
             <title>Bare Metal Groups:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-bare-groups.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata fileref="media/dash-bare-groups.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>    
                                 </para>
@@ -634,8 +616,10 @@ nodes:
             <title>Confirmation:</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-cluster-confirmation.png" scale="50"></imagedata>
-                </imageobject>
+                                                <imagedata
+                                                  fileref="media/dash-cluster-confirmation.png"
+                                                  scale="50" align="center"/>
+                                            </imageobject>
             </mediaobject>
         </figure>   
                                 </para>

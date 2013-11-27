@@ -8,7 +8,7 @@
     xmlns:db="http://docbook.org/ns/docbook"
     xml:id="ch05">
     
-    <title>Launching a HOPStart Cluster</title>
+    <title>Launching a Cluster</title>
     
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_aws.xml" />
   
