@@ -225,9 +225,19 @@
     </sect1>
 
     <sect1>
-        <title>HDFS Platform-as-a-Service</title>
-        <para>Our Platform-as-a-Service model describes the set of frameworks and tools
-            that we use to deploy a Hadoop cluster on both cloud and bare-metal clusters.
+        <title>HOP: Hadoop Open Platform-as-a-Service</title>
+        <para>We have a prototype implementation of a Platform-as-a-Service (PaaS) framework for HDFS.
+            As our PaaS model will cover the whole Hadoop stack, and not just HDFS, we call it
+            Hadoop Open Platform-as-a-Service, or HOP for short. Our framework is 
+            <emphasis>open</emphasis>, as it is designed to be deployable on any cloud platform
+            or a bare-metal environment. Currently, we have early support for Amazon
+            Web Services and OpenStack, as well as for bare-metal hosts.
+            HOP consists of a set of frameworks and libraries that we use to deploy a Hadoop cluster 
+            on both cloud and bare-metal clusters, with the most significant technologies
+            being Chef and JClouds, but also including a YAML-compatible language for 
+            defining a cluster and BitTorrent for improving download speeds of 
+            programs to hosts in a cluster.
+            
             <figure xml:id="arch-helper">
                 <title>Hop PaaS </title>
                 <mediaobject>
@@ -242,16 +252,56 @@
             <orderedlist>
                 <listitem>
                     <para>
-                        <emphasis>SnakeYAML and YAML</emphasis>
+                        <emphasis>YAML</emphasis>
                         YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
-                        programming languages such as C, Perl and Python, and ideas from XML. YAML syntax
-                        allows easy mappings of common data types found in high level languages like list, 
+                        programming languages such as C, Perl and Python, and ideas from XML. 
+                        We use YAML to define the set of hosts and the services that will be installed on 
+                        those hosts, making up a single cluster. This way, we can define a whole cluster
+                        in a single file, enabling easier management of clusters and even the sharing of
+                        cluster definitions.
+                        YAML syntax allows easy mappings of common data types found in high level languages like list, 
                         associative arrays and scalar. It makes it suitable for tasks where humans are likely to
                         view or edit data structures, such as configuration files or in our case, cluster
                         definition files. Additionally, we make use of the open source parser SnakeYAML to parse
-                        the contents of our cluster definition files. Parser transforms the given cluster 
+                        the contents of our cluster definition files. The SnakeYAML parser transforms the given cluster 
                         definition into consecutive stages such as defining security groups, virtual machine 
                         allocation, bittorent, installation, validation and retry.
+                        An example of a simple cluster definition is given below. It describes a cluster with 6 nodes,
+                        with MySQL Cluster running exclusively on 2 nodes, Hadoop running exclusively on 3 nodes, and
+                        another node running both MySQL Cluster and Hadoop services. The example uses default
+                        values for the AWS image, instanceType and region. There are many other parameters that 
+                        can be overriden. Our services map directly onto chef recipes for installing the services. We
+                        are developing a model for explicitly handling dependencies in chef, so that dependent services
+                        such as Java don't need to be specified as requirements in this cluster definition file.
+                            
+                <example>
+                    <title>Example Cluster Definition</title>
+                <programlisting>
+name: simpleCluster                 
+provider:
+  name: aws-ec2
+                    
+nodes:
+- service: 
+  - ndb::ndbd
+  number: 2
+
+- service: 
+  - ndb::mgm, ndb::mysqld, hadoop::namenode
+  number: 1
+          
+- service: 
+  - hadoop::namenode
+  - hadoop::resourcemanager
+  number: 1
+          
+- service: 
+  - hadoop::datanode
+  - hadoop::nodemanager
+  number: 2
+                </programlisting>
+                </example>
+                            
                     </para>
                 </listitem>
                 <listitem>

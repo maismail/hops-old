@@ -12,7 +12,7 @@
         This section describes the steps required to deploy a HOP cluster 
         on a single machine using git, vagrant
         <footnote>
-            <para>
+            <para>  
                 <link  xlink:href="http://www.vagrantup.com">Vagrant is a tool for building complete development environments.
                     With an easy-to-use workflow and focus on automation,
                     Vagrant lowers development environment setup time, increases development/production parity,
