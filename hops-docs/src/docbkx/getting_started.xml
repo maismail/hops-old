@@ -9,9 +9,10 @@
          xml:id="ch02">
     <title>Portal</title>
     <para>Hadoop Open Platform-as-a-service, is an effort to offer a high performance next generation
-        hadoop platform focusing in improving its scalability, availability and reliability. This section describes
-        the information and materials you need in order to start working with our data platform by making use
-        of our Hadoop Open PaaS dashboard. HOPStart dashboard provides an end-to-end management and 
+        Hadoop platform focusing to address previous issues found in Hadoop in relation its scalability, 
+        availability and reliability. This section describes the information and artifacts you need in order to start 
+        working with our data platform by making use of our Hadoop Open PaaS dashboard. HOPStart 
+        dashboard provides an end-to-end management and 
         monitoring application of our Hadoop distribution operating in the datacenter of your choice. With our
         dashboard, thanks to its graphical user interface (GUI); you will be able to manage your cluster, 
         define the cluster infrastructure of your choice, monitor services and alerts through a centralized application
