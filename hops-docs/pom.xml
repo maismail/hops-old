@@ -44,7 +44,9 @@
                     <paperType>A4</paperType>
                     <fop1Extensions>1</fop1Extensions>
                     <foCustomization>src/docbkx-stylesheet/fo/docbook.xsl</foCustomization>
-                    <externalFOPConfiguration>src/test/resources/fop.xconf</externalFOPConfiguration>
+                    <!--
+<externalFOPConfiguration>src/test/resources/fop.xconf</externalFOPConfiguration>
+-->
                     <chunkedOutput>true</chunkedOutput>
                     <customizationParameters>
                         <parameter>
