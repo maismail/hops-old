@@ -16,9 +16,9 @@
             petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
             The Hadoop Distributed File System (HDFS) is a 
             distributed, fault-tolerant file system designed to run on 
-            low-cost commodity hardware, and is the file storage component of the Hadoop
-            platform. The Hadoop Distributed File System (HDFS)
-            provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
+            low-cost commodity hardware that scales to store petabytes of data, 
+            and is the file storage component of the Hadoop platform. 
+            HDFS provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
             YARN applications, see <xref linkend="hadoop2"/>.
             <figure xml:id="hadoop2">
                 <title>Hadoop v2</title>
@@ -29,27 +29,29 @@
                 </mediaobject>
             </figure>
             
-            In 2013, HDFS v2 introduced a new highly available metadata architecture, where 
-            the entire filesystem's metadata is stored in memory on a single node, and
-            changes to the metadata (<emphasis>edit log entries</emphasis>) are also replicated 
-            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm
-            . In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
+            In 2013, HDFS v2 introduced a new highly available metadata architecture, where, as
+            in HDFS v1, the entire filesystem's metadata is stored in memory on a single node, but in v2
+            changes to the metadata (<emphasis>edit log entries</emphasis>) are now replicated 
+            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm.
+            In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
             responsible for managing the metadata, and the Secondary NameNode 
             keeps an eventually consistent copy of the metadata. The Secondary NameNode 
-            is kept in sync with the Primary by two mechanisms: firstly, by eventually applying all 
-            edit log entries that were applied at the Primary, and 
+            is kept in sync with the Primary by two mechanisms: firstly, by asynchronously applying all 
+            edit log entries that have been committed at the Journal Nodes, and 
             secondly, receiving the same set of heartbeats from Data Nodes that are 
             received by the Primary.
-            The Primary/Secondary replication model derives from the Active/Standy or 
-            Master/Slave replication models popularized by databases in the 1990s. In HDFS' take 
-            on this eventually consistent replication model, the Primary receives all read and write requests.
-            All write requests are sent to the Primary to ensure a single consistent copy of the metadata,
-            and updates are also applied to the Secondary. Read requests are also sent to the Primary.
-            Although, in principle, read requests could also be sent to the Secondary (as is the case in
-            many Master/Slave database setups), this could potentially result in operations being executed
-            on stale metadata. This is a bigger problem for a filesystem than it may be for a Web 2.0 
-            social media application using a Master/Slave database setup.
-            Thus, reads are only sent to the Primary. If the Primary fails, however, 
+            The Primary/Secondary replication model is also known as an Active/Standy or 
+            Master/Slave replication model, and was popularized by databases in the 1990s. HDFS' 
+            implementation of this eventually consistent replication model is more limited than in
+            the traditional relational database world, as all read and write requests are sent to 
+            the Primary. In typical Master/Slave configurations, writes are sent to the master, while
+            reads are load-balanced across slaves.
+            The reason all write requests are sent to the Primary to ensure a single consistent copy of the metadata. 
+            Read requests are also sent to the Primary, as reads at the Secondary could result in operations being executed
+            on stale metadata. This is a bigger problem for a filesystem, such as HDFS, 
+            than it would be for a Web 2.0  social media application with non-critical data, 
+            using a Master/Slave database setup. Thus, reads are only sent to the Primary. 
+            If the Primary fails, however, 
             the Secondary needs to take over as Primary. Before it can take over, it first has to 
             catch up with the set of edit log entries applied to Primary before it failed. 
             The period of time before all outstanding edit log entries are applied at the Secondary before
