@@ -19,7 +19,7 @@
         <para>
             Before starting, make sure that you have access to a functional and running Dashboard in a virtual
             machine in an accessible Amazon EC2 region. If you have not done so, please refer back to the 
-            section Getting Started for further information.
+            <xref linkend="ch02"/>.
         </para>
     </sect2>
 
@@ -50,9 +50,9 @@
             <note>
                 <title>Additional dashboard credentials</title>
                 <para>
-                    It is possible to include other options when deploying a EC2 cluster, for example; for
+                    It is possible to include other options when deploying an EC2 cluster, for example; for
                     maintanance purposes you might want to authorize extra public keys to the virtual machines.
-                    This is possible to set in the credential section of the dashboard
+                    This is possible to set in the credential section of the dashboard.
                 </para>
             </note>
         </para>
@@ -81,7 +81,7 @@
                         In this new view, you can manage available clusters that you may have defined 
                         previously. You can select a previous cluster, create a new one with the only wizard or
                         load a cluster from a cluster definition file. For further information on managing cluster files, 
-                        see the cluster configuration section. To continue, select a cluster from the table or load a
+                        see <xref linkend="ch04"/>. To continue, select a cluster from the table or load a
                         cluster from a file.
                     </para>
                 </listitem>
@@ -94,7 +94,7 @@
                 <listitem>
                     <para>
                         Pressing the start cluster will start the deployment process. A status bar will appear giving
-                        information of the current process. Also a progress table on the background will be generated
+                        information of the current status of the deployment. Also a progress table on the background will be generated
                         with information of the configuration state of the nodes. The process is long and it depends
                         on the number of nodes you deploy. On average, for 8 nodes it takes around 35 minutes.
                     </para>

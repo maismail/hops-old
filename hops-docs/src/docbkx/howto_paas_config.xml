@@ -10,7 +10,7 @@
     <title>Defining a Cluster</title>
 
     <para>In this section, we describe the tools we offer in order to easily define and structure
-        HOP clusters for their deployment through our orchestration architecture from the dashboard.
+        HOP clusters for their deployment through our orchestration architecture.
         In here, we will introduce you to our definition language to define clusters for cloud
         providers like Amazon EC2 and OpenStack or Baremetal clusters based on physical machines.
         With our cluster definition language, you will see that you will easily have a cluster
@@ -25,11 +25,12 @@
                     <para><emphasis>Cluster:</emphasis> A cluster is an entity that defines a whole
                         system based on a heterogenous structure composed of multiple nodes. In most
                         of the cases, we can classify the nodes into groups depending of the
-                        software they run. Also you need to provide the specific class tag of the
-                        type of cluster for our software to identify which type of cluster you want
-                        to deploy. To allow further customization of your cluster, we allow
+                        software they run. To allow further customization of your cluster, we allow
                         interesting options like the possibility of running chef recipes globally on
-                        all the nodes and open ports that you may want to be open. <example>
+                        all the nodes and open ports that you may want to be open. In order to identify which type
+                        of cluster you are defining, it is necessary to specify the class tag of the
+                        type of cluster so our software can map with the bindings of the type of cluster you want
+                        to deploy.<example>
                             <title>Defining Global Properties</title>
                             <programlisting>
 !!se.kth.kthfsdashboard.virtualization.clusterparser.Cluster
@@ -113,16 +114,16 @@ provider:
             </itemizedlist>
         </para>
         <para>
-            We will also see that the syntax differs depending if you are designing your cluster towards a 
+            We will also see that the syntax differs on whether are designing your cluster towards a 
             virtualized environment or a physical environment. In the following sections, we will go through 
             detailed examples for both types of clusters.
         </para>
     </sect1>
     <sect1>
         <title>Structuring your Cluster:</title>
-        <para> Before using our tools, it is important that you have at least an idea of how you
-            want to structure the services of our data platform among the different machines that
-            will be part of the cluster. In our case, a fully functional cluster requires the
+        <para> Before using our tools, it is important that you have an idea of how you
+            want to structure the services of our data platform through out the whole cluster. 
+            In our case, a fully functional cluster requires the
             following services deployed in different machines: <orderedlist>
                 <listitem>
                     <para>
@@ -148,7 +149,7 @@ provider:
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Hop</emphasis>
+                        <emphasis>HOP</emphasis>
                         <itemizedlist>
                             <listitem>
                                 <para>
@@ -209,7 +210,7 @@ provider:
         <sect2>
             <title>Cluster in AWS</title>
             <para>
-                Lets imagine that we want to define a complete Hop which will contain a basic minimal setup.
+                Lets imagine that we want to define a complete HOP cluster which will contain a basic minimal setup.
                 In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
                 datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
                 manager and 2 node managers. How we could map the services using only 7 machines?
@@ -262,8 +263,8 @@ nodes:
         <sect2>
             <title>Cluster in OpenStack</title>
             <para>
-                Taking the previous case for Amazon EC2, we can easily the same cluster description using the
-                same cluster definition file. In this the only section we need to change is related to the provider
+                Taking the previous case for Amazon EC2, we can easily write the same cluster description using the
+                same cluster definition file. In this case, the only section we need to change is related to the provider
                 we want to use which in this case is OpenStack. The file will look as follows:
                 <example>
                     <title>Full OpenStack Example</title>
@@ -314,8 +315,8 @@ nodes:
             <title>Cluster on Baremetal Machines</title>
             <para>
                 How would we describe the same cluster for Amazon EC2 in a cluster of physical machines?
-                In this case it is much simpler but you need to watch out for minor details like in this case
-                the class tag needs to be different for this types of clusters as we will see. Also in this case, you
+                In this case it is much simpler but you need to watch out for minor details like, for example;
+                the class tag needs to be different for this type of clusters as we will see. Also in this case, you
                 need to provide the IP addresses of the machines to connect to. An example is as follows:
                 <example>
                     <title>Full Baremetal Example</title>
@@ -491,8 +492,8 @@ nodes:
                                 <para>
                                     <emphasis>Provider Section:</emphasis>
                                     This form enables you to define the parameters for OpenStack or Amazon EC2.
-                                    Some values appear by default in the case of Amazon EC2 where you can use them
-                                    directly if you want.
+                                    Some values appear by default in the case of Amazon EC2 of defining a cluster to be
+                                    used with this cloud provider.
                                     <orderedlist>
                                         <listitem>
                                             <para>
@@ -512,7 +513,7 @@ nodes:
                                                 <emphasis>Login user:</emphasis>
                                                 Here you include the user name with sudo access to access the instances
                                                 in Amazon EC2 or OpenStack. Note that this value is necessary if you use a 
-                                                custom AMI in Amazon EC2 or using OpenStack.
+                                                custom AMI in Amazon EC2 or using you use OpenStack.
                                             </para>
                                         </listitem>
                                         <listitem>
