@@ -13,9 +13,9 @@
         high scalability, availability and reliability. This section describes the information
         needed to jump start Hop cluster. Hop web portal, is an entry point were users can test our
         platform in one of the supported environments: AWS, OpenStack and Baremetal machines. It is
-        a simple web application that deploys the Hop Dashboard in the cloud. Using the HOP
+        a simple web application that deploys the Hop Dashboard in the cloud. Using the Hop
         dashboard you can provision and configure the rest of the cluster. Hop Dashboard provides a
-        centralized end-to-end management and monitoring application for HOP distribution. Following
+        centralized end-to-end management and monitoring application for Hop distribution. Following
         are the step by step instructions for setting up the cluster in different environments. </para>
 
     <example>

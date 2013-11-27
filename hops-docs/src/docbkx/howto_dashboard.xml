@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/2000/svg" xmlns:ns4="http://www.w3.org/1998/Math/MathML" xmlns:ns3="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" xml:id="ch03">
-    <title>Dashboard</title>
+    <title>Hop Dashboard</title>
     
-    <para>In this section we will give an overview of our HOP Dashboard web based application. This
-        web application is design with Hadoop administrators in mind so they can easily monitor,
-        define and maintain  HOP cluster through an endpoint. This simplifies Hadoop administrator's
-        job by having all the necessary information of the hadoop cluster gathered in one place and
-        presented in an effective manner. Also it is possible to execute maintanance commands
-        through the different terminals available for services like MySQL, HDFS or Spark. </para>
-    <para> When you launch the HOP Dashboard for the first time, you will need to configure some
-        parameters to get starting with Hop. In order to access the dashboard, use the credentials
-        you specified in the Hop Portal when you where preparing to launch the dashboard <xref linkend="ch02"/>. After login, if you press your user icon you will have a menu with the
-        following options: <itemizedlist>
+    <para>Hop Dashboard is a web application designed with Hadoop administrators in mind. Hop
+        Dashboard provides a centralized end-to-end management and monitoring application for HOP
+        distribution. It simplifies Hadoop administrator's job by having all the necessary
+        statistics of the Hadoop cluster gathered in one place and presented in an effective manner.
+        Also it is possible to execute maintanance commands through the different terminals
+        available for services like MySQL, HDFS or Spark. </para>
+    <para>You will need to configure certain parameters when the Hop Dashboard is launched for the
+        first time. In order to access the dashboard, use the credentials you specified in the Hop
+        Portal when you where preparing to launch the dashboard <xref linkend="ch02"/>. After login,
+        if you press your user icon you will have a menu with the following options: <itemizedlist>
             <listitem>
                 <para> Change password </para>
             </listitem>
@@ -24,22 +24,16 @@
             <listitem>
                 <para> Setup Credentials </para>
             </listitem>
-        </itemizedlist> We will go over this options in detail in the following sections. </para>
+        </itemizedlist> We will go these options in more detail in the following sections. </para>
     <sect1>
         <title>Change Password</title>
-        <para>
-            This option will give the user the functionality to change their password if they need to do it. For 
-            now this functionality is not implemented.
-        </para>
+        <para>This is currently under development.  </para>
     </sect1>
     <sect1>
         <title>Edit Graphs</title>
-        <para>
-            Hop Dashboard offers great customization of how you want to display the data retrieved
-            from the Hop agents allocated in each one of the nodes that make up your cluster. Selecting this
-            option will bring you to a new view where you can define the graphs for the different services
-            of Hop.
-        </para>
+        <para>Hop Dashboard offers customization of how the data is displayed that is retrieved from
+            the Hop agents located in each node of the cluster. Selecting this option will enable
+            you to define the graphs for the different services of Hop. </para>
         <figure xml:id="dash-graphs">
             <title>Edit Graphs</title>
             <mediaobject>
@@ -48,48 +42,42 @@
                 </imageobject>
             </mediaobject>
         </figure>
-        <para>
-            You can define your graphs through two different options that are visible on this new view:
-            <itemizedlist>
+        <para> You can define your graphs through two different options that are visible on this new
+            view: <itemizedlist>
                 <listitem>
                     <para>
-                        <emphasis>New</emphasis>
-                    
-                        Selecting this option will open a new dialog where you can define the main specifications
-                        of your graph for a certain type of element monitored by the dashboard.
-                    </para>
+                        <emphasis>New</emphasis> Selecting this option will open a new dialog where
+                        you can define the specifications for new graph for statistics monitored by
+                        the dashboard. </para>
                     <figure xml:id="dash-new-graphs">
                         <title>Graph Editor</title>
                         <mediaobject>
                             <imageobject>
-                                <imagedata fileref="media/dash-new-graphs.png" align="center" scalefit="1" width="650"/>
+                                <imagedata fileref="media/dash-new-graphs.png" align="center"
+                                    scalefit="1" width="650"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Import</emphasis>
-                        It is also possible to import the graphs from a graph file written in JSON, this is the quickest way
-                        if you want to load a large number of graphs
-                    </para>
+                        <emphasis>Import</emphasis> It is also possible to import the graphs
+                        speicfications from a JSON graph file. This is the quickest way if you want
+                        to load a large number of graphs. </para>
                     <figure xml:id="dash-import-graphs">
                         <title>Import Graphs</title>
                         <mediaobject>
                             <imageobject>
-                                <imagedata fileref="media/dash-import-graphs.png" align="center" scalefit="1" width="650"/>
+                                <imagedata fileref="media/dash-import-graphs.png" align="center"
+                                    scalefit="1" width="650"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
                 </listitem>
-            </itemizedlist>
-        </para>  
-        <para>
-            When graphs are generated, they are stored in the graph database and loaded in the dashboard.
-            In the graph tables, it is possible to view all the graphs for a specific type of service or component 
-            the dashboard is capable of monitoring. Choosing a entry with the zoom icon, will generate a dialog
-            box where you can see more details of the graph entry.
-        </para>
+            </itemizedlist>When graphs are generated, they are stored in the database and loaded in
+            the dashboard. In the graph table, it is possible to view all the graphs for a specific
+            type of service or component that the dashboard is monitoring. Pressing the zoom button
+            will generate a dialog box where you can see more details about the graph. </para>
         <figure xml:id="dash-selected-graphs">
             <title>Graph Selection Detail</title>
             <mediaobject>
@@ -101,12 +89,9 @@
     </sect1>
     <sect1>
         <title>Backup/Restore</title>
-        <para>
-            The Backup/Restore option allows the user to do 2 things, one is to do a whole backup of the
-            dashboard state stored in the database in case of failure, maintenance or any other reasons.
-            The other option is to restore the dashboard's state from a previous backup which was obtained
-            from the dashboard.
-        </para>
+        <para>It takes backup of the whole dashboard state stored in the database. Incase of failure
+            or maintenence the dashboard can restore the previous states from a backup file obtained
+            from the dashboard. </para>
         <figure xml:id="dash-backup">
             <title>Backup/Restore</title>
             <mediaobject>
@@ -118,13 +103,9 @@
     </sect1>
     <sect1>
         <title>Setup Credentials</title>
-        <para>
-            This option allows the user to setup the credentials that will be used when the dashboard deploys
-            a cluster. You can select between Amazon EC2, OpenStack or Baremetal, depending on what option
-            you select; it will enable or disable sections of the form. This is important as not setting up this
-            credentials, will make the deployment architecture to fail when querying the cloud providers for
-            the necessary resources for your clusters.
-        </para>
+        <para>It allows the user to setup the credentials that are used when the dashboard deploys a
+            cluster. These are important configuration parameters. Cluster deployment will fail if
+            these parameteres are not properly set.  </para>
         <figure xml:id="dash-credentials">
             <title>Setup Credentials</title>
             <mediaobject>
@@ -138,15 +119,9 @@
     
     <sect1>
         <title>Cluster Management</title>
-        <para>
-            One of the options in the main Dashboard toolbar which will be of interest for Hadoop Administrators 
-            is the Manage Cluster option. This will bring a new view were users will be able to do a series of
-            basic operations with their stored clusters. The Dashboard will keep track of all the users clusters in a table that will be 
-            visible when the user accesses this view. Also in this view, users are able of uploading clusters easily with the
-            provided uploader. In the next chapter, we will explain in detail how users can create their clusters
-            using our cluster definition language or the provided cluster generator wizard, see 
-            <xref linkend="ch04">Chapter 4: Defining Clusters</xref>.
-        </para>
+        <para>Cluster mangement is an interesting feature in the Hop Dashboard. The dashboad keeps
+            track of diffenent cluster applications deployed in the cloud. It allows the
+            administrators to create, delete, edit, load and export clusters.  </para>
         <figure xml:id="dash-manage-cluster">
             <title>Manage Cluster</title>
             <mediaobject>
@@ -156,122 +131,103 @@
             </mediaobject>
         </figure>
         <para>
-            From the previous image we can see that the following options are available for a user:
             <itemizedlist>
                 <listitem>
-                    <para>
-                    <emphasis>Create Cluster</emphasis>
-                    Selecting this option it will take you to the cluster generation wizard where a user will be capable
-                    of generating its own cluster for HOP. We will explain in detail how this process works in the
-                    next chapter 
-                    <xref linkend="ch04">Chapter 4</xref>.
-                    </para>
+                    <para><emphasis>Create Cluster</emphasis> Selecting this option will take you to
+                        the cluster generation wizard where a users can of generate their own
+                        clusters for Hop. In the next chapter, we will explain in detail how users
+                        can create their custom clusters using our Cluster Definition Language, see
+                            <xref linkend="ch04">Chapter 4: Defining Clusters</xref>. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Delete Clusters</emphasis>
-                    This option will delete a selected cluster from the table. It is possible to delete multiple entries
-                    at once by shift clicking multiple entries before selecting this option.
-                    </para>
+                    <para><emphasis>Delete Clusters</emphasis> This option will delete a selected
+                        cluster. It is possible to delete multiple clusters at once by shift
+                        clicking multiple clusters before selecting this option. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Edit Selected Cluster</emphasis>
-                    This option will allow a user to edit an existing cluster from the stored clusters. This will bring
-                    the cluster generation wizard with the values of the selected cluster so the user can modify
-                    their cluster.
-                    </para>
+                    <para><emphasis>Edit Selected Cluster</emphasis> This option will allow a user
+                        to edit an existing stored cluster. This will bring the cluster generation
+                        wizard with the values of the selected cluster. Administrators can use this
+                        wizard to modify the cluster. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Load Selected Cluster</emphasis>
-                    This option will allow the user to load one of the stored clusters into the cluster launcher. From
-                    there the user can deploy the cluster on the environment of defined in that cluster.
-                    </para>
+                    <para><emphasis>Load Selected Cluster</emphasis> This option allows the user to
+                        load one of the stored clusters into the cluster launcher. Cluster launcer
+                        is used to deploy the cluster in the cloud. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Export Cluster</emphasis>
-                    This option allows the user to download, in a YAML file; a stored cluster in the dashboard.
-                    </para>
+                    <para><emphasis>Export Cluster</emphasis> It saves the information about the
+                        cluster in  a YAML file. </para>
                 </listitem>
             </itemizedlist>
         </para>
     </sect1>
     <sect1>
         <title>Clusters Progress</title>
-        <para>
-            Another interesting feature for Hadoop administrators, is the option available in the main Dashboard
-            toolbar for tracking the progress of the nodes deployed for your multiple clusters. Selecting this
-            option will bring you a view where you will have all the history of all the nodes through multiple phases
-            of the deployment cycle. A progress bar will appear over each of the entries in the table to see the
-            deployment progress of the nodes and an information tag with the current phase. Here you will be 
-            notified of succesfully configured nodes or nodes that had an error during the deployment phase 
-            of your cluster which will require of special maintenance. A node entry will go through the following
-            phases during a cluster deployment.
-            
-            <itemizedlist>
+        <para>Another interesting feature for Hadoop administrators, is the option available in the
+            main Dashboard toolbar for tracking the progress of the nodes deployed for your multiple
+            clusters. Selecting this option will bring you a view where you will have all the
+            history of all the nodes through multiple phases of the deployment cycle. A progress bar
+            will appear over each of the entries in the table to see the deployment progress of the
+            nodes and an information tag with the current phase. Here you will be notified of
+            succesfully configured nodes or nodes that had an error during the deployment phase of
+            your cluster which will require of special maintenance. A node entry will go through the
+            following phases during a cluster deployment. <itemizedlist>
                 <listitem>
                     <para>
-                    <emphasis>Waiting</emphasis>
-                    A node in this phase means, that; the entry has been generated in the node scheduler but
-                    no node creation query has been generated to the cloud provider. It will wait until the query
-                    is submitted against the cloud provider.
-                    </para>
+                        <emphasis>Waiting</emphasis> A node in this phase means, that; the entry has
+                        been generated in the node scheduler but no node creation query has been
+                        generated to the cloud provider. It will wait until the query is submitted
+                        against the cloud provider. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Creation</emphasis>
-                    A node in this phase means, that; the scheduler has submitted the query against the cloud 
-                    provider and it is waiting for the cloud provider to finish deploying the virtual instance. After
-                    successfully getting back the information of the specific instance, an initialization script is executed
-                    to do a preliminary configuration on that node.
-                    </para>
+                        <emphasis>Creation</emphasis> A node in this phase means, that; the
+                        scheduler has submitted the query against the cloud provider and it is
+                        waiting for the cloud provider to finish deploying the virtual instance.
+                        After successfully getting back the information of the specific instance, an
+                        initialization script is executed to do a preliminary configuration on that
+                        node. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Install</emphasis>
-                    A node in this phase means, that; the node is already created and we are running the install
-                    script which will execute chef install recipes for Hop services to fetch the necessary binaries
-                    from the different repositories. This phase is optional in case of using prebuilt virtual instances
-                    which contain Hop binaries inside.
-                    </para>
+                        <emphasis>Install</emphasis> A node in this phase means, that; the node is
+                        already created and we are running the install script which will execute
+                        chef install recipes for Hop services to fetch the necessary binaries from
+                        the different repositories. This phase is optional in case of using prebuilt
+                        virtual instances which contain Hop binaries inside. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Configure</emphasis>
-                    A node in this phase means, that; the node is receiving the configuration script which will
-                    execute chef with the selected recipes for the services defined for that node.
-                    </para>
+                        <emphasis>Configure</emphasis> A node in this phase means, that; the node is
+                        receiving the configuration script which will execute chef with the selected
+                        recipes for the services defined for that node. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Complete</emphasis>
-                    A node in this phase means, that; the node has succesfully finished executing the configuration
-                    script with chef and it is now working as part of the cluster. Additionally, the nodes in this phase
-                    will appear green in the progress history.
-                    </para>
+                        <emphasis>Complete</emphasis> A node in this phase means, that; the node has
+                        succesfully finished executing the configuration script with chef and it is
+                        now working as part of the cluster. Additionally, the nodes in this phase
+                        will appear green in the progress history. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Retrying</emphasis>
-                    A node in this phase means, that; the deployment system has detected a problem during 
-                    a previous node phase and it is triggering the retrying mechanism. It will retry submitting the
-                    previous phase script for 5 retries. This process ends when the number of retries finish or 
-                    we manage to successfully execute the script.
-                    </para>
+                        <emphasis>Retrying</emphasis> A node in this phase means, that; the
+                        deployment system has detected a problem during a previous node phase and it
+                        is triggering the retrying mechanism. It will retry submitting the previous
+                        phase script for 5 retries. This process ends when the number of retries
+                        finish or we manage to successfully execute the script. </para>
                 </listitem>
                 <listitem>
                     <para>
-                    <emphasis>Error</emphasis>
-                    A node in this phase means, that; the deployment system failed to recover the node through
-                    the retrying mechanism. This will be shown as a Red entry in the progress table and further actions
-                    will be needed by the Hadoop administrator in order to recover that node, for example; SSH to
-                    the failed node in order to get more information of the type of error it got.
-                    </para>
+                        <emphasis>Error</emphasis> A node in this phase means, that; the deployment
+                        system failed to recover the node through the retrying mechanism. This will
+                        be shown as a Red entry in the progress table and further actions will be
+                        needed by the Hadoop administrator in order to recover that node, for
+                        example; SSH to the failed node in order to get more information of the type
+                        of error it got. </para>
                 </listitem>
             </itemizedlist>
-            
         </para>
   
         
