@@ -10,57 +10,50 @@
     <title>Hop Architecture</title>
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
-        <para>
-            Due to the rapid growth of data in recent years, distributed file systems have
-            gained widespread adoption. The new breed of distributed file systems reliably store
-            petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
-            The Hadoop Distributed File System (HDFS) is a 
-            distributed, fault-tolerant file system designed to run on 
-            low-cost commodity hardware, and is the file storage component of the Hadoop
-            platform. The Hadoop Distributed File System (HDFS)
-            provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
-            YARN applications, see <xref linkend="hadoop2"/>.
-            <figure xml:id="hadoop2">
+        <para>Due to the rapid growth of data in recent years, distributed file systems have gained
+            widespread adoption. The new breed of distributed file systems reliably store petabytes
+            of data, and also provide rich abstractions for massively parallel data analytics. The
+            Hadoop Distributed File System (HDFS) is a distributed, fault-tolerant file system
+            designed to run on low-cost commodity hardware, and is the file storage component of the
+            Hadoop platform. The Hadoop Distributed File System (HDFS) provides the storage layer
+            for MapReduce, Hive, HBase, Spark and all other YARN applications, see <xref
+                linkend="hadoop2"/>. <figure xml:id="hadoop2">
                 <title>Hadoop v2</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/hadoop2.png" scale="40" align="center"/>
                     </imageobject>
                 </mediaobject>
-            </figure>
-            
-            In 2013, HDFS v2 introduced a new highly available metadata architecture, where 
-            the entire filesystem's metadata is stored in memory on a single node, and
-            changes to the metadata (<emphasis>edit log entries</emphasis>) are also replicated 
-            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm
-            . In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
-            responsible for managing the metadata, and the Secondary NameNode 
-            keeps an eventually consistent copy of the metadata. The Secondary NameNode 
-            is kept in sync with the Primary by two mechanisms: firstly, by eventually applying all 
-            edit log entries that were applied at the Primary, and 
-            secondly, receiving the same set of heartbeats from Data Nodes that are 
-            received by the Primary.
-            The Primary/Secondary replication model derives from the Active/Standy or 
-            Master/Slave replication models popularized by databases in the 1990s. In HDFS' take 
-            on this eventually consistent replication model, the Primary receives all read and write requests.
-            All write requests are sent to the Primary to ensure a single consistent copy of the metadata,
-            and updates are also applied to the Secondary. Read requests are also sent to the Primary.
-            Although, in principle, read requests could also be sent to the Secondary (as is the case in
-            many Master/Slave database setups), this could potentially result in operations being executed
-            on stale metadata. This is a bigger problem for a filesystem than it may be for a Web 2.0 
-            social media application using a Master/Slave database setup.
-            Thus, reads are only sent to the Primary. If the Primary fails, however, 
-            the Secondary needs to take over as Primary. Before it can take over, it first has to 
-            catch up with the set of edit log entries applied to Primary before it failed. 
-            The period of time before all outstanding edit log entries are applied at the Secondary before
-            it can take over may be up to tens of seconds, depending on the current load of the system and
-            the hardware and software setup.
-            Another limitation of the Primary/Secondary model, is that client and Data Nodes from 
-            HDFS need to have a consistent view of who the current Primary NameNode is. They do this by 
-            asking a Zookeeper coordination service that needs to run on at least 3 nodes to provide a fault
-            tolerant reliable service. Finally, the concurrency model supported by HDFS v2 is still 
-            multiple-readers, single-writer.
-            <figure xml:id="hdfsv2">
+            </figure> In 2013, HDFS v2 introduced a new highly available metadata architecture,
+            where the entire filesystem's metadata is stored in memory on a single node, and changes
+            to the metadata (<emphasis>edit log entries</emphasis>) are also replicated and
+            persisted to a set of (at least three) Journal Nodes using a quorum-based replication
+            algorithm. In HDFS v2, a Primary and Secondary NameNode can be configured, where the
+            Primary NameNode is responsible for managing the metadata, and the Secondary NameNode
+            keeps an eventually consistent copy of the metadata. The Secondary NameNode is kept in
+            sync with the Primary by two mechanisms: firstly, by eventually applying all edit log
+            entries that were applied at the Primary, and secondly, receiving the same set of
+            heartbeats from Data Nodes that are received by the Primary. The Primary/Secondary
+            replication model derives from the Active/Standy or Master/Slave replication models
+            popularized by databases in the 1990s. In HDFS' take on this eventually consistent
+            replication model, the Primary receives all read and write requests. All write requests
+            are sent to the Primary to ensure a single consistent copy of the metadata, and updates
+            are also applied to the Secondary. Read requests are also sent to the Primary. Although,
+            in principle, read requests could also be sent to the Secondary (as is the case in many
+            Master/Slave database setups), this could potentially result in operations being
+            executed on stale metadata. This is a bigger problem for a filesystem than it may be for
+            a Web 2.0 social media application using a Master/Slave database setup. Thus, reads are
+            only sent to the Primary. If the Primary fails, however, the Secondary needs to take
+            over as Primary. Before it can take over, it first has to catch up with the set of edit
+            log entries applied to Primary before it failed. The period of time before all
+            outstanding edit log entries are applied at the Secondary before it can take over may be
+            up to tens of seconds, depending on the current load of the system and the hardware and
+            software setup. Another limitation of the Primary/Secondary model, is that client and
+            Data Nodes from HDFS need to have a consistent view of who the current Primary NameNode
+            is. They do this by asking a Zookeeper coordination service that needs to run on at
+            least 3 nodes to provide a fault tolerant reliable service. Finally, the concurrency
+            model supported by HDFS v2 is still multiple-readers, single-writer. <figure
+                xml:id="hdfsv2">
                 <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
                 <mediaobject>
                     <imageobject>
@@ -111,16 +104,14 @@
 
     <sect1>                                
         <title>Early performance measurements for Hop HDFS</title>
-        <para>
-            Our early performance figures show that Hop HDFS can scale to handle a similar
-            number of read and write requests per unit time as Apache HDFS. We have
-            introduced a number of features to enable this high level of performance, including
-            a snapshot layer at NameNodes and row-level locking at the database level, rather than
-            a system level lock for update operations as is done in Apache HDFS.
-            Our snapshotting layer involves a transaction acquiring all resources it requires at
-            the start of a primitive filesystem operation, and performing local read/write operations
-            on the snapshot copy, and then finally committing or rolling back on transaction commit.
-        </para>
+        <para>Our early performance figures show that Hop HDFS can scale to handle a similar number
+            of read and write requests per unit time as Apache HDFS. We have introduced a number of
+            features to enable this high level of performance, including a snapshot layer at
+            NameNodes and row-level locking at the database level, rather than a system level lock
+            for update operations as is done in Apache HDFS. Our snapshotting layer involves a
+            transaction acquiring all resources it requires at the start of a primitive filesystem
+            operation, and performing local read/write operations on the snapshot copy, and then
+            finally committing or rolling back on transaction commit. </para>
         <figure xml:id="hdfs-snapshot">
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
@@ -202,12 +193,18 @@
   
     <sect1>
         <title>Deployment model</title>
-        <para>At the moment HOPS supports Amazon Cloud, Open Stack and Bare Metal. Based on the chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment 
-            model consist of Hops-Dashboard plus other machines either virtual in cloud or bare metal. Dashboard is the point of administration with web access through which customer 
-            could define configuration of the cluster, machines are allocated, their software stack is installed and state of the cluster is monitored. Cloud machines could be associated
-            into security node-groups, machines inside each node-group basically have the same security credentials and could communicate with each other; however, communication 
-            between machnies from different security group is not possible. All the machins inside the cluster have the same infrastructure and basic stack of softwares, althoug based 
-            on the services each machine shoul provide, arbitrary platform softwares are installed.</para>
+        <para>At the moment HOP supports Amazon Cloud, Open Stack and Bare Metal. Based on the
+            chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment
+            model consist of Hop-Dashboard plus other machines either virtual in cloud or bare
+            metal. Dashboard is the point of administration with web access through which customer
+            could define configuration of the cluster, machines are allocated, their software stack
+            is installed and state of the cluster is monitored. Cloud machines could be associated
+            into security node-groups, machines inside each node-group basically have the same
+            security credentials and could communicate with each other; however, communication
+            between machnies from different security group is not possible. All the machins inside
+            the cluster have the same infrastructure and basic stack of softwares, althoug based on
+            the services each machine shoul provide, arbitrary platform softwares are
+            installed.</para>
         <figure xml:id="arch-deploy">
             <title>Deployment Model</title>
             <mediaobject>
