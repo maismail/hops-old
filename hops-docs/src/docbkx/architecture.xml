@@ -113,16 +113,14 @@
 
     <sect1>                                
         <title>Early performance measurements for Hop HDFS</title>
-        <para>
-            Our early performance figures show that Hop HDFS can scale to handle a similar
-            number of read and write requests per unit time as Apache HDFS. We have
-            introduced a number of features to enable this high level of performance, including
-            a snapshot layer at NameNodes and row-level locking at the database level, rather than
-            a system level lock for update operations as is done in Apache HDFS.
-            Our snapshotting layer involves a transaction acquiring all resources it requires at
-            the start of a primitive filesystem operation, and performing local read/write operations
-            on the snapshot copy, and then finally committing or rolling back on transaction commit.
-        </para>
+        <para>Our early performance figures show that Hop HDFS can scale to handle a similar number
+            of read and write requests per unit time as Apache HDFS. We have introduced a number of
+            features to enable this high level of performance, including a snapshot layer at
+            NameNodes and row-level locking at the database level, rather than a system level lock
+            for update operations as is done in Apache HDFS. Our snapshotting layer involves a
+            transaction acquiring all resources it requires at the start of a primitive filesystem
+            operation, and performing local read/write operations on the snapshot copy, and then
+            finally committing or rolling back on transaction commit. </para>
         <figure xml:id="hdfs-snapshot">
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
@@ -204,12 +202,18 @@
   
     <sect1>
         <title>Deployment model</title>
-        <para>At the moment HOPS supports Amazon Cloud, Open Stack and Bare Metal. Based on the chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment 
-            model consist of Hops-Dashboard plus other machines either virtual in cloud or bare metal. Dashboard is the point of administration with web access through which customer 
-            could define configuration of the cluster, machines are allocated, their software stack is installed and state of the cluster is monitored. Cloud machines could be associated
-            into security node-groups, machines inside each node-group basically have the same security credentials and could communicate with each other; however, communication 
-            between machnies from different security group is not possible. All the machins inside the cluster have the same infrastructure and basic stack of softwares, althoug based 
-            on the services each machine shoul provide, arbitrary platform softwares are installed.</para>
+        <para>At the moment HOP supports Amazon Cloud, Open Stack and Bare Metal. Based on the
+            chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment
+            model consist of Hop-Dashboard plus other machines either virtual in cloud or bare
+            metal. Dashboard is the point of administration with web access through which customer
+            could define configuration of the cluster, machines are allocated, their software stack
+            is installed and state of the cluster is monitored. Cloud machines could be associated
+            into security node-groups, machines inside each node-group basically have the same
+            security credentials and could communicate with each other; however, communication
+            between machnies from different security group is not possible. All the machins inside
+            the cluster have the same infrastructure and basic stack of softwares, althoug based on
+            the services each machine shoul provide, arbitrary platform softwares are
+            installed.</para>
         <figure xml:id="arch-deploy">
             <title>Deployment Model</title>
             <mediaobject>
