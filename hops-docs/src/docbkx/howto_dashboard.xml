@@ -29,7 +29,7 @@
         <title>Change Password</title>
         <para>This is currently under development.  </para>
     </sect1>
-    <sect1>
+    <sect1 xml:id="edit_graphs">
         <title>Edit Graphs</title>
         <para>Hop Dashboard offers customization of how the data is displayed that is retrieved from
             the Hop agents located in each node of the cluster. Selecting this option will enable
@@ -244,31 +244,16 @@
     </sect1>
     <sect1>
         <title>Monitoring</title>
-        <para>Hop Dashboard lets monitor hosts, alters and Hop clusters in real time. Brie <itemizedlist>
-                <listitem>
-                    <para><emphasis>Hosts:</emphasis> Information and data analytics of all the
-                        nodes the dashboard is monitoring. </para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>Alerts:</emphasis> List of all alerts sent to the Dashboard by
-                        the Hop agents running on all the nodes of the cluster. </para>
-                </listitem>
-                <listitem>
-                    <para><emphasis>Clusters:</emphasis> A drop down list with the available
-                        clusters been monitored by the dashboard. Selecting an entry will give
-                        further information of the state of that cluster. </para>
-                </listitem>
-            </itemizedlist>
-        </para>
+        <para>Hop Dashboard monitors hosts, alters and Hop clusters in real time. Brief overview of
+            the monitoring tool is given below.   </para>
         <sect2>
             <title>Hosts</title>
-            <para>This view allows a user to get a general overview of the state of all the nodes in
-                all the clusters, you will be able to track information of great interest like the
-                allocated ip's for that node, its hostname, host ID, its current health in the
-                system, and when the last heartbeat was received. Also it shows information about
-                the nodes available resources like the number of cores that machine has, the load
-                average in that instance in the last 1, 5 15 min, disk usage and physical memory in
-                use. </para>
+            <para>The host monitoring tools shows the state of all the nodes in the clusters. An
+                administrator can track information of his/her interest such as the allocated IPs
+                for the nodes, hostnames, host IDs, health of the nodes in the system, and when the
+                last heartbeat was received from the nodes. It also monitors available resources on
+                the nodes such as the number of cores that machine has, average load on the
+                instance, disk usage and physical memory in use. </para>
             <figure>
                 <title>Hosts</title>
                 <mediaobject>
@@ -277,11 +262,9 @@
                     </imageobject>
                 </mediaobject>
             </figure>   
-            <para>
-                By clicking in one of the host ID's entries, it will show a detailed view of the hosts monitoring analytics
-                with the graphs that are available for the Hosts components. See the previous Edit Graphs section,
-                where we explained how users can create graphs for the dashboards monitoring components.
-            </para>
+            <para>Selecting the host ID's displays a detailed view of the host's analytics with the
+                graphs that are available for the hosts. See the <xref linkend="edit_graphs"/>
+                section to create or delete graphs for the dashboards monitoring components. </para>
             <figure>
                 <title>Hosts Details-Services</title>
                 <mediaobject>
@@ -301,14 +284,9 @@
         </sect2>
         <sect2>
             <title>Alerts</title>
-            <para>
-                This view allows a user to keep track of the whole history of alerts submitted by the
-                Hop agents. Here you will see for each entry an alert submitted by one of the agents
-                containing the message provided by that alert plus the date the message was generated,
-                the severity of the alert and the host ID that triggered the alert. Also further information is provided
-                with the alert like the source that originated the alert and other parameters that help to track
-                the source of the alert.
-            </para>
+            <para>This tools allows the user to view all the alerts submitted by the Hop agents. An
+                administrator can query the alert monitoring tool to display alerts of certain
+                severity and that were generated in a certain time window. </para>
             <figure>
                 <title>Alerts</title>
                 <mediaobject>
@@ -320,13 +298,13 @@
         </sect2>
         <sect2>
             <title>Clusters</title>
-            <para>
-                Selecting this option from the main Dashboard toolbar, will generate a dropdown list with all the 
-                available clusters been actually monitored by the dashboard. From here you can navigate and get
-                further detail of the cluster and the current status of the services running in that cluster. This 
-                allows a user to navigate through the different Hop services and sub roles allowing the user
-                to grasp a deep understanding of what is currently going on each of the services.               
-            </para>
+            <para>Cluster monitoring tool gives a bird eye view of the clusters monitored by the Hop
+                Dashboard. It contains information such as number of nodes that compose the cluster
+                and the health status of the nodes. Also it keeps track of the resources allocated
+                to the cluster such as total number of cores which compose the overall computing
+                power of the cluster, the total disk capacity and the total physical memory
+                capacity. An administrator can drill down in a cluster to find out list of services
+                in the cluster, their status and a list of nodes in each service.  </para>
             <figure>
                 <title>Clusters</title>
                 <mediaobject>
@@ -334,38 +312,19 @@
                         <imagedata fileref="media/dash-clusters.png" align="center" scalefit="1" width="650"/>
                     </imageobject>
                 </mediaobject>
-            </figure>
-            <para>
-                From the previous image, we can see a top level overview of each cluster with general information
-                on the status of that cluster. This contains information on the number of nodes that compose that
-                cluster, the current health of the cluster and the number of hosts involved in the cluster. Also it
-                keeps track of the resources allocated on that cluster like the total number of cores which compose
-                the overall computing power of the cluster, the total disk capacity and the total physical memory 
-                capacity. Selecting a cluster entry will bring a more detailed view of that cluster.
-            </para>   
+            </figure>   
             <figure>
-                <title>Cluster Detail</title>
+                <title>Detailed Cluster View</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-cluster-detail.png" align="center" scalefit="1" width="650"/>
                     </imageobject>
                 </mediaobject>
             </figure>
-            <para>
-                In this new view, we can see that we have gone further inside the services the cluster consists of
-                and here the user can identify the status of each of the services that are part of the current cluster
-                instance. Selecting one of the services will show greater detail of information of the service. We will
-                see how it looks like each view for each of the services that form the HOP. Note that in order
-                for the graphs to appear, a user needs to configure the specific graph for the specific component, refer to
-                the Edit Graph section found in this chapter.
-            </para>
             <sect3>
                 <title>YARN monitoring</title>
-                <para>
-                    If YARN is enabled in your cluster, you can get highly detailed information of YARN like the total
-                    amount of resource managers and node managers, and metrics of interest for YARN
-                    monitoring.
-                    </para>
+                <para>YRAN is an important system in Hadoop echo system. Hop Dashboard displays very
+                    detailed YARN performance analytics. </para>
                     <figure>
                 <title>YARN Metrics</title>
                 <mediaobject>
@@ -374,10 +333,8 @@
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>
-                If you select one of the components that form part of the YARN ecosystem, you will get more
-                information on that specific component.
-            </para>
+            <para>You, can drill down and see the analytics for the resource and node managers in
+                    the YARN echo system. </para>
             <figure>
                 <title>Resource Manager Metrics</title>
                 <mediaobject>
@@ -394,10 +351,13 @@
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>
-                If you select the corresponding web UI link that appears in one of the YARN components, it will
-                load the respective Hadoop information Web UI with more detailed information of that component.
-            </para>
+            <para>Hop dashboard provides a direct access to the resource and node manger web base
+                    UIs. Resource manager web UI gives a very detailed infortion such as number of
+                    applications submitted, number of applications in progress, number of
+                    application completed, total available memory, memory consumed, dead nodes etc.
+                    Node manager web UI displays information such as total memory allocated to the
+                    java virtual machine on the node, memory allocated to each container, node's
+                    healt status, hadoop version etc. </para>
             
             <figure>
                 <title>Resource Manager UI</title>
@@ -406,7 +366,7 @@
                         <imagedata fileref="media/dash-YARN-resourceUI.png" align="center" scalefit="1" width="650"/>
                         </imageobject>
                 </mediaobject>
-            </figure>
+            </figure>  
                <figure>
                 <title>Node Manager UI</title>
                 <mediaobject>
@@ -418,28 +378,23 @@
             </sect3>
             <sect3>
                 <title>MySQL Cluster</title>
-                <para>
-                    You can get a highly detailed view of what is happening in MySQL cluster after deploying a 
-                    Hop cluster. You can keep track of statistics of interest in order to keep the performance
-                    of your MySQL Cluster in good shape. If you select the MySQL you can obtain the following information
-                    if the graphs are configured accordingly, see Edit Graph section in this chapter.
-                </para>
+                <para>In Our implementation the HDFS' the metadata is stored in MySQL Cluster, a
+                    distributed, in-memory, highly available relational database. You can monitor
+                    the MySQL Cluster using the Hop Dashboard. Its keeps track of data memory, index
+                    memory, number of reads and writes per second and number of scans per second. </para>
                  <figure>
-                <title>MySQL overall graphs</title>
+                <title>MySQL Cluster Monitor</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-MYSQL-graphs.png" align="center" scalefit="1" width="650"/>
                         </imageobject>
                 </mediaobject>
             </figure>
-                 <para>
-                     We also offer additional functionality for users to maintain and manage the status of their
-                     MySQL cluster without the need to connecting directly to the machine. We provide an online
-                     terminal where users can execute mysql commands directly to the MySQL cluster without any
-                     delay.
-                 </para>
+                 <para>Hop Dashboard is designed to make the Hadoop administrator's job easier to
+                    manage the cluster. The dashboard provides an online terminal to directly run
+                    SQL commands on MySQL Cluster.</para>
                   <figure>
-                <title>MySQL console</title>
+                <title>MySQL Console</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-MYSQL-console.png" align="center" scalefit="1" width="650"/>
@@ -448,20 +403,12 @@
             </figure>
             </sect3>
             <sect3>
-                <title>HOPS HDFS (Hadoop Filesystem)</title>
-                <para>
-                   You can get a highly detailed view of what is happening in the Hop file system after deploying a 
-                    Hop cluster. You can keep track of statistics of interest in order to keep the performance
-                    of your Hop system in good shape. If you select the Hop option you can obtain information
-                    from the graphs previously configured in the Edit Graph section.
-                </para>
-                <para>
-                    We also offer additional functionality for users to manage the file system without the need to 
-                    connecting directly to the machine. We provide an online terminal where users can execute 
-                    hdfs commands directly to the file system without any delay.
-                </para>
+                <title>Hop Distributed File System (HDFS)</title>
+                <para>It also provides an online termianl for quering the distributed file system
+                    using the HDFS client. It can query the file system to display file listing, cop
+                    , move, delete files etc. </para>
                 <figure>
-                <title>HOP console</title>
+                <title>HOP Console</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-HOP-console.png" align="center" scalefit="1" width="650"/>
