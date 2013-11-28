@@ -142,8 +142,7 @@
                                         <title>Portal AWS</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-AWS.png"
-                                                  scalefit="1" align="center" width="550"/>
+                                                <imagedata fileref="media/portal-AWS.png" align="center"  scale="30"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -232,8 +231,7 @@
                                         <title>Portal OpenStack</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-OpenStack.png"
-                                                  align="center" scalefit="1" width="550"/>
+                                                <imagedata fileref="media/portal-OpenStack.png" align="center" scale="30"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -292,11 +290,10 @@
                                         </listitem>
                                     </itemizedlist>
                                     <figure xml:id="portal-baremetal">
-                                        <title>Portal OpenStack</title>
+                                        <title>Portal Baremetal</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-Baremetal.png"
-                                                  align="center" scalefit="1" width="550"/>
+                                                <imagedata fileref="media/portal-Baremetal.png" align="center" scale="30"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>

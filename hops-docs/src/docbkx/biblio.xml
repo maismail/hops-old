@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bibliography version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/2000/svg" xmlns:ns4="http://www.w3.org/1998/Math/MathML" xmlns:ns3="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" xml:id="ch03">
+
+  <biblioentry role="book" id="au72">
+
+    <abbrev id="au72.abbrev">AU72</abbrev>
+    <authorgroup>
+      <author>
+        <firstname>Alfred V.</firstname>
+        <surname>Aho</surname>
+
+      </author>
+      <author>
+        <firstname>Jeffrey D.</firstname>
+        <surname>Ullman</surname>
+      </author>
+
+    </authorgroup>
+    <title>The Theory of Parsing, Translation, and Compiling</title>
+    <subtitle role="series">Series in Automatic Computation</subtitle>
+
+    <publisher>Prentice Hall</publisher>
+    <address>Englewood Cliffs, New Jersey</address>
+    <pubdate>1972</pubdate>
+  </biblioentry>
+
+  <biblioentry role="article" id="decidability">
+    <abbrev id="decidability.abbrev">Hun82</abbrev>
+    <biblioset role="article">
+      <author><firstname>H. B.</firstname><surname>Hunt, III</surname></author>
+
+      <title>On the decidability of grammar problems</title>
+      <pagenums>429--447</pagenums>
+      <bibliosource class="doi">http://doi.acm.org/10.1145/322307.322317</bibliosource>
+    </biblioset>
+
+    <biblioset role="journal">
+      <title>Journal of the ACM (JACM)</title>
+      <volumenum>29</volumenum><issuenum>2</issuenum>
+      <pubdate>1982</pubdate>
+
+    </biblioset>
+  </biblioentry>
+
+  <biblioentry role="book" id="sippu-2">
+    <abbrev id="sippu-2.abbrev">SSS90</abbrev>
+    <authorgroup>
+
+      <author>
+        <firstname>Seppo</firstname>
+        <surname>Sippu</surname>
+      </author>
+      <author>
+
+        <firstname>Eljas</firstname>
+        <surname>Soisalon-Soininen</surname>
+      </author>
+    </authorgroup>
+    <title>Parsing Theory</title>
+
+    <subtitle role="series">EATCS Monographs on Theoretical Computer Science</subtitle>
+    <publisher>Springer-Verlag</publisher>
+    <pubdate>1990</pubdate>
+
+  </biblioentry>
+
+</bibliography>
