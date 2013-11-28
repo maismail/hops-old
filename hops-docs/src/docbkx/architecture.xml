@@ -451,16 +451,17 @@ return selectAll()
         <emphasis>Hierarchy of Resources</emphasis>
         <para>
             Filesystems, such as HDFS, have hierarchical namespaces, with directories
-            containing zero to many files, and, in unix-based filesystems, both 
-            files and directories represented as inodes. In HDFS, when an inode represents
-            a file, the inode may be made up of a variable number of fix-sized blocks 
-            (typically 512 MB).
+            containing zero to many files. In unix-based filesystems, both 
+            files and directories are represented as inodes. A filesystem
+            hierarchy can be represented as a directed acyclic graph (DAG), when
+            symbolic links are resolved.
             
             We ensure deadlock freedom, by ensuring that all transactions lock
-            inodes in a consistent order, defined by the filesystem's hierarchy: 
+            inodes in a consistent order, defined by the filesystem's DAG: 
             the appropriate read or write locks are taken at inodes, starting at 
-            the root and traversing directories in a depth-first, left-most order 
-            until all the inode locks required for this transaction have been acquired.
+            the root and traversing directories in a depth-first order to the leftmost
+            leaf info, continuing until either the rightmost leaf inode is reached or 
+            all the inode locks have been acquired for this transaction.
             The locks are then held for the duration of the transaction. 
             Locks are not upgraded within a transaction. 
             Since all transactions acquire locks in the same order, there are 
@@ -468,10 +469,13 @@ return selectAll()
             lock-upgrade deadlocks.
             
             Locks also need to be acquired on data-structures used by inodes, such
-            as blocks, replicas, leases, corrupted-blocks, etc.
-            When operations are performed on inodes, we take a write lock on the
+            as blocks, replicas, leases, corrupted-blocks, etc. In HDFS, an inode for
+            a file contains a variable number of fix-sized blocks 
+            (typically 512 MB), where each block is typically replicated on 3
+            DataNodes. When operations are performed on inodes or a constituent
+            part of an inode, we first take a write lock on the
             inode itself, ensuring no other transactions can concurrently access
-            that inode.
+            that inode or its constituent parts.
          </para>           
     </sect1>
 
