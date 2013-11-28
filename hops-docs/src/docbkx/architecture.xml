@@ -117,186 +117,372 @@
         multiple NameNodes attempt to perform them concurrently. Examples of such
         tasks include: 
         <orderedlist>
-        <listitem>
-        replication monitoring, 
-        </listitem>
-        <listitem>
-        lease management,
-        </listitem>
-        <listitem>
-        block token generation,
-        </listitem>
-        <listitem>
-        and the decomissioning of datanodes.
-        </listitem>
+            <listitem>
+                replication monitoring, 
+            </listitem>
+            <listitem>
+                lease management,
+            </listitem>
+            <listitem>
+                block token generation,
+            </listitem>
+            <listitem>
+                and the decomissioning of datanodes.
+            </listitem>
         </orderedlist>
-        Without any coordination between the NameNodes, and since all NameNodes have identical behaviour, 
-        then, if a block becomes under-replicated, potentially several NameNodes will identify
-        this event, and select a DataNode to replicate that block to. This would
+        To clariy the problem, we give an exapmle. Without any coordination between 
+        NameNodes, and since all NameNodes have identical behaviour, 
+        if a block becomes under-replicated, several NameNodes may identify
+        this event, and each would select a DataNode to replicate that block to. This would
         cause multiple re-replications of the block, leading it to enter an over-replicated
-        state, upon which, multiple NameNodes would again recognize this state and attempt
-        to remove replicas, leading to an under-replicated block, in a circular manner. 
+        state, upon which, multiple NameNodes would recognize this over-replicated state and attempt
+        to remove replicas, possibly leading to an under-replicated block - back where 
+        we started. 
 
         We solve this coordination problem, by implementing a Leader Election Algorithm,
-        where only the leader is assigned the task of performing the above background tasks.
+        where only the leader NameNode is assigned the task of performing the above background tasks.
         Our leader election algorithm uses the shared, transactional memory 
         abstraction provided by MySQL Cluster to coordinate the election process.
 
-        <emphasis>Definition: correct NameNode process</emphasis>
-        The notion of correct in this context means that a process is active and 
-        running and is able to connect and write to NDB cluster in a bounded time interval.
+        <para/>
+        <emphasis>Definition: Correct NameNode process</emphasis>
         <para>
-        The bounded time interval is typically set to around 1 second. That means our
-        MySQL Cluster should be provisioned to handle peak loads.
+            The notion of correct in this context means that a process is active and 
+            running and is able to connect and write to NDB cluster in a bounded time interval.
+            The bounded time interval is typically set to around 1 second, and we call such
+            an interval a <emphasis>round</emphasis>. 
         </para>
 
         A leader NameNode is a NameNode from the set of NameNodes that  
         is correct and is responsible for listening to DateNode heartbeats and 
         assigning various tasks to them as well as responsible for managing background tasks.
-        
         The properties that our leader election algorithm guarantee are:
         <orderedlist>
-        <listitem>
-        <emphasis>Completeness:</emphasis> after a bounded time interval, all correct namenodes will detect every namenode that has crashed.
-<emphasis>Agreement:</emphasis> after a bounded time interval, all correct namenodes will recognize one among them as the leader.
-All will agree to the same namenode being the leader.
-<emphasis>Stability:</emphasis> If one correct namenode is the leader, all previous leaders have crashed
-        </listitem>
+            <listitem>
+                <emphasis>Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
+                <emphasis>Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
+                All will agree to the same NameNode being the leader.
+<emphasis>Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
+            </listitem>
         </orderedlist>
-
+        <para/>
         <emphasis>Leader Election Algorithm</emphasis>
-The leader election algorithm runs continuously at the namenodes as soon as it has started. Each
-namenode is assigned an (integer) id. At any point in time, the namenode with the lowest id is always
-elected as the leader.
-The central focus of the algorithm for detecting failures and electing a new leader is through the use
-of heartbeats called counters. The ids of each namenode are persisted in a table called LEADER and
-in this way all namenodes have a uniform view of all the namenodes in the system. The schema and
-sample records for these tables look like the following:
+        <para>
+            The leader election algorithm runs continuously at the NameNodes. 
+            Each NameNode is assigned an (integer) id. 
+            At any point in time, the correct NameNode with the lowest id is 
+            elected as the leader. The central focus of the algorithm is to detect failures 
+            and elect a new leader using heartbeats. We implement heartbeats as counters in 
+            a table in NDB. The algorithm is run at NameNodes in rounds (every nth second), 
+            and it is expected that each NameNode will send only one heartbeat per round, 
+            although our algorithm tolerates minor deviations, as explained later. 
+            NameNodes can discover who the leader is by reading the ids of correct 
+            NameNodes from a table in NDB. NDB's shared transactional memory 
+            allows all NameNodes to have a uniform view of the correct NameNodes in the system. 
+            We implemented our heartbeat model using the schema shown in <xref linkend="leader"/>. Some
+            sample records are also shown to show an example run of the algorithm.
+        </para>
+        <figure xml:id="leader">
+            <title>Leader Table in NDB</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/leader.png" scale="66" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+        <para>
+            Once a NameNode starts, it starts a rounds timer which periodically triggers
+            causing it to send a heartbeat to the NDB to indicate 
+            that it is currently active and running. The heartbeat is implemented by
+            a NameNode first reading the highest counter value in a LEADER table and
+            then updating its counter value in the LEADER table to be one higher than
+            the current highest counter value. A heartbeat, in effect, increments
+            the highest counter value. Heartbeats should be loosely synchronized by
+            configuring hosts to use Network Time Protocol, and setting equivalent timeouts
+            for triggering heartbeats at nodes.
+            To ensure serialized updates to counter values, when each NameNode 
+            reads the highest counter value, it acquires a table-level write lock on 
+            the LEADER table and only releases this lock after
+            it has updated its own counter value. All of these operations happen within 
+            a transaction, so that the lock is released in the event of a NameNode 
+            failure while updating the LEADER table. 
+        </para>
+        <emphasis>Case-I: Failure-free scenario</emphasis>
+        In the case of no failures, after each round when all NameNodes have successfully
+        sent heartbeats, the highest value of the counter should have increased
+        by the number of correct NameNodes, and the value of each NameNode's counter 
+        should have increased by approximately the number of correct NameNodes.
+        We say approximately, as clock skew, network delays, and congestion may cause updates 
+        to arrive at varying times within a round. Assuming clock skews are not as 
+        large as the heartbeat interval and no congestion, all
+        NameNodes should succeed in sending one heartbeat at least every 2 rounds.
+        The above figure shows an example of counter values for 3 NameNodes 
+        with ids 1, 2 and 3 and their corresponding counter values as 23, 24 and 25 respectively.
+        For brevity, we designate a NameNode with an id of value x as NNx. From this 
+        example we see that NN1 has the lowest id and is therefore elected as the current leader in
+        the system.
+        <para/>
+        <emphasis>Case-II: Leader crash scenario</emphasis>
+        <para>
+            For numerous reasons, a NameNode may fail in sending a heartbeat to NDB 
+            a round, and, thus, fail to update its counter 
+            value in the LEADER table. The counter value for the NameNodes remains 
+            the same Namenodes would experience an irregular sequence of
+            counter values in each of these rows. For example, let’s say that NN1 
+            has crashed and the current counter value is now 6. This would allow 
+            NN2 and NN3 to progress in updating the counter with values 9 and 10 
+            while counter value for NN1 is still at value 6. In  <xref linkend="leader-example"/>, 
+            we can see a snapshot of the view on the LEADER table at this round (T0).
+            The figure shows non-consecutive counter values 6, 9 and 10 when we 
+            would expect something like 8, 9 and 10. As all NNs have a consistent view of these
+            counter values, so NN2 and NN3 can now agree that NN1 has crashed, and NN2 will 
+            become leader.
+        </para>
+
+        <figure xml:id="leader-example">
+            <title>Leader Table in NDB</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/leader-example.png" scale="50" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
 
 
-Once the namenodes start, they send their heartbeats to NDB to indicate that it is currently active and
-running. The heartbeat involves incrementing shared counter value in the [COUNTERS] table and
-updating that value against its record in the [LEADER] table.
-
-For the purpose of atomic sequential update, each namenode gets a write lock on the row of
-[COUNTER] table, increments and updates the value in this table and finally update that value in the
-[LEADER] table against its row. This will eliminate the possibility of all namenodes to update to the
-same value during concurrent updates.
-        <emphasis>Case-I: Scenario if all goes well</emphasis>
-If all goes well, in each round of updating the counter we should see the value of the counter as a
-sequence of numbers iterating in ascending order against all the namenodes. The above figure shows
-an example of counter values for 3 namenode in the system designated with ids 1, 2 and 3 with their
-corresponding counter values as 23, 24 and 25 respectively.
-For the purposes of simplicity in explanation, we call NNx a namenode with an id of value x.
-From this example we see that NN1 has the lowest id and is therefore elected as the current leader in
-the system.
-        <emphasis>Case-II: Scenario when a leader crashes</emphasis>
-However, in a distributed system it is ideal for all to go well. Namenodes can crash or experience
-network glitches or shutdown. This would prevent it from sending its heartbeat to NDB and thus
-would unable to update its value in the [LEADER] table.
-So if this happens, the counter value for those namenodes would remain the same and would not
-progress towards incremental updates. Namenodes would experience an irregular sequence of
-counter values in each of these rows. For example, let’s say that NN1 has crashed and the current
-counter value is now 25. This would allow NN2 and NN3 to progress in updating the counter with
-values 26 and 27 while counter value for NN1 is still at value 23. Following would be the snapshot of
-the view on the [LEADER] table at this round:
-
-
-The figure shows an irregular sequence of counter values i.e. 23, 26 and 27 when we should expect
-26, 27 and 28. This means something has gone wrong.
-
-
+        <para/>
         <emphasis>Determining the leader</emphasis>
-The next step is to detect this irregular sequence and decide if a new leader is to be elected. If so, the
-leader election will run again and a new namenode would be elected as the leader.
-The basic idea to determine the leader is to determine which namenodes are strongly aligned to the
-current counter value. In this case, the current counter after the updates from NN2 and NN3 is 27.
-Hence, if we have 3 namenodes in the system, we expect the counter sequence to range from
-27] where NN1 would have value 25, NN2 would have value 26 and NN3 would have value 27. So
-we need to get all namenodes that have a counter with value greater than 24.
-From the list of namenodes returned, the one with the lowest id would be elected the leader. This
-logic is implemented in the algorithm and runs periodically during a configured time interval.
-So in this case, the list of namenodes returned includes NN2 and NN3. Out of these two, NN2 has the
-lowest and would elect itself as the leader. Accordingly NN3 would notice that it does not have the
-lowest id and will accept NN2 as the current leader.
-Ensuring single leader dominance
-Once a namenode determines that it is the leader, the first thing is to ensure that there are no other
-leaders in the system. This would mean that all previously elected leaders (or namenodes with lower
-id than itself) have crashed. To ensure this, it simply enforces this rule by removing all records from
-the [LEADER] table that have a lower id than itself.
+        <para>
+            The next step is to detect an irregular sequence of counter values and to
+            decide if a new leader is to be elected. 
+            The basic idea to determine the leader is to determine which NameNode 
+            have counter values close enough to the current highest counter value to be
+            considered 'correct'. In the example given above, the highest counter value 
+            at round T2 (bottom table) is 11.
+            As we have 3 NameNodes in the system, we expect the counter values to
+            be in the range [9-11], although allowing for out-of-order heartbeats, 
+            the counter values could be in the range [7-10]. The upper-bound on 
+            out-of-order updates to counters is, by default, 2 rounds. That means
+            that a NameNode that is more than 2 rounds behind in updating its counter
+            value is no longer considered to be correct.
+            In the lower table, we can see that NN1 is now no longer considered correct,
+            as both NN2 and NN3 have succeeded in updating their counters 3 times 
+            before NN1 has updated its counter. Therefore, NN2 now becomes the new 
+            leader, as its counter value is within the range of 2 rounds from the max
+            counter value, and it has the lowest id of the remaining correct NNs.
+            Both NN2 and NN3 independently reach a decision about the new leader, NN2,
+            the next time they try to update their own counter.
+        </para>
 
+        <para/>
+        <emphasis>Ensuring single leader dominance</emphasis>
+        <para>
+            Once a NameNode determines that it is the leader, the first thing it does
+            is to ensure that there are no other leaders in the system. This 
+            means that all previously elected leaders (or NameNodes with ids lower
+            than its own) have crashed. To ensure this, it enforces this rule by 
+            removing all records from the [LEADER] table for NNs with a lower id than 
+            its own.
+        </para>
+        <!--        <para/>
         <emphasis>Correctness</emphasis>
-Following are the cases that would prove correctness of the algorithm
-Case-I: Scenario when current leader crashes
-Supposing we have three namenodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
-We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
-update the counter to 9 and later NN3 would update the counter to 10 and we would have the
-following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
+        <para>
+        The following are the cases that prove correctness of the algorithm
+        Case-I: Scenario when current leader crashes
+        Supposing we have three NameNodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
+        We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
+        update the counter to 9 and later NN3 would update the counter to 10 and we would have the
+        following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
+        </para>-->
 
-<example xml:id="leader-election-NNs">
-    <title>Leader Election Algorithm at NameNodes</title>
-    <programlisting>
-    </programlisting>
-</example>
+        <example xml:id="leader-election-NNs">
+            <title>Leader Election Algorithm at NameNodes</title>
+            <programlisting linenumbering="numbered">
+function updateCounter()
+retrieve ([COUNTER], counter)
+increment counter
+store([COUNTER], counter)
 
-<example xml:id="leader-election-DNs">
-    <title>Detecting the Leader at DataNodes</title>
-    <programlisting>
-        
-    </programlisting>
-</example>
+// The entry for this NN may not exist if it crashed 
+// and was removed by another leader
+if(!exists([LEADER], id) then 
+id = retrieve([LEADER], max(id)) + 1
+end if
 
+store([LEADER], id, counter)
 
-Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
-counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
-of [6-8]. At this point, from both namenode perspectives, NN1 is alive as its counter lies in the range
-while the datanodes detect failure of NN1 via the TCP socket. This is illustrated in Figure6.
-Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
-would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
-NN1 is still 6 and does not lie in this range.
-Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
-counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
-NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
-leader. Thus [Property#1] holds.
-Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
-the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
-all previous leaders have now crashed. This is illustrated above in Figure7.
-If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
-record with the next highest id.
-DNs recognizing the new leader
-All datanodes are up-to-date with the current view of namenodes in the system. This is done via
-requesting the namenodes for the current list of namenodes. This is done via a simple RPC call. The
-datanodes get the list of namenodes and assume the namenode with the lowest id is the leader.
-When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
-successful at making contact with the NN it will remove it from the list and select the next NN who
-potentially would be the leader. This would achieve [Property#2].
-There can be two possibilities where (a) the datanode contacts the next NN and if it is actually the
-leader then the process flows normally. (b) The datanode contacts the next NN in the list but who may
-not be the leader (because it is possible that it has crashed) but this NN would then provide the
-updated list of namenodes and then it would recognize the new leader.
-Eventually all correct DNs would recognize some correct NN as the leader thereby fulfilling
-[Property#1].
+// The function that determines the current leader
+function select()
+SELECT id FROM [LEADER]
+WHERE counter  (max(counter) – count(id)) // returns all correct NNs
+LIMIT 1 /*selects lowest id*/
+return id
 
+// The function that returns the list of correct NNs
+function selectAll()
+SELECT id FROM [LEADER]
+WHERE counter &gt; (max(counter) – count(id)) // returns all correct NNs
+ORDER BY id                              // the leader has the lowest id
+return list(id)
 
-Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
-If a namenode process say NN1 is active and running and thinks that it has not crashed BUT cannot
-make contact with NDB, then such an namenode process is not considered correct as per definition.
-In this scenario, all datanodes would always think that NN1 is the current leader as it can make
-contact with that NN. But since the NN cannot make contact with NDB, it would kill itself and
-shutdown hoping that some other namenode would eventually be elected the leader.
-When NN1 will be shutdown, the datanodess will keep retrying for some amount of time after some
-point where they will switch to the next namenode in the list and will determine the next NN leader.
-This also ensures no corruption of data where the namenode thinks it is still the leader as it cannot
-update the metadata in the NDB since its communication with it is lost.
+upon event &lt;init&gt; do
+leader = NIL
+updateCounter()
+leader = select()
 
+// After every interval, the NameNode updates the counter
+upon event &lt;check&gt;
+updateCounter()
+leader = select()
+// If this NN is elected the leader, remove previous leaders
+if(leader == id) then
+remove([LEADER],[ids &lt; leader])
+end if
 
+upon event &lt; timeout&gt;
+// Kill NN on timeouts, so DNs can connect to the next leader NN
+shutdown()
+
+// Return the list of correct NNs in order of lowest ids
+upon event &lt;heartbeats&gt;
+return selectAll()
+            </programlisting>
+        </example>
+
+        <example xml:id="leader-election-DNs">
+            <title>Detecting the Leader at DataNodes</title>
+            <programlisting  linenumbering="numbered">
+        // The NN leader id is passed in upon initialization of DN
+        upon event init&lt;list(id)&gt;
+        nnlist = list(id)
+        // The NN with the lowest id is the leader
+        leader = min(nnlist)
+
+        // Update the list of NNs on every heartbeat response from Leader NN
+        upon event &lt;heartbeat-response, list(id)&gt;
+        nnlist = list(id)
+        leader = min(nnlist)
+
+        // On timeout from leader NN
+        upon event &lt;timeout&gt;
+        // remove current leader from nnlist
+        remove(nnlist, leader)
+        // elect a new leader
+        leader = min(nnlist)
+            </programlisting>
+        </example>
+
+        <!--        <para>
+        Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
+        counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
+        of [6-8]. At this point, from both NameNode perspectives, NN1 is alive as its counter lies in the range
+        while the DataNodes detect failure of NN1 via the TCP socket. 
+        Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
+        would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
+        NN1 is still 6 and does not lie in this range.
+        Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
+        counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
+        NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
+        leader. Thus [Property#1] holds.
+        Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
+        the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
+        all previous leaders have now crashed. This is illustrated above in Figure7.
+        If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
+        record with the next highest id.
+        DNs recognizing the new leader
+        </para>-->
+        <para>
+            All DataNodes are kept up-to-date with the current view of NameNodes in the system. This is done via
+            requesting the NameNodes for the current list of NameNodes. This is done via a simple RPC call. The
+            DataNodes get the list of NameNodes and assume the NameNode with the lowest id is the leader.
+            When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
+            successful at making contact with the NN it will remove it from the list and select the next NN who
+            could potentially be the leader. This would achieve [Property#2].
+            There can be two possibilities where (a) the DataNode contacts the next NN and if it is actually the
+            leader then the process flows normally. (b) The DataNode contacts the next NN in the list but who may
+            not be the leader (because it is possible that it has also crashed or a new NN has joined with a lower id).
+            This NN would then either provide the updated list of NameNodes, including the new leader, or not respond due
+            to failure. THe DataNode can continue querying all NameNodes until either it
+            is returned a list of correct nodes (including the id of the leader) or
+            all NameNodes have failed.
+            If there is a correct NameNode, eventually all correct DNs would recognize 
+            a correct NN as the leader thereby fulfilling [Property#1].
+        </para>
+        <para>
+            Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
+            If NN1 is active and running, but it cannot update the LEADER table in NDB, then such a NameNode
+            is not considered correct as per definition. In this scenario, all DataNodes 
+            would always think that NN1 is the current leader as it can make
+            contact with that NN. But since the NN cannot update NDB, it has to kill itself and
+            shutdown (or restart) hoping that some other NameNode would eventually be elected the leader.
+            When NN1 is shutdown, DataNodes will keep retrying for some amount of time after some
+            point where they will switch to the next NameNode and try to determine the next NN leader.
+        </para>
+    </sect1>
+
+    <sect1>                                
+        <title>Ensuring Correctness of HDFS</title>
+            One of the main challenges in migrating HDFS' metadata from the heap of
+            a single JVM to a relational database was ensuring the correctness of 
+            our approach. From a practical perspective, we ensure correctness by
+            ensuring that we have (almost) no failing unit tests from the extensive
+            suite of over 300 unit tests.
+            From a theoretical perspective, our solution provides for support for multiple
+            concurrent writers, so we need to show that our solution is free of both
+            deadlock and livelock.
+
+        <para/>
+        <emphasis>Transactions and Isolation Levels</emphasis>
+        <para>
+            We implemented each HDFS operation as a single transaction, where we begin the transaction, 
+            read and write the necessary meta-data from NDB, and then either commit, 
+            or in the case of failure, abort the transaction and then possibly re-try
+            the transaction. A general, cheap, and widely supported transaction isolation level,
+            and the only isolation level supported by NDB, is read-committed, 
+            which allows the results of write operations in transactions 
+            to be exposed to read operations in different concurrent transactions. 
+            However, the read-committed isolation level allows anomalies which would
+            break the consistency of our file-system operations, such as
+            Fuzzy Reads, Phantom reads, Lost Update, Read Skew and Write Skew [berenson1995critique]. 
+         </para>           
+         
+        <para/>
+        <emphasis>Hierarchy of Resources</emphasis>
+        <para>
+            Filesystems, such as HDFS, have hierarchical namespaces, with directories
+            containing zero to many files, and, in unix-based filesystems, both 
+            files and directories represented as inodes. In HDFS, when an inode represents
+            a file, the inode may be made up of a variable number of fix-sized blocks 
+            (typically 512 MB).
+            
+            We ensure deadlock freedom, by ensuring that all transactions lock
+            inodes in a consistent order, defined by the filesystem's hierarchy: 
+            the appropriate read or write locks are taken at inodes, starting at 
+            the root and traversing directories in a depth-first, left-most order 
+            until all the inode locks required for this transaction have been acquired.
+            The locks are then held for the duration of the transaction. 
+            Locks are not upgraded within a transaction. 
+            Since all transactions acquire locks in the same order, there are 
+            no cycles, and since locks are not upgraded, there will be no 
+            lock-upgrade deadlocks.
+            
+            Locks also need to be acquired on data-structures used by inodes, such
+            as blocks, replicas, leases, corrupted-blocks, etc.
+            When operations are performed on inodes, we take a write lock on the
+            inode itself, ensuring no other transactions can concurrently access
+            that inode.
+         </para>           
+    </sect1>
+
+    <sect1>                                
+        <title>Snapshot layer</title>
 
     </sect1>
 
     <sect1>                                
-        <title>Early performance measurements for Hop HDFS</title>
-        <para>Our early performance figures show that Hop HDFS can scale to handle a similar number
-            of read and write requests per unit time as Apache HDFS. We have introduced a number of
+        <title>Early performance measurements for HDFS</title>
+        <para>Our early performance figures show that our version of HDFS can scale to handle a similar number
+            of read and write requests per unit time as Apache HDFS (unpublished). We have introduced a number of
             features to enable this high level of performance, including a snapshot layer at
             NameNodes and row-level locking at the database level, rather than a system level lock
             for update operations as is done in Apache HDFS. Our snapshotting layer involves a
@@ -307,10 +493,14 @@ update the metadata in the NDB since its communication with it is lost.
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="75" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="66" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>    
+            For improved performance, we implement schema-aware partitioning of metadata across 
+            multiple hosts, ensuring all data related to a single inode hashes
+            to the same host, and can be retrieved in a single network hop.
+
         <!--        <figure xml:id="hdfs-locking">
             <title>Effect of replacing a global lock with row-level locks.</title>
             <mediaobject>
@@ -322,8 +512,8 @@ update the metadata in the NDB since its communication with it is lost.
     </sect1>    
         
     <sect1>
-        <title>Hop Architecture</title>
-        <para>Hops, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
+        <title>Platform-as-a-Service support: Hop</title>
+        <para>Hop, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
             can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
             Cross-layer aspects like Security and PaaS services are also included.</para>
 
@@ -353,7 +543,7 @@ update the metadata in the NDB since its communication with it is lost.
                     Designed around a distributed, multi-master architecture with no single point of failure;
                     MySQL Cluster's real-time design delivers predictable, milisecond response times with 
                     the ability to service millions of operations per second. In the case of our data platform, it is
-                    used to handle and manage the state of our multi-namenode solution of our architecture.                                    
+                    used to handle and manage the state of our multi-NameNode solution of our architecture.                                    
                 </para>
             </listitem>
             <listitem>
