@@ -7,7 +7,7 @@
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch07">
-    <title>Hop Architecture</title>
+    <title>Hadoop Open Platform-as-Service (Hop)</title>
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
         <para>
@@ -24,7 +24,7 @@
                 <title>Hadoop v2</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hadoop2.png" scale="40" align="center"/>
+                        <imagedata fileref="media/hadoop2.png" scale="66" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -51,8 +51,7 @@
             on stale metadata. This is a bigger problem for a filesystem, such as HDFS, 
             than it would be for a Web 2.0  social media application with non-critical data, 
             using a Master/Slave database setup. Thus, reads are only sent to the Primary. 
-            If the Primary fails, however, 
-            the Secondary needs to take over as Primary. Before it can take over, it first has to 
+            If the Primary fails, however, the Secondary needs to take over as Primary. Before it can take over, it first has to 
             catch up with the set of edit log entries applied to Primary before it failed. 
             The period of time before all outstanding edit log entries are applied at the Secondary before
             it can take over may be up to tens of seconds, depending on the current load of the system and
@@ -66,15 +65,16 @@
                 <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hdfsv2.png" scale="50" align="center"/>
+                        <imagedata fileref="media/hdfsv2.png" scale="66" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
         </para>
+        <emphasis>Hop HDFS</emphasis>
         <para>
-            In contrast, our implementation of HDFS, called Hop HDFS, replaces the 
+            In contrast, our implementation of HDFS, called <emphasis>Hop HDFS</emphasis>, replaces the 
             Primary-Secondary metadata model with shared, transactional memory, 
-            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster <xref linkend="Manual2010"/> 
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster (NDB) <xref linkend="Manual2010"/> 
             see figure <xref linkend="hop-hdfs"/>.
             In our new model, the size of HDFS' metadata is no longer limited 
             to the amount of memory that can be managed on the JVM of a single node.
@@ -97,9 +97,9 @@
             all the resources it needs are aquired in the defined global order, while
             simulatenously taking row-level locks for those resources. On transaction
             commit or abort, the resources are freed. This solution enables NameNodes
-            to perform operations on a local copy (or snapshot) of the transactions
+            to perform operations on a local copy (or snapshot) of the database
             state until such time as the transaction is completed, thus reducing
-            the number the number of roundtrips to the database, see <xref linkend="hdfs-snapshot"/> . 
+            the number the number of roundtrips required to the database, see <xref linkend="hdfs-snapshot"/> . 
         </para>
         <figure xml:id="hop-hdfs">
             <title>Hop HDFS</title>
@@ -131,13 +131,13 @@
                 and the decomissioning of datanodes.
             </listitem>
         </orderedlist>
-        To clariy the problem, we give an exapmle. Without any coordination between 
-        NameNodes, and since all NameNodes have identical behaviour, 
-        if a block becomes under-replicated, several NameNodes may identify
-        this event, and each would select a DataNode to replicate that block to. This would
+        Without any coordination between NameNodes, and since all NameNodes have identical behaviour, 
+        we would have problems with many of these background tasks. For example,
+        if a block becomes under-replicated, several NameNodes could independently identify
+        this under-replicated state, and each would select a DataNode to replicate that block to. This would
         cause multiple re-replications of the block, leading it to enter an over-replicated
-        state, upon which, multiple NameNodes would recognize this over-replicated state and attempt
-        to remove replicas, possibly leading to an under-replicated block - back where 
+        state, upon which, multiple NameNodes could recognize this over-replicated state and attempt
+        to remove replicas, possibly leading to an under-replicated state - back where 
         we started. 
 
         We solve this coordination problem, by implementing a Leader Election Algorithm,
@@ -146,30 +146,34 @@
         abstraction provided by MySQL Cluster to coordinate the election process.
 
         <para/>
-        <emphasis>Definition: Correct NameNode process</emphasis>
-        <para>
-            The notion of correct in this context means that a process is active and 
-            running and is able to connect and write to NDB cluster in a bounded time interval.
-            The bounded time interval is typically set to around 1 second, and we call such
-            an interval a <emphasis>round</emphasis>. 
-        </para>
+        <emphasis role="bold-italic">Definition: Correct NameNode</emphasis>
+            A correct NameNode is defined as an alive process that is 
+            is able to write to NDB in a bounded time interval.
+        <para/>
 
         A leader NameNode is a NameNode from the set of NameNodes that  
         is correct and is responsible for listening to DateNode heartbeats and 
         assigning various tasks to them as well as responsible for managing background tasks.
+        In a deployed system, the bounded time interval during which it is expected
+        that a NameNode can write to NDB is typically set to around 1 second. 
+
         The properties that our leader election algorithm guarantee are:
-        <orderedlist>
-            <listitem>
-                <emphasis>Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
-                <emphasis>Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
-                All will agree to the same NameNode being the leader.
-<emphasis>Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
-            </listitem>
-        </orderedlist>
+    <orderedlist>
+        <listitem>
+            <emphasis role="bold-italic">Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
+        </listitem>
+        <listitem>
+            <emphasis role="bold-italic">Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
+            All will agree to the same NameNode being the leader.
+        </listitem>
+        <listitem>
+            <emphasis role="bold-italic">Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
+        </listitem>
+    </orderedlist>
         <para/>
         <emphasis>Leader Election Algorithm</emphasis>
         <para>
-            The leader election algorithm runs continuously at the NameNodes. 
+            The leader election algorithm runs continuously at the NameNodes in rounds. 
             Each NameNode is assigned an (integer) id. 
             At any point in time, the correct NameNode with the lowest id is 
             elected as the leader. The central focus of the algorithm is to detect failures 
@@ -187,7 +191,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader.png" scale="66" align="center"/>
+                    <imagedata fileref="media/leader.png" scale="75" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -410,7 +414,7 @@ return selectAll()
             a correct NN as the leader thereby fulfilling [Property#1].
         </para>
         <para>
-            Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
+            Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB 
             If NN1 is active and running, but it cannot update the LEADER table in NDB, then such a NameNode
             is not considered correct as per definition. In this scenario, all DataNodes 
             would always think that NN1 is the current leader as it can make
@@ -422,7 +426,7 @@ return selectAll()
     </sect1>
 
     <sect1>                                
-        <title>Ensuring Correctness of HDFS</title>
+        <title>Ensuring Correctness of Hop HDFS</title>
             One of the main challenges in migrating HDFS' metadata from the heap of
             a single JVM to a relational database was ensuring the correctness of 
             our approach. From a practical perspective, we ensure correctness by
@@ -431,22 +435,85 @@ return selectAll()
             From a theoretical perspective, our solution provides for support for multiple
             concurrent writers, so we need to show that our solution is free of both
             deadlock and livelock.
+            Our first challenge was to migrate the state of HDFS from highly optimized
+            data structures in the NameNode to tables in NDB. We migrated a total
+            of 13 datastructures from HDFS' NameNode to tables in NDB, see <xref linkend="hop-er"/>.
 
+        <figure xml:id="hop-er">
+            <title>Entity Relation Diagram for NameNode state in Hop-HDFS</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hopER.png" scale="50" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>   
+
+
+        <figure xml:id="hdfs-operations">
+            <title>HDFS Filesystem Operation Sequence Diagram</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-operations.png" scale="37" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>   
+
+
+        <figure xml:id="hdfs-operations">
+            <title>HDFS Filesystem Operation Sequence Diagram</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-operations.png" scale="37" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>   
         <para/>
         <emphasis>Transactions and Isolation Levels</emphasis>
         <para>
             We implemented each HDFS operation as a single transaction, where we begin the transaction, 
             read and write the necessary meta-data from NDB, and then either commit, 
-            or in the case of failure, abort the transaction and then possibly re-try
-            the transaction. A general, cheap, and widely supported transaction isolation level,
-            and the only isolation level supported by NDB, is read-committed, 
-            which allows the results of write operations in transactions 
-            to be exposed to read operations in different concurrent transactions. 
-            However, the read-committed isolation level allows anomalies which would
-            break the consistency of our file-system operations, such as
-            Fuzzy Reads, Phantom reads, Lost Update, Read Skew and Write Skew [berenson1995critique]. 
+            or in the case of failure, abort the transaction and then possibly retry
+            the transaction. An example of a HDFS filesystem operation that copies a file
+            from the local filesystem into HDFS is ilustrated in <xref linkend="hdfs-operations"/>.
+            In this example, we can see that the copyFromLocal soperation consists of a number 
+            of HDFS internal protocol messages (startFile, getAdditionalBlock, writeBlockData,
+            and getAdditionalBlock). Each protocol message sent to the NameNode is handled
+            within a single transaction. Transactions, however, only maintain consistency for individual
+            protocol messages, and HDFS maintains consistency for the filesystem between
+            transactions using leases on files. A lease is held throughout the duration
+            of the HDFS filesystem operation, and in the event of a failure, the
+            lease will eventually be released after a relatively long timeout.
+            
+         </para>           
+         <para>
+            We implement our transactions using the MySQL CLuster database, as
+            known as NDB (Network Database). Read-committed is the only isolation level supported by NDB, and is
+            a general, cheap, and widely supported transaction isolation level. 
+            Read-committed isolation means a transaction may see new state from other
+            transactions that have completed while that transaction is executing.
+            The read-committed isolation level allows anomalies, such as
+            fuzzy reads, phantom reads, lost update, read skew and write skew <citation>2</citation>, that would
+            break the consistency of HDFS' file-system operations. 
          </para>           
          
+        <figure xml:id="deadlock-cycle">
+            <title>Locking in conflicting order can lead to Deadlock</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/deadlock-cycle.png" scale="75" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+        <figure xml:id="deadlock-upgrade">
+            <title>Lock upgrade can lead to Deadlock</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/deadlock-upgrade.png" scale="75" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
         <para/>
         <emphasis>Hierarchy of Resources</emphasis>
         <para>
@@ -457,7 +524,8 @@ return selectAll()
             symbolic links are resolved.
             
             We ensure deadlock freedom, by ensuring that all transactions lock
-            inodes in a consistent order, defined by the filesystem's DAG: 
+            inodes in a consistent order, see <xref linkend="deadlock-cycle"/>. 
+            The consistent order is defined by the filesystem's DAG: 
             the appropriate read or write locks are taken at inodes, starting at 
             the root and traversing directories in a depth-first order to the leftmost
             leaf info, continuing until either the rightmost leaf inode is reached or 
@@ -466,7 +534,7 @@ return selectAll()
             Locks are not upgraded within a transaction. 
             Since all transactions acquire locks in the same order, there are 
             no cycles, and since locks are not upgraded, there will be no 
-            lock-upgrade deadlocks.
+            lock-upgrade deadlocks, , see <xref linkend="deadlock-upgrade"/>.
             
             Locks also need to be acquired on data-structures used by inodes, such
             as blocks, replicas, leases, corrupted-blocks, etc. In HDFS, an inode for
@@ -490,7 +558,7 @@ return selectAll()
         <example xml:id="snapshot">
             <title>Snapshotting at NameNodes</title>
             <programlisting linenumbering="numbered">
-initially: snapshot.clear;
+init: snapshot.clear
 
 operation doOperation
     tx.begin
@@ -529,12 +597,12 @@ we can restart the operation, beginning at the first transaction.
         <example xml:id="snapshot-multi">
             <title>Snapshotting at NameNodes using Two Transactions</title>
             <programlisting linenumbering="numbered">
-initially: snapshot.clear, restart = true, try = 0;
+init: snapshot.clear, restart = true, try = 0
 
 operation doOperation
     while restart and try &lt; 3
         restart = false
-            try = try + 1
+        try = try + 1
         if op.should_resolve_parent then
             tx1.begin
             resolve_parent(op.param)
@@ -551,7 +619,7 @@ operation doOperation
     end while	
 
 operation resolve_parent(y)
-    tx.lockLevel(“read_commited”)
+    tx.lockLevel("read_commited")
     tx.find(y.parent_query)
 
 operation doSnapshot
@@ -567,15 +635,18 @@ operation performTask
 </programlisting>
 </example>
 
-
-
     </sect1>
 
     <sect1>                                
-        <title>Early performance measurements for HDFS</title>
-        <para>Our early performance figures show that our version of HDFS can scale to handle a similar number
-            of read and write requests per unit time as Apache HDFS (unpublished). We have introduced a number of
-            features to enable this high level of performance, including a snapshot layer at
+        <title>Performance of Hop HDFS</title>
+        <para>We have recently re-written our code base to migrate to HDFS 2.2, 
+            which is functionally complete, but it is too early to give read/write 
+            performance figures for our new implementation. Unpublished performance figures from an earlier prototype 
+            show that Hop-HDFS can scale to handle a similar number of read and write 
+            requests per unit time as Apache HDFS, but needing additional hardware
+            to do so. 
+            We have introduced a number of features to enable this high level of 
+            performance, including a snapshot layer at
             NameNodes and row-level locking at the database level, rather than a system level lock
             for update operations as is done in Apache HDFS. Our snapshotting layer involves a
             transaction acquiring all resources it requires at the start of a primitive filesystem
@@ -589,9 +660,22 @@ operation performTask
                 </imageobject>
             </mediaobject>
         </figure>    
-            For improved performance, we implement schema-aware partitioning of metadata across 
+            For improved performance, we have also implemented schema-aware partitioning of metadata across 
             multiple hosts, ensuring all data related to a single inode hashes
             to the same host, and can be retrieved in a single network hop.
+            This involved partitioning tables by inode-id, and when a transaction
+            is started that involves a single inode, we give a hint to NDB, using 
+            the ClusterJ API, that the transaction should start on data node containing
+            the data for that inode.
+        <para>
+            One positive aspect of HopHDFS is that the amount of metadata that can be
+            supported is vastly increased over Apache HDFS. In Apache HDFS, the
+            NameNode is limited to the maximum size of the JVM heap for a single node,
+            which in practice is around 100GB. In NDB, there are existing clusters
+            of 2TB, and larger clusters are feasible. However, we have measured
+            an expansion in the amount of memory that we require of around 43 percent.
+            
+        </para>
 
         <!--        <figure xml:id="hdfs-locking">
             <title>Effect of replacing a global lock with row-level locks.</title>
@@ -706,7 +790,7 @@ operation performTask
                 <title>Hop PaaS </title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/arch-layers.png" scale="50" align="center"></imagedata>
+                        <imagedata fileref="media/arch-layers.png" scale="40" align="center"></imagedata>
                     </imageobject>
                     <caption>
                         <para>Hop PaaS Stack</para>
@@ -742,28 +826,28 @@ operation performTask
                         <example xml:id="example-cluster-defn">
                             <title>Example Cluster Definition</title>
                             <programlisting>
-                                name: simpleCluster                 
-                                provider:
-                                name: aws-ec2
-                    
-                                nodes:
-                                - service: 
-                                - ndb::ndbd
-                                number: 2
+    name: simpleCluster                 
+    provider:
+    name: aws-ec2
 
-                                - service: 
-                                - ndb::mgm, ndb::mysqld, hadoop::namenode
-                                number: 1
-          
-                                - service: 
-                                - hadoop::namenode
-                                - hadoop::resourcemanager
-                                number: 1
-          
-                                - service: 
-                                - hadoop::datanode
-                                - hadoop::nodemanager
-                                number: 2
+    nodes:
+    - service: 
+    - ndb::ndbd
+    number: 2
+
+    - service: 
+    - ndb::mgm, ndb::mysqld, hadoop::namenode
+    number: 1
+
+    - service: 
+    - hadoop::namenode
+    - hadoop::resourcemanager
+    number: 1
+
+    - service: 
+    - hadoop::datanode
+    - hadoop::nodemanager
+    number: 2
                             </programlisting>
                         </example>
                             
