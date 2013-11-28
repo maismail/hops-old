@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
+<svg width="43cm" height="15cm" viewBox="339 174 857 282" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <g>
+    <rect style="fill: #ffffff" x="539" y="176" width="458" height="127"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="539" y="176" width="458" height="127"/>
+    <text font-size="33.8667" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="768" y="249.783">
+      <tspan x="768" y="249.783">Launch Hop</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="341" y="360" width="272" height="53"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="341" y="360" width="272" height="53"/>
+    <text font-size="22.5778" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="477" y="393.389">
+      <tspan x="477" y="393.389">Single Host</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="922.8" y="358.1" width="272" height="53"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="922.8" y="358.1" width="272" height="53"/>
+    <text font-size="22.5778" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:700" x="1058.8" y="391.489">
+      <tspan x="1058.8" y="391.489">Distributed</tspan>
+    </text>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="653.5" y1="303" x2="486.265" y2="357.008"/>
+    <polygon style="fill: #000000" points="479.128,359.313 487.107,351.482 486.265,357.008 490.181,360.998 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="479.128,359.313 487.107,351.482 486.265,357.008 490.181,360.998 "/>
+  </g>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="882.5" y1="303" x2="1049.51" y2="355.196"/>
+    <polygon style="fill: #000000" points="1056.67,357.433 1045.63,359.222 1049.51,355.196 1048.61,349.678 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" points="1056.67,357.433 1045.63,359.222 1049.51,355.196 1048.61,349.678 "/>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="340.8" y="412.1" width="272" height="43.1667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="340.8" y="412.1" width="272" height="43.1667"/>
+    <text font-size="16.9333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="476.8" y="438.85">
+      <tspan x="476.8" y="438.85">Chapter 2</tspan>
+    </text>
+  </g>
+  <g>
+    <rect style="fill: #ffffff" x="922.8" y="411.1" width="272" height="43.1667"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="922.8" y="411.1" width="272" height="43.1667"/>
+    <text font-size="16.9333" style="fill: #000000;text-anchor:middle;font-family:sans-serif;font-style:normal;font-weight:normal" x="1058.8" y="437.85">
+      <tspan x="1058.8" y="437.85">Chapter 3</tspan>
+    </text>
+  </g>
+</svg>
