@@ -14,7 +14,7 @@
             Due to the rapid growth of data in recent years, distributed file systems have
             gained widespread adoption. The new breed of distributed file systems reliably store
             petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
-            The Hadoop Distributed File System (HDFS) is a 
+            The Hadoop Distributed File System (HDFS)  <xref linkend="Borthakur2007"/>  is a 
             distributed, fault-tolerant file system designed to run on 
             low-cost commodity hardware that scales to store petabytes of data, 
             and is the file storage component of the Hadoop platform. 
@@ -29,7 +29,7 @@
                 </mediaobject>
             </figure>
             
-            In 2013, HDFS v2 introduced a new highly available metadata architecture, where, as
+            In 2013, HDFS v2 <xref linkend="wang2009hadoop"/> introduced a new highly available metadata architecture, where, as
             in HDFS v1, the entire filesystem's metadata is stored in memory on a single node, but in v2
             changes to the metadata (<emphasis>edit log entries</emphasis>) are now replicated 
             and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm.
@@ -74,7 +74,7 @@
         <para>
             In contrast, our implementation of HDFS, called Hop HDFS, replaces the 
             Primary-Secondary metadata model with shared, transactional memory, 
-            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster, 
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster <xref linkend="Manual2010"/> 
             see figure <xref linkend="hop-hdfs"/>.
             In our new model, the size of HDFS' metadata is no longer limited 
             to the amount of memory that can be managed on the JVM of a single node.
@@ -87,7 +87,8 @@
             Our solution guarantees freedom from deadlock and progress by
             logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
             defining on a global order for transactions acquiring both explicit locks and 
-            implicit locks on subtrees in the hierarchy. 
+            implicit locks on subtrees in the hierarchy; this solution is motivated by <xref linkend="J.GrayR.LorieG.Putzolu1976"/> and 
+            <xref linkend="berenson1995critique"/>. 
             The use of a database, however, also has its drawbacks. As the data now resides
             on remote hosts on the network, an excessive number of roundtrips to 
             the database harms system scalability and increases per-operation latencies.
@@ -117,18 +118,18 @@
         multiple NameNodes attempt to perform them concurrently. Examples of such
         tasks include: 
         <orderedlist>
-        <listitem>
-        replication monitoring, 
-        </listitem>
-        <listitem>
-        lease management,
-        </listitem>
-        <listitem>
-        block token generation,
-        </listitem>
-        <listitem>
-        and the decomissioning of datanodes.
-        </listitem>
+            <listitem>
+                replication monitoring, 
+            </listitem>
+            <listitem>
+                lease management,
+            </listitem>
+            <listitem>
+                block token generation,
+            </listitem>
+            <listitem>
+                and the decomissioning of datanodes.
+            </listitem>
         </orderedlist>
         Without any coordination between the NameNodes, and since all NameNodes have identical behaviour, 
         then, if a block becomes under-replicated, potentially several NameNodes will identify
@@ -146,8 +147,8 @@
         The notion of correct in this context means that a process is active and 
         running and is able to connect and write to NDB cluster in a bounded time interval.
         <para>
-        The bounded time interval is typically set to around 1 second. That means our
-        MySQL Cluster should be provisioned to handle peak loads.
+            The bounded time interval is typically set to around 1 second. That means our
+            MySQL Cluster should be provisioned to handle peak loads.
         </para>
 
         A leader NameNode is a NameNode from the set of NameNodes that  
@@ -156,138 +157,138 @@
         
         The properties that our leader election algorithm guarantee are:
         <orderedlist>
-        <listitem>
-        <emphasis>Completeness:</emphasis> after a bounded time interval, all correct namenodes will detect every namenode that has crashed.
-<emphasis>Agreement:</emphasis> after a bounded time interval, all correct namenodes will recognize one among them as the leader.
-All will agree to the same namenode being the leader.
+            <listitem>
+                <emphasis>Completeness:</emphasis> after a bounded time interval, all correct namenodes will detect every namenode that has crashed.
+                <emphasis>Agreement:</emphasis> after a bounded time interval, all correct namenodes will recognize one among them as the leader.
+                All will agree to the same namenode being the leader.
 <emphasis>Stability:</emphasis> If one correct namenode is the leader, all previous leaders have crashed
-        </listitem>
+            </listitem>
         </orderedlist>
 
         <emphasis>Leader Election Algorithm</emphasis>
-The leader election algorithm runs continuously at the namenodes as soon as it has started. Each
-namenode is assigned an (integer) id. At any point in time, the namenode with the lowest id is always
-elected as the leader.
-The central focus of the algorithm for detecting failures and electing a new leader is through the use
-of heartbeats called counters. The ids of each namenode are persisted in a table called LEADER and
-in this way all namenodes have a uniform view of all the namenodes in the system. The schema and
-sample records for these tables look like the following:
+        The leader election algorithm runs continuously at the namenodes as soon as it has started. Each
+        namenode is assigned an (integer) id. At any point in time, the namenode with the lowest id is always
+        elected as the leader.
+        The central focus of the algorithm for detecting failures and electing a new leader is through the use
+        of heartbeats called counters. The ids of each namenode are persisted in a table called LEADER and
+        in this way all namenodes have a uniform view of all the namenodes in the system. The schema and
+        sample records for these tables look like the following:
 
 
-Once the namenodes start, they send their heartbeats to NDB to indicate that it is currently active and
-running. The heartbeat involves incrementing shared counter value in the [COUNTERS] table and
-updating that value against its record in the [LEADER] table.
+        Once the namenodes start, they send their heartbeats to NDB to indicate that it is currently active and
+        running. The heartbeat involves incrementing shared counter value in the [COUNTERS] table and
+        updating that value against its record in the [LEADER] table.
 
-For the purpose of atomic sequential update, each namenode gets a write lock on the row of
-[COUNTER] table, increments and updates the value in this table and finally update that value in the
-[LEADER] table against its row. This will eliminate the possibility of all namenodes to update to the
-same value during concurrent updates.
+        For the purpose of atomic sequential update, each namenode gets a write lock on the row of
+        [COUNTER] table, increments and updates the value in this table and finally update that value in the
+        [LEADER] table against its row. This will eliminate the possibility of all namenodes to update to the
+        same value during concurrent updates.
         <emphasis>Case-I: Scenario if all goes well</emphasis>
-If all goes well, in each round of updating the counter we should see the value of the counter as a
-sequence of numbers iterating in ascending order against all the namenodes. The above figure shows
-an example of counter values for 3 namenode in the system designated with ids 1, 2 and 3 with their
-corresponding counter values as 23, 24 and 25 respectively.
-For the purposes of simplicity in explanation, we call NNx a namenode with an id of value x.
-From this example we see that NN1 has the lowest id and is therefore elected as the current leader in
-the system.
+        If all goes well, in each round of updating the counter we should see the value of the counter as a
+        sequence of numbers iterating in ascending order against all the namenodes. The above figure shows
+        an example of counter values for 3 namenode in the system designated with ids 1, 2 and 3 with their
+        corresponding counter values as 23, 24 and 25 respectively.
+        For the purposes of simplicity in explanation, we call NNx a namenode with an id of value x.
+        From this example we see that NN1 has the lowest id and is therefore elected as the current leader in
+        the system.
         <emphasis>Case-II: Scenario when a leader crashes</emphasis>
-However, in a distributed system it is ideal for all to go well. Namenodes can crash or experience
-network glitches or shutdown. This would prevent it from sending its heartbeat to NDB and thus
-would unable to update its value in the [LEADER] table.
-So if this happens, the counter value for those namenodes would remain the same and would not
-progress towards incremental updates. Namenodes would experience an irregular sequence of
-counter values in each of these rows. For example, let’s say that NN1 has crashed and the current
-counter value is now 25. This would allow NN2 and NN3 to progress in updating the counter with
-values 26 and 27 while counter value for NN1 is still at value 23. Following would be the snapshot of
-the view on the [LEADER] table at this round:
+        However, in a distributed system it is ideal for all to go well. Namenodes can crash or experience
+        network glitches or shutdown. This would prevent it from sending its heartbeat to NDB and thus
+        would unable to update its value in the [LEADER] table.
+        So if this happens, the counter value for those namenodes would remain the same and would not
+        progress towards incremental updates. Namenodes would experience an irregular sequence of
+        counter values in each of these rows. For example, let’s say that NN1 has crashed and the current
+        counter value is now 25. This would allow NN2 and NN3 to progress in updating the counter with
+        values 26 and 27 while counter value for NN1 is still at value 23. Following would be the snapshot of
+        the view on the [LEADER] table at this round:
 
 
-The figure shows an irregular sequence of counter values i.e. 23, 26 and 27 when we should expect
-26, 27 and 28. This means something has gone wrong.
+        The figure shows an irregular sequence of counter values i.e. 23, 26 and 27 when we should expect
+        26, 27 and 28. This means something has gone wrong.
 
 
         <emphasis>Determining the leader</emphasis>
-The next step is to detect this irregular sequence and decide if a new leader is to be elected. If so, the
-leader election will run again and a new namenode would be elected as the leader.
-The basic idea to determine the leader is to determine which namenodes are strongly aligned to the
-current counter value. In this case, the current counter after the updates from NN2 and NN3 is 27.
-Hence, if we have 3 namenodes in the system, we expect the counter sequence to range from
-27] where NN1 would have value 25, NN2 would have value 26 and NN3 would have value 27. So
-we need to get all namenodes that have a counter with value greater than 24.
-From the list of namenodes returned, the one with the lowest id would be elected the leader. This
-logic is implemented in the algorithm and runs periodically during a configured time interval.
-So in this case, the list of namenodes returned includes NN2 and NN3. Out of these two, NN2 has the
-lowest and would elect itself as the leader. Accordingly NN3 would notice that it does not have the
-lowest id and will accept NN2 as the current leader.
-Ensuring single leader dominance
-Once a namenode determines that it is the leader, the first thing is to ensure that there are no other
-leaders in the system. This would mean that all previously elected leaders (or namenodes with lower
-id than itself) have crashed. To ensure this, it simply enforces this rule by removing all records from
-the [LEADER] table that have a lower id than itself.
+        The next step is to detect this irregular sequence and decide if a new leader is to be elected. If so, the
+        leader election will run again and a new namenode would be elected as the leader.
+        The basic idea to determine the leader is to determine which namenodes are strongly aligned to the
+        current counter value. In this case, the current counter after the updates from NN2 and NN3 is 27.
+        Hence, if we have 3 namenodes in the system, we expect the counter sequence to range from
+        27] where NN1 would have value 25, NN2 would have value 26 and NN3 would have value 27. So
+        we need to get all namenodes that have a counter with value greater than 24.
+        From the list of namenodes returned, the one with the lowest id would be elected the leader. This
+        logic is implemented in the algorithm and runs periodically during a configured time interval.
+        So in this case, the list of namenodes returned includes NN2 and NN3. Out of these two, NN2 has the
+        lowest and would elect itself as the leader. Accordingly NN3 would notice that it does not have the
+        lowest id and will accept NN2 as the current leader.
+        Ensuring single leader dominance
+        Once a namenode determines that it is the leader, the first thing is to ensure that there are no other
+        leaders in the system. This would mean that all previously elected leaders (or namenodes with lower
+        id than itself) have crashed. To ensure this, it simply enforces this rule by removing all records from
+        the [LEADER] table that have a lower id than itself.
 
         <emphasis>Correctness</emphasis>
-Following are the cases that would prove correctness of the algorithm
-Case-I: Scenario when current leader crashes
-Supposing we have three namenodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
-We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
-update the counter to 9 and later NN3 would update the counter to 10 and we would have the
-following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
+        Following are the cases that would prove correctness of the algorithm
+        Case-I: Scenario when current leader crashes
+        Supposing we have three namenodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
+        We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
+        update the counter to 9 and later NN3 would update the counter to 10 and we would have the
+        following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
 
-<example xml:id="leader-election-NNs">
-    <title>Leader Election Algorithm at NameNodes</title>
-    <programlisting>
-    </programlisting>
-</example>
+        <example xml:id="leader-election-NNs">
+            <title>Leader Election Algorithm at NameNodes</title>
+            <programlisting>
+            </programlisting>
+        </example>
 
-<example xml:id="leader-election-DNs">
-    <title>Detecting the Leader at DataNodes</title>
-    <programlisting>
+        <example xml:id="leader-election-DNs">
+            <title>Detecting the Leader at DataNodes</title>
+            <programlisting>
         
-    </programlisting>
-</example>
+            </programlisting>
+        </example>
 
 
-Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
-counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
-of [6-8]. At this point, from both namenode perspectives, NN1 is alive as its counter lies in the range
-while the datanodes detect failure of NN1 via the TCP socket. This is illustrated in Figure6.
-Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
-would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
-NN1 is still 6 and does not lie in this range.
-Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
-counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
-NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
-leader. Thus [Property#1] holds.
-Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
-the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
-all previous leaders have now crashed. This is illustrated above in Figure7.
-If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
-record with the next highest id.
-DNs recognizing the new leader
-All datanodes are up-to-date with the current view of namenodes in the system. This is done via
-requesting the namenodes for the current list of namenodes. This is done via a simple RPC call. The
-datanodes get the list of namenodes and assume the namenode with the lowest id is the leader.
-When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
-successful at making contact with the NN it will remove it from the list and select the next NN who
-potentially would be the leader. This would achieve [Property#2].
-There can be two possibilities where (a) the datanode contacts the next NN and if it is actually the
-leader then the process flows normally. (b) The datanode contacts the next NN in the list but who may
-not be the leader (because it is possible that it has crashed) but this NN would then provide the
-updated list of namenodes and then it would recognize the new leader.
-Eventually all correct DNs would recognize some correct NN as the leader thereby fulfilling
-[Property#1].
+        Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
+        counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
+        of [6-8]. At this point, from both namenode perspectives, NN1 is alive as its counter lies in the range
+        while the datanodes detect failure of NN1 via the TCP socket. This is illustrated in Figure6.
+        Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
+        would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
+        NN1 is still 6 and does not lie in this range.
+        Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
+        counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
+        NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
+        leader. Thus [Property#1] holds.
+        Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
+        the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
+        all previous leaders have now crashed. This is illustrated above in Figure7.
+        If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
+        record with the next highest id.
+        DNs recognizing the new leader
+        All datanodes are up-to-date with the current view of namenodes in the system. This is done via
+        requesting the namenodes for the current list of namenodes. This is done via a simple RPC call. The
+        datanodes get the list of namenodes and assume the namenode with the lowest id is the leader.
+        When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
+        successful at making contact with the NN it will remove it from the list and select the next NN who
+        potentially would be the leader. This would achieve [Property#2].
+        There can be two possibilities where (a) the datanode contacts the next NN and if it is actually the
+        leader then the process flows normally. (b) The datanode contacts the next NN in the list but who may
+        not be the leader (because it is possible that it has crashed) but this NN would then provide the
+        updated list of namenodes and then it would recognize the new leader.
+        Eventually all correct DNs would recognize some correct NN as the leader thereby fulfilling
+        [Property#1].
 
 
-Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
-If a namenode process say NN1 is active and running and thinks that it has not crashed BUT cannot
-make contact with NDB, then such an namenode process is not considered correct as per definition.
-In this scenario, all datanodes would always think that NN1 is the current leader as it can make
-contact with that NN. But since the NN cannot make contact with NDB, it would kill itself and
-shutdown hoping that some other namenode would eventually be elected the leader.
-When NN1 will be shutdown, the datanodess will keep retrying for some amount of time after some
-point where they will switch to the next namenode in the list and will determine the next NN leader.
-This also ensures no corruption of data where the namenode thinks it is still the leader as it cannot
-update the metadata in the NDB since its communication with it is lost.
+        Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
+        If a namenode process say NN1 is active and running and thinks that it has not crashed BUT cannot
+        make contact with NDB, then such an namenode process is not considered correct as per definition.
+        In this scenario, all datanodes would always think that NN1 is the current leader as it can make
+        contact with that NN. But since the NN cannot make contact with NDB, it would kill itself and
+        shutdown hoping that some other namenode would eventually be elected the leader.
+        When NN1 will be shutdown, the datanodess will keep retrying for some amount of time after some
+        point where they will switch to the next namenode in the list and will determine the next NN leader.
+        This also ensures no corruption of data where the namenode thinks it is still the leader as it cannot
+        update the metadata in the NDB since its communication with it is lost.
 
 
 
@@ -307,7 +308,7 @@ update the metadata in the NDB since its communication with it is lost.
             <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="75" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="50" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -340,7 +341,7 @@ update the metadata in the NDB since its communication with it is lost.
             <listitem>
                 <para>
                     <emphasis>Hop File System (Hop-FS)</emphasis>
-                    At the bottom layer of big data stack is Hop-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
+                    At the bottom layer of big data stack is Hop-FS a distributed file system based on Hadoop Distributed File System (HDFS) <xref linkend="Borthakur2007"/>. We revisited relational 
                     representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
                     of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
                     maintaining the consistency of the metadata, while providing high performance. Hop-FS also guarantees freedom from deadlock and progress.
@@ -350,7 +351,7 @@ update the metadata in the NDB since its communication with it is lost.
                 <para>
                     <emphasis>MySQL Cluster</emphasis>
                     MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
-                    Designed around a distributed, multi-master architecture with no single point of failure;
+                    Designed around a distributed, multi-master architecture with no single point of failure <xref linkend="Manual2010"/>. 
                     MySQL Cluster's real-time design delivers predictable, milisecond response times with 
                     the ability to service millions of operations per second. In the case of our data platform, it is
                     used to handle and manage the state of our multi-namenode solution of our architecture.                                    
@@ -359,7 +360,7 @@ update the metadata in the NDB since its communication with it is lost.
             <listitem>
                 <para>
                     <emphasis>YARN</emphasis>
-                    Resource negotiator for managing high volume distributed data processing tasks against HDFS. 
+                    Resource negotiator for managing high volume distributed data processing tasks against HDFS <xref linkend="Vavilapalli2013"/>. 
                     It supports different processing models other that Map-Reduce by separating its Resource 
                     Manager from Scheduler and Application Master. Application Master gives us flexibility to 
                     accommodate heterogeneous processes by implementing a wrapper for each kind of application 
@@ -527,7 +528,7 @@ update the metadata in the NDB since its communication with it is lost.
                         To handle this situation HopS run a bittorent in which dashboard machine is the seeder, then all 
                         machnies could contribute to download process which is both faster and anti-bottleneck. After download 
                         Chef agent starts installation based on the required packages in each machine and with the order of 
-                        dependencies between packages. 
+                        dependencies between packages.
                     </para>
                 </listitem>
                 <!--                <listitem>
@@ -548,47 +549,435 @@ update the metadata in the NDB since its communication with it is lost.
         <title>References</title>
         
         <bibliodiv>
-            <biblioentry>
-                <abbrev>AhoSethiUllman96</abbrev>
+            <biblioentry xml:id="Vavilapalli2013">
+                <abbrev>1</abbrev>
                 <authorgroup>
                     <author>
-                        <personname>
-                            <firstname>Alfred V.</firstname>
-                            <surname>Aho</surname>
-                        </personname>
+                        <firstname>Vinod Kumar</firstname>
+                        <surname>Vavilapalli</surname>
                     </author>
                     <author>
-                        <personname>
-                            <firstname>Ravi</firstname>
-                            <surname>Sethi</surname>
-                        </personname>
+                        <firstname>Arun C</firstname>
+                        <surname>Murthy</surname>
                     </author>
                     <author>
-                        <personname>
-                            <firstname>Jeffrey D.</firstname>
-                            <surname>Ullman</surname>
-                        </personname>
+                        <firstname>Chris</firstname>
+                        <surname>Douglas</surname>
                     </author>
+                    <author>
+                        <firstname>Sharad</firstname>
+                        <surname>Agarwal</surname>
+                    </author>
+                    <author>
+                        <firstname>Mahadev</firstname>
+                        <surname>Konar</surname>
+                    </author>
+                    <author>
+                        <firstname>Robert</firstname>
+                        <surname>Evans</surname>
+                    </author>
+                    <author>
+                        <firstname>Thomas</firstname>
+                        <surname>Graves</surname>
+                    </author>
+                    <author>
+                        <firstname>Jason</firstname>
+                        <surname>Lowe</surname>
+                    </author>
+                    <author>
+                        <firstname>Hitesh</firstname>
+                        <surname>Shah</surname>
+                    </author>
+                    <author>
+                        <firstname>Siddharth</firstname>
+                        <surname>Seth</surname>
+                    </author>
+                    <author>
+                        <firstname>Bikas</firstname>
+                        <surname>Saha</surname>
+                    </author>
+                    <author>
+                        <firstname>Carlo</firstname>
+                        <surname>Curino</surname>
+                    </author>
+                    <author>
+                        <firstname>Owen</firstname>
+                        <surname>O&#8217;Malley</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Radia</surname>
+                    </author>
+                    <author>
+                        <firstname>Benjamin</firstname>
+                        <surname>Reed</surname>
+                    </author>
+                    <author>
+                        <firstname>Eric</firstname>
+                        <surname>Baldeschwieler</surname>
+                    </author> 
                 </authorgroup>
-                <copyright>
-                    <year>1996</year>
-                    <holder>Bell Telephone Laboratories, Inc.</holder>
-                </copyright>
-                <editor>
-                    <personname>
-                        <firstname>James T.</firstname>
-                        <surname>DeWolf</surname>
-                    </personname>
-                </editor>
-                <biblioid class="isbn">0-201-10088-6</biblioid>
-                <publisher>
-                    <publishername>Addison-Wesley Publishing Company</publishername>
-                </publisher>
-                <citetitle>Compilers, Principles, Techniques, and Tools</citetitle>
+                <citetitle pubwork="article">Apache Hadoop YARN: Yet Another Resource Negotiator</citetitle>
+                <citetitle pubwork="journal">2013 ACM Symposium on Cloud Computing (SoCC 2013)</citetitle>
+                <pubdate>2013</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://hortonworks.com/blog/apache&#45;hadoop&#45;yarn&#45;wins&#45;best&#45;paper&#45;award&#45;at&#45;socc&#45;2013/">http://hortonworks.com/blog/apache&#45;hadoop&#45;yarn&#45;wins&#45;best&#45;paper&#45;award&#45;at&#45;socc&#45;2013/</ulink>
+                </bibliomisc>
             </biblioentry>
-            <!--</bibliolist>-->    
-        </bibliodiv>
+            <biblioentry xml:id="berenson1995critique">
+                <abbrev>2</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Hal</firstname>
+                        <surname>Berenson</surname>
+                    </author>
+                    <author>
+                        <firstname>Phil</firstname>
+                        <surname>Bernstein</surname>
+                    </author>
+                    <author>
+                        <firstname>Jim</firstname>
+                        <surname>Gray</surname>
+                    </author>
+                    <author>
+                        <firstname>Jim</firstname>
+                        <surname>Melton</surname>
+                    </author>
+                    <author>
+                        <firstname>Elizabeth</firstname>
+                        <surname>O&#39;Neil</surname>
+                    </author>
+                    <author>
+                        <firstname>Patrick</firstname>
+                        <surname>O&#39;Neil</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">A critique of ANSI SQL isolation levels</citetitle>
+                <citetitle pubwork="journal">ACM SIGMOD Record</citetitle>
+                <publisher>
+                    <publishername>ACM</publishername>
+                </publisher>
+                <volumenum>24</volumenum> 
+                <artpagenums>1&#x2013;10</artpagenums> 
+                <pubdate>1995</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="Borthakur2007">
+                <abbrev>3</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>D</firstname>
+                        <surname>Borthakur</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The hadoop distributed file system: Architecture and design</citetitle>
+                <citetitle pubwork="journal">Hadoop Project Website</citetitle>
+                <artpagenums>1&#x2013;14</artpagenums> 
+                <pubdate>2007</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf">http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf</ulink>
+                </bibliomisc>
+                <abstract>
+                    <para>The Hadoop Distributed File System (HDFS) is a distributed file system designed to run on commodity hardware. It has many similarities with existing distributed file systems. However&#44; the differences from other distributed file systems are significant. HDFS is highly fault&#45;tolerant and is designed to be deployed on low&#45;cost hardware. HDFS provides high throughput access to application data and is suitable for applications that have large data sets. HDFS relaxes a few POSIX requirements to enable streaming access to file system data. HDFS was originally built as infrastructure for the Apache Nutch web search engine project. HDFS is part of the Apache Hadoop Core project. The project URL is http://hadoop.apache.org/core/.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Borthakur2011">
+                <abbrev>4</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Dhruba</firstname>
+                        <surname>Borthakur</surname>
+                    </author>
+                    <author>
+                        <firstname>Samuel</firstname>
+                        <surname>Rash</surname>
+                    </author>
+                    <author>
+                        <firstname>Rodrigo</firstname>
+                        <surname>Schmidt</surname>
+                    </author>
+                    <author>
+                        <firstname>Amitanand</firstname>
+                        <surname>Aiyer</surname>
+                    </author>
+                    <author>
+                        <firstname>Jonathan</firstname>
+                        <surname>Gray</surname>
+                    </author>
+                    <author>
+                        <firstname>Joydeep Sen</firstname>
+                        <surname>Sarma</surname>
+                    </author>
+                    <author>
+                        <firstname>Kannan</firstname>
+                        <surname>Muthukkaruppan</surname>
+                    </author>
+                    <author>
+                        <firstname>Nicolas</firstname>
+                        <surname>Spiegelberg</surname>
+                    </author>
+                    <author>
+                        <firstname>Hairong</firstname>
+                        <surname>Kuang</surname>
+                    </author>
+                    <author>
+                        <firstname>Karthik</firstname>
+                        <surname>Ranganathan</surname>
+                    </author>
+                    <author>
+                        <firstname>Dmytro</firstname>
+                        <surname>Molkov</surname>
+                    </author>
+                    <author>
+                        <firstname>Aravind</firstname>
+                        <surname>Menon</surname>
+                    </author> 
 
+                </authorgroup>
+                <citetitle pubwork="article">Apache hadoop goes realtime at Facebook</citetitle>
+                <artpagenums>1071</artpagenums> 
+                <pubdate>2011</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://dl.acm.org/citation.cfm&#63;id=1989323.1989438">http://dl.acm.org/citation.cfm&#63;id=1989323.1989438</ulink>
+                </bibliomisc>
+                <abstract>
+                    <para>Facebook recently deployed Facebook Messages&#44; its first ever user&#45;facing application built on the Apache Hadoop platform. Apache HBase is a database&#45;like layer built on Hadoop designed to support billions of messages per day. This paper describes the reasons why Facebook chose Hadoop and HBase over other systems such as Apache Cassandra and Voldemort and discusses the application&#39;s requirements for consistency&#44; availability&#44; partition tolerance&#44; data model and scalability. We explore the enhancements made to Hadoop to make it a more effective realtime system&#44; the tradeoffs we made while configuring the system&#44; and how this solution has significant advantages over the sharded MySQL database scheme used in other applications at Facebook and many other web&#45;scale companies. We discuss the motivations behind our design choices&#44; the challenges that we face in day&#45;to&#45;day operations&#44; and future capabilities and improvements still under development. We offer these observations on the deployment as a model for other companies who are contemplating a Hadoop&#45;based solution over traditional sharded RDBMS deployments.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Fetterly2011">
+                <abbrev>5</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Dennis</firstname>
+                        <surname>Fetterly</surname>
+                    </author>
+                    <author>
+                        <firstname>Maya</firstname>
+                        <surname>Haridasan</surname>
+                    </author>
+                    <author>
+                        <firstname>Michael</firstname>
+                        <surname>Isard</surname>
+                    </author>
+                    <author>
+                        <firstname>Swaminathan</firstname>
+                        <surname>Sundararaman</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">TidyFS: a simple and small distributed file system</citetitle>
+                <artpagenums>34</artpagenums> 
+                <pubdate>2011</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://dl.acm.org/citation.cfm&#63;id=2002181.2002215">http://dl.acm.org/citation.cfm&#63;id=2002181.2002215</ulink>
+                </bibliomisc>
+                <abstract>
+                    <para>In recent years&#44; there has been an explosion of interest in computing using clusters of commodity&#44; shared nothing computers. In this paper&#44; we describe the design of TidyFS&#44; a simple and small distributed file system that provides the abstractions necessary for data parallel computations on clusters. Similar to other large&#45;scale distributed file systems such as the Google File System (GFS) and the Hadoop Distributed File System (HDFS)&#44; the prototypical workload for this file system is high&#45;throughput&#44; write&#45;once&#44; sequential I/O. The primary user visible unit of storage in this system is the stream&#44; which is a sequence of partitions distributed across the local storage of machines in the cluster. The mapping of streams to sequences of partitions is performed by the TidyFS metadata server&#44; which also tracks the locations of each of the partition replicas in the system&#44; the state of each storage machine in the cluster&#44; and per&#45;stream and per&#45;partition attributes. The metadata server is implemented as a state machine and replicated for scalability and fault tolerance. In addition to the metadata server&#44; the system is comprised of a graphical user interface which enables users and administrators to view the state of the system and a small service installed on each cluster machine responsible for replication&#44; validation&#44; and garbage collection. Clients read and write partitions directly to get the best possible I/O performance.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Gilbert2002">
+                <abbrev>6</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Seth</firstname>
+                        <surname>Gilbert</surname>
+                    </author>
+                    <author>
+                        <firstname>Nancy</firstname>
+                        <surname>Lynch</surname>
+                    </author> 
+
+                </authorgroup>
+                <citetitle pubwork="article">Brewer&#39;s conjecture and the feasibility of consistent&#44; available&#44; partition&#45;tolerant web services</citetitle>
+                <volumenum>33</volumenum> 
+                <artpagenums>51</artpagenums> 
+                <pubdate>2002</pubdate>  
+                <abstract>
+                    <para>When designing distributed web services&#44; there are three properties that are commonly desired: consistency&#44; availability&#44; and partition tolerance. It is impossible to achieve all three. In this note&#44; we prove this conjecture in the asynchronous network model&#44; and then discuss solutions to this dilemma in the partially synchronous model.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Gobioff2003">
+                <abbrev>7</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Howard</firstname>
+                        <surname>Gobioff</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Ghemawat</surname>
+                    </author>
+                    <author>
+                        <firstname>Shun&#45;Tak</firstname>
+                        <surname>Leung</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The Google file system</citetitle>
+                <volumenum>37</volumenum> 
+                <artpagenums>29</artpagenums> 
+                <pubdate>2003</pubdate>  
+                <abstract>
+                    <para>We have designed and implemented the Google File System&#44; a scalable distributed file system for large distributed data&#45;intensive applications. It provides fault tolerance while running on inexpensive commodity hardware&#44; and it delivers high aggregate performance to a large number of clients. While sharing many of the same goals as previous distributed file systems&#44; our design has been driven by observations of our application workloads and technological environment&#44; both current and anticipated&#44; that reflect a marked departure from some earlier file system assumptions. This has led us to reexamine traditional choices and explore radically different design points. The file system has successfully met our storage needs. It is widely deployed within Google as the storage platform for the generation and processing of data used by our service as well as research and development efforts that require large data sets. The largest cluster to date provides hundreds of terabytes of storage across thousands of disks on over a thousand machines&#44; and it is concurrently accessed by hundreds of clients. In this paper&#44; we present file system interface extensions designed to support distributed applications&#44; discuss many aspects of our design&#44; and report measurements from both micro&#45;benchmarks and real world use.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="gunawi2008sqck">
+                <abbrev>8</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Haryadi S</firstname>
+                        <surname>Gunawi</surname>
+                    </author>
+                    <author>
+                        <firstname>Abhishek</firstname>
+                        <surname>Rajimwale</surname>
+                    </author>
+                    <author>
+                        <firstname>Andrea C</firstname>
+                        <surname>Arpaci&#45;Dusseau</surname>
+                    </author>
+                    <author>
+                        <firstname>Remzi H</firstname>
+                        <surname>Arpaci&#45;Dusseau</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">SQCK: A Declarative File System Checker.</citetitle>
+                <artpagenums>131&#x2013;146</artpagenums> 
+                <pubdate>2008</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="J.GrayR.LorieG.Putzolu1976">
+                <abbrev>9</abbrev>
+                <authorgroup>
+                    <author>
+                        <surname>J. Gray&#44; R. Lorie&#44; G. Putzolu</surname>
+                    </author>
+                    <author>
+                        <firstname>I.</firstname>
+                        <surname>Traiger</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Granularity of Locks and Degrees of Consistency in a Shared Database. In Modeling in Data Base Management Systems</citetitle>
+                <artpagenums>365&#x2013;394</artpagenums> 
+                <pubdate>1976</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="lamport1998part">
+                <abbrev>10</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Leslie</firstname>
+                        <surname>Lamport</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The part&#45;time parliament</citetitle>
+                <citetitle pubwork="journal">ACM Transactions on Computer Systems (TOCS)</citetitle>
+                <publisher>
+                    <publishername>ACM</publishername>
+                </publisher>
+                <volumenum>16</volumenum> 
+                <artpagenums>133&#x2013;169</artpagenums> 
+                <pubdate>1998</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="Manual2010">
+                <abbrev>11</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Mysql Reference</firstname>
+                        <surname>Manual</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">MySQL 5.0 Reference Manual</citetitle>
+                <citetitle pubwork="journal">Syntax</citetitle>
+                <artpagenums>3079</artpagenums> 
+                <pubdate>2010</pubdate>  
+                <abstract>
+                    <para>This is the MySQL Reference Manual. It documents MySQL 5.0 through 5.0.93. This manual is for MySQL Enterprise Server&#44; our commercial offering&#44; and for MySQL Community Server. Sections that do not apply for MySQL Enterprise Server users are marked: This section does not apply to MySQL Enterprise Server users. Sections that do not apply to MySQL Community Server users are marked: This section does not apply to MySQL Community Server users. MySQL 5.0 FeaturesThis manual describes features that are not included in every edition of MySQL 5.0 and such features may not be included in the edition of MySQL 5.0 licensed to you. If you have any questions about the fea&#45; tures included in your edition of MySQL 5.0&#44; refer to your MySQL 5.0 license agreement or contact your Oracle rep&#45; resentative. Document generated on: 2011&#45;03&#45;27 (revision: 25583) End of Product Lifecycle Active development for MySQL Database S
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="novik2006peer">
+                <abbrev>12</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Lev</firstname>
+                        <surname>Novik</surname>
+                    </author>
+                    <author>
+                        <firstname>Irena</firstname>
+                        <surname>Hudis</surname>
+                    </author>
+                    <author>
+                        <firstname>Douglas B</firstname>
+                        <surname>Terry</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Anand</surname>
+                    </author>
+                    <author>
+                        <firstname>Vivek</firstname>
+                        <surname>Jhaveri</surname>
+                    </author>
+                    <author>
+                        <firstname>Ashish</firstname>
+                        <surname>Shah</surname>
+                    </author>
+                    <author>
+                        <firstname>Yunxin</firstname>
+                        <surname>Wu</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Peer&#45;to&#45;peer replication in WinFS</citetitle>
+                <citetitle pubwork="journal">Technical ReportMSR&#45;TR&#45;2006&#45;78&#44; Microsoft Research</citetitle>
+                <pubdate>2006</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="shvachko2010hdfs">
+                <abbrev>13</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Konstantin V</firstname>
+                        <surname>Shvachko</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">HDFS Scalability: The limits to growth</citetitle>
+                <citetitle pubwork="journal">login</citetitle>
+                <volumenum>35</volumenum> 
+                <artpagenums>6&#x2013;16</artpagenums> 
+                <pubdate>2010</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="wang2009hadoop">
+                <abbrev>14</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Feng</firstname>
+                        <surname>Wang</surname>
+                    </author>
+                    <author>
+                        <firstname>Jie</firstname>
+                        <surname>Qiu</surname>
+                    </author>
+                    <author>
+                        <firstname>Jie</firstname>
+                        <surname>Yang</surname>
+                    </author>
+                    <author>
+                        <firstname>Bo</firstname>
+                        <surname>Dong</surname>
+                    </author>
+                    <author>
+                        <firstname>Xinhui</firstname>
+                        <surname>Li</surname>
+                    </author>
+                    <author>
+                        <firstname>Ying</firstname>
+                        <surname>Li</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Hadoop high availability through metadata replication</citetitle>
+                <artpagenums>37&#x2013;44</artpagenums> 
+                <pubdate>2009</pubdate>  
+            </biblioentry>
+        </bibliodiv>
     </bibliography>
-        
 </chapter>
