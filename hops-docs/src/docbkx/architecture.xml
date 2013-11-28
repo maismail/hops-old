@@ -457,16 +457,6 @@ return selectAll()
                 </imageobject>
             </mediaobject>
         </figure>   
-
-
-        <figure xml:id="hdfs-operations">
-            <title>HDFS Filesystem Operation Sequence Diagram</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/hdfs-operations.png" scale="37" align="center"/>
-                </imageobject>
-            </mediaobject>
-        </figure>   
         <para/>
         <emphasis>Transactions and Isolation Levels</emphasis>
         <para>
