@@ -105,7 +105,7 @@
         <title>Setup Credentials</title>
         <para>It allows the user to setup the credentials that are used when the dashboard deploys a
             cluster. These are important configuration parameters. Cluster deployment will fail if
-            these parameteres are not properly set.  </para>
+            these parameteres are not set properly.  </para>
         <figure xml:id="dash-credentials">
             <title>Setup Credentials</title>
             <mediaobject>
@@ -163,147 +163,89 @@
         </para>
     </sect1>
     <sect1>
-        <title>Clusters Progress</title>
-        <para>Another interesting feature for Hadoop administrators, is the option available in the
-            main Dashboard toolbar for tracking the progress of the nodes deployed for your multiple
-            clusters. Selecting this option will bring you a view where you will have all the
-            history of all the nodes through multiple phases of the deployment cycle. A progress bar
-            will appear over each of the entries in the table to see the deployment progress of the
-            nodes and an information tag with the current phase. Here you will be notified of
-            succesfully configured nodes or nodes that had an error during the deployment phase of
-            your cluster which will require of special maintenance. A node entry will go through the
-            following phases during a cluster deployment. <itemizedlist>
+        <title>Cluster Deployment Progress</title>
+        <para>Hop Dashboard monitors the all the nodes deployed in the cluster. It displays the
+            history of all the nodes going through multiple phases of the deployment cycle. A
+            progress bar appears over each of the entries in the table showing the deployment stage
+            progress of the nodes. A cluster node goes through the following phases during
+            deployment. <itemizedlist>
                 <listitem>
-                    <para>
-                        <emphasis>Waiting</emphasis> A node in this phase means, that; the entry has
-                        been generated in the node scheduler but no node creation query has been
-                        generated to the cloud provider. It will wait until the query is submitted
-                        against the cloud provider. </para>
+                    <para><emphasis>Waiting:</emphasis> An entry has been generated in the node
+                        scheduler but no node creation query has been yet been sent to the cloud
+                        provider.</para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Creation</emphasis> A node in this phase means, that; the
-                        scheduler has submitted the query against the cloud provider and it is
-                        waiting for the cloud provider to finish deploying the virtual instance.
-                        After successfully getting back the information of the specific instance, an
-                        initialization script is executed to do a preliminary configuration on that
-                        node. </para>
+                    <para><emphasis>Creation:</emphasis> The scheduler has submitted the query to
+                        the cloud provider and it is waiting for the cloud provider to finish
+                        deploying the virtual instance. When an instance is successfully created an
+                        initialization script is executed for preliminary configuration of the node.
+                    </para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Install</emphasis> A node in this phase means, that; the node is
-                        already created and we are running the install script which will execute
-                        chef install recipes for Hop services to fetch the necessary binaries from
-                        the different repositories. This phase is optional in case of using prebuilt
-                        virtual instances which contain Hop binaries inside. </para>
+                    <para><emphasis>Install:</emphasis> After the node is successfully commissioned,
+                        chef installs recipes for Hop Services to fetch the necessary binaries from
+                        the different repositories. This phase is optional in case of using pre
+                        built virtual instances which contain Hop binaries. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Configure</emphasis> A node in this phase means, that; the node is
-                        receiving the configuration script which will execute chef with the selected
-                        recipes for the services defined for that node. </para>
+                    <para><emphasis>Configure:</emphasis> A node in this phase means, that; the node
+                        is receiving the configuration script which will execute chef with the
+                        selected recipes for the services defined for that node. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Complete</emphasis> A node in this phase means, that; the node has
-                        succesfully finished executing the configuration script with chef and it is
-                        now working as part of the cluster. Additionally, the nodes in this phase
-                        will appear green in the progress history. </para>
+                    <para><emphasis>Complete:</emphasis> The node has successfully finished
+                        executing the configuration script with chef and it is now part of the
+                        working cluster. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Retrying</emphasis> A node in this phase means, that; the
-                        deployment system has detected a problem during a previous node phase and it
-                        is triggering the retrying mechanism. It will retry submitting the previous
-                        phase script for 5 retries. This process ends when the number of retries
-                        finish or we manage to successfully execute the script. </para>
+                    <para><emphasis>Retrying:</emphasis> The deployment system has detected a
+                        problem during a node deployment phase and it is retrying to recover from
+                        the failure. It retries the failed phase script for five times.</para>
                 </listitem>
                 <listitem>
-                    <para>
-                        <emphasis>Error</emphasis> A node in this phase means, that; the deployment
-                        system failed to recover the node through the retrying mechanism. This will
-                        be shown as a Red entry in the progress table and further actions will be
-                        needed by the Hadoop administrator in order to recover that node, for
-                        example; SSH to the failed node in order to get more information of the type
-                        of error it got. </para>
+                    <para><emphasis>Error:</emphasis> When all the retires are exhausted the node is
+                        marked erroneous. Hadoop administrator can to take further actions to
+                        recover the node, for example, SSH into the failed node and the fix the
+                        problem manually, retry the deployment process or delete the failed
+                        nodes.</para>
                 </listitem>
-            </itemizedlist>
-        </para>
-  
-        
-        <para>
-            <figure>
+            </itemizedlist><figure>
                 <title>Clusters Progress</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters-progress.png" align="center" scalefit="1" width="650"/>
+                        <imagedata fileref="media/dash-clusters-progress.png" align="center"
+                            scalefit="1" width="650"/>
                     </imageobject>
                 </mediaobject>
-            </figure> 
-            
-            From the previous figure, we get an overview of the cluster progress table. In here, the user is 
-            capable of executing the following actions:
-            <itemizedlist>
-                <listitem>
-                    <para>
-                    <emphasis>Delete Nodes</emphasis>
-                    A user can select multiple node entries by shift click and later delete their progress history
-                    by executing this command. Note that this option will delete node entries which are registered
-                    with a node complete phase.
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                    <emphasis>Retry Nodes</emphasis>
-                    A user can do make use of this option in order to execute further retry procedures on nodes
-                    that failed to deploy correctly. This will make the deployment system to execute a recovery 
-                    script on the selected nodes in an error state. For now, this script simply tries to rerun the nodes
-                    configuration script by executing only chef in that node. It is possible to retry multiple nodes
-                    at once by selecting multiple entries by shift click.
-                    </para>
-                </listitem>
-            </itemizedlist>
-        </para>
+            </figure></para>
     </sect1>
     <sect1>
         <title>Monitoring</title>
-        <para>The Hop Dashboard offers multiple ways in how you can monitor the state of your
-            current Hop clusters. The following options related to monitoring features can be found in
-            the main Dashboard toolbar
-            <itemizedlist>
+        <para>Hop Dashboard lets monitor hosts, alters and Hop clusters in real time. Brie <itemizedlist>
                 <listitem>
-                    <para>
-                    <emphasis>Hosts</emphasis>
-                    Information and data analytics of all the nodes this dashboard is monitoring.
-                    </para>
+                    <para><emphasis>Hosts:</emphasis> Information and data analytics of all the
+                        nodes the dashboard is monitoring. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Alerts</emphasis>
-                    Information of possible alerts the Hop agents will be sending the dasboard in order
-                    to notify the current state of the nodes.
-                    </para>
+                    <para><emphasis>Alerts:</emphasis> List of all alerts sent to the Dashboard by
+                        the Hop agents running on all the nodes of the cluster. </para>
                 </listitem>
                 <listitem>
-                    <para>
-                    <emphasis>Clusters</emphasis>
-                    A dropdown list with the available clusters been monitored by the dashboard. Selecting an 
-                    entry will give further information of the state of that cluster.
-                    </para>
+                    <para><emphasis>Clusters:</emphasis> A drop down list with the available
+                        clusters been monitored by the dashboard. Selecting an entry will give
+                        further information of the state of that cluster. </para>
                 </listitem>
             </itemizedlist>
-           
         </para>
         <sect2>
             <title>Hosts</title>
-            <para>
-                This view allows a user to get a general overview of the state of all the nodes in all the clusters,
-                you will be able to track information of great interest like the allocated ip's for that node, its 
-                hostname, host ID, its current health in the system, and when the last heartbeat was received. Also
-                it shows information about the nodes available resources like the number of cores that machine
-                has, the load average in that instance in the last 1, 5 15 min, disk usage and physical memory
-                in use.               
-            </para>
+            <para>This view allows a user to get a general overview of the state of all the nodes in
+                all the clusters, you will be able to track information of great interest like the
+                allocated ip's for that node, its hostname, host ID, its current health in the
+                system, and when the last heartbeat was received. Also it shows information about
+                the nodes available resources like the number of cores that machine has, the load
+                average in that instance in the last 1, 5 15 min, disk usage and physical memory in
+                use. </para>
             <figure>
                 <title>Hosts</title>
                 <mediaobject>
