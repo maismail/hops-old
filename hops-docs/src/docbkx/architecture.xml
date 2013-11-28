@@ -233,6 +233,19 @@ We assume NN1 has crashed and therefore will not update its counter. In the next
 update the counter to 9 and later NN3 would update the counter to 10 and we would have the
 following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
 
+<example xml:id="leader-election-NNs">
+    <title>Leader Election Algorithm at NameNodes</title>
+    <programlisting>
+    </programlisting>
+</example>
+
+<example xml:id="leader-election-DNs">
+    <title>Detecting the Leader at DataNodes</title>
+    <programlisting>
+        
+    </programlisting>
+</example>
+
 
 Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
 counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
@@ -275,6 +288,8 @@ When NN1 will be shutdown, the datanodess will keep retrying for some amount of 
 point where they will switch to the next namenode in the list and will determine the next NN leader.
 This also ensures no corruption of data where the namenode thinks it is still the leader as it cannot
 update the metadata in the NDB since its communication with it is lost.
+
+
 
     </sect1>
 
