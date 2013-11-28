@@ -8,27 +8,23 @@
          xmlns:db="http://docbook.org/ns/docbook" xml:id="ch01">
 
     <title>Quickstart with Vagrant</title>
-    <para>
-        This section describes the steps required to deploy a HOP cluster 
-        on a single machine using git, vagrant
-        <footnote>
-            <para>  
-                <link  xlink:href="http://www.vagrantup.com">Vagrant is a tool for building complete development environments.
-                    With an easy-to-use workflow and focus on automation,
-                    Vagrant lowers development environment setup time, increases development/production parity,
-                    and makes the "works on my machine" excuse a relic of the past.</link> 
-            </para>
-        </footnote>
-        , and chef
-        <footnote>
+    <para> This section describes the steps required to deploy a Hop cluster on a single machine
+        using git, vagrant <footnote>
             <para>
-                <link  xlink:href="http://docs.opscode.com/">Chef is a systems and cloud infrastructure automation framework that makes it 
-                    easy to deploy servers and applications to any physical, virtual, 
-                    or cloud location, no matter the size of the infrastructure.</link> 
+                <link xlink:href="http://www.vagrantup.com">Vagrant is a tool for building complete
+                    development environments. With an easy-to-use workflow and focus on automation,
+                    Vagrant lowers development environment setup time, increases
+                    development/production parity, and makes the "works on my machine" excuse a
+                    relic of the past.</link>
             </para>
-        </footnote>
-        .
-    </para>
+        </footnote> , and chef <footnote>
+            <para>
+                <link xlink:href="http://docs.opscode.com/">Chef is a systems and cloud
+                    infrastructure automation framework that makes it easy to deploy servers and
+                    applications to any physical, virtual, or cloud location, no matter the size of
+                    the infrastructure.</link>
+            </para>
+        </footnote> . </para>
 
     <sect1>
         <title>Pre-requisites:</title>
