@@ -481,6 +481,93 @@ return selectAll()
 
     <sect1>                                
         <title>Snapshot layer</title>
+            To improve the performance of our solution, we take snapshots of
+            the database state at the start of filesystem operations, 
+            mutate that state locally, and then finally commit any changes at the
+            end of the transaction. This approach reduces the number of round-trips
+           to the database, helping to improve database throughput.
+            
+        <example xml:id="snapshot">
+            <title>Snapshotting at NameNodes</title>
+            <programlisting linenumbering="numbered">
+initially: snapshot.clear;
+
+operation doOperation
+    tx.begin
+    doSnapshot()
+    performTask()
+    tx.commit
+
+operation doSnapshot
+    S = total_order_sort(op.X)
+    foreach x in S do
+        if x is a parent then level = x.parent_level_lock
+        else level = x.strongest_lock_type
+        tx.lockLevel(level)
+        snapshot &lt;-tx.find(x.query)
+    
+operation performTask
+    //Operation Body, accessing only state stored in the snapshot
+</programlisting>
+</example>
+
+
+For some filesystem operations, the presented algorithm is not enough to ensure a total
+order on acquiring resources.
+For example there might be a datatype y for which x is parent, and a lock on x should be
+acquired to access y. Since y is not supplied in the operations’ parameters we need to first
+discover y before we can lock it. Only then, can we start the main transaction by locking y before locking x. 
+We solve this problem by breaking the operation up into two transactions. In the 
+first transaction we do not mutate state, we only resolve resources that need to 
+be locked in the second transaction. In the second transaction, we first validate
+that the resources/state we resolved in the first transaction is still valid, and if
+so, we then perform a standard transaction, acquiring locks and taking a 
+snapshot of the data. If the state in the second transaction is no longer valid,
+we can restart the operation, beginning at the first transaction.
+
+
+        <example xml:id="snapshot-multi">
+            <title>Snapshotting at NameNodes using Two Transactions</title>
+            <programlisting linenumbering="numbered">
+initially: snapshot.clear, restart = true, try = 0;
+
+operation doOperation
+    while restart and try &lt; 3
+        restart = false
+            try = try + 1
+        if op.should_resolve_parent then
+            tx1.begin
+            resolve_parent(op.param)
+            tx1.commit
+
+        tx2.begin
+        doSnapshot()
+        if data from tx1 is not valid then 
+            tx.abort()
+            restart = true
+        else
+            performTask()
+            tx2.commit
+    end while	
+
+operation resolve_parent(y)
+    tx.lockLevel(“read_commited”)
+    tx.find(y.parent_query)
+
+operation doSnapshot
+	S = total_order_sort(op.X)
+	foreach x in S do
+		if x is a parent then level = x.parent_level_lock 
+                else level = x.strongest_lock_type
+		tx.lockLevel(level)
+		cache &lt;- tx.find(x.query)
+
+operation performTask
+	//Operation Body, accessing only state stored in the snapshot
+</programlisting>
+</example>
+
+
 
     </sect1>
 
