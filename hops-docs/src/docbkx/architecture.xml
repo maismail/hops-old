@@ -112,6 +112,188 @@
     </sect1>
 
     <sect1>                                
+        <title>Leader Election</title>
+        In HDFS, there are a number of background tasks that are problematic if
+        multiple NameNodes attempt to perform them concurrently. Examples of such
+        tasks include: 
+        <orderedlist>
+        <listitem>
+        replication monitoring, 
+        </listitem>
+        <listitem>
+        lease management,
+        </listitem>
+        <listitem>
+        block token generation,
+        </listitem>
+        <listitem>
+        and the decomissioning of datanodes.
+        </listitem>
+        </orderedlist>
+        Without any coordination between the NameNodes, and since all NameNodes have identical behaviour, 
+        then, if a block becomes under-replicated, potentially several NameNodes will identify
+        this event, and select a DataNode to replicate that block to. This would
+        cause multiple re-replications of the block, leading it to enter an over-replicated
+        state, upon which, multiple NameNodes would again recognize this state and attempt
+        to remove replicas, leading to an under-replicated block, in a circular manner. 
+
+        We solve this coordination problem, by implementing a Leader Election Algorithm,
+        where only the leader is assigned the task of performing the above background tasks.
+        Our leader election algorithm uses the shared, transactional memory 
+        abstraction provided by MySQL Cluster to coordinate the election process.
+
+        <emphasis>Definition: correct NameNode process</emphasis>
+        The notion of correct in this context means that a process is active and 
+        running and is able to connect and write to NDB cluster in a bounded time interval.
+        <para>
+        The bounded time interval is typically set to around 1 second. That means our
+        MySQL Cluster should be provisioned to handle peak loads.
+        </para>
+
+        A leader NameNode is a NameNode from the set of NameNodes that  
+        is correct and is responsible for listening to DateNode heartbeats and 
+        assigning various tasks to them as well as responsible for managing background tasks.
+        
+        The properties that our leader election algorithm guarantee are:
+        <orderedlist>
+        <listitem>
+        <emphasis>Completeness:</emphasis> after a bounded time interval, all correct namenodes will detect every namenode that has crashed.
+<emphasis>Agreement:</emphasis> after a bounded time interval, all correct namenodes will recognize one among them as the leader.
+All will agree to the same namenode being the leader.
+<emphasis>Stability:</emphasis> If one correct namenode is the leader, all previous leaders have crashed
+        </listitem>
+        </orderedlist>
+
+        <emphasis>Leader Election Algorithm</emphasis>
+The leader election algorithm runs continuously at the namenodes as soon as it has started. Each
+namenode is assigned an (integer) id. At any point in time, the namenode with the lowest id is always
+elected as the leader.
+The central focus of the algorithm for detecting failures and electing a new leader is through the use
+of heartbeats called counters. The ids of each namenode are persisted in a table called LEADER and
+in this way all namenodes have a uniform view of all the namenodes in the system. The schema and
+sample records for these tables look like the following:
+
+
+Once the namenodes start, they send their heartbeats to NDB to indicate that it is currently active and
+running. The heartbeat involves incrementing shared counter value in the [COUNTERS] table and
+updating that value against its record in the [LEADER] table.
+
+For the purpose of atomic sequential update, each namenode gets a write lock on the row of
+[COUNTER] table, increments and updates the value in this table and finally update that value in the
+[LEADER] table against its row. This will eliminate the possibility of all namenodes to update to the
+same value during concurrent updates.
+        <emphasis>Case-I: Scenario if all goes well</emphasis>
+If all goes well, in each round of updating the counter we should see the value of the counter as a
+sequence of numbers iterating in ascending order against all the namenodes. The above figure shows
+an example of counter values for 3 namenode in the system designated with ids 1, 2 and 3 with their
+corresponding counter values as 23, 24 and 25 respectively.
+For the purposes of simplicity in explanation, we call NNx a namenode with an id of value x.
+From this example we see that NN1 has the lowest id and is therefore elected as the current leader in
+the system.
+        <emphasis>Case-II: Scenario when a leader crashes</emphasis>
+However, in a distributed system it is ideal for all to go well. Namenodes can crash or experience
+network glitches or shutdown. This would prevent it from sending its heartbeat to NDB and thus
+would unable to update its value in the [LEADER] table.
+So if this happens, the counter value for those namenodes would remain the same and would not
+progress towards incremental updates. Namenodes would experience an irregular sequence of
+counter values in each of these rows. For example, let’s say that NN1 has crashed and the current
+counter value is now 25. This would allow NN2 and NN3 to progress in updating the counter with
+values 26 and 27 while counter value for NN1 is still at value 23. Following would be the snapshot of
+the view on the [LEADER] table at this round:
+
+
+The figure shows an irregular sequence of counter values i.e. 23, 26 and 27 when we should expect
+26, 27 and 28. This means something has gone wrong.
+
+
+        <emphasis>Determining the leader</emphasis>
+The next step is to detect this irregular sequence and decide if a new leader is to be elected. If so, the
+leader election will run again and a new namenode would be elected as the leader.
+The basic idea to determine the leader is to determine which namenodes are strongly aligned to the
+current counter value. In this case, the current counter after the updates from NN2 and NN3 is 27.
+Hence, if we have 3 namenodes in the system, we expect the counter sequence to range from
+27] where NN1 would have value 25, NN2 would have value 26 and NN3 would have value 27. So
+we need to get all namenodes that have a counter with value greater than 24.
+From the list of namenodes returned, the one with the lowest id would be elected the leader. This
+logic is implemented in the algorithm and runs periodically during a configured time interval.
+So in this case, the list of namenodes returned includes NN2 and NN3. Out of these two, NN2 has the
+lowest and would elect itself as the leader. Accordingly NN3 would notice that it does not have the
+lowest id and will accept NN2 as the current leader.
+Ensuring single leader dominance
+Once a namenode determines that it is the leader, the first thing is to ensure that there are no other
+leaders in the system. This would mean that all previously elected leaders (or namenodes with lower
+id than itself) have crashed. To ensure this, it simply enforces this rule by removing all records from
+the [LEADER] table that have a lower id than itself.
+
+        <emphasis>Correctness</emphasis>
+Following are the cases that would prove correctness of the algorithm
+Case-I: Scenario when current leader crashes
+Supposing we have three namenodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
+We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
+update the counter to 9 and later NN3 would update the counter to 10 and we would have the
+following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
+
+<example xml:id="leader-election-NNs">
+    <title>Leader Election Algorithm at NameNodes</title>
+    <programlisting>
+    </programlisting>
+</example>
+
+<example xml:id="leader-election-DNs">
+    <title>Detecting the Leader at DataNodes</title>
+    <programlisting>
+        
+    </programlisting>
+</example>
+
+
+Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
+counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
+of [6-8]. At this point, from both namenode perspectives, NN1 is alive as its counter lies in the range
+while the datanodes detect failure of NN1 via the TCP socket. This is illustrated in Figure6.
+Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
+would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
+NN1 is still 6 and does not lie in this range.
+Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
+counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
+NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
+leader. Thus [Property#1] holds.
+Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
+the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
+all previous leaders have now crashed. This is illustrated above in Figure7.
+If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
+record with the next highest id.
+DNs recognizing the new leader
+All datanodes are up-to-date with the current view of namenodes in the system. This is done via
+requesting the namenodes for the current list of namenodes. This is done via a simple RPC call. The
+datanodes get the list of namenodes and assume the namenode with the lowest id is the leader.
+When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
+successful at making contact with the NN it will remove it from the list and select the next NN who
+potentially would be the leader. This would achieve [Property#2].
+There can be two possibilities where (a) the datanode contacts the next NN and if it is actually the
+leader then the process flows normally. (b) The datanode contacts the next NN in the list but who may
+not be the leader (because it is possible that it has crashed) but this NN would then provide the
+updated list of namenodes and then it would recognize the new leader.
+Eventually all correct DNs would recognize some correct NN as the leader thereby fulfilling
+[Property#1].
+
+
+Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB cluster
+If a namenode process say NN1 is active and running and thinks that it has not crashed BUT cannot
+make contact with NDB, then such an namenode process is not considered correct as per definition.
+In this scenario, all datanodes would always think that NN1 is the current leader as it can make
+contact with that NN. But since the NN cannot make contact with NDB, it would kill itself and
+shutdown hoping that some other namenode would eventually be elected the leader.
+When NN1 will be shutdown, the datanodess will keep retrying for some amount of time after some
+point where they will switch to the next namenode in the list and will determine the next NN leader.
+This also ensures no corruption of data where the namenode thinks it is still the leader as it cannot
+update the metadata in the NDB since its communication with it is lost.
+
+
+
+    </sect1>
+
+    <sect1>                                
         <title>Early performance measurements for Hop HDFS</title>
         <para>Our early performance figures show that Hop HDFS can scale to handle a similar number
             of read and write requests per unit time as Apache HDFS. We have introduced a number of
@@ -129,7 +311,7 @@
                 </imageobject>
             </mediaobject>
         </figure>    
-<!--        <figure xml:id="hdfs-locking">
+        <!--        <figure xml:id="hdfs-locking">
             <title>Effect of replacing a global lock with row-level locks.</title>
             <mediaobject>
                 <imageobject>
@@ -157,11 +339,11 @@
         <orderedlist>
             <listitem>
                 <para>
-                    <emphasis>HOP File System (HOP-FS)</emphasis>
-                    At the bottom layer of big data stack is HOP-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
+                    <emphasis>Hop File System (Hop-FS)</emphasis>
+                    At the bottom layer of big data stack is Hop-FS a distributed file system based on Hadoop Distributed File System (HDFS). We revisited relational 
                     representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
                     of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
-                    maintaining the consistency of the metadata, while providing high performance. HOP-FS also guarantees freedom from deadlock and progress.
+                    maintaining the consistency of the metadata, while providing high performance. Hop-FS also guarantees freedom from deadlock and progress.
                 </para>
             </listitem>
             <listitem>
@@ -190,10 +372,10 @@
             <listitem>
                 <para>
                     <emphasis>Workflow Engine</emphasis>
-                    On top of YARN, HOPS workflow engine parses workflows into an execution model of arbitrary tasks. 
+                    On top of YARN, HopS workflow engine parses workflows into an execution model of arbitrary tasks. 
                     For each task, it asks YARN for a containter, then for each container allocated task based on 
-                    the scheduling policy it stages in data into HOPSFS, launches the task and stages out the result 
-                    back to HOPSFS                                     
+                    the scheduling policy it stages in data into HopSFS, launches the task and stages out the result 
+                    back to HopSFS                                     
                 </para>
             </listitem>
         </orderedlist>
@@ -202,7 +384,7 @@
   
     <sect1>
         <title>Deployment model</title>
-        <para>At the moment HOP supports Amazon Cloud, Open Stack and Bare Metal. Based on the
+        <para>At the moment Hop supports Amazon Cloud, Open Stack and Bare Metal. Based on the
             chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment
             model consist of Hop-Dashboard plus other machines either virtual in cloud or bare
             metal. Dashboard is the point of administration with web access through which customer
@@ -225,18 +407,18 @@
     </sect1>
 
     <sect1>
-        <title>HOP: Hadoop Open Platform-as-a-Service</title>
+        <title>Hop: Hadoop Open Platform-as-a-Service</title>
         <para>We have a prototype implementation of a Platform-as-a-Service (PaaS) framework for HDFS.
             As our PaaS model will cover the whole Hadoop stack, and not just HDFS, we call it
-            Hadoop Open Platform-as-a-Service, or HOP for short. Our framework is 
+            Hadoop Open Platform-as-a-Service, or <emphasis>Hop</emphasis> for short. Our framework is 
             <emphasis>open</emphasis>, as it is designed to be deployable on any cloud platform
-            or a bare-metal environment. Currently, we have early support for Amazon
+            or a bare-metal environment. Currently, we support Amazon
             Web Services and OpenStack, as well as for bare-metal hosts.
-            HOP consists of a set of frameworks and libraries that we use to deploy a Hadoop cluster 
+            Hop consists of a set of frameworks and libraries that we use to deploy a Hadoop cluster 
             on both cloud and bare-metal clusters, with the most significant technologies
             being Chef and JClouds, but also including a YAML-compatible language for 
             defining a cluster and BitTorrent for improving download speeds of 
-            programs to hosts in a cluster.
+            programs to hosts in a cluster. 
             
             <figure xml:id="arch-helper">
                 <title>Hop PaaS </title>
@@ -266,7 +448,8 @@
                         the contents of our cluster definition files. The SnakeYAML parser transforms the given cluster 
                         definition into consecutive stages such as defining security groups, virtual machine 
                         allocation, bittorent, installation, validation and retry.
-                        An example of a simple cluster definition is given below. It describes a cluster with 6 nodes,
+                        An example of a simple cluster definition is given in <xref linkend="example-cluster-defn"/>. 
+                        The YAML file defines a cluster consisting of 6 nodes,
                         with MySQL Cluster running exclusively on 2 nodes, Hadoop running exclusively on 3 nodes, and
                         another node running both MySQL Cluster and Hadoop services. The example uses default
                         values for the AWS image, instanceType and region. There are many other parameters that 
@@ -274,53 +457,59 @@
                         are developing a model for explicitly handling dependencies in chef, so that dependent services
                         such as Java don't need to be specified as requirements in this cluster definition file.
                             
-                <example>
-                    <title>Example Cluster Definition</title>
-                <programlisting>
-name: simpleCluster                 
-provider:
-  name: aws-ec2
+                        <example xml:id="example-cluster-defn">
+                            <title>Example Cluster Definition</title>
+                            <programlisting>
+                                name: simpleCluster                 
+                                provider:
+                                name: aws-ec2
                     
-nodes:
-- service: 
-  - ndb::ndbd
-  number: 2
+                                nodes:
+                                - service: 
+                                - ndb::ndbd
+                                number: 2
 
-- service: 
-  - ndb::mgm, ndb::mysqld, hadoop::namenode
-  number: 1
+                                - service: 
+                                - ndb::mgm, ndb::mysqld, hadoop::namenode
+                                number: 1
           
-- service: 
-  - hadoop::namenode
-  - hadoop::resourcemanager
-  number: 1
+                                - service: 
+                                - hadoop::namenode
+                                - hadoop::resourcemanager
+                                number: 1
           
-- service: 
-  - hadoop::datanode
-  - hadoop::nodemanager
-  number: 2
-                </programlisting>
-                </example>
+                                - service: 
+                                - hadoop::datanode
+                                - hadoop::nodemanager
+                                number: 2
+                            </programlisting>
+                        </example>
                             
                     </para>
                 </listitem>
                 <listitem>
                     <para>
                         <emphasis>Apache JClouds</emphasis>
-                        Apache JClouds is an open source multi-api interface which allows easy interaction 
-                        with multiple cloud providers and cloud software stacks. This open source api gives 
-                        support around 30 providers which include Amazon, Azure, OpenStack and Rackspace. 
-                        JClouds offers api implementations both in Java or Clojure. Through they simple 
-                        interface, it is very simple to deploy and port your application over different cloud 
-                        environments. Each single configuration in YAML may result in multiple JCloud instructions.         
+                        Apache JClouds is an open source multi-cloud api interface which allows us
+                        to write reusable code for creating, destroying, and bootstrapping virtual machines (VMs)
+                        on different cloud providers.
+                        The same code can be configured to interact with Amazon, OpenStack, Azure, and Rackspace VMs,
+                        and 26 other cloud providers. 
+                        Through JClouds simple Java interface, we can deploy and port Hop to different cloud 
+                        environments. Hop parses cluster definition files, producing
+                        code that executes JCloud API calls to create, destroy and bootstrap VMs.
                     </para>
                 </listitem>
                 <listitem>
                     <para>
                         <emphasis>Chef</emphasis>
-                        Chef is a systems and cloud infrastructure automation framework based on Ruby 
-                        that simplifies deployment of servers and applications to any physical, virtual or cloud location
-                        no matter the size of the infrastructure. The chef-client relies in a series of abstract definitions 
+                        Chef is a systems infrastructure and configuration framework 
+                        that automates the deployment of servers and 
+                        applications to any physical, virtual or cloud location. 
+                        JClouds is used to bootstrap chef on VMs or physical hosts, and once
+                        chef is installed on a host, we can run <emphasis>chef recipes</emphasis>
+                        using the chef-client deployed on host to install software on that host.
+                        The chef-client relies in a series of abstract definitions 
                         (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
                         With each definition, we describe how a specific part should be built and managed, which then; the chef-client
                         applies these definitions to deploy and configure servers and applications as specified.
@@ -335,7 +524,7 @@ nodes:
                         tries to open a ssh connection into every single machine and install Chef agent for installations. 
                         Before installation starts, software libraries is replicated in all machines from dashboard, though 
                         the process could overflow the bandwidth to dashboard if all machines try to download from dashboard. 
-                        To handle this situation HOPS run a bittorent in which dashboard machine is the seeder, then all 
+                        To handle this situation HopS run a bittorent in which dashboard machine is the seeder, then all 
                         machnies could contribute to download process which is both faster and anti-bottleneck. After download 
                         Chef agent starts installation based on the required packages in each machine and with the order of 
                         dependencies between packages. 
@@ -354,4 +543,52 @@ nodes:
             </orderedlist>
         </para>
     </sect1>
+    
+    <bibliography>
+        <title>References</title>
+        
+        <bibliodiv>
+            <biblioentry>
+                <abbrev>AhoSethiUllman96</abbrev>
+                <authorgroup>
+                    <author>
+                        <personname>
+                            <firstname>Alfred V.</firstname>
+                            <surname>Aho</surname>
+                        </personname>
+                    </author>
+                    <author>
+                        <personname>
+                            <firstname>Ravi</firstname>
+                            <surname>Sethi</surname>
+                        </personname>
+                    </author>
+                    <author>
+                        <personname>
+                            <firstname>Jeffrey D.</firstname>
+                            <surname>Ullman</surname>
+                        </personname>
+                    </author>
+                </authorgroup>
+                <copyright>
+                    <year>1996</year>
+                    <holder>Bell Telephone Laboratories, Inc.</holder>
+                </copyright>
+                <editor>
+                    <personname>
+                        <firstname>James T.</firstname>
+                        <surname>DeWolf</surname>
+                    </personname>
+                </editor>
+                <biblioid class="isbn">0-201-10088-6</biblioid>
+                <publisher>
+                    <publishername>Addison-Wesley Publishing Company</publishername>
+                </publisher>
+                <citetitle>Compilers, Principles, Techniques, and Tools</citetitle>
+            </biblioentry>
+            <!--</bibliolist>-->    
+        </bibliodiv>
+
+    </bibliography>
+        
 </chapter>
