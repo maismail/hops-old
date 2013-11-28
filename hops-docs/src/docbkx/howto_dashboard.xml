@@ -3,7 +3,7 @@
     <title>Hop Dashboard</title>
     
     <para>Hop Dashboard is a web application designed with Hadoop administrators in mind. Hop
-        Dashboard provides a centralized end-to-end management and monitoring application for HOP
+        Dashboard provides a centralized end-to-end management and monitoring application for Hop
         distribution. It simplifies Hadoop administrator's job by having all the necessary
         statistics of the Hadoop cluster gathered in one place and presented in an effective manner.
         Also it is possible to execute maintanance commands through the different terminals
