@@ -7,7 +7,13 @@
          xmlns:ns3="http://www.w3.org/1999/xhtml"
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch07">
-    <title>Hadoop Open Platform-as-Service (Hop)</title>
+    <title>Hadoop Open PaaS</title>
+    In this chapter, we introduce our implementation of the the Hadoop Filesystem,
+    where we introduce a new model for the NameNode that enables clusters with
+    larger, more configurable metadata than is currently found in Apache's HDFS.
+    We also introduce a Platform-as-a-Service (PaaS) model for our HDFS implementation,
+    showing how we automate the deployment of a cluster on cloud platforms, such as
+    Amazon Web Services (AWS) and OpenStack, as well as standard clusters.
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
         <para>
@@ -74,10 +80,16 @@
         <para>
             In contrast, our implementation of HDFS, called <emphasis>Hop HDFS</emphasis>, replaces the 
             Primary-Secondary metadata model with shared, transactional memory, 
-            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster (NDB) <xref linkend="Manual2010"/> 
+            implemented using a distributed, in-memory, shared-nothing database, 
+            MySQL Cluster (NDB) <xref linkend="Manual2010"/> 
             see figure <xref linkend="hop-hdfs"/>.
-            In our new model, the size of HDFS' metadata is no longer limited 
-            to the amount of memory that can be managed on the JVM of a single node.
+            MySQL Cluster is a real-time, ACID-complaint transactional database, 
+            with no single point of failure, that has predictable, milisecond response times with 
+            the ability to service millions of operations per second. 
+            
+            By leveraging MySQL Cluster to store HDFS' metadata, 
+            the size of HDFS' metadata is no longer limited 
+            to the amount of memory that can be managed on the heap of JVM on a single node.
             Our solution involves storing the metadata in a replicated, distributed, in-memory
             database that can scale up to several tens of nodes, all while maintaining 
             the consistency semantics of HDFS.  We maintain the consistency of the metadata, 
@@ -473,10 +485,9 @@ return selectAll()
             transactions using leases on files. A lease is held throughout the duration
             of the HDFS filesystem operation, and in the event of a failure, the
             lease will eventually be released after a relatively long timeout.
-            
          </para>           
          <para>
-            We implement our transactions using the MySQL CLuster database, as
+            We implement our transactions using the MySQL CLuster database, also
             known as NDB (Network Database). Read-committed is the only isolation level supported by NDB, and is
             a general, cheap, and widely supported transaction isolation level. 
             Read-committed isolation means a transaction may see new state from other
@@ -643,10 +654,10 @@ operation performTask
             operation, and performing local read/write operations on the snapshot copy, and then
             finally committing or rolling back on transaction commit. </para>
         <figure xml:id="hdfs-snapshot">
-            <title>Reduction in the DB roundtrips by snapshotting metadata at the NameNodes</title>
+            <title>Reduction in the number of DB roundtrips by snapshotting</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="66" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="55" align="center"></imagedata>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -659,32 +670,35 @@ operation performTask
             the data for that inode.
         <para>
             One positive aspect of HopHDFS is that the amount of metadata that can be
-            supported is vastly increased over Apache HDFS. In Apache HDFS, the
-            NameNode is limited to the maximum size of the JVM heap for a single node,
+            supported is vastly increased over Apache HDFS, and it is much more easy to modify. 
+            In Apache HDFS, the NameNode is limited to the maximum size of the JVM heap for a single node,
             which in practice is around 100GB. In NDB, there are existing clusters
             of 2TB, and larger clusters are feasible. However, we have measured
             an expansion in the amount of memory that we require of around 43 percent.
-            
+            Our plan is to use this extra metadata for features such as block-level 
+            indexing, which will be very useful for BAM files used to store 
+            whole sequenced genomes, and also access control information for files.
+            The lack of access control in HDFS is one enterprise-level feature that
+            is preventing the use of HDFS in storing sensitive data, such as 
+            genomic data.
         </para>
-
-        <!--        <figure xml:id="hdfs-locking">
-            <title>Effect of replacing a global lock with row-level locks.</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/hdfs-locking.png" scale="100" align="center"></imagedata>
-                </imageobject>
-            </mediaobject>
-        </figure>            -->
     </sect1>    
         
     <sect1>
-        <title>Platform-as-a-Service support: Hop</title>
-        <para>Hop, as a cloud patform for distrbuted processing and big data, is made up of latest Hadoop ecosystem. As you 
-            can see in <xref linkend="arch-stack"/> there are three major layers in our stack, HDFS, YARN and Workflow. 
-            Cross-layer aspects like Security and PaaS services are also included.</para>
+        <title>Hop: Platform-as-a-Service support for HDFS</title>
+        <para>HDFS exists as just one part of the larger Hadoop ecosystem 
+            for the storage and parallel processing of big data. As you 
+            can see in <xref linkend="arch-stack"/>, our goal is to build an 
+            architecture where HDFS is the main layer for storage, YARN is used to 
+            manage the allocation of computational resources, and we support a 
+            workflow manager and workflow language for Bioinformatics (Cuneform) 
+            as data-intensive computing support for BiobankCloud. 
+            Platform-as-a-Service (Paas) support is required at all layers in our
+            system. Security and data sharing are not covered in this diagram, as
+            they will be integrated in future phases of the project.</para>
 
         <figure xml:id="arch-stack">
-            <title>Hop stack</title>
+            <title>Hop architecture</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/arch-stack.png" scale="70" align="center"></imagedata>
@@ -693,7 +707,7 @@ operation performTask
         </figure>    
         <para>.</para>
         <orderedlist>
-            <listitem>
+<!--            <listitem>
                 <para>
                     <emphasis>Hop File System (Hop-FS)</emphasis>
                     At the bottom layer of big data stack is Hop-FS a distributed file system based on Hadoop Distributed File System (HDFS) <xref linkend="Borthakur2007"/>. We revisited relational 
@@ -711,80 +725,78 @@ operation performTask
                     the ability to service millions of operations per second. In the case of our data platform, it is
                     used to handle and manage the state of our multi-NameNode solution of our architecture.                                    
                 </para>
-            </listitem>
+            </listitem>-->
             <listitem>
                 <para>
                     <emphasis>YARN</emphasis>
-                    Resource negotiator for managing high volume distributed data processing tasks against HDFS <xref linkend="Vavilapalli2013"/>. 
-                    It supports different processing models other that Map-Reduce by separating its Resource 
-                    Manager from Scheduler and Application Master. Application Master gives us flexibility to 
-                    accommodate heterogeneous processes by implementing a wrapper for each kind of application 
-                    so it could manage any kind of processing resources that is defined for it. This allows user 
-                    to process data intensive task like MapReduce jobs or in our case our future support for 
-                    bioinformatic workflow tasks engine which will make use of YARN to handle and negotiate the 
-                    scheduling of this type of jobs.                                 
+                    Yarn (Yet Another Resource Negotiator) manages the allocation of 
+                    computation and memory resources to tasks in  
+                    Hadoop clusters <xref linkend="Vavilapalli2013"/>. 
+                    It supports many processing models, not just Map-Reduce, by separating the old JobTracker
+                    into a Resource Manager, a Scheduler and Application Master. 
+                    The Application Master has the flexibility to 
+                    accommodate heterogeneous processes by implementing a wrapper 
+                    for each kind of application that runs over YARN, so that 
+                    the application itself manages processing resources allocated to it. 
+                    This enables the user  to process data intensive task like MapReduce jobs 
+                    or, in the BiobankCloud, to run a bioinformatics workflow engine 
+                    that makes use of YARN to handle and negotiate the 
+                    scheduling of its jobs.                                 
                 </para>
             </listitem>
             <listitem>
                 <para>
                     <emphasis>Workflow Engine</emphasis>
-                    On top of YARN, HopS workflow engine parses workflows into an execution model of arbitrary tasks. 
-                    For each task, it asks YARN for a containter, then for each container allocated task based on 
-                    the scheduling policy it stages in data into HopSFS, launches the task and stages out the result 
-                    back to HopSFS                                     
+                    On top of YARN, the BiobankCloud workflow engine parses bioinformatic workflows 
+                    written in Cuneform into an execution model of arbitrary tasks. 
+                    For each task, it asks YARN for at least one container, 
+                    then for each container allocated task based on  the scheduling policy 
+                    it stages in data into HDFS, launches the task and stages out the result,
+                    if needed. The workflow engine and language are being developed
+                    by Humboldt University as part of the BiobankCloud project.
                 </para>
             </listitem>
         </orderedlist>
-    </sect1>
 
-  
-    <sect1>
-        <title>Deployment model</title>
-        <para>At the moment Hop supports Amazon Cloud, Open Stack and Bare Metal. Based on the
-            chosen cloud provider, as it can be seen in <xref linkend="arch-deploy"/> our deployment
-            model consist of Hop-Dashboard plus other machines either virtual in cloud or bare
-            metal. Dashboard is the point of administration with web access through which customer
-            could define configuration of the cluster, machines are allocated, their software stack
-            is installed and state of the cluster is monitored. Cloud machines could be associated
-            into security node-groups, machines inside each node-group basically have the same
-            security credentials and could communicate with each other; however, communication
-            between machnies from different security group is not possible. All the machins inside
-            the cluster have the same infrastructure and basic stack of softwares, althoug based on
-            the services each machine shoul provide, arbitrary platform softwares are
-            installed.</para>
+        <para/>
+        <emphasis>Hop PaaS</emphasis>
+        <para>Our PaaS for HDFS, as well as YARN and the Workflow Engine,
+            supports the automated deployment of a Hop cluster on Amazon Cloud, 
+            Open Stack or a bare metal cluster. We call it
+            Hadoop Open Platform-as-a-Service, or <emphasis>Hop</emphasis> for short, as it is
+            <emphasis>open</emphasis> - designed to be deployable on any cloud platform
+            or a bare-metal environment, not just those we currently support. 
+            Hop consists of a set of frameworks and libraries that we use to 
+            support the automated deploymented a Hadoop cluster from a website or
+            the command-line. The main technologies we have built our prototype PaaS
+            on are Chef and JClouds, but we are unifying all these technologies in 
+            an API based on a YAML that can be used to define a cluster that is
+            to be deployed, see <xref linkend="arch-deploy"/>. 
+            The other technologies we currently use are BitTorrent 
+            for improving the download speeds of installation binaries and virtual 
+            machine instances (AMIs in AWS) to pre-load software onto virtual machines.
+            The YAML API can currently be accessed by a Dashboard application that we
+            have built to manage and adminster Hop clusters.
+        </para>
         <figure xml:id="arch-deploy">
-            <title>Deployment Model</title>
+            <title>Deploying a Hop cluster from a Website</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
-    </sect1>
-
-    <sect1>
-        <title>Hop: Hadoop Open Platform-as-a-Service</title>
-        <para>We have a prototype implementation of a Platform-as-a-Service (PaaS) framework for HDFS.
-            As our PaaS model will cover the whole Hadoop stack, and not just HDFS, we call it
-            Hadoop Open Platform-as-a-Service, or <emphasis>Hop</emphasis> for short. Our framework is 
-            <emphasis>open</emphasis>, as it is designed to be deployable on any cloud platform
-            or a bare-metal environment. Currently, we support Amazon
-            Web Services and OpenStack, as well as for bare-metal hosts.
-            Hop consists of a set of frameworks and libraries that we use to deploy a Hadoop cluster 
-            on both cloud and bare-metal clusters, with the most significant technologies
-            being Chef and JClouds, but also including a YAML-compatible language for 
-            defining a cluster and BitTorrent for improving download speeds of 
-            programs to hosts in a cluster. 
-            
+        
+        <para> 
             <figure xml:id="arch-helper">
-                <title>Hop PaaS </title>
+                <title>Hop PaaS API</title>
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/arch-layers.png" scale="40" align="center"></imagedata>
                     </imageobject>
-                    <caption>
-                        <para>Hop PaaS Stack</para>
-                    </caption>
+<!--                    <caption>
+                        <para>Hop PaaS API</para>
+                    </caption>-->
                 </mediaobject>
             </figure>
             <orderedlist>
