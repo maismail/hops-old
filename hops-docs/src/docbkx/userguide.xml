@@ -4,10 +4,10 @@
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
     <info>
-<!--        <contractnum>Project number: 317871</contractnum>
+        <!--        <contractnum>Project number: 317871</contractnum>
         <contractsponsor>EU FP7 - BiobankCloud Project</contractsponsor>
         <title>Hadoop Open Platform Userguide</title>-->
-<!--        <authorgroup>
+        <!--        <authorgroup>
             <author>
                 <personname>Jim Dowling</personname>
             </author>
