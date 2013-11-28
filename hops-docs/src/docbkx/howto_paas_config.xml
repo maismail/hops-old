@@ -406,7 +406,7 @@ nodes:
             <title>Select Cluster Type:</title>
             <mediaobject>
                 <imageobject>
-                                        <imagedata fileref="media/dash-clusterType.png" scale="30"
+                                        <imagedata fileref="media/dash-clusterType.png" scale="60"
                                             align="center"/>
                                     </imageobject>
             </mediaobject>
