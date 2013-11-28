@@ -146,9 +146,32 @@
                 </listitem>
                 <listitem>
                     <para><emphasis>Edit Selected Cluster</emphasis> This option will allow a user
-                        to edit an existing stored cluster. This will bring the cluster generation
-                        wizard with the values of the selected cluster. Administrators can use this
-                        wizard to modify the cluster. </para>
+                        to edit an existing stored cluster. Administrators can use this
+                        wizard to modify the cluster. They can choose 2 ways to edit a cluster from the entry, they
+                        can reuse the cluster wizard or they can choose to use the embedded YAML editor available
+                        in the dashboard.</para><figure>
+                <title>Select edit mode:</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-edit-select.png" align="center"
+                            scalefit="1" width="650"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <para>
+                If we select the Online editor option, it will open the selected YAML cluster into a new code editor 
+                window which follows the YAML syntax.
+            </para>
+            <figure>
+                <title>YAML Editor</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-yamleditor.png" align="center"
+                            scalefit="1" width="650"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+                        
                 </listitem>
                 <listitem>
                     <para><emphasis>Load Selected Cluster</emphasis> This option allows the user to
