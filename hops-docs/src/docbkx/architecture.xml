@@ -448,7 +448,7 @@ upon event &lt;timeout&gt;
             <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hopER.png" align="center" width="650"/>
+                    <imagedata fileref="media/hopER.png" align="center" scale="66"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -659,7 +659,7 @@ operation performTask
             <title>Reduction in the number of DB roundtrips by snapshotting</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="65" align="center"/>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="55" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>

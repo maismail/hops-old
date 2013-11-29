@@ -18,16 +18,14 @@
         and launch a changed version of your cluster, and you can edit it to 
         reconfigure your cluster. 
         </para>
-    <!--<sect1>-->
-        <!--<title>Cluster Definition Language (CDL)</title>-->
-        <para>A cluster definition file consists the following sections: 
+        <para>A cluster definition file consists of the following sections: 
             <itemizedlist>
-                <listitem>Global</listitem>
-                <listitem>Provider</listitem>
+                <listitem>[Global]</listitem>
+                <listitem>[Provider]</listitem>
                 <listitem>Nodes 
                     <itemizedlist>
                         <listitem>Services</listitem>
-                        <listitem>Number</listitem>
+                        <listitem>Number|Hosts</listitem>
                     </itemizedlist>
                 </listitem>
             </itemizedlist>
@@ -98,7 +96,7 @@ nodes:
                         </example>
 
 
-     <title>Cloud Provider</title>
+     <!--<title>Cloud Provider</title>-->
             <para>
            It is possible to take the above cluster definition and deploy the
            same set of VMs and services on an OpenStack cluster. To do this,
@@ -110,6 +108,7 @@ nodes:
            In the example below, we show how to change the provider section to 
            prepare the cluster definition file to work for OpenStack.
                 <example>
+                    <title>OpenStack provider</title>
                     <programlisting>
 provider:
   name: openstack-nova
@@ -131,7 +130,7 @@ provider:
                 of nodes.
             </para>
                 <example>
-                    <title>Baremetal Provider and Services</title>
+                    <title>Bare-metal cluster</title>
                 <programlisting>
 !!se.kth.dashboard.virtualization.clusterparser.Baremetal
 name: baremetal
