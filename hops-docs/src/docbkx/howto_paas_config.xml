@@ -402,8 +402,8 @@ nodes:
             <title>Select Cluster Type:</title>
             <mediaobject>
                 <imageobject>
-                                        <imagedata fileref="media/dash-clusterType.png" scale="60"
-                                            align="center"/>
+                                        <imagedata fileref="media/dash-clusterType.png"
+                                            align="center" width="200"/>
                                     </imageobject>
             </mediaobject>
         </figure>
@@ -469,7 +469,7 @@ nodes:
             <mediaobject>
                 <imageobject>
                                                 <imagedata fileref="media/dash-cluster-common.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>
@@ -478,7 +478,7 @@ nodes:
             <mediaobject>
                 <imageobject>
                                                 <imagedata fileref="media/dash-bare-common.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>
@@ -525,7 +525,7 @@ nodes:
             <mediaobject>
                 <imageobject>
                                                 <imagedata fileref="media/dash-cluster-provider.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>
@@ -588,7 +588,7 @@ nodes:
             <mediaobject>
                 <imageobject>
                                                 <imagedata fileref="media/dash-cluster-groups.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>
@@ -597,7 +597,7 @@ nodes:
             <mediaobject>
                 <imageobject>
                                                 <imagedata fileref="media/dash-bare-groups.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>    
@@ -615,7 +615,7 @@ nodes:
                 <imageobject>
                                                 <imagedata
                                                   fileref="media/dash-cluster-confirmation.png"
-                                                  scale="50" align="center"/>
+                                                  align="center" width="450"/>
                                             </imageobject>
             </mediaobject>
         </figure>   
