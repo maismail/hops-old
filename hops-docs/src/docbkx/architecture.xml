@@ -38,13 +38,12 @@
             
             In 2013, HDFS v2 introduced a  highly available metadata architecture 
             <citation>1</citation>, where the entire filesystem's metadata is 
-            stored in memory on a single node, but changes to the metadata 
+            stored in memory on a single node <citation>13</citation>, but changes to the metadata 
             (<emphasis>edit log entries</emphasis>) are now replicated 
             and persisted to a set of (at least three) Journal Nodes using a 
             quorum-based replication algorithm, see <xref linkend="hdfsv2"/>.
             In HDFS v2, a Primary and Secondary NameNode can be configured, 
-            where the Primary NameNode is 
-            responsible for managing the metadata, and the Secondary NameNode 
+            where the Primary NameNode is  responsible for managing the metadata, and the Secondary NameNode 
             keeps an eventually consistent copy of the metadata. The Secondary NameNode 
             is kept in sync with the Primary by two mechanisms: firstly, by asynchronously applying all 
             edit log entries that have been committed at the Journal Nodes, and 
