@@ -77,7 +77,7 @@ git:
                         different nodes just indicating that information when grouping them. Also
                         you may indicate further services to be deployed on them.
                         <programlisting>
-service: 
+services: 
   - datanode 
   - nodemanager
   number: 2
@@ -230,29 +230,29 @@ provider:
 ##lists of groups, with the roles the nodes 
 ##will have and open ports 
 nodes:
-- service: 
-  - ndb
+- services: 
+  - ndb::dn
   number: 2
 
-- service: 
-  - mgm 
+- services: 
+  - ndb::mgm
   number: 1
 	  
-- service:
-  - mysqld
-  - namenode
+- services: 
+  - ndb::mysqld
+  - hop::namenode
   number: 1
           
-- service: 
-  - namenode
-  - resourcemanager
+- services: 
+  - hop::namenode
+  - hop::resourcemanager
   number: 1
           
-- service: 
-  - datanode
-  - nodemanager
-  - spark
+- services: 
+  - hop::datanode
+  - hop::nodemanager
   number: 2
+
                 </programlisting>
                 </example>
                 With this configuration file, we will create 5 security groups which will have as a name the first
@@ -280,30 +280,29 @@ provider:
           
 ##lists of groups, with the roles the nodes 
 ##will have and open ports 
-nodes:
-  - service: 
-    - ndb
-    number: 2
+- services: 
+  - ndb::dn
+  number: 2
+
+- services: 
+  - ndb::mgm
+  number: 1
 	  
-  - service: 
-    - mgm
-    number: 1
-	  
-  - service:
-    - mysqld
-    - namenode
-    number: 1
+- services: 
+  - ndb::mysqld
+  - hop::namenode
+  number: 1
           
-  - service: 
-    - namenode
-    - resourcemanager
-    number: 1
+- services: 
+  - hop::namenode
+  - hop::resourcemanager
+  number: 1
           
-  - service: 
-    - datanode
-    - nodemanager
-    - spark
-    number: 2
+- services: 
+  - hop::datanode
+  - hop::nodemanager
+  number: 2
+                    
                 </programlisting>
                 </example>
                 With this configuration file, it is possible to deploy the same cluster we defined in Amazon EC2
@@ -326,37 +325,33 @@ name: baremetal
 loginUser: ubuntu
 totalHosts: 7
 nodes:
-  - service: ndb
-    number: 2
+  - services: 
+    - ndb::dn
     hosts: 
     - 10.20.0.8 
     - 10.20.0.11
 	  
-  - service: mgm
-    number: 1
+  - services: 
+    - ndb::mgm
     hosts: 
     - 10.20.0.6
 	  
-  - service: 
-    - mysqld 
-    - namenode
-    number: 1
+  - services: 
+    - ndb::mysqld
+    - hop::namenode
     hosts: 
     - 10.20.0.7
 	  
-  - service: 
-    - namenode
-    - resourcemanager
-    number: 1
+  - services: 
+    - hop::namenode
+    - hop::resourcemanager
     hosts: 
     - 10.20.0.12 
     - 10.20.0.14
 	  
-  - service: 
-    - datanode
-    - nodemanager
-    - spark
-    number: 2
+  - services: 
+    - hop::datanode
+    - hop::nodemanager
     hosts: 
     - 10.20.0.16 
     - 10.20.0.17

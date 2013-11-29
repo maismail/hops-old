@@ -266,7 +266,6 @@
             </mediaobject>
         </figure>    
 
-
         <para/>
         <emphasis>Determining the leader</emphasis>
         <para>
@@ -452,7 +451,7 @@ return selectAll()
             of 13 datastructures from HDFS' NameNode to tables in NDB, see <xref linkend="hop-er"/>.
 
         <figure xml:id="hop-er">
-            <title>Entity Relation Diagram for NameNode state in Hop-HDFS</title>
+            <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/hopER.png" scale="50" align="center"/>
@@ -826,30 +825,32 @@ operation performTask
                         such as Java don't need to be specified as requirements in this cluster definition file.
                             
                         <example xml:id="example-cluster-defn">
-                            <title>Example Cluster Definition</title>
+                            <title>Example Cluster Definition in Hop</title>
                             <programlisting>
-    name: simpleCluster                 
-    provider:
-    name: aws-ec2
+name: simpleCluster                 
+provider:
+name: aws-ec2
 
-    nodes:
-    - service: 
-    - ndb::ndbd
-    number: 2
+nodes:
+- services: 
+  - ndb::dn
+  number: 2
 
-    - service: 
-    - ndb::mgm, ndb::mysqld, hadoop::namenode
-    number: 1
+- services: 
+  - ndb::mgm
+  - ndb::mysqld
+  - hop::namenode
+  number: 1
 
-    - service: 
-    - hadoop::namenode
-    - hadoop::resourcemanager
-    number: 1
+- services: 
+  - hop::namenode
+  - hop::resourcemanager
+  number: 1
 
-    - service: 
-    - hadoop::datanode
-    - hadoop::nodemanager
-    number: 2
+- services: 
+  - hop::datanode
+  - hop::nodemanager
+  number: 2                                
                             </programlisting>
                         </example>
                             
