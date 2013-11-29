@@ -54,7 +54,7 @@
 
     <chapter>
         <title>Conclusions</title>
-        <section>
+        <para>
         In this document, we presented our highly available HDFS architecture. 
         Our version of HDFS provides a new model for stateless NameNodes, with
         metadata stored in highly available shared, transactional memory, implemented
@@ -65,6 +65,6 @@
         We have also presented Hop (Hadoop Open Paas), our platform-as-a-service for
         automating the deployment of clusters, as well as a language for describing
         clusters. Finally, we included a userguide to get started using Hop.
-        </section>
+        </para>
     </chapter>
 </book>
