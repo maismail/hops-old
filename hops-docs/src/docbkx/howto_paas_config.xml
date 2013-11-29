@@ -171,16 +171,14 @@ hosts:
 
 
     <sect1>
-        <title>Cluster Generator on Dashboard</title>
+        <title>Cluster Wizard</title>
         <para>
-            Apart of offering a mechanism were users can upload their clusters written in YAML to the system
-            and later on deploy them, we also have a cluster wizard which allows the user to define a
-            cluster step by step quite easily. To make use of this feature, follow these steps:
+            In addition to being able to define a cluster in YAML, you can also 
+            generate a cluster using a wizard with the following these steps:
             <orderedlist>
                 <listitem>
                     <para>
-                        Go to the manage cluster section from the main bar in the dashboard. Select the create cluster
-                        option.
+                        Press the create cluster button following the menu items:
                         <menuchoice>
                             <guimenu>Main Menu Bar</guimenu> 
                             <guisubmenu>Manage Cluster</guisubmenu>
@@ -205,15 +203,14 @@ hosts:
                                 </para>
                             </listitem>
                         </itemizedlist>
-                        <figure xml:id="dash-clusterType">
-                            <title>Select Cluster Type</title>
+                        <para>
                             <mediaobject>
                                 <imageobject>
                                     <imagedata fileref="media/dash-clusterType.png"
-                                               align="center" scale="100"/>
+                                               align="center" scale="66"/>
                                 </imageobject>
                             </mediaobject>
-                        </figure>
+                        </para>
                     </para>
                 </listitem>
                 <listitem>
@@ -417,7 +414,7 @@ hosts:
                                 When you press the submit button, your cluster file will be stored in the dashboard
                                 and it will proceed to the cluster launcher.
                                 <figure xml:id="dash-cluster-confirmation">
-                                    <title>Confirmation:</title>
+                                    <title>Confirmation</title>
                                     <mediaobject>
                                         <imageobject>
                                             <imagedata

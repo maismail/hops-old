@@ -265,7 +265,7 @@
                             </listitem>
                             <listitem>
                                 <para> In the new page, select BareMetal from the providers list. A
-                                    form will be generated were you need to fill in the following <itemizedlist>
+                                    form will be generated where you need to fill in the following: <itemizedlist>
                                         <listitem>
                                             <para> Dashboard credentials: here you specify the admin
                                                 username and password for the new dashboad. </para>
@@ -276,15 +276,15 @@
                                             </para>
                                         </listitem>
                                         <listitem>
-                                            <para> Extra parameters that we might need: <orderedlist>
+                                            <para> Additional parameters: <orderedlist>
                                                   <listitem>
-                                                  <para> Selecting the option to authorize the
+                                                  <para> If you select the option to authorize a
                                                   public key, it will open a new option were you can
                                                   insert your desired public key to allow extra
                                                   access to the machine. </para>
                                                   </listitem>
                                                   <listitem>
-                                                  <para>Selecting the override login user will
+                                                  <para>If you select the override login user, it will
                                                   rename the sudo user to used to deploy the
                                                   dashboard on the machine. </para>
                                                   </listitem>
@@ -295,7 +295,7 @@
                                 </para>
                             </listitem>
                             <listitem>
-                                <para>After filling up the form, press the Launch Instance button.
+                                <para>After filling in the form, press the Launch Instance button.
                                     The whole process takes 10-15 minutes. After the deployment you
                                     will receive a notification showing the URL of the newly
                                     deployed Hop Dashboard. To login the dashboard, use the

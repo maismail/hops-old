@@ -4,13 +4,13 @@
     
     <para>The Hop Dashboard is a web application designed with Hop/Hadoop administrators in mind. The
         Dashboard provides a centralized end-to-end management and monitoring application for Hop
-        clusters. It simplifies the Hadoop administrator's job by having all the necessary
-        statistics of the Hop cluster gathered in one place and presented in an effective
-        manner.</para>
-    <para>Certain parameters need to be configured when the Hop Dashboard is launched for the first
-        time. In order to access the dashboard, use the credentials you specified in the Hop Portal
-        during dashboard deployment <xref linkend="ch02"/>. After the login, press the user icon,
-        and a menu with the following options will pop up: <itemizedlist>
+        clusters. It simplifies the Hadoop administrator's job by gathering all statistics for the 
+        Hop cluster in one place and presenting them in both chart and other formats. 
+        You are also able to restart many services on nodes from the Dashboard, as well as access
+        terminals to services such as HDFS and MySQL.</para>
+    <para>After logging in to the Dashboard, press the user icon,
+        and a menu with the following options will pop up: 
+        <itemizedlist>
             <listitem>
                 <para> Change password </para>
             </listitem>
@@ -23,7 +23,16 @@
             <listitem>
                 <para> Setup Credentials </para>
             </listitem>
-        </itemizedlist> We will go these options in more detail in the following sections. </para>
+        </itemizedlist> 
+        Similar to <xref linkend="ch03"/> for the Hop Portal, in order to launch clusters 
+        from the dashboard, you must set your credentials for your provider:
+        <menuchoice>
+            <guimenu>Main Menu Bar</guimenu>
+            <guisubmenu>User Icon</guisubmenu>
+            <guimenuitem>Setup Credentials</guimenuitem>
+        </menuchoice>
+    </para>
+        
     <sect1 xml:id="edit_graphs">
         <title>Graphs</title>
         <para> The Hop Dashboard displays graphs with monitoring data for both hosts
@@ -74,20 +83,20 @@
                 </imageobject>
             </mediaobject>
         </figure>
-    </sect1>
-    <sect1>
+    <sect2>
         <title>Backup/Restore</title>
         <para>The Dashboard's state is stored entirely in a MySQL database instance. This option
             makes a backup of the whole dashboard state as an SQL file that can be downloaded by the
             user for off-site backup. In the case of failure or maintenance, the dashboard can
             restore a previous state from a backup SQL file. </para> 
-    </sect1>
-    <sect1>
+    </sect2>
+    <sect2>
         <title>Setup Credentials</title>
         <para>The administrator need to specify user credentials that are used when the dashboard
             deploys a cluster on a cloud platform or cluster. They are typically AWS or OpenStack
             credentials or a public key for cluster deployments. If user credentials have not been
             setup, cluster deployment will fail.</para>   
+    </sect2>
     </sect1>
     
     <sect1>
@@ -106,19 +115,19 @@
         <para>
             <itemizedlist>
                 <listitem>
-                    <para><emphasis>Create Cluster:</emphasis> Selecting this option will take you
+                    <para><emphasis>Create cluster:</emphasis> Selecting this option will take you
                         to the cluster generation wizard where a users can of generate their own
                         clusters for Hop. In the next chapter, we will explain in detail how users
                         can create their custom clusters using our Cluster Definition Language, see
                         <xref linkend="defining_a_cluster">Chapter: Defining a Cluster</xref>. </para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Delete Clusters:</emphasis> This option will delete a selected
+                    <para><emphasis>Delete clusters:</emphasis> This option will delete a selected
                         cluster. It is possible to delete multiple clusters at once by shift
                         clicking multiple clusters before selecting this option. </para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Edit Selected Cluster:</emphasis> This option will allow a user
+                    <para><emphasis>Edit selected cluster:</emphasis> This option will allow a user
                         to edit an existing stored cluster. Administrators can use this wizard to
                         modify the set of hosts or services in an existing cluster. They can edit
                         the cluster either by re-running the cluster wizard or by choosing to use
@@ -131,26 +140,25 @@
                 <title>YAML Editor</title>
                 <mediaobject>
                     <imageobject>
-                                <imagedata fileref="media/dash-yamleditor.png" align="center" scale="40"/>
+                                <imagedata fileref="media/dash-yamleditor.png" align="center" scale="50"/>
                             </imageobject>
                 </mediaobject>
             </figure>
                         
                 </listitem>
                 <listitem>
-                    <para><emphasis>Load Selected Cluster:</emphasis> This option allows the user to
+                    <para><emphasis>Load selected cluster:</emphasis> This option allows the user to
                         load an existing cluster definition from a YAML file. This is a useful
                         feature for reusing cluster definitions, users can share cluster definitions
                         and load them using this option.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Export Cluster:</emphasis> It saves the information about the
+                    <para><emphasis>Export selected cluster:</emphasis> It saves the information about the
                         cluster in a YAML file, so that the cluster definition can be shared. </para>
                 </listitem>
             </itemizedlist>
         </para>
-    </sect1>
-    <sect1>
+    <sect2>
         <title>Cluster Deployment Progress</title>
         <para>The Hop Dashboard monitors all the nodes deployed in its clusters. It displays the
             history of all the nodes going through different phases of the deployment cycle. A
@@ -198,20 +206,14 @@
                         nodes.</para>
                 </listitem>
             </itemizedlist>
-<!--            <figure>
-                <title>Clusters Progress</title>
-                <mediaobject>
-                    <imageobject>
-                        <imagedata fileref="media/dash-clusters-progress.png" align="center" scale="40"/>
-                    </imageobject>
-                </mediaobject>
-            </figure>-->
         </para>
+    </sect2>
     </sect1>
+    
     <sect1>
         <title>Monitoring</title>
-        <para>Hop Dashboard monitors hosts, alerts and Hop services in real time. A brief overview
-            of the monitoring tools is given below. </para>
+        <para>The Hop Dashboard monitors hosts and services and also displays alerts in real time. A brief overview
+            of the monitoring functionality is given below. </para>
         <sect2>
             <title>Hosts</title>
             <para>The host monitoring tool shows the state of all the nodes in the clusters. An
@@ -402,7 +404,7 @@
             </sect3>
         </sect2>
     </sect1>
-    <sect1>
+<!--    <sect1>
         <title>Launching the Hop Cluster </title>
         
         <para>After installing the Hop Dashboard on a machine in the cloud, 
@@ -446,7 +448,7 @@
             </orderedlist></para>
         <para> Congratulations, you have successfully deployed a Hop cluster ready! </para>
         
-    </sect1>
+    </sect1>-->
     
    
 </chapter>

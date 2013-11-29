@@ -221,7 +221,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader.png" scale="85" align="center"/>
+                    <imagedata fileref="media/leader.png" scale="66" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -280,7 +280,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader-example.png" scale="33" align="center"/>
+                    <imagedata fileref="media/leader-example.png" scale="50" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -315,16 +315,6 @@
             removing all records from the [LEADER] table for NNs with a lower id than 
             its own.
         </para>
-        <!--        <para/>
-        <emphasis>Correctness</emphasis>
-        <para>
-        The following are the cases that prove correctness of the algorithm
-        Case-I: Scenario when current leader crashes
-        Supposing we have three NameNodes, each have the current counter as [NN1=6, NN2=7, NN3=8].
-        We assume NN1 has crashed and therefore will not update its counter. In the next round, NN2 will
-        update the counter to 9 and later NN3 would update the counter to 10 and we would have the
-        following state information for NNs to agree on [NN1=6, NN2=9, NN3=10].
-        </para>-->
 
         <example xml:id="leader-election-NNs">
             <title>Leader Election Algorithm at NameNodes</title>
@@ -1058,9 +1048,9 @@ nodes:
                 <citetitle pubwork="journal">Hadoop Project Website</citetitle>
                 <artpagenums>1&#x2013;14</artpagenums> 
                 <pubdate>2007</pubdate>  
-                <bibliomisc>
+<!--                <bibliomisc>
                     <ulink url="http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf">http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf</ulink>
-                </bibliomisc>
+                </bibliomisc>-->
                 <abstract>
                     <para>The Hadoop Distributed File System (HDFS) is a distributed file system designed to run on commodity hardware. It has many similarities with existing distributed file systems. However&#44; the differences from other distributed file systems are significant. HDFS is highly fault&#45;tolerant and is designed to be deployed on low&#45;cost hardware. HDFS provides high throughput access to application data and is suitable for applications that have large data sets. HDFS relaxes a few POSIX requirements to enable streaming access to file system data. HDFS was originally built as infrastructure for the Apache Nutch web search engine project. HDFS is part of the Apache Hadoop Core project. The project URL is http://hadoop.apache.org/core/.
                     </para>
