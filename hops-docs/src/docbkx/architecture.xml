@@ -859,44 +859,70 @@ nodes:
                 <listitem>
                     <para>
                         <emphasis>Apache JClouds</emphasis>
-                        Apache JClouds is an open source multi-cloud api interface which allows us
+                        Apache JClouds is an open source multi-cloud api which allows us
                         to write reusable code for creating, destroying, and bootstrapping virtual machines (VMs)
-                        on different cloud providers.
-                        The same code can be configured to interact with Amazon, OpenStack, Azure, and Rackspace VMs,
-                        and 26 other cloud providers. 
-                        Through JClouds simple Java interface, we can deploy and port Hop to different cloud 
-                        environments. Hop parses cluster definition files, producing
-                        code that executes JCloud API calls to create, destroy and bootstrap VMs.
+                        on different cloud providers. The same code can be configured 
+                        to work with Amazon, OpenStack, Azure, and Rackspace VMs,
+                        and 26 other cloud providers. Through JClouds API, we can 
+                        deploy and port Hop to different cloud providers. 
+                        Hop parses cluster definition files, producing
+                        code that executes JCloud API calls to create, destroy and 
+                        bootstrap VMs.
                     </para>
                 </listitem>
                 <listitem>
                     <para>
                         <emphasis>Chef</emphasis>
                         Chef is a systems infrastructure and configuration framework 
-                        that automates the deployment of servers and 
-                        applications to any physical, virtual or cloud location. 
-                        JClouds is used to bootstrap chef on VMs or physical hosts, and once
-                        chef is installed on a host, we can run <emphasis>chef recipes</emphasis>
-                        using the chef-client deployed on host to install software on that host.
-                        The chef-client relies in a series of abstract definitions 
-                        (defined as cookbooks and recopes) which are managed in Ruby and are treated like source code.
-                        With each definition, we describe how a specific part should be built and managed, which then; the chef-client
-                        applies these definitions to deploy and configure servers and applications as specified.
-                        In most of the cases, it is simple enough to let chef-client know which cookbooks and recipes
-                        it needs to apply.
+                        that automates the deployment of applications to any 
+                        physical, virtual or cloud location. 
+                        When we create virtual machines (VMs) using JClouds,
+                        we receive information about the VM's IP address from the cloud provider 
+                        that we use to open a ssh connection to the machine and install the Chef client. 
+                        That is, JClouds installs chef during the bootstrap phase, 
+                        and once the chef client is installed on a host, 
+                        we can execute <emphasis>chef recipes</emphasis>
+                        to install software on the target host.
+                        The chef-client parses and executes a series of abstract definitions 
+                        (defined as recipes inside cookbooks) written in Ruby to install
+                        software on a host. With each definition, we describe 
+                        how a specific service should be installed and configured.
+                        The chef-client applies these definitions to deploy and 
+                        configure applications as specified. In most of the cases, 
+                        it is simple enough to let chef-client know which cookbooks and recipes
+                        it needs to apply, although recipes can be customized
+                        by users through parameterization. Although a Chef Server
+                        can be deployed to manage the chef clients, we instead use 
+                        simple python agents installed at hosts and our Dashboard application
+                        to manage clients. Our chef clients install recipes using 
+                        chef-solo from their local filesystem, 
+                        instead of downloading recipes from the Chef Server.
                     </para>
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>BitTorrent</emphasis>
-                        After machines are allocated in cloud, with the metadata information that JCloud returns, dashboard
-                        tries to open a ssh connection into every single machine and install Chef agent for installations. 
-                        Before installation starts, software libraries is replicated in all machines from dashboard, though 
-                        the process could overflow the bandwidth to dashboard if all machines try to download from dashboard. 
-                        To handle this situation HopS run a bittorent in which dashboard machine is the seeder, then all 
-                        machnies could contribute to download process which is both faster and anti-bottleneck. After download 
-                        Chef agent starts installation based on the required packages in each machine and with the order of 
-                        dependencies between packages.
+                        <emphasis>BitTorrent and VMIs</emphasis>
+                        Chef recipse contain instructions for how to download
+                        and install software. However, some binaries are quite
+                        large, and if a large number of hosts (10s or 100s) attempt
+                        to download the same software package from the same Http
+                        Server at the same time, it can lead to congestion and
+                        slow deployment times. To handle this problem, we
+                        provide two solutions: firstly, when creating a VM image (VMI),
+                        you can specify an image that already has the software
+                        pre-installed. In AWS, this leads to fast startup times, but users
+                        lose the ability to parameterize chef recipes. In OpenStack, however,
+                        nodes all download the VMI from a Glance Http Server, so 
+                        we are back to the problem of slow download times
+                        due to overloading a single server.
+                        The other option we provide is to have nodes run a bittorent 
+                        server on our Dashboard to distribute binaries among clients.
+                        The Dashboard host becomes the seeder, and all clients contribute
+                        their upload bandwidth in sharing the binaries with one another.
+                        When the binaries are downloaded, the chef recipe can be executed,
+                        configuring the software and skipping over the step of downloading the binaries. 
+                        If there is a failure in the Bittorrent step, the chef recipe can download the
+                        binaries using the traditional Http server method. 
                     </para>
                 </listitem>
                 <!--                <listitem>
