@@ -8,12 +8,13 @@
          xmlns:db="http://docbook.org/ns/docbook"
          xml:id="ch07">
     <title>Hadoop Open PaaS</title>
+    <para>
     In this chapter, we introduce our implementation of the the Hadoop Filesystem,
     where we introduce a new model for the NameNode that enables clusters with
     larger, more configurable metadata than is currently found in Apache's HDFS.
     We also introduce a Platform-as-a-Service (PaaS) model for our HDFS implementation,
     showing how we automate the deployment of a cluster on cloud platforms, such as
-    Amazon Web Services (AWS) and OpenStack, as well as standard clusters.
+    Amazon Web Services (AWS) and OpenStack, as well as standard clusters.</para>   
     <sect1>
         <title>Highly Available Hadoop Filesystem (HDFS)</title>
         <para>
@@ -76,43 +77,36 @@
                 </mediaobject>
             </figure>
         </para>
-        <emphasis>Hop HDFS</emphasis>
-        <para>
-            In contrast, our implementation of HDFS, called <emphasis>Hop HDFS</emphasis>, replaces the 
-            Primary-Secondary metadata model with shared, transactional memory, 
-            implemented using a distributed, in-memory, shared-nothing database, 
-            MySQL Cluster (NDB) <xref linkend="Manual2010"/> 
-            see figure <xref linkend="hop-hdfs"/>.
-            MySQL Cluster is a real-time, ACID-complaint transactional database, 
-            with no single point of failure, that has predictable, milisecond response times with 
-            the ability to service millions of operations per second. 
-            
-            By leveraging MySQL Cluster to store HDFS' metadata, 
-            the size of HDFS' metadata is no longer limited 
-            to the amount of memory that can be managed on the heap of JVM on a single node.
-            Our solution involves storing the metadata in a replicated, distributed, in-memory
-            database that can scale up to several tens of nodes, all while maintaining 
-            the consistency semantics of HDFS.  We maintain the consistency of the metadata, 
-            while providing high performance, all within a multiple-writer, multiple-reader
-            concurrency model. Multiple concurrent writers are now supported for the filesystem
-            as a whole, but single-writer concurrency is enforced at the inode level.
-            Our solution guarantees freedom from deadlock and progress by
-            logically organizing inodes  (and their constituent blocks and replicas) into a hierarchy and having transactions 
-            defining on a global order for transactions acquiring both explicit locks and 
-            implicit locks on subtrees in the hierarchy; this solution is motivated by <xref linkend="J.GrayR.LorieG.Putzolu1976"/> and 
-            <xref linkend="berenson1995critique"/>. 
-            The use of a database, however, also has its drawbacks. As the data now resides
-            on remote hosts on the network, an excessive number of roundtrips to 
-            the database harms system scalability and increases per-operation latencies.
-            We ameliorate these problems by introducing a snapshotting mechanism 
-            for transactions, where, at the beginning of a transaction, 
-            all the resources it needs are aquired in the defined global order, while
-            simulatenously taking row-level locks for those resources. On transaction
-            commit or abort, the resources are freed. This solution enables NameNodes
-            to perform operations on a local copy (or snapshot) of the database
-            state until such time as the transaction is completed, thus reducing
-            the number the number of roundtrips required to the database, see <xref linkend="hdfs-snapshot"/> . 
-        </para>
+        <para> <emphasis>Hop HDFS</emphasis></para>
+        <para> In contrast, our implementation of HDFS, called <emphasis>Hop HDFS</emphasis>,
+            replaces the Primary-Secondary metadata model with shared, transactional memory,
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster (NDB)
+                <xref linkend="Manual2010"/> see  <xref linkend="hop-hdfs"/>. MySQL Cluster is a
+            real-time, ACID-complaint transactional database, with no single point of failure, that
+            has predictable, milisecond response times with the ability to service millions of
+            operations per second. By leveraging MySQL Cluster to store HDFS' metadata, the size of
+            HDFS' metadata is no longer limited to the amount of memory that can be managed on the
+            heap of JVM on a single node. Our solution involves storing the metadata in a
+            replicated, distributed, in-memory database that can scale up to several tens of nodes,
+            all while maintaining the consistency semantics of HDFS. We maintain the consistency of
+            the metadata, while providing high performance, all within a multiple-writer,
+            multiple-reader concurrency model. Multiple concurrent writers are now supported for the
+            filesystem as a whole, but single-writer concurrency is enforced at the inode level. Our
+            solution guarantees freedom from deadlock and progress by logically organizing inodes
+            (and their constituent blocks and replicas) into a hierarchy and having transactions
+            defining on a global order for transactions acquiring both explicit locks and implicit
+            locks on subtrees in the hierarchy; this solution is motivated by <xref
+                linkend="J.GrayR.LorieG.Putzolu1976"/> and <xref linkend="berenson1995critique"/>.
+            The use of a database, however, also has its drawbacks. As the data now resides on
+            remote hosts on the network, an excessive number of roundtrips to the database harms
+            system scalability and increases per-operation latencies. We ameliorate these problems
+            by introducing a snapshotting mechanism for transactions, where, at the beginning of a
+            transaction, all the resources it needs are aquired in the defined global order, while
+            simulatenously taking row-level locks for those resources. On transaction commit or
+            abort, the resources are freed. This solution enables NameNodes to perform operations on
+            a local copy (or snapshot) of the database state until such time as the transaction is
+            completed, thus reducing the number the number of roundtrips required to the database,
+            see <xref linkend="hdfs-snapshot"/> . </para>
         <figure xml:id="hop-hdfs">
             <title>Hop HDFS</title>
             <mediaobject>
@@ -126,6 +120,7 @@
 
     <sect1>                                
         <title>Leader Election</title>
+        <para>
         In HDFS, there are a number of background tasks that are problematic if
         multiple NameNodes attempt to perform them concurrently. Examples of such
         tasks include: 
@@ -157,15 +152,20 @@
         Our leader election algorithm uses the shared, transactional memory 
         abstraction provided by MySQL Cluster to coordinate the election process.
 
-        <para/>
+        </para>
+        <para>
         <emphasis role="bold-italic">Definition: Correct NameNode</emphasis>
             A correct NameNode is defined as an alive process that is 
             is able to write to NDB in a bounded time interval.
-        <para/>
-
-        A leader NameNode is a NameNode from the set of NameNodes that  
+        </para>
+        <para>
+         <emphasis role="bold-italic">Definition: Leader NameNode</emphasis>
+            A leader NameNode is a NameNode from the set of NameNodes that  
         is correct and is responsible for listening to DateNode heartbeats and 
         assigning various tasks to them as well as responsible for managing background tasks.
+        </para>
+        
+        <para>
         In a deployed system, the bounded time interval during which it is expected
         that a NameNode can write to NDB is typically set to around 1 second. 
 
@@ -182,8 +182,10 @@
             <emphasis role="bold-italic">Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
         </listitem>
     </orderedlist>
-        <para/>
+        </para>
+        <para>
         <emphasis>Leader Election Algorithm</emphasis>
+        </para>
         <para>
             The leader election algorithm runs continuously at the NameNodes in rounds. 
             Each NameNode is assigned an (integer) id. 
@@ -225,7 +227,8 @@
             a transaction, so that the lock is released in the event of a NameNode 
             failure while updating the LEADER table. 
         </para>
-        <emphasis>Case-I: Failure-free scenario</emphasis>
+        <para> <emphasis>Case-I: Failure-free scenario</emphasis></para>
+        <para>
         In the case of no failures, after each round when all NameNodes have successfully
         sent heartbeats, the highest value of the counter should have increased
         by the number of correct NameNodes, and the value of each NameNode's counter 
@@ -239,8 +242,8 @@
         For brevity, we designate a NameNode with an id of value x as NNx. From this 
         example we see that NN1 has the lowest id and is therefore elected as the current leader in
         the system.
-        <para/>
-        <emphasis>Case-II: Leader crash scenario</emphasis>
+        </para>
+        <para> <emphasis>Case-II: Leader crash scenario</emphasis></para>
         <para>
             For numerous reasons, a NameNode may fail in sending a heartbeat to NDB 
             a round, and, thus, fail to update its counter 
@@ -264,10 +267,8 @@
                     <imagedata fileref="media/leader-example.png" scale="50" align="center"/>
                 </imageobject>
             </mediaobject>
-        </figure>    
-
-        <para/>
-        <emphasis>Determining the leader</emphasis>
+        </figure>
+        <para><emphasis>Determining the leader</emphasis></para>
         <para>
             The next step is to detect an irregular sequence of counter values and to
             decide if a new leader is to be elected. 
@@ -289,9 +290,7 @@
             Both NN2 and NN3 independently reach a decision about the new leader, NN2,
             the next time they try to update their own counter.
         </para>
-
-        <para/>
-        <emphasis>Ensuring single leader dominance</emphasis>
+        <para><emphasis>Ensuring single leader dominance</emphasis></para>
         <para>
             Once a NameNode determines that it is the leader, the first thing it does
             is to ensure that there are no other leaders in the system. This 
@@ -367,24 +366,24 @@ return selectAll()
 
         <example xml:id="leader-election-DNs">
             <title>Detecting the Leader at DataNodes</title>
-            <programlisting  linenumbering="numbered">
-        // The NN leader id is passed in upon initialization of DN
-        upon event init&lt;list(id)&gt;
-        nnlist = list(id)
-        // The NN with the lowest id is the leader
-        leader = min(nnlist)
+            <programlisting linenumbering="numbered">
+// The NN leader id is passed in upon initialization of DN
+upon event init&lt;list(id)&gt;
+nnlist = list(id)
+// The NN with the lowest id is the leader
+leader = min(nnlist)
 
-        // Update the list of NNs on every heartbeat response from Leader NN
-        upon event &lt;heartbeat-response, list(id)&gt;
-        nnlist = list(id)
-        leader = min(nnlist)
+// Update the list of NNs on every heartbeat response from Leader NN
+upon event &lt;heartbeat-response, list(id)&gt;
+nnlist = list(id)
+leader = min(nnlist)
 
-        // On timeout from leader NN
-        upon event &lt;timeout&gt;
-        // remove current leader from nnlist
-        remove(nnlist, leader)
-        // elect a new leader
-        leader = min(nnlist)
+// On timeout from leader NN
+upon event &lt;timeout&gt;
+// remove current leader from nnlist
+remove(nnlist, leader)
+// elect a new leader
+leader = min(nnlist)
             </programlisting>
         </example>
 
