@@ -524,13 +524,13 @@ upon event &lt;timeout&gt;
             The consistent order is defined by the filesystem's DAG: 
             the appropriate read or write locks are taken at inodes, starting at 
             the root and traversing directories in a depth-first order to the leftmost
-            leaf info, continuing until either the rightmost leaf inode is reached or 
+            leaf, continuing until either the rightmost leaf inode is reached or 
             all the inode locks have been acquired for this transaction.
             The locks are then held for the duration of the transaction. 
-            Locks are not upgraded within a transaction. 
+            Locks are not upgraded within a transaction, see <xref linkend="deadlock-upgrade"/>. 
             Since all transactions acquire locks in the same order, there are 
             no cycles, and since locks are not upgraded, there will be no 
-            lock-upgrade deadlocks, , see <xref linkend="deadlock-upgrade"/>.
+            lock-upgrade deadlocks.
             
             Locks also need to be acquired on data-structures used by inodes, such
             as blocks, replicas, leases, corrupted-blocks, etc. In HDFS, an inode for
@@ -545,11 +545,13 @@ upon event &lt;timeout&gt;
 
     <sect1>                                
         <title>Snapshot layer</title>
-            To improve the performance of our solution, we take snapshots of
-            the database state at the start of filesystem operations, 
-            mutate that state locally, and then finally commit any changes at the
-            end of the transaction. This approach reduces the number of round-trips
-           to the database, helping to improve database throughput.
+            To improve the performance of our solution, we take a snapshot of
+            the database state required for a transaction at the start of filesystem operations, 
+            store and mutate that state locally at the NameNode, and then 
+            finally commit any changes to that state at the
+            end of the transaction, see <xref linkend="snapshot"/>. 
+            This approach reduces the number of round-trips
+            to the database, helping to improve database throughput.
             
         <example xml:id="snapshot">
             <title>Snapshotting at NameNodes</title>
@@ -575,19 +577,21 @@ operation performTask
 </programlisting>
 </example>
 
-
-For some filesystem operations, the presented algorithm is not enough to ensure a total
-order on acquiring resources.
-For example there might be a datatype y for which x is parent, and a lock on x should be
-acquired to access y. Since y is not supplied in the operations’ parameters we need to first
-discover y before we can lock it. Only then, can we start the main transaction by locking y before locking x. 
-We solve this problem by breaking the operation up into two transactions. In the 
+For some filesystem operations, the presented algorithm is not complete enough 
+to ensure a total order on acquiring resources. For example, there may be an inode y 
+for which x is parent directory, and a lock on x should be acquired to access y. 
+Since y is not always supplied in the operation parameter list (as is the case for
+many internal HDFS protocol messages) we need to first
+discover y before we can lock it. Only then, can we start the main transaction, 
+where we lock y before locking x (based on our agreed global order for acquiring locks). 
+We solve this problem by breaking the filesystem operation up into two transactions. In the 
 first transaction we do not mutate state, we only resolve resources that need to 
 be locked in the second transaction. In the second transaction, we first validate
 that the resources/state we resolved in the first transaction is still valid, and if
-so, we then perform a standard transaction, acquiring locks and taking a 
+so, we then perform the standard transaction, acquiring locks and taking a 
 snapshot of the data. If the state in the second transaction is no longer valid,
-we can restart the operation, beginning at the first transaction.
+we can retry the whole operation, beginning at the first transaction, see 
+<xref linkend="snapshot-multi"/>.
 
 
         <example xml:id="snapshot-multi">
@@ -635,9 +639,10 @@ operation performTask
 
     <sect1>                                
         <title>Performance of Hop HDFS</title>
-        <para>We have recently re-written our code base to migrate to HDFS 2.2, 
-            which is functionally complete, but it is too early to give read/write 
-            performance figures for our new implementation. Unpublished performance figures from an earlier prototype 
+        <para>We have recently re-written our code base to migrate to HDFS 2.2. 
+            Our code is now functionally complete, but it is too early to give read/write 
+            performance figures for our new implementation. 
+            Unpublished performance figures from an earlier prototype 
             show that Hop-HDFS can scale to handle a similar number of read and write 
             requests per unit time as Apache HDFS, but needing additional hardware
             to do so. 
@@ -824,8 +829,7 @@ operation performTask
                             <title>Example Cluster Definition in Hop</title>
                             <programlisting>
 name: simpleCluster                 
-provider:
-name: aws-ec2
+provider: aws-ec2
 
 nodes:
 - services: [ndb::dn]
