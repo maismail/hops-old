@@ -315,76 +315,73 @@
             <title>Leader Election Algorithm at NameNodes</title>
             <programlisting linenumbering="numbered">
 function updateCounter()
-retrieve ([COUNTER], counter)
-increment counter
-store([COUNTER], counter)
-
+    retrieve ([LEADER], maxCounter)
+    increment maxCounter
 // The entry for this NN may not exist if it crashed 
 // and was removed by another leader
-if(!exists([LEADER], id) then 
-id = retrieve([LEADER], max(id)) + 1
-end if
-
-store([LEADER], id, counter)
+    if (!exists([LEADER], id) then 
+        id = retrieve([LEADER], max(id)) + 1
+    end if
+    store([LEADER], id, maxCounter)
 
 // The function that determines the current leader
 function select()
-SELECT id FROM [LEADER]
-WHERE counter  (max(counter) – count(id)) // returns all correct NNs
-LIMIT 1 /*selects lowest id*/
-return id
+    SELECT id FROM [LEADER]
+    WHERE counter  (max(counter) – count(id)) // returns all correct NNs
+    LIMIT 1 /*selects lowest id*/
+    return id
 
 // The function that returns the list of correct NNs
 function selectAll()
-SELECT id FROM [LEADER]
-WHERE counter &gt; (max(counter) – count(id)) // returns all correct NNs
-ORDER BY id                              // the leader has the lowest id
-return list(id)
+    SELECT id FROM [LEADER]
+    WHERE counter &gt; (max(counter) – count(id)) // returns all correct NNs
+    ORDER BY id                              // the leader has the lowest id
+    return list(id)
 
 upon event &lt;init&gt; do
-leader = NIL
-updateCounter()
-leader = select()
+    leader = NIL
+    updateCounter()
+    leader = select()
 
 // After every interval, the NameNode updates the counter
 upon event &lt;check&gt;
-updateCounter()
-leader = select()
-// If this NN is elected the leader, remove previous leaders
-if(leader == id) then
-remove([LEADER],[ids &lt; leader])
-end if
+    updateCounter()
+    leader = select()
+    // If this NN is elected the leader, remove previous leaders
+    if (leader == id) then
+        remove([LEADER],[ids &lt; leader])
+    end if
 
 upon event &lt; timeout&gt;
-// Kill NN on timeouts, so DNs can connect to the next leader NN
-shutdown()
+    // Kill NN on timeouts, so DNs can connect to the next leader NN
+    shutdown()
 
 // Return the list of correct NNs in order of lowest ids
 upon event &lt;heartbeats&gt;
-return selectAll()
+    return selectAll()
             </programlisting>
         </example>
 
         <example xml:id="leader-election-DNs">
             <title>Detecting the Leader at DataNodes</title>
             <programlisting  linenumbering="numbered">
-        // The NN leader id is passed in upon initialization of DN
-        upon event init&lt;list(id)&gt;
-        nnlist = list(id)
-        // The NN with the lowest id is the leader
-        leader = min(nnlist)
+// The NN leader id is passed in upon initialization of DN
+upon event init&lt;list(id)&gt;
+    nnlist = list(id)
+    // The NN with the lowest id is the leader
+    leader = min(nnlist)
 
-        // Update the list of NNs on every heartbeat response from Leader NN
-        upon event &lt;heartbeat-response, list(id)&gt;
-        nnlist = list(id)
-        leader = min(nnlist)
+// Update the list of NNs on every heartbeat response from Leader NN
+upon event &lt;heartbeat-response, list(id)&gt;
+    nnlist = list(id)
+    leader = min(nnlist)
 
-        // On timeout from leader NN
-        upon event &lt;timeout&gt;
-        // remove current leader from nnlist
-        remove(nnlist, leader)
-        // elect a new leader
-        leader = min(nnlist)
+// On timeout from leader NN
+upon event &lt;timeout&gt;
+    // remove current leader from nnlist
+    remove(nnlist, leader)
+    // elect a new leader
+    leader = min(nnlist)
             </programlisting>
         </example>
 
@@ -778,7 +775,7 @@ operation performTask
             have built to manage and adminster Hop clusters.
         </para>
         <figure xml:id="arch-deploy">
-            <title>Deploying a Hop cluster from a Website</title>
+            <title>Deploying a Hop cluster from our Portal Website</title>
             <mediaobject>
                 <imageobject>
                     <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
