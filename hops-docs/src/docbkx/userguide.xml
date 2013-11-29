@@ -49,7 +49,7 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="getting_started.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_dashboard.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_paas_config.xml" />
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
+    <!--xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" /-->
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
 
     <chapter>

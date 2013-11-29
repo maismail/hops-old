@@ -31,7 +31,7 @@
                 <title>Hadoop v2</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hadoop2.png" scale="66" align="center"/>
+                        <imagedata fileref="media/hadoop2.png" scale="60" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -74,7 +74,7 @@
                 <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hdfsv2.png" scale="66" align="center"/>
+                        <imagedata fileref="media/hdfsv2.png" scale="60" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -113,7 +113,7 @@
             <title>Hop HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"/>
+                    <imagedata fileref="media/hop-hdfs.png" scale="40" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -174,14 +174,20 @@
         The properties that our leader election algorithm guarantee are:
     <orderedlist>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
+            </para>
         </listitem>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
             All will agree to the same NameNode being the leader.
+            </para>
         </listitem>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
+            </para>
         </listitem>
     </orderedlist>
         </para>
@@ -207,7 +213,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader.png" scale="75" align="center"/>
+                    <imagedata fileref="media/leader.png" scale="85" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -452,7 +458,7 @@ upon event &lt;timeout&gt;
             <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hopER.png" scale="50" align="center"/>
+                    <imagedata fileref="media/hopER.png" align="center" width="650"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -462,7 +468,7 @@ upon event &lt;timeout&gt;
             <title>HDFS Filesystem Operation Sequence Diagram</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-operations.png" scale="37" align="center"/>
+                    <imagedata fileref="media/hdfs-operations.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -498,7 +504,7 @@ upon event &lt;timeout&gt;
             <title>Locking in conflicting order can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-cycle.png" scale="75" align="center"/>
+                    <imagedata fileref="media/deadlock-cycle.png" scale="90" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -507,7 +513,7 @@ upon event &lt;timeout&gt;
             <title>Lock upgrade can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-upgrade.png" scale="75" align="center"/>
+                    <imagedata fileref="media/deadlock-upgrade.png" scale="90" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -659,7 +665,7 @@ operation performTask
             <title>Reduction in the number of DB roundtrips by snapshotting</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="55" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="65" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -703,7 +709,7 @@ operation performTask
             <title>Hop architecture</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-stack.png" scale="70" align="center"></imagedata>
+                    <imagedata fileref="media/arch-stack.png" scale="55" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -784,7 +790,7 @@ operation performTask
             <title>Deploying a Hop cluster from our Portal Website</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
+                    <imagedata fileref="media/arch-deploy.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
