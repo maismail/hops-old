@@ -829,7 +829,9 @@ operation performTask
                             <title>Example Cluster Definition in Hop</title>
                             <programlisting>
 name: simpleCluster                 
-provider: aws-ec2
+
+provider:
+  name: aws-ec2
 
 nodes:
 - services: [ndb::dn]
