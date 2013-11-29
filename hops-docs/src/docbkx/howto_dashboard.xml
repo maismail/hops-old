@@ -39,7 +39,7 @@
             <title>New/Import Graphs</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-edit-graphs.png" align="center" scale="30"/>
+                    <imagedata fileref="media/dash-edit-graphs.png" align="center" width="700"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -55,7 +55,7 @@
                         <mediaobject>
                             <imageobject>
                                 <imagedata fileref="media/dash-new-graphs.png" align="center"
-                                    scale="30"/>
+                                    width="500"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
@@ -82,7 +82,7 @@
             <title>Graph Selection Detail</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-detail-graphs.png" align="center" scale="30"/>
+                    <imagedata fileref="media/dash-detail-graphs.png" align="center" width="500"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -97,7 +97,7 @@
             <title>Backup/Restore</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-backup-restore.png" align="center" scale="40"/>
+                    <imagedata fileref="media/dash-backup-restore.png" align="center" width="700"/>
                 </imageobject>
             </mediaobject>
         </figure> 
@@ -112,7 +112,7 @@
             <title>Setup Credentials</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-credentials.png" align="center" scale="40"/>
+                    <imagedata fileref="media/dash-credentials.png" align="center" scale="50"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -127,7 +127,7 @@
             <title>Manage Cluster</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-manage-cluster.png" align="center" scale="40"/>
+                    <imagedata fileref="media/dash-manage-cluster.png" align="center" width="500"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -155,9 +155,9 @@
                 <title>Select edit mode:</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-edit-select.png" align="center"
-                            scale="40"/>
-                    </imageobject>
+                                <imagedata fileref="media/dash-edit-select.png" align="center"
+                                    width="500"/>
+                            </imageobject>
                 </mediaobject>
             </figure>
             <para>
@@ -168,9 +168,9 @@
                 <title>YAML Editor</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-yamleditor.png" align="center"
-                            scale="40"/>
-                    </imageobject>
+                                <imagedata fileref="media/dash-yamleditor.png" align="center"
+                                    width="500"/>
+                            </imageobject>
                 </mediaobject>
             </figure>
                         
@@ -241,7 +241,7 @@
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-clusters-progress.png" align="center"
-                            scale="40"/>
+                            width="500"/>
                     </imageobject>
                 </mediaobject>
             </figure></para>
@@ -262,7 +262,7 @@
                 <title>Hosts</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-hosts.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-hosts.png" align="center" width="700"/>
                     </imageobject>
                 </mediaobject>
             </figure>   
@@ -273,7 +273,7 @@
                 <title>Hosts Details-Services</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-host-detail.png" align="center" width="700"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -281,7 +281,8 @@
                 <title>Hosts Details Graphs</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail-2.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-host-detail-2.png" align="center" width="700"
+                        />
                     </imageobject>
                 </mediaobject>
             </figure>     
@@ -296,7 +297,7 @@
                 <title>Alerts</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-alerts.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-alerts.png" align="center" width="700"/>
                     </imageobject>
                 </mediaobject>
             </figure>    
@@ -317,7 +318,7 @@
                 <title>Clusters</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-clusters.png" align="center" width="700"/>
                     </imageobject>
                 </mediaobject>
             </figure>   
@@ -325,7 +326,8 @@
                 <title>Detailed Cluster View</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-cluster-detail.png" align="center" scale="35"/>
+                        <imagedata fileref="media/dash-cluster-detail.png" align="center"
+                            width="700"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -336,7 +338,8 @@
                 <title>YARN Metrics</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-metrics.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-YARN-metrics.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -345,7 +348,8 @@
                 <title>Resource Manager Metrics</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-resource.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-YARN-resource.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -353,7 +357,8 @@
                 <title>Node Manager Metrics</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-manager.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-YARN-manager.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -370,7 +375,8 @@
                 <title>Resource Manager UI</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-resourceUI.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-YARN-resourceUI.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure>  
@@ -378,7 +384,8 @@
                 <title>Node Manager UI</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-YARN-managerUI.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-YARN-managerUI.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure> 
@@ -394,7 +401,8 @@
                 <title>MySQL Cluster Monitor</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-MYSQL-graphs.png" align="center" scale="35"/>
+                            <imagedata fileref="media/dash-MYSQL-graphs.png" align="center"
+                                width="700"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -404,7 +412,8 @@
                 <title>MySQL Console</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-MYSQL-console.png" align="center" scale="50"/>
+                            <imagedata fileref="media/dash-MYSQL-console.png" align="center"
+                                width="500"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -418,7 +427,8 @@
                 <title>Hdfs Console</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-HOP-console.png" align="center" scale="50"/>
+                            <imagedata fileref="media/dash-HOP-console.png" align="center"
+                                width="500"/>
                         </imageobject>
                 </mediaobject>
             </figure>
