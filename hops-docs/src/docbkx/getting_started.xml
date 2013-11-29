@@ -142,7 +142,7 @@
                                         <title>Portal AWS</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-AWS.png" align="center"  scale="30"/>
+                                                <imagedata fileref="media/portal-AWS.png" align="center"  scale="40"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -231,7 +231,7 @@
                                         <title>Portal OpenStack</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-OpenStack.png" align="center" scale="30"/>
+                                                <imagedata fileref="media/portal-OpenStack.png" align="center" scale="40"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -293,7 +293,7 @@
                                         <title>Portal Baremetal</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-Baremetal.png" align="center" scale="30"/>
+                                                <imagedata fileref="media/portal-Baremetal.png" align="center" scale="40"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
