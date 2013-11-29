@@ -366,7 +366,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-MYSQL-graphs.png" align="center"
-                                width="700"/>
+                                scale="50"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -377,7 +377,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-MYSQL-console.png" align="center"
-                                width="500"/>
+                                scale="100"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -392,7 +392,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-HOP-console.png" align="center"
-                                width="500"/>
+                                scale="100"/>
                         </imageobject>
                 </mediaobject>
             </figure>

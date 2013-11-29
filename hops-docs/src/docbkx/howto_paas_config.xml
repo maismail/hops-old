@@ -18,8 +18,8 @@
         and launch a changed version of your cluster, and you can edit it to 
         reconfigure your cluster. 
         </para>
-    <sect1>
-        <title>Cluster Definition Language (CDL)</title>
+    <!--<sect1>-->
+        <!--<title>Cluster Definition Language (CDL)</title>-->
         <para>A cluster definition file consists the following sections: 
             <itemizedlist>
                 <listitem>Global</listitem>
@@ -250,7 +250,7 @@ nodes:
             following sections, we will describe how you can define the structure for virtualized
             cloud providers like Amazon EC2 and OpenStack or in a physical Baremetal environment. </para>-->
 
-        <sect2>
+        <sect1>
             <title>Cluster Generator on Dashboard</title>
             <para>
                 Apart of offering a mechanism were users can upload their clusters written in YAML to the system
@@ -513,10 +513,10 @@ nodes:
           
                 </orderedlist>
             </para>
-        </sect2>
+        </sect1>
 
 
-    </sect1>
+    <!--</sect1>-->
 <!--    <sect1>
         <title>Building your cluster</title>
         <para>
