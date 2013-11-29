@@ -128,16 +128,24 @@
         tasks include: 
         <orderedlist>
             <listitem>
-                replication monitoring, 
+                <para>
+                replication monitoring,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 lease management,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 block token generation,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 and the decomissioning of datanodes.
+                </para>
             </listitem>
         </orderedlist>
         Without any coordination between NameNodes, and since all NameNodes have identical behaviour, 
@@ -442,6 +450,7 @@ upon event &lt;timeout&gt;
 
     <sect1>                                
         <title>Ensuring Correctness of Hop HDFS</title>
+        <para>
             One of the main challenges in migrating HDFS' metadata from the heap of
             a single JVM to a relational database was ensuring the correctness of 
             our approach. From a practical perspective, we ensure correctness by
@@ -472,8 +481,10 @@ upon event &lt;timeout&gt;
                 </imageobject>
             </mediaobject>
         </figure>   
-        <para/>
+        </para>
+        <para>
         <emphasis>Transactions and Isolation Levels</emphasis>
+        </para>
         <para>
             We implemented each HDFS operation as a single transaction, where we begin the transaction, 
             read and write the necessary meta-data from NDB, and then either commit, 
@@ -518,8 +529,9 @@ upon event &lt;timeout&gt;
             </mediaobject>
         </figure>    
 
-        <para/>
+        <para>
         <emphasis>Hierarchy of Resources</emphasis>
+        </para>
         <para>
             Filesystems, such as HDFS, have hierarchical namespaces, with directories
             containing zero to many files. In unix-based filesystems, both 
@@ -553,6 +565,7 @@ upon event &lt;timeout&gt;
 
     <sect1>                                
         <title>Snapshot layer</title>
+        <para>
             To improve the performance of our solution, we take a snapshot of
             the database state required for a transaction at the start of filesystem operations, 
             store and mutate that state locally at the NameNode, and then 
@@ -560,7 +573,7 @@ upon event &lt;timeout&gt;
             end of the transaction, see <xref linkend="snapshot"/>. 
             This approach reduces the number of round-trips
             to the database, helping to improve database throughput.
-            
+        </para>            
         <example xml:id="snapshot">
             <title>Snapshotting at NameNodes</title>
             <programlisting linenumbering="numbered">
@@ -584,7 +597,7 @@ operation performTask
     //Operation Body, accessing only state stored in the snapshot
 </programlisting>
 </example>
-
+<para>
 For some filesystem operations, the presented algorithm is not complete enough 
 to ensure a total order on acquiring resources. For example, there may be an inode y 
 for which x is parent directory, and a lock on x should be acquired to access y. 
@@ -600,7 +613,7 @@ so, we then perform the standard transaction, acquiring locks and taking a
 snapshot of the data. If the state in the second transaction is no longer valid,
 we can retry the whole operation, beginning at the first transaction, see 
 <xref linkend="snapshot-multi"/>.
-
+</para>
 
         <example xml:id="snapshot-multi">
             <title>Snapshotting at NameNodes using Two Transactions</title>
@@ -668,7 +681,8 @@ operation performTask
                     <imagedata fileref="media/hdfs-snapshot.png" scale="65" align="center"/>
                 </imageobject>
             </mediaobject>
-        </figure>    
+        </figure>
+        <para>
             For improved performance, we have also implemented schema-aware partitioning of metadata across 
             multiple hosts, ensuring all data related to a single inode hashes
             to the same host, and can be retrieved in a single network hop.
@@ -676,6 +690,7 @@ operation performTask
             is started that involves a single inode, we give a hint to NDB, using 
             the ClusterJ API, that the transaction should start on data node containing
             the data for that inode.
+        </para>
         <para>
             One positive aspect of HopHDFS is that the amount of metadata that can be
             supported is vastly increased over Apache HDFS, and it is much more easy to modify. 
@@ -713,7 +728,6 @@ operation performTask
                 </imageobject>
             </mediaobject>
         </figure>    
-        <para>.</para>
         <orderedlist>
 <!--            <listitem>
                 <para>
@@ -766,8 +780,9 @@ operation performTask
             </listitem>
         </orderedlist>
 
-        <para/>
+        <para>
         <emphasis>Hop PaaS</emphasis>
+        </para>
         <para>Our PaaS for HDFS, as well as YARN and the Workflow Engine,
             supports the automated deployment of a Hop cluster on Amazon Cloud, 
             Open Stack or a bare metal cluster. We call it
