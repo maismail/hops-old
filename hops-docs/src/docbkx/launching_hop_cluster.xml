@@ -8,12 +8,49 @@
     xmlns:db="http://docbook.org/ns/docbook"
     xml:id="ch05">
     
-    <title>Launching a Cluster</title>
-    
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_aws.xml" />
-  
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_openstack.xml" />
-    
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_baremetal.xml" />
+    <title>Launching the Hop Cluster </title>
+
+    <para>After installing the Hop Dashboard on a machine in the cloud, you can easily deploy and
+        manage the Hop Cluster using the dashboard. This chapter gives a quick review of the steps
+        involved in launching the cluster. </para>
+    <para>Login the dashboard using the credentials provided to Hop Portal during the installation
+        of the dashboard. <orderedlist>
+            <listitem>
+                <para> Select the manage cluster option available in the dashboard. </para>
+                <para>
+                    <menuchoice>
+                        <guimenu>Main Menu Bar</guimenu>
+                        <guisubmenu>Manage Cluster</guisubmenu>
+                        <guimenuitem>Load File</guimenuitem>
+                    </menuchoice>
+                </para>
+            </listitem>
+            <listitem>
+                <para>Load a file containing the cluster definition. We refer to section
+                            <emphasis><xref linkend="defining_a_cluster">Defining a
+                        Cluster</xref></emphasis> to create custom clusters definitions.</para>
+            </listitem>
+            <listitem>
+                <para>The file is loaded and the cluster launcher will appear showing the content of
+                    the loaded file.</para>
+            </listitem>
+            <listitem>
+                <para>Pressing the <emphasis>Start Cluster</emphasis> button to start the deployment
+                    process. A status bar will appear showing information about the current status
+                    of the deployment process. Installation process is long and it depends on the
+                    number of nodes in the cluster. On average, for 8 nodes it takes around 35
+                    minutes. </para>
+            </listitem>
+            <listitem>
+                <para>If a node fails then the Hop cluster launcher will automatically retry the
+                    node deployment.</para>
+            </listitem>
+            <listitem>
+                <para>Summary of all the install nodes and their status is displayed after the
+                    Cluster Launcher finishes.</para>
+            </listitem>
+        </orderedlist></para>
+    <para> Congratulations, you have successfully deployed a Hop cluster ready! </para>
+
 
 </chapter>
