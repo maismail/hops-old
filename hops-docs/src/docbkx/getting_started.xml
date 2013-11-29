@@ -9,74 +9,76 @@
          xml:id="ch02">
     <title>Hop Web Portal</title>
 
-    <para>Hop is an effort to offer a high performance next generation hadoop platform focusing on
-        high scalability, availability and reliability. This section describes the information
-        needed to jump start Hop cluster. Hop web portal, is an entry point were users can test our
-        platform in one of the supported environments: AWS, OpenStack and Baremetal machines. It is
-        a simple web application that deploys the Hop Dashboard in the cloud. Using the Hop
-        dashboard you can provision and configure the rest of the cluster. Hop Dashboard provides a
-        centralized end-to-end management and monitoring application for Hop distribution. Following
-        are the step by step instructions for setting up the cluster in different environments. </para>
+    <para>This section describes how to setup a Hop cluster on either a cloud provider
+        or a baremetal cluster from our website, Hop web portal. 
+        Hop web portal is a web application where users can register, enter the credentials 
+        for their cloud provider (or ssh keys for their cluster) can from there, 
+        they can launch the Hop Dashboard on their target infrastructure. 
+        The Hop Dashboard is a web application that can be used to provision and 
+        configure the rest of the cluster. Hop Dashboard provides a
+        centralized end-to-end management and monitoring application for Hop clusters. </para>
 
-    <example>
-        <title>HOP Portal</title>
-        <programlisting>https://snurran.sics.se:8181/hop-portal</programlisting>
-    </example>
 
     <figure xml:id="portal-login">
-        <title>Hop Portal</title>
+        <title>Hop Portal Webiste</title>
         <mediaobject>
             <imageobject>
-                <imagedata fileref="media/portal.png" align="center" width="400" scalefit="1"/>
+                <imagedata fileref="media/portal.png" align="center" scale="50"/>
             </imageobject>
+            <caption>
+                <para>https://snurran.sics.se:8181/hop-portal</para></caption>
         </mediaobject>
     </figure>   
     <sect1>
-        <title>Requirements:</title>
-        <para>Hop Dashboard has to be installed on a machine in a cluster that has connectivity both
-            to cloud infrastructure and the cluster. Using Hop Web Portal you can provision a
-            cluster and install the dashboard to any of the following plateforms: AWS, OpenStack and
-            cluster of bare-metal hosts. The following environments are currently fully supported: <itemizedlist>
+        <title>Prerequisites</title>
+        <para>The following platforms are currently supported: <itemizedlist>
                 <listitem>
                     <para>
-                        <emphasis>Amazon Web Services:</emphasis> In order to use of our platform in
-                        AWS cloud Infrastructure, it is necessary to provide EC2 account
-                        credentials. When deploying our Dashboard in EC2, we recommend minimum
-                        Instance type should be of m1.large type Instance with Ubuntu. </para>
+                        <emphasis>Amazon Web Services:</emphasis> You require an EC2 account
+                        credentials. The minimum recommended instance type for our Dashboard is 
+                        m1.large type. Other nodes may have m1.medium or even m1.small type.</para>
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>OpenStack</emphasis> For using Hop on OpenStack, it is necessary
-                        that you provide the credentials and configuration parameters to connect to
-                        you OpenStack end-point. The recommended instance to use in OpenStack
-                        infrastructure should be equivalent to a m1.large instance type or greater.
+                        <emphasis>OpenStack:</emphasis> You require credentials and 
+                        configuration parameters to connect to an OpenStack end-point. 
+                        The end-point must be reachable from the public Internet.
+                        The recommended instance to use in OpenStack infrastructure 
+                        should be the equivalent to a m1.large instance type or greater.
                     </para>
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Baremetal Physical Machine:</emphasis> For deployment on Baremetal
-                        machines our system requires security credentials of a user with sudo access
-                        to the machines to deploy the software through SSH .</para>
+                        <emphasis>Baremetal Cluster:</emphasis> For deployment on
+                        physical hosts, you require openssh public and private keys
+                        for a user with sudo access to the hosts
+                        where you will deploy the cluster. The dashboard uses ssh
+                        to install chef on the hosts.</para>
                 </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Vagrant:</emphasis> With our vagrant distribution, you can deploy
-                        the whole cluster locally in a VM machine. It is ideal for testing the
-                        platform before deployment in a production environment. </para>
-                    <para>All the environments are tested with instances running Ubuntu 12.04.
-                    </para>
-                </listitem>
-            </itemizedlist></para>
+            </itemizedlist>
+        Currently, the only platform we support is Ubuntu 12.04.
+        </para>
     </sect1>
     <sect1>
         <title>Installing the Hop Dashboard</title>
         <para>Intalling Hop Dashboard through the Portal is quite simple and takes a couple of
             minutes to deploy. Here you may find instructions on how to deploy the dashboard on AWS,
-            OpenStack and Baremetal Machine: <orderedlist>
-                <listitem>
-                    <para>
-                        <emphasis>Amazon EC2:</emphasis> For installing the dashboard in Amazon EC2
-                        follow these simple steps: <itemizedlist>
+            OpenStack and Baremetal Machine.
+        </para>
+                        <sect2>
+                        <title>Amazon EC2</title> 
+                                    <figure xml:id="portal-aws">
+                                        <title>AWS Credentials</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-AWS.png"
+                                                  align="center" scale="60"/>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure>
+                        
+                        To install the dashboard in Amazon EC2 follow these steps: 
+                        <itemizedlist>
                             <listitem>
                                 <para> Login into the HOP Portal with your user name and password.
                                 </para>
@@ -138,15 +140,6 @@
                                             </para>
                                         </listitem>
                                     </itemizedlist>
-                                    <figure xml:id="portal-aws">
-                                        <title>Portal AWS</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-AWS.png"
-                                                  align="center" width="550"/>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure>
                                 </para>
                             </listitem>
                             <listitem>
@@ -157,15 +150,30 @@
                                     credentials you specified previously in the web portal.</para>
                             </listitem>
                         </itemizedlist>
-                    </para>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>OpenStack:</emphasis> For deployment in OpenStack cloud follow
-                        these simple steps. Note, this is in alpha state: <itemizedlist>
+
+                        </sect2>
+                    <sect2>
+                        <title>OpenStack</title> 
+                                    <figure xml:id="portal-openstack">
+                                        <title>OpenStack Credentials</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-OpenStack.png"
+                                                  align="center" scale="60"/>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure>
+                        
+                    <note>
+                        <title>IP pools in OpenStack</title>
+                        <para>It is necessary that you have allocated at least 1 public IP to the
+                            project. During the deployment phase the portal will query the OpenStack
+                            project and link the public ip to the VM. </para>
+                    </note>
+                        For deployment in OpenStack cloud follow these steps. 
+                        <itemizedlist>
                             <listitem>
-                                <para> Login into the Hop Portal with your user name and password.
-                                </para>
+                                <para> Login into the Hop Portal with your user name and password.</para>
                             </listitem>
                             <listitem>
                                 <para> Select from the providers the OpenStack option. A new form
@@ -228,15 +236,6 @@
                                             </para>
                                         </listitem>
                                     </itemizedlist>
-                                    <figure xml:id="portal-openstack">
-                                        <title>Portal OpenStack</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-OpenStack.png"
-                                                  align="center" width="550"/>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure>
                                 </para>
                             </listitem>
                             <listitem>
@@ -246,18 +245,20 @@
                                     deployed Hop Dashboard. To login the dashboard, use the
                                     credentials you specified previously in the web portal </para>
                             </listitem>
-                        </itemizedlist></para>
-                    <note>
-                        <title>IP pools in OpenStack</title>
-                        <para>It is necessary that you have allocated at least 1 public IP to the
-                            project. During the deployment phase the portal will query the OpenStack
-                            project and link the public ip to the VM. </para>
-                    </note>
-                </listitem>
-                <listitem>
-                    <para>
-                        <emphasis>Baremetal Physical Machine:</emphasis> For deploying the dashboard
-                        on a BareMetal hosts cluster follow these simple steps: <itemizedlist>
+                        </itemizedlist>
+                </sect2>
+                <sect2>
+                    <title>Baremetal Hosts</title>
+                        <figure xml:id="portal-baremetal">
+                            <title>Baremetal Credentials</title>
+                            <mediaobject>
+                                <imageobject>
+                                    <imagedata fileref="media/portal-Baremetal.png"
+                                      align="center" scale="60"/>
+                                </imageobject>
+                            </mediaobject>
+                        </figure>
+                        To deploy the dashboard on a BareMetal hosts cluster follow these simple steps: <itemizedlist>
                             <listitem>
                                 <para> Login into the Hop Portal with your user name and password.
                                 </para>
@@ -291,15 +292,6 @@
                                             </para>
                                         </listitem>
                                     </itemizedlist>
-                                    <figure xml:id="portal-baremetal">
-                                        <title>Portal Baremetal</title>
-                                        <mediaobject>
-                                            <imageobject>
-                                                <imagedata fileref="media/portal-Baremetal.png"
-                                                  align="center" width="550"/>
-                                            </imageobject>
-                                        </mediaobject>
-                                    </figure>
                                 </para>
                             </listitem>
                             <listitem>
@@ -310,9 +302,6 @@
                                     credentials you specified previously in the web portal. </para>
                             </listitem>
                         </itemizedlist>
-                    </para>
-                </listitem>
-            </orderedlist>
-        </para>
-    </sect1>
+                </sect2>
+        </sect1>
 </chapter>

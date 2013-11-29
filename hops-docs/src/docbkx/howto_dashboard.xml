@@ -2,10 +2,10 @@
 <chapter version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/2000/svg" xmlns:ns4="http://www.w3.org/1998/Math/MathML" xmlns:ns3="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" xml:id="ch03">
     <title>Hop Dashboard</title>
     
-    <para>Hop Dashboard is a web application designed with Hadoop administrators in mind. The
+    <para>The Hop Dashboard is a web application designed with Hop/Hadoop administrators in mind. The
         Dashboard provides a centralized end-to-end management and monitoring application for Hop
         clusters. It simplifies the Hadoop administrator's job by having all the necessary
-        statistics of the Hadoop cluster gathered in one place and presented in an effective
+        statistics of the Hop cluster gathered in one place and presented in an effective
         manner.</para>
     <para>Certain parameters need to be configured when the Hop Dashboard is launched for the first
         time. In order to access the dashboard, use the credentials you specified in the Hop Portal
@@ -24,16 +24,14 @@
                 <para> Setup Credentials </para>
             </listitem>
         </itemizedlist> We will go these options in more detail in the following sections. </para>
-    <sect1>
-        <title>Change Password</title>
-        <para>Change the password for this user.</para>
-    </sect1>
     <sect1 xml:id="edit_graphs">
-        <title>Edit Graphs</title>
-        <para>The Hop Dashboard enables the customization of what monitoring data that is displayed
-            to the administrators. An administrator can select which graphs to enable for the
-            different services of Hop. You can define new graphs or import the list of graphs from a
-            file.  <itemizedlist>
+        <title>Graphs</title>
+        <para> The Hop Dashboard displays graphs with monitoring data for both hosts
+            and services in your clusters.            
+            You can customize the monitoring data that is displayed by select 
+            which graphs to enable for the different services of Hop. 
+            You can also define new graphs and import the list of graphs from a file.  
+            <itemizedlist>
                 <listitem>
                     <para>
                         <emphasis>New</emphasis> Selecting this option will open a new dialog where
@@ -44,7 +42,7 @@
                         <mediaobject>
                             <imageobject>
                                 <imagedata fileref="media/dash-new-graphs.png" align="center"
-                                    width="500"/>
+                                    scale="40"/>
                             </imageobject>
                         </mediaobject>
                     </figure>
@@ -72,7 +70,7 @@
             <title>Graph Selection Detail</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-detail-graphs.png" align="center" width="500"/>
+                    <imagedata fileref="media/dash-detail-graphs.png" align="center" scale="40"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -101,7 +99,7 @@
             <title>Manage Cluster</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/dash-manage-cluster.png" align="center" width="500"/>
+                    <imagedata fileref="media/dash-manage-cluster.png" align="center" scale="40"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -133,8 +131,7 @@
                 <title>YAML Editor</title>
                 <mediaobject>
                     <imageobject>
-                                <imagedata fileref="media/dash-yamleditor.png" align="center"
-                                    width="500"/>
+                                <imagedata fileref="media/dash-yamleditor.png" align="center" scale="40"/>
                             </imageobject>
                 </mediaobject>
             </figure>
@@ -200,15 +197,16 @@
                         problem manually, retry the deployment process or delete the failed
                         nodes.</para>
                 </listitem>
-            </itemizedlist><figure>
+            </itemizedlist>
+<!--            <figure>
                 <title>Clusters Progress</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters-progress.png" align="center"
-                            width="500"/>
+                        <imagedata fileref="media/dash-clusters-progress.png" align="center" scale="40"/>
                     </imageobject>
                 </mediaobject>
-            </figure></para>
+            </figure>-->
+        </para>
     </sect1>
     <sect1>
         <title>Monitoring</title>
@@ -226,26 +224,26 @@
                 <title>Hosts</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-hosts.png" align="center" width="700"/>
+                        <imagedata fileref="media/dash-hosts.png" align="center" scale="33"/>
                     </imageobject>
                 </mediaobject>
             </figure>   
-            <para>Selecting the host ID's displays a detailed view of the host's analytics with the
-                graphs. See the <xref linkend="edit_graphs"/> section to create or delete graphs for
-                the dashboards monitoring components. </para>
-            <figure>
-                <title>Hosts Details-Services</title>
+            <para>Selecting a host displays a set of services installed on the host, 
+                <xref linkend="host-services"/>, and a set 
+                of graphs monitoring the host's performance, <xref linkend="host-graphs"/>.</para>
+            <figure  xml:id="host-services">
+                <title>Hosts Services</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail.png" align="center" width="700"/>
+                        <imagedata fileref="media/dash-host-detail.png" align="center" scale="33"/>
                     </imageobject>
                 </mediaobject>
             </figure>
-            <figure>
-                <title>Hosts Details Graphs</title>
+            <figure  xml:id="host-graphs">
+                <title>Host Graphs</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-host-detail-2.png" align="center" width="700"
+                        <imagedata fileref="media/dash-host-detail-2.png" align="center" scale="33"
                         />
                     </imageobject>
                 </mediaobject>
@@ -253,36 +251,39 @@
         </sect2>
         <sect2>
             <title>Alerts</title>
-            <para>This feature allows the user to view alerts for events of interest to the administrator,
-                such as failed hosts, full hard drives, etc. An administrator can filter alerts of certain
-                severity and that were generated in a certain time window. The Alerts feature is based on 
-                collectd thresholds.</para>
+            <para>You can define alerts as thresholds in collectd. Examples
+                of thresholds would be cpu at 100%, hard drives at 95% capacity, etc. 
+                From the Dashboard, you can filter alerts both by severity and within
+                a given time-window.</para>
             <figure>
                 <title>Alerts</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-alerts.png" align="center" width="700"/>
+                        <imagedata fileref="media/dash-alerts.png" align="center" scale="33"/>
                     </imageobject>
                 </mediaobject>
             </figure>    
         </sect2>
         <sect2>
             <title>Clusters</title>
-            <para>The cluster monitoring tool gives a bird eye view of the clusters monitored by the Hop
-                Dashboard. It contains information such as the nodes that compose the cluster
+            <para>In the Clusters tab you view and manage the set of deployed clusters, 
+                as well as create new clusters. Here, you can see information 
+                about the nodes that compose the cluster
                 and the health status of the services deployed on those nodes. 
-                Also it keeps track of the resources allocated
+<!--                Also it keeps track of the resources allocated
                 to the cluster such as total number of cores which compose the overall computing
                 power of the cluster, the total disk capacity and the total physical memory
-                capacity. An administrator can drill down into a cluster to find out the list of services
-                in the cluster, their status and a list of nodes in each service.  
-                Many services can be restarted from the Dashboard.
+                capacity. -->
+                You can drill down into a cluster to find out the list of services
+                in the cluster, their status and a list of nodes for each service.  
+                Many of the services can be restarted from the Dashboard in the
+                event of failure.
             </para>
             <figure>
                 <title>Clusters</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/dash-clusters.png" align="center" width="700"/>
+                        <imagedata fileref="media/dash-clusters.png" align="center" scale="33"/>
                     </imageobject>
                 </mediaobject>
             </figure>   
@@ -291,30 +292,30 @@
                 <mediaobject>
                     <imageobject>
                         <imagedata fileref="media/dash-cluster-detail.png" align="center"
-                            width="700"/>
+                            scale="33"/>
                     </imageobject>
                 </mediaobject>
             </figure>
             <sect3>
                 <title>YARN monitoring</title>
-                <para>The Hop Dashboard displays graphs on YARN performance analytics. </para>
+                <para>The Hop Dashboard displays graphs on YARN performance statistics. </para>
                     <figure>
                 <title>YARN Metrics</title>
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-YARN-metrics.png" align="center"
-                                width="700"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>You can also access performance analytics for the resource and node managers in
-                    YARN. </para>
+            <para>You can also access performance statistics for the resourcemanager
+                and nodemanagers in YARN. </para>
             <figure>
                 <title>Resource Manager Metrics</title>
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-YARN-resource.png" align="center"
-                                width="700"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -323,24 +324,26 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-YARN-manager.png" align="center"
-                                width="700"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>The Hop dashboard provides direct access to the resource and node manger web UIs
-                    provided by the Apache distribution. The resource manager web UI gives detailed
-                    information about the number of applications submitted, number of applications
-                    in progress, number of application completed, total available memory, memory
-                    consumed, dead nodes etc. The Node manager web UI displays information such as
-                    total memory allocated to the java virtual machine on the node, memory allocated
-                    to each container, node health status, Hadoop version, etc. </para>
+            <para>The Hop dashboard provides direct access to the resourcemanager 
+                and nodemanager web UIs provided by the Apache distribution. 
+                The resource manager web UI gives detailed information about the 
+                number of applications submitted, number of applications in progress, 
+                number of application completed, total available memory, memory consumed, 
+                dead nodes etc. 
+                The Node manager web UI displays information such as total memory allocated 
+                to the java virtual machine on the node, memory allocated to each 
+                container, node health status, Hadoop version, etc. </para>
             
             <figure>
                 <title>Resource Manager UI</title>
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-YARN-resourceUI.png" align="center"
-                                width="700"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure>  
@@ -349,7 +352,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-YARN-managerUI.png" align="center"
-                                width="700"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure> 
@@ -366,7 +369,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-MYSQL-graphs.png" align="center"
-                                scale="50"/>
+                                scale="33"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -377,7 +380,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-MYSQL-console.png" align="center"
-                                scale="100"/>
+                                scale="66"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -392,7 +395,7 @@
                 <mediaobject>
                     <imageobject>
                             <imagedata fileref="media/dash-HOP-console.png" align="center"
-                                scale="100"/>
+                                scale="66"/>
                         </imageobject>
                 </mediaobject>
             </figure>
@@ -402,8 +405,8 @@
     <sect1>
         <title>Launching the Hop Cluster </title>
         
-        <para>After installing the Hop Dashboard on a machine in the cloud, you can easily deploy
-            and manage the Hop Cluster using the dashboard. </para>
+        <para>After installing the Hop Dashboard on a machine in the cloud, 
+            you can deploy and manage a new Hop Cluster using the dashboard. </para>
         <para>Login the dashboard using the credentials provided to Hop Portal during the installation
             of the dashboard. <orderedlist>
                 <listitem>

@@ -21,7 +21,7 @@
             Due to the rapid growth of data in recent years, distributed file systems have
             gained widespread adoption. The new breed of distributed file systems reliably store
             petabytes of data, and also provide rich abstractions for massively parallel data analytics <citation>5,7</citation>. 
-            The Hadoop Distributed File System (HDFS)  <xref linkend="Borthakur2007"/>  is a 
+            The Hadoop Distributed File System (HDFS) <xref linkend="Borthakur2007"/> is a 
             distributed, fault-tolerant file system designed to run on 
             low-cost commodity hardware that scales to store petabytes of data, 
             and is the file storage component of the Hadoop platform <citation>3,4</citation>. 
@@ -280,7 +280,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader-example.png" scale="50" align="center"/>
+                    <imagedata fileref="media/leader-example.png" scale="33" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -448,7 +448,7 @@ upon event &lt;timeout&gt;
             <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hopER.png" align="center" scale="66"/>
+                    <imagedata fileref="media/hopER.png" align="center" scale="50"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -458,7 +458,7 @@ upon event &lt;timeout&gt;
             <title>HDFS Filesystem Operation Sequence Diagram</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-operations.png" scale="30" align="center"/>
+                    <imagedata fileref="media/hdfs-operations.png" scale="36" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -496,7 +496,7 @@ upon event &lt;timeout&gt;
             <title>Locking in conflicting order can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-cycle.png" scale="90" align="center"/>
+                    <imagedata fileref="media/deadlock-cycle.png" scale="75" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -505,7 +505,7 @@ upon event &lt;timeout&gt;
             <title>Lock upgrade can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-upgrade.png" scale="90" align="center"/>
+                    <imagedata fileref="media/deadlock-upgrade.png" scale="75" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -779,14 +779,15 @@ operation performTask
             The other technologies we currently use are BitTorrent 
             for improving the download speeds of installation binaries and virtual 
             machine instances (AMIs in AWS) to pre-load software onto virtual machines.
-            The YAML API can currently be accessed by a Dashboard application that we
-            have built to manage and adminster Hop clusters.
+            The Hop Paas API (or YAML API) can currently be accessed by a 
+            Dashboard application that we have built to manage and adminster Hop clusters
+            , see <xref linkend="arch-helper"/>.
         </para>
         <figure xml:id="arch-deploy">
             <title>Deploying a Hop cluster from our Portal Website</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="30" align="center"/>
+                    <imagedata fileref="media/arch-deploy.png" scale="40" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>
@@ -809,8 +810,8 @@ operation performTask
                         <emphasis>YAML</emphasis>
                         YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
                         programming languages such as C, Perl and Python, and ideas from XML. 
-                        We use YAML to define the set of hosts and the services that will be installed on 
-                        those hosts, making up a single cluster. This way, we can define a whole cluster
+                        We use YAML to define the cloud provider, the set of hosts and the services that will be installed on 
+                        those hosts, together making up a single cluster. This way, we can define a whole cluster
                         in a single file, enabling easier management of clusters and even the sharing of
                         cluster definitions.
                         YAML syntax allows easy mappings of common data types found in high level languages like list, 
@@ -823,11 +824,13 @@ operation performTask
                         An example of a simple cluster definition is given in <xref linkend="example-cluster-defn"/>. 
                         The YAML file defines a cluster consisting of 6 nodes,
                         with MySQL Cluster running exclusively on 2 nodes, Hadoop running exclusively on 3 nodes, and
-                        another node running both MySQL Cluster and Hadoop services. The example uses default
-                        values for the AWS image, instanceType and region. There are many other parameters that 
-                        can be overriden. Our services map directly onto chef recipes for installing the services. We
-                        are developing a model for explicitly handling dependencies in chef, so that dependent services
-                        such as Java don't need to be specified as requirements in this cluster definition file.
+                        another node running both MySQL Cluster and Hadoop services. The example uses AWS as the cloud
+                        provider and default values for the AWS image, instanceType and region (shown later in Chapter 5). 
+                        There are many other parameters that can be overriden. 
+                        Our services map directly onto chef recipes for installing the services. 
+                        We are developing a model for explicitly handling recipe dependencies 
+                        in chef, so that dependent services such as Java don't need 
+                        to be explicitly defined as services in this cluster definition file.
                             
                         <example xml:id="example-cluster-defn">
                             <title>Example Cluster Definition in Hop</title>
@@ -923,16 +926,6 @@ nodes:
                         binaries using the traditional Http server method. 
                     </para>
                 </listitem>
-                <!--                <listitem>
-                    <para>
-                        <emphasis>Collectd</emphasis>
-                        Collectd is a daemon which collects system performance statistics periodically and 
-                        provides mechanisms to store values in a variety of ways like RRD files. Collectd 
-                        gathers statistics about the system it is running and stores this information. With 
-                        these statistics, we can keep track of the performance of your cluster and detect
-                        possible failures and performance bottlenecks that might be needed to be address.
-                    </para>
-                </listitem>-->
             </orderedlist>
         </para>
     </sect1>
@@ -1254,7 +1247,7 @@ nodes:
                 <artpagenums>365&#x2013;394</artpagenums> 
                 <pubdate>1976</pubdate>  
             </biblioentry>
-            <biblioentry xml:id="lamport1998part">
+<!--            <biblioentry xml:id="lamport1998part">
                 <abbrev>10</abbrev>
                 <authorgroup>
                     <author>
@@ -1270,7 +1263,7 @@ nodes:
                 <volumenum>16</volumenum> 
                 <artpagenums>133&#x2013;169</artpagenums> 
                 <pubdate>1998</pubdate>  
-            </biblioentry>
+            </biblioentry>-->
             <biblioentry xml:id="Manual2010">
                 <abbrev>11</abbrev>
                 <authorgroup>

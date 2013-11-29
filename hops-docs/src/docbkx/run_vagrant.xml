@@ -27,7 +27,7 @@
         </footnote> . </para>
 
     <sect1>
-        <title>Pre-requisites:</title>
+        <title>Pre-requisites</title>
         <para>
             You should have the following programs installed:
             git and vagrant. You will also need to download the vagrant virtual machine image
