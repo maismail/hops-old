@@ -386,25 +386,6 @@ upon event &lt;timeout&gt;
             </programlisting>
         </example>
 
-        <!--        <para>
-        Let’s say that NN1 crashes as soon as it updated its counter to 6. In the same round, NN2 updates its
-        counter to 7 with a counter range of [5-7] and NN3 would update its counter to 8 with a counter range
-        of [6-8]. At this point, from both NameNode perspectives, NN1 is alive as its counter lies in the range
-        while the DataNodes detect failure of NN1 via the TCP socket. 
-        Now, in the next round, NN2 would progress to updating the counter to 9 and now the counter range
-        would be [7-9]. Thus at this round, it would detect the crash of NN1 because the counter pertaining to
-        NN1 is still 6 and does not lie in this range.
-        Similarly, when NN3 updates the counter to 10 it detects the crash of NN1 because the range of
-        counter values is [8-10]. This means that at this point, both NN2 and NN3 recognizes the crash of
-        NN1 and run the consensus to elect the leader. NN2 having the lowest id would be elected as the
-        leader. Thus [Property#1] holds.
-        Now, when NN2 is elected the leader, it removes all lower NN ids in comparison to its own id from
-        the table. So now it has the lowest id and all NNs will see this view. This forces [Property#2] where
-        all previous leaders have now crashed. This is illustrated above in Figure7.
-        If the previous leader recovers, it notices that its id is not in the table as the lowest id and will place its
-        record with the next highest id.
-        DNs recognizing the new leader
-        </para>-->
         <para>
             All DataNodes are kept up-to-date with the current view of NameNodes in the system. This is done via
             requesting the NameNodes for the current list of NameNodes. This is done via a simple RPC call. The
