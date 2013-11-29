@@ -20,11 +20,11 @@
         <para>
             Due to the rapid growth of data in recent years, distributed file systems have
             gained widespread adoption. The new breed of distributed file systems reliably store
-            petabytes of data, and also provide rich abstractions for massively parallel data analytics. 
+            petabytes of data, and also provide rich abstractions for massively parallel data analytics <citation>5,7</citation>. 
             The Hadoop Distributed File System (HDFS)  <xref linkend="Borthakur2007"/>  is a 
             distributed, fault-tolerant file system designed to run on 
             low-cost commodity hardware that scales to store petabytes of data, 
-            and is the file storage component of the Hadoop platform. 
+            and is the file storage component of the Hadoop platform <citation>3,4</citation>. 
             HDFS provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
             YARN applications, see <xref linkend="hadoop2"/>.
             <figure xml:id="hadoop2">
@@ -36,18 +36,21 @@
                 </mediaobject>
             </figure>
             
-            In 2013, HDFS v2 <xref linkend="wang2009hadoop"/> introduced a new highly available metadata architecture, where, as
-            in HDFS v1, the entire filesystem's metadata is stored in memory on a single node, but in v2
-            changes to the metadata (<emphasis>edit log entries</emphasis>) are now replicated 
-            and persisted to a set of (at least three) Journal Nodes using a quorum-based replication algorithm.
-            In HDFS v2, a Primary and Secondary NameNode can be configured, where the Primary NameNode is 
+            In 2013, HDFS v2 introduced a  highly available metadata architecture 
+            <citation>1</citation>, where the entire filesystem's metadata is 
+            stored in memory on a single node, but changes to the metadata 
+            (<emphasis>edit log entries</emphasis>) are now replicated 
+            and persisted to a set of (at least three) Journal Nodes using a 
+            quorum-based replication algorithm, see <xref linkend="hdfsv2"/>.
+            In HDFS v2, a Primary and Secondary NameNode can be configured, 
+            where the Primary NameNode is 
             responsible for managing the metadata, and the Secondary NameNode 
             keeps an eventually consistent copy of the metadata. The Secondary NameNode 
             is kept in sync with the Primary by two mechanisms: firstly, by asynchronously applying all 
             edit log entries that have been committed at the Journal Nodes, and 
             secondly, receiving the same set of heartbeats from Data Nodes that are 
             received by the Primary.
-            The Primary/Secondary replication model is also known as an Active/Standy or 
+            This Primary/Secondary replication model is also known as an Active/Standy or 
             Master/Slave replication model, and was popularized by databases in the 1990s. HDFS' 
             implementation of this eventually consistent replication model is more limited than in
             the traditional relational database world, as all read and write requests are sent to 
@@ -97,8 +100,8 @@
             defining on a global order for transactions acquiring both explicit locks and implicit
             locks on subtrees in the hierarchy; this solution is motivated by <xref
                 linkend="J.GrayR.LorieG.Putzolu1976"/> and <xref linkend="berenson1995critique"/>.
-            The use of a database, however, also has its drawbacks. As the data now resides on
-            remote hosts on the network, an excessive number of roundtrips to the database harms
+                The use of a database, however, also has its drawbacks <citation>8,12</citation>. 
+            As the data now resides on remote hosts on the network, an excessive number of roundtrips to the database harms
             system scalability and increases per-operation latencies. We ameliorate these problems
             by introducing a snapshotting mechanism for transactions, where, at the beginning of a
             transaction, all the resources it needs are aquired in the defined global order, while

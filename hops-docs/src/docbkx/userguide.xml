@@ -52,4 +52,19 @@
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
 
+    <chapter>
+        <title>Conclusions</title>
+        <section>
+        In this document, we presented our highly available HDFS architecture. 
+        Our version of HDFS provides a new model for stateless NameNodes, with
+        metadata stored in highly available shared, transactional memory, implemented
+        using MySQL Cluster. We have solved problems related to leader election, 
+        maintaining consistency of the filesystem operations after migrating metadata
+        to a relational store, and snapshotting of database state to reduce the number
+        of database roundtrips, thus improving throughput.
+        We have also presented Hop (Hadoop Open Paas), our platform-as-a-service for
+        automating the deployment of clusters, as well as a language for describing
+        clusters. Finally, we included a userguide to get started using Hop.
+        </section>
+    </chapter>
 </book>
