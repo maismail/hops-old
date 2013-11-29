@@ -27,7 +27,7 @@
         <title>Hop Portal</title>
         <mediaobject>
             <imageobject>
-                <imagedata fileref="media/portal.png" align="center"  width="300" scalefit="1"/>
+                <imagedata fileref="media/portal.png" align="center" width="400" scalefit="1"/>
             </imageobject>
         </mediaobject>
     </figure>   
@@ -142,7 +142,8 @@
                                         <title>Portal AWS</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-AWS.png" align="center"  scale="40"/>
+                                                <imagedata fileref="media/portal-AWS.png"
+                                                  align="center" scalefit="0"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -231,7 +232,8 @@
                                         <title>Portal OpenStack</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-OpenStack.png" align="center" scale="40"/>
+                                                <imagedata fileref="media/portal-OpenStack.png"
+                                                  align="center"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
@@ -293,7 +295,8 @@
                                         <title>Portal Baremetal</title>
                                         <mediaobject>
                                             <imageobject>
-                                                <imagedata fileref="media/portal-Baremetal.png" align="center" scale="40"/>
+                                                <imagedata fileref="media/portal-Baremetal.png"
+                                                  align="center"/>
                                             </imageobject>
                                         </mediaobject>
                                     </figure>
