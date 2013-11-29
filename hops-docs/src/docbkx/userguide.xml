@@ -3,8 +3,8 @@
       xmlns:xlink="http://www.w3.org/1999/xlink"
       xmlns:xi="http://www.w3.org/2001/XInclude"
       xmlns:db="http://docbook.org/ns/docbook">
-    <info>
-        <!--        <contractnum>Project number: 317871</contractnum>
+    <!--info>
+        <contractnum>Project number: 317871</contractnum>
         <contractsponsor>EU FP7 - BiobankCloud Project</contractsponsor>
         <title>Hadoop Open Platform Userguide</title>-->
         <!--        <authorgroup>
@@ -40,16 +40,16 @@
                 without fee is hereby granted in perpetuity, provided that the above
                 copyright notice and this paragraph appear in all copies.
             </para>
-        </legalnotice>-->
+        </legalnotice>>
     
-    </info>
+    </info-->
 
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="architecture.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_vagrant.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="getting_started.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_dashboard.xml" />
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_paas_config.xml" />
-    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" />
+    <!--xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" /-->
     <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
 
     <chapter>

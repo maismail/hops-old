@@ -31,7 +31,7 @@
                 <title>Hadoop v2</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hadoop2.png" scale="66" align="center"/>
+                        <imagedata fileref="media/hadoop2.png" scale="60" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -74,7 +74,7 @@
                 <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
                 <mediaobject>
                     <imageobject>
-                        <imagedata fileref="media/hdfsv2.png" scale="66" align="center"/>
+                        <imagedata fileref="media/hdfsv2.png" scale="60" align="center"/>
                     </imageobject>
                 </mediaobject>
             </figure>
@@ -113,7 +113,7 @@
             <title>Hop HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hop-hdfs.png" scale="50" align="center"/>
+                    <imagedata fileref="media/hop-hdfs.png" scale="40" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -128,16 +128,24 @@
         tasks include: 
         <orderedlist>
             <listitem>
-                replication monitoring, 
+                <para>
+                replication monitoring,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 lease management,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 block token generation,
+                </para>
             </listitem>
             <listitem>
+                <para>
                 and the decomissioning of datanodes.
+                </para>
             </listitem>
         </orderedlist>
         Without any coordination between NameNodes, and since all NameNodes have identical behaviour, 
@@ -174,14 +182,20 @@
         The properties that our leader election algorithm guarantee are:
     <orderedlist>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
+            </para>
         </listitem>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
             All will agree to the same NameNode being the leader.
+            </para>
         </listitem>
         <listitem>
+            <para>
             <emphasis role="bold-italic">Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
+            </para>
         </listitem>
     </orderedlist>
         </para>
@@ -207,7 +221,7 @@
             <title>Leader Table in NDB</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/leader.png" scale="75" align="center"/>
+                    <imagedata fileref="media/leader.png" scale="85" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -417,6 +431,7 @@ upon event &lt;timeout&gt;
 
     <sect1>                                
         <title>Ensuring Correctness of Hop HDFS</title>
+        <para>
             One of the main challenges in migrating HDFS' metadata from the heap of
             a single JVM to a relational database was ensuring the correctness of 
             our approach. From a practical perspective, we ensure correctness by
@@ -433,7 +448,7 @@ upon event &lt;timeout&gt;
             <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hopER.png" scale="50" align="center"/>
+                    <imagedata fileref="media/hopER.png" align="center" width="650"/>
                 </imageobject>
             </mediaobject>
         </figure>   
@@ -443,12 +458,14 @@ upon event &lt;timeout&gt;
             <title>HDFS Filesystem Operation Sequence Diagram</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-operations.png" scale="37" align="center"/>
+                    <imagedata fileref="media/hdfs-operations.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>   
-        <para/>
+        </para>
+        <para>
         <emphasis>Transactions and Isolation Levels</emphasis>
+        </para>
         <para>
             We implemented each HDFS operation as a single transaction, where we begin the transaction, 
             read and write the necessary meta-data from NDB, and then either commit, 
@@ -479,7 +496,7 @@ upon event &lt;timeout&gt;
             <title>Locking in conflicting order can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-cycle.png" scale="75" align="center"/>
+                    <imagedata fileref="media/deadlock-cycle.png" scale="90" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
@@ -488,13 +505,14 @@ upon event &lt;timeout&gt;
             <title>Lock upgrade can lead to Deadlock</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/deadlock-upgrade.png" scale="75" align="center"/>
+                    <imagedata fileref="media/deadlock-upgrade.png" scale="90" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
 
-        <para/>
+        <para>
         <emphasis>Hierarchy of Resources</emphasis>
+        </para>
         <para>
             Filesystems, such as HDFS, have hierarchical namespaces, with directories
             containing zero to many files. In unix-based filesystems, both 
@@ -528,6 +546,7 @@ upon event &lt;timeout&gt;
 
     <sect1>                                
         <title>Snapshot layer</title>
+        <para>
             To improve the performance of our solution, we take a snapshot of
             the database state required for a transaction at the start of filesystem operations, 
             store and mutate that state locally at the NameNode, and then 
@@ -535,7 +554,7 @@ upon event &lt;timeout&gt;
             end of the transaction, see <xref linkend="snapshot"/>. 
             This approach reduces the number of round-trips
             to the database, helping to improve database throughput.
-            
+        </para>            
         <example xml:id="snapshot">
             <title>Snapshotting at NameNodes</title>
             <programlisting linenumbering="numbered">
@@ -559,7 +578,7 @@ operation performTask
     //Operation Body, accessing only state stored in the snapshot
 </programlisting>
 </example>
-
+<para>
 For some filesystem operations, the presented algorithm is not complete enough 
 to ensure a total order on acquiring resources. For example, there may be an inode y 
 for which x is parent directory, and a lock on x should be acquired to access y. 
@@ -575,7 +594,7 @@ so, we then perform the standard transaction, acquiring locks and taking a
 snapshot of the data. If the state in the second transaction is no longer valid,
 we can retry the whole operation, beginning at the first transaction, see 
 <xref linkend="snapshot-multi"/>.
-
+</para>
 
         <example xml:id="snapshot-multi">
             <title>Snapshotting at NameNodes using Two Transactions</title>
@@ -640,10 +659,11 @@ operation performTask
             <title>Reduction in the number of DB roundtrips by snapshotting</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/hdfs-snapshot.png" scale="55" align="center"></imagedata>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="65" align="center"/>
                 </imageobject>
             </mediaobject>
-        </figure>    
+        </figure>
+        <para>
             For improved performance, we have also implemented schema-aware partitioning of metadata across 
             multiple hosts, ensuring all data related to a single inode hashes
             to the same host, and can be retrieved in a single network hop.
@@ -651,6 +671,7 @@ operation performTask
             is started that involves a single inode, we give a hint to NDB, using 
             the ClusterJ API, that the transaction should start on data node containing
             the data for that inode.
+        </para>
         <para>
             One positive aspect of HopHDFS is that the amount of metadata that can be
             supported is vastly increased over Apache HDFS, and it is much more easy to modify. 
@@ -684,11 +705,10 @@ operation performTask
             <title>Hop architecture</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-stack.png" scale="70" align="center"></imagedata>
+                    <imagedata fileref="media/arch-stack.png" scale="55" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>    
-        <para>.</para>
         <orderedlist>
 <!--            <listitem>
                 <para>
@@ -741,8 +761,9 @@ operation performTask
             </listitem>
         </orderedlist>
 
-        <para/>
+        <para>
         <emphasis>Hop PaaS</emphasis>
+        </para>
         <para>Our PaaS for HDFS, as well as YARN and the Workflow Engine,
             supports the automated deployment of a Hop cluster on Amazon Cloud, 
             Open Stack or a bare metal cluster. We call it
@@ -765,7 +786,7 @@ operation performTask
             <title>Deploying a Hop cluster from our Portal Website</title>
             <mediaobject>
                 <imageobject>
-                    <imagedata fileref="media/arch-deploy.png" scale="45" align="center"/>
+                    <imagedata fileref="media/arch-deploy.png" scale="30" align="center"/>
                 </imageobject>
             </mediaobject>
         </figure>

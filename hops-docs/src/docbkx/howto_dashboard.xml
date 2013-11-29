@@ -2,17 +2,15 @@
 <chapter version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/2000/svg" xmlns:ns4="http://www.w3.org/1998/Math/MathML" xmlns:ns3="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" xml:id="ch03">
     <title>Hop Dashboard</title>
     
-    <para>Hop Dashboard is a web application designed with Hadoop administrators in mind. The 
+    <para>Hop Dashboard is a web application designed with Hadoop administrators in mind. The
         Dashboard provides a centralized end-to-end management and monitoring application for Hop
         clusters. It simplifies the Hadoop administrator's job by having all the necessary
-        statistics of the Hadoop cluster gathered in one place and presented in an effective manner,
-        and it also provides buttons to execute maintanance commands as well as command-line terminals
-        for services like MySQL and HDFS. The Dashboard monitoring services are built using the
-        open-source collectd monitoring software.</para>
-    <para>You will need to configure certain parameters when the Hop Dashboard is launched for the
-        first time. In order to access the dashboard, use the credentials you specified in the Hop
-        Portal when you where preparing to launch the dashboard <xref linkend="ch02"/>. After login,
-        if you press your user icon you will have a menu with the following options: <itemizedlist>
+        statistics of the Hadoop cluster gathered in one place and presented in an effective
+        manner.</para>
+    <para>Certain parameters need to be configured when the Hop Dashboard is launched for the first
+        time. In order to access the dashboard, use the credentials you specified in the Hop Portal
+        during dashboard deployment <xref linkend="ch02"/>. After the login, press the user icon,
+        and a menu with the following options will pop up: <itemizedlist>
             <listitem>
                 <para> Change password </para>
             </listitem>
@@ -32,24 +30,15 @@
     </sect1>
     <sect1 xml:id="edit_graphs">
         <title>Edit Graphs</title>
-        <para>The Hop Dashboard enables the customization of what monitoring data is displayed 
-            to administrators. An administrator can select which graphs to enable
-            for the different services of Hop. </para>
-        <figure xml:id="dash-graphs">
-            <title>New/Import Graphs</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-edit-graphs.png" align="center" width="700"/>
-                </imageobject>
-            </mediaobject>
-        </figure>
-        <para> You can define your graphs through two different options that are visible on this new
-            view: <itemizedlist>
+        <para>The Hop Dashboard enables the customization of what monitoring data that is displayed
+            to the administrators. An administrator can select which graphs to enable for the
+            different services of Hop. You can define new graphs or import the list of graphs from a
+            file.  <itemizedlist>
                 <listitem>
                     <para>
                         <emphasis>New</emphasis> Selecting this option will open a new dialog where
-                        you can define the specifications for a new graph for statistics monitored by
-                        the dashboard. </para>
+                        you can define the specifications for a new graph for statistics monitored
+                        by the dashboard. </para>
                     <figure xml:id="dash-new-graphs">
                         <title>Graph Editor</title>
                         <mediaobject>
@@ -62,9 +51,10 @@
                 </listitem>
                 <listitem>
                     <para>
-                        <emphasis>Import</emphasis> It is also possible to import a predefined set of graphs
-                        from a JSON file. This is the quickest way to load a large number of graphs. </para>
-<!--                    <figure xml:id="dash-import-graphs">
+                        <emphasis>Import</emphasis> It is also possible to import a predefined set
+                        of graphs from a JSON file. This is the quickest way to load a large number
+                        of graphs. </para>
+                    <!--                    <figure xml:id="dash-import-graphs">
                         <title>Import Graphs</title>
                         <mediaobject>
                             <imageobject>
@@ -74,10 +64,10 @@
                         </mediaobject>
                     </figure>-->
                 </listitem>
-            </itemizedlist>The graph speficiations are stored in a MySQL database and loaded in
-            the dashboard. In the graph table, it is possible to view all the graphs for a specific
-            type of service or component that the dashboard is monitoring. Pressing the zoom button
-            will generate a dialog box where you can see more details about the graph. </para>
+            </itemizedlist>The graph specifications are stored in a MySQL database and loaded in the
+            dashboard. The graph table shows all the graphs for a specific type of service or a
+            component that the dashboard is monitoring. Pressing the zoom button will generate a
+            dialog box where you can see more details about the graph. </para>
         <figure xml:id="dash-selected-graphs">
             <title>Graph Selection Detail</title>
             <mediaobject>
@@ -89,40 +79,24 @@
     </sect1>
     <sect1>
         <title>Backup/Restore</title>
-        <para>The Dashboard's state is stored entirely in a MySQL database instance. 
-            This option makes a backup of the whole dashboard state as an SQL file that
-            can be downloaded by the user for off-site backup. In the case of failure
-            or maintenence, the dashboard can restore a previous state from a backup SQL file. </para>
-        <figure xml:id="dash-backup">
-            <title>Backup/Restore</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-backup-restore.png" align="center" width="700"/>
-                </imageobject>
-            </mediaobject>
-        </figure> 
+        <para>The Dashboard's state is stored entirely in a MySQL database instance. This option
+            makes a backup of the whole dashboard state as an SQL file that can be downloaded by the
+            user for off-site backup. In the case of failure or maintenance, the dashboard can
+            restore a previous state from a backup SQL file. </para> 
     </sect1>
     <sect1>
         <title>Setup Credentials</title>
-        <para>This option is to setup user credentials that are used when the dashboard deploys a
-            cluster on a cloud platform or cluster. They are typically AWS or OpenStack credentials 
-            or a public key for cluster deployments. If user credentials have not been setup,
-            cluster deployment will fail.</para>
-        <figure xml:id="dash-credentials">
-            <title>Setup Credentials</title>
-            <mediaobject>
-                <imageobject>
-                    <imagedata fileref="media/dash-credentials.png" align="center" scale="50"/>
-                </imageobject>
-            </mediaobject>
-        </figure>   
+        <para>The administrator need to specify user credentials that are used when the dashboard
+            deploys a cluster on a cloud platform or cluster. They are typically AWS or OpenStack
+            credentials or a public key for cluster deployments. If user credentials have not been
+            setup, cluster deployment will fail.</para>   
     </sect1>
     
     <sect1>
         <title>Cluster Management</title>
-        <para>Cluster mangement is an interesting feature in the Hop Dashboard. The dashboad keeps
-            track of diffenent cluster applications deployed in the cloud. It allows the
-            administrators to create, delete, edit, load and export clusters.  </para>
+        <para>Cluster management is an interesting feature in the Hop Dashboard. The dashboad keeps
+            track of different cluster applications deployed in the cloud. It allows the
+            administrators to create, edit, delete, load and export clusters. </para>
         <figure xml:id="dash-manage-cluster">
             <title>Manage Cluster</title>
             <mediaobject>
@@ -134,32 +108,23 @@
         <para>
             <itemizedlist>
                 <listitem>
-                    <para><emphasis>Create Cluster</emphasis> Selecting this option will take you to
-                        the cluster generation wizard where a users can of generate their own
+                    <para><emphasis>Create Cluster:</emphasis> Selecting this option will take you
+                        to the cluster generation wizard where a users can of generate their own
                         clusters for Hop. In the next chapter, we will explain in detail how users
                         can create their custom clusters using our Cluster Definition Language, see
-                            <xref linkend="ch04"/>. </para>
+                        <xref linkend="defining_a_cluster">Chapter: Defining a Cluster</xref>. </para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Delete Clusters</emphasis> This option will delete a selected
+                    <para><emphasis>Delete Clusters:</emphasis> This option will delete a selected
                         cluster. It is possible to delete multiple clusters at once by shift
                         clicking multiple clusters before selecting this option. </para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Edit Selected Cluster</emphasis> This option will allow a user
-                        to edit an existing stored cluster. Administrators can use this
-                        wizard to modify the set of hosts or services in an existing cluster. 
-                    They can choose 2 ways to edit a cluster from the entry, they
-                        can re-run the cluster wizard or they can choose to use the embedded YAML editor available
-                        in the dashboard.</para><figure>
-                <title>Select edit mode:</title>
-                <mediaobject>
-                    <imageobject>
-                                <imagedata fileref="media/dash-edit-select.png" align="center"
-                                    width="500"/>
-                            </imageobject>
-                </mediaobject>
-            </figure>
+                    <para><emphasis>Edit Selected Cluster:</emphasis> This option will allow a user
+                        to edit an existing stored cluster. Administrators can use this wizard to
+                        modify the set of hosts or services in an existing cluster. They can edit
+                        the cluster either by re-running the cluster wizard or by choosing to use
+                        the embedded YAML editor available in the dashboard.</para>
             <para>
                 If we select the online editor option, it will open the selected cluster 
                 into a YAML editor window.
@@ -176,14 +141,14 @@
                         
                 </listitem>
                 <listitem>
-                    <para><emphasis>Load Selected Cluster</emphasis> This option allows the user to
+                    <para><emphasis>Load Selected Cluster:</emphasis> This option allows the user to
                         load an existing cluster definition from a YAML file. This is a useful
-                    feature for reusing cluster definitions - users can share cluster definitions
-                    and load them using this option.</para>
+                        feature for reusing cluster definitions, users can share cluster definitions
+                        and load them using this option.</para>
                 </listitem>
                 <listitem>
-                    <para><emphasis>Export Cluster</emphasis> It saves the information about the
-                        cluster in  a YAML file, so that the cluster definition can be shared. </para>
+                    <para><emphasis>Export Cluster:</emphasis> It saves the information about the
+                        cluster in a YAML file, so that the cluster definition can be shared. </para>
                 </listitem>
             </itemizedlist>
         </para>
@@ -191,14 +156,13 @@
     <sect1>
         <title>Cluster Deployment Progress</title>
         <para>The Hop Dashboard monitors all the nodes deployed in its clusters. It displays the
-            history of all the nodes going through multiple phases of the deployment cycle. A
-            progress bar appears over each of the entries in the table showing the deployment 
+            history of all the nodes going through different phases of the deployment cycle. A
+            progress bar appears over each of the entries in the table showing the deployment
             progress of the nodes. A cluster node goes through the following phases during
-            deployment: 
-            <itemizedlist>
+            deployment: <itemizedlist>
                 <listitem>
-                    <para><emphasis>Waiting:</emphasis> An entry has been generated in the node
-                        scheduler but no node creation query has been yet been sent to the cloud
+                    <para><emphasis>Waiting:</emphasis> A task has been generated in the node
+                        scheduler but no node creation query has been sent to the cloud
                         provider.</para>
                 </listitem>
                 <listitem>
@@ -248,16 +212,16 @@
     </sect1>
     <sect1>
         <title>Monitoring</title>
-        <para>Hop Dashboard uses collectd to monitor hosts, alerts and Hop services in real time. 
-            A brief overview of the monitoring tools is given below.   </para>
+        <para>Hop Dashboard monitors hosts, alerts and Hop services in real time. A brief overview
+            of the monitoring tools is given below. </para>
         <sect2>
             <title>Hosts</title>
             <para>The host monitoring tool shows the state of all the nodes in the clusters. An
                 administrator can track information of his/her interest such as the allocated IPs
-                for the nodes, hostnames, host IDs, health of the nodes in the system, and when the
-                last heartbeat was received from the nodes. It also monitors available resources on
-                the nodes such as the number of cores that machine has, average load on the
-                instance, disk usage and physical memory in use. </para>
+                for the nodes, host names, host IDs, health of the nodes, and when the last
+                heartbeat was received from the nodes. It also monitors available resources on the
+                nodes such as the number of cores that machine has, average load on the instance,
+                disk usage and physical memory in use. </para>
             <figure>
                 <title>Hosts</title>
                 <mediaobject>
@@ -267,8 +231,8 @@
                 </mediaobject>
             </figure>   
             <para>Selecting the host ID's displays a detailed view of the host's analytics with the
-                graphs that are available for the hosts. See the <xref linkend="edit_graphs"/>
-                section to create or delete graphs for the dashboards monitoring components. </para>
+                graphs. See the <xref linkend="edit_graphs"/> section to create or delete graphs for
+                the dashboards monitoring components. </para>
             <figure>
                 <title>Hosts Details-Services</title>
                 <mediaobject>
@@ -343,7 +307,8 @@
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>You can also access the Apache websites for the resource and node managers in YARN. </para>
+            <para>You can also access performance analytics for the resource and node managers in
+                    YARN. </para>
             <figure>
                 <title>Resource Manager Metrics</title>
                 <mediaobject>
@@ -362,14 +327,13 @@
                         </imageobject>
                 </mediaobject>
             </figure>
-            <para>The Hop dashboard provides direct access to the resource and node manger web
-                    UIs provided by the Apache distribution. 
-                    The resource manager web UI gives detailed information about the number of
-                    applications submitted, number of applications in progress, number of
-                    application completed, total available memory, memory consumed, dead nodes etc.
-                    The Node manager web UI displays information such as total memory allocated to the
-                    java virtual machine on the node, memory allocated to each container, node
-                    health status, hadoop version, etc. </para>
+            <para>The Hop dashboard provides direct access to the resource and node manger web UIs
+                    provided by the Apache distribution. The resource manager web UI gives detailed
+                    information about the number of applications submitted, number of applications
+                    in progress, number of application completed, total available memory, memory
+                    consumed, dead nodes etc. The Node manager web UI displays information such as
+                    total memory allocated to the java virtual machine on the node, memory allocated
+                    to each container, node health status, Hadoop version, etc. </para>
             
             <figure>
                 <title>Resource Manager UI</title>
@@ -406,8 +370,8 @@
                         </imageobject>
                 </mediaobject>
             </figure>
-                 <para>The dashboard provides a commmand-line terminal to directly run
-                    SQL commands on a MySQL Server connected to NDB.</para>
+                 <para>The dashboard provides a command-line terminal to directly run SQL commands
+                    on a MySQL Server connected to NDB.</para>
                   <figure>
                 <title>MySQL Console</title>
                 <mediaobject>
@@ -434,6 +398,51 @@
             </figure>
             </sect3>
         </sect2>
+    </sect1>
+    <sect1>
+        <title>Launching the Hop Cluster </title>
+        
+        <para>After installing the Hop Dashboard on a machine in the cloud, you can easily deploy
+            and manage the Hop Cluster using the dashboard. </para>
+        <para>Login the dashboard using the credentials provided to Hop Portal during the installation
+            of the dashboard. <orderedlist>
+                <listitem>
+                    <para> Select the manage cluster option available in the dashboard. </para>
+                    <para>
+                        <menuchoice>
+                            <guimenu>Main Menu Bar</guimenu>
+                            <guisubmenu>Manage Cluster</guisubmenu>
+                            <guimenuitem>Load File</guimenuitem>
+                        </menuchoice>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>Load a file containing the cluster definition. We refer to section
+                        <emphasis><xref linkend="defining_a_cluster">Defining a
+                            Cluster</xref></emphasis> to create custom clusters definitions.</para>
+                </listitem>
+                <listitem>
+                    <para>The file is loaded and the cluster launcher will appear showing the content of
+                        the loaded file.</para>
+                </listitem>
+                <listitem>
+                    <para>Pressing the <emphasis>Start Cluster</emphasis> button to start the deployment
+                        process. A status bar will appear showing information about the current status
+                        of the deployment process. Installation process is long and it depends on the
+                        number of nodes in the cluster. On average, for 8 nodes it takes around 35
+                        minutes. </para>
+                </listitem>
+                <listitem>
+                    <para>If a node fails then the Hop cluster launcher will automatically retry the
+                        node deployment.</para>
+                </listitem>
+                <listitem>
+                    <para>Summary of all the install nodes and their status is displayed after the
+                        Cluster Launcher finishes.</para>
+                </listitem>
+            </orderedlist></para>
+        <para> Congratulations, you have successfully deployed a Hop cluster ready! </para>
+        
     </sect1>
     
    
