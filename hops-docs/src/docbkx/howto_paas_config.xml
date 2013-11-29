@@ -212,9 +212,10 @@ provider:
             <para>
                 Lets imagine that we want to define a complete HOP cluster which will contain a basic minimal setup.
                 In this case we need 2 NDBs, 1 MGM and 1 Mysqld for the MySQL cluster, 2 namenode and 2 
-                datanode for the Hadoop File System and in order to user Spark, a Spark instance with 1 resource
-                manager and 2 node managers. How we could map the services using only 7 machines?
-                A very simple configuration could be as follows:
+                datanode for the Hadoop File System, 1 resource manager and 2 node managers for YARN. 
+                How we could map the services using only 7 machines?
+                A very simple configuration is shown below. Note that the syntax differs slightly from
+                the example presented in Chapter 1, but both forms represent valid YAML syntax.
                 <example>
                     <title>Full AWS Cluster Example</title>
                 <programlisting>
