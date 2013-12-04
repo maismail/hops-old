@@ -29,7 +29,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
-import org.apache.hadoop.hdfs.server.namenode.Leader;
+import se.sics.hop.metadata.persistence.entity.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
@@ -366,7 +366,7 @@ public class TransactionLockAcquirer {
 
   public TransactionLocks acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
-      acquireLockList(locks.getLeaderLock(), Leader.Finder.All);
+      acquireLockList(locks.getLeaderLock(), HopLeader.Finder.All);
     }
     return locks;
   }

@@ -24,13 +24,13 @@ import java.util.List;
 import java.util.Map;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.Leader;
+import se.sics.hop.metadata.persistence.entity.HopLeader;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaderDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
@@ -38,12 +38,12 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author salman
  */
-public class LeaderContext extends EntityContext<Leader> {
+public class LeaderContext extends EntityContext<HopLeader> {
 
-  private Map<Long, Leader> allReadLeaders = new HashMap<Long, Leader>();
-  private Map<Long, Leader> modifiedLeaders = new HashMap<Long, Leader>();
-  private Map<Long, Leader> removedLeaders = new HashMap<Long, Leader>();
-  private Map<Long, Leader> newLeaders = new HashMap<Long, Leader>();
+  private Map<Long, HopLeader> allReadLeaders = new HashMap<Long, HopLeader>();
+  private Map<Long, HopLeader> modifiedLeaders = new HashMap<Long, HopLeader>();
+  private Map<Long, HopLeader> removedLeaders = new HashMap<Long, HopLeader>();
+  private Map<Long, HopLeader> newLeaders = new HashMap<Long, HopLeader>();
   private boolean allRead = false;
   private LeaderDataAccess dataAccess;
 
@@ -52,7 +52,7 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public void add(Leader leader) throws PersistanceException {
+  public void add(HopLeader leader) throws PersistanceException {
     if (removedLeaders.containsKey(leader.getId())) {
       throw new TransactionContextException("Removed leader passed for persistance");
     }
@@ -82,8 +82,8 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public int count(CounterType<Leader> counter, Object... params) throws PersistanceException {
-    Leader.Counter lCounter = (Leader.Counter) counter;
+  public int count(CounterType<HopLeader> counter, Object... params) throws PersistanceException {
+    HopLeader.Counter lCounter = (HopLeader.Counter) counter;
 
     switch (lCounter) {
       case All:
@@ -119,9 +119,9 @@ public class LeaderContext extends EntityContext<Leader> {
 
   }
 
-  private List<Leader> findPredLeadersFromMapping(long id) {
-    List<Leader> preds = new ArrayList<Leader>();
-    for (Leader leader : allReadLeaders.values()) {
+  private List<HopLeader> findPredLeadersFromMapping(long id) {
+    List<HopLeader> preds = new ArrayList<HopLeader>();
+    for (HopLeader leader : allReadLeaders.values()) {
       if (leader.getId() < id) {
         preds.add(leader);
       }
@@ -130,9 +130,9 @@ public class LeaderContext extends EntityContext<Leader> {
     return preds;
   }
 
-  private List<Leader> findLeadersWithGreaterCounterFromMapping(long counter) {
-    List<Leader> greaterLeaders = new ArrayList<Leader>();
-    for (Leader leader : allReadLeaders.values()) {
+  private List<HopLeader> findLeadersWithGreaterCounterFromMapping(long counter) {
+    List<HopLeader> greaterLeaders = new ArrayList<HopLeader>();
+    for (HopLeader leader : allReadLeaders.values()) {
       if (leader.getCounter() > counter) {
         greaterLeaders.add(leader);
       }
@@ -141,9 +141,9 @@ public class LeaderContext extends EntityContext<Leader> {
     return greaterLeaders;
   }
 
-  private List<Leader> findSuccLeadersFromMapping(long id) {
-    List<Leader> preds = new ArrayList<Leader>();
-    for (Leader leader : allReadLeaders.values()) {
+  private List<HopLeader> findSuccLeadersFromMapping(long id) {
+    List<HopLeader> preds = new ArrayList<HopLeader>();
+    for (HopLeader leader : allReadLeaders.values()) {
       if (leader.getId() > id) {
         preds.add(leader);
       }
@@ -153,9 +153,9 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public Leader find(FinderType<Leader> finder, Object... params) throws PersistanceException {
-    Leader.Finder lFinder = (Leader.Finder) finder;
-    Leader leader;
+  public HopLeader find(FinderType<HopLeader> finder, Object... params) throws PersistanceException {
+    HopLeader.Finder lFinder = (HopLeader.Finder) finder;
+    HopLeader leader;
 
     switch (lFinder) {
       case ById:
@@ -179,9 +179,9 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public Collection<Leader> findList(FinderType<Leader> finder, Object... params) throws PersistanceException {
-    Leader.Finder lFinder = (Leader.Finder) finder;
-    Collection<Leader> leaders = null;
+  public Collection<HopLeader> findList(FinderType<HopLeader> finder, Object... params) throws PersistanceException {
+    HopLeader.Finder lFinder = (HopLeader.Finder) finder;
+    Collection<HopLeader> leaders = null;
 
     switch (lFinder) {
       case AllByCounterGTN:
@@ -199,7 +199,7 @@ public class LeaderContext extends EntityContext<Leader> {
           if (leaders != null) {
             Iterator itr = leaders.iterator();
             while (itr.hasNext()) {
-              Leader leader = (Leader) itr.next();
+              HopLeader leader = (HopLeader) itr.next();
               if (!allReadLeaders.containsKey(leader.getId())) {
                 allReadLeaders.put(leader.getId(), leader);
               }
@@ -221,7 +221,7 @@ public class LeaderContext extends EntityContext<Leader> {
           if (leaders != null) {
             Iterator itr = leaders.iterator();
             while (itr.hasNext()) {
-              Leader leader = (Leader) itr.next();
+              HopLeader leader = (HopLeader) itr.next();
               if (!allReadLeaders.containsKey(leader.getId())) {
                 allReadLeaders.put(leader.getId(), leader);
               }
@@ -241,7 +241,7 @@ public class LeaderContext extends EntityContext<Leader> {
           if (leaders != null) {
             Iterator itr = leaders.iterator();
             while (itr.hasNext()) {
-              Leader leader = (Leader) itr.next();
+              HopLeader leader = (HopLeader) itr.next();
               if (!allReadLeaders.containsKey(leader.getId())) {
                 allReadLeaders.put(leader.getId(), leader);
               }
@@ -270,7 +270,7 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public void remove(Leader leader) throws PersistanceException {
+  public void remove(HopLeader leader) throws PersistanceException {
     removedLeaders.put(leader.getId(), leader);
 
     if (allReadLeaders.containsKey(leader.getId())) {
@@ -289,7 +289,7 @@ public class LeaderContext extends EntityContext<Leader> {
   }
 
   @Override
-  public void update(Leader leader) throws PersistanceException {
+  public void update(HopLeader leader) throws PersistanceException {
     if (removedLeaders.containsKey(leader.getId())) {
       throw new TransactionContextException("Trying to update a removed leader record");
     }

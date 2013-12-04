@@ -114,7 +114,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.Block
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockTokenKeyClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.INodeAttributesClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaderClusterj;
+import se.sics.hop.metadata.persistence.ndb.dalimpl.LeaderClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeasePathClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;

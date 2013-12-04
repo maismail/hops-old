@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
 
+import se.sics.hop.metadata.persistence.entity.HopLeader;
 import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import se.sics.hop.metadata.persistence.DALDriver;
 import se.sics.hop.metadata.persistence.DALStorageFactory;
 import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 
 /**
@@ -127,29 +129,29 @@ public class StorageFactory {
 
   public static Map<Class, EntityContext> createEntityContexts() {
     Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
-    BlockInfoContext bicj = new BlockInfoContext(blockInfoDataAccess);
-    entityContexts.put(BlockInfo.class, bicj);
-    entityContexts.put(BlockInfoUnderConstruction.class, bicj);
-    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
-    entityContexts.put(IndexedReplica.class, new ReplicaContext(replicaDataAccess));
-    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
-    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
-    entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper(getDataAccess(LeaseDataAccess.class))));
-    entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
-    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
-    InodeContext inodeContext = new InodeContext(inodeDataAccess);
-    entityContexts.put(INode.class, inodeContext);
-    entityContexts.put(INodeDirectory.class, inodeContext);
-    entityContexts.put(INodeFile.class, inodeContext);
-    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
-    entityContexts.put(INodeSymlink.class, inodeContext);
-    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
-    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
-    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
-    entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
-    entityContexts.put(Leader.class, new LeaderContext(leaderDataAccess));
-    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
-    entityContexts.put(INodeAttributes.class, new INodeAttributesContext(iNodeAttributesDataAccess));
+//    BlockInfoContext bicj = new BlockInfoContext(blockInfoDataAccess);
+//    entityContexts.put(BlockInfo.class, bicj);
+//    entityContexts.put(BlockInfoUnderConstruction.class, bicj);
+//    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
+//    entityContexts.put(IndexedReplica.class, new ReplicaContext(replicaDataAccess));
+//    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
+//    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
+    entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class))));
+//    entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
+//    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
+//    InodeContext inodeContext = new InodeContext(inodeDataAccess);
+//    entityContexts.put(INode.class, inodeContext);
+//    entityContexts.put(INodeDirectory.class, inodeContext);
+//    entityContexts.put(INodeFile.class, inodeContext);
+//    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
+//    entityContexts.put(INodeSymlink.class, inodeContext);
+//    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
+//    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
+//    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
+//    entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
+    entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess)getDataAccess(LeaderDataAccess.class)));
+//    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));
+//    entityContexts.put(INodeAttributes.class, new INodeAttributesContext(iNodeAttributesDataAccess));
     return entityContexts;
   }
 

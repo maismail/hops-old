@@ -18,6 +18,7 @@
 
 package org.apache.hadoop.hdfs.security.token.block;
 
+import se.sics.hop.metadata.persistence.security.token.block.NameNodeBlockTokenSecretManager;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

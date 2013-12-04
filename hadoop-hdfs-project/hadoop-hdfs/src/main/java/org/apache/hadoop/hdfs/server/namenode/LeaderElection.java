@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.persistence.entity.HopLeader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -139,7 +140,7 @@ public class LeaderElection extends Thread {
     // preceding rows which could end up in deadlock. 
     // we solved it by making sure that the namenodes delete the rows in the same order.
     
-    while (nn.namesystem.isRunning()) {
+    while (nn.getNamesystem().isRunning()) {
       try {
         LOG.info(hostname+") Leader Election timeout. Updating the counter and checking for new leader");
         leaderElectionHandler.handle(null/*fanamesystem*/);
@@ -164,7 +165,7 @@ public class LeaderElection extends Thread {
       return LeaderElection.LEADER_INITIALIZATION_ID;
     }
 
-    List<Leader> activeNamenodes = getActiveNamenodesInternal(maxCounter, totalNamenodes);
+    List<HopLeader> activeNamenodes = getActiveNamenodesInternal(maxCounter, totalNamenodes);
     return getMinNamenodeId(activeNamenodes);
   }
 
@@ -193,19 +194,19 @@ public class LeaderElection extends Thread {
   }
 
   private long getMaxNamenodeCounter() throws PersistanceException {
-    List<Leader> namenodes = getAllNamenodesInternal();
+    List<HopLeader> namenodes = getAllNamenodesInternal();
     return getMaxNamenodeCounter(namenodes);
   }
 
-  private List<Leader> getAllNamenodesInternal() throws PersistanceException {
+  private List<HopLeader> getAllNamenodesInternal() throws PersistanceException {
 
-    List<Leader> leaders = (List<Leader>) EntityManager.findList(Leader.Finder.All);
+    List<HopLeader> leaders = (List<HopLeader>) EntityManager.findList(HopLeader.Finder.All);
     return leaders;
   }
 
-  private long getMaxNamenodeCounter(List<Leader> namenodes) {
+  private long getMaxNamenodeCounter(List<HopLeader> namenodes) {
     long maxCounter = 0;
-    for (Leader lRecord : namenodes) {
+    for (HopLeader lRecord : namenodes) {
       if (lRecord.getCounter() > maxCounter) {
         maxCounter = lRecord.getCounter();
       }
@@ -215,7 +216,7 @@ public class LeaderElection extends Thread {
 
   private boolean doesNamenodeExist(long leaderId) throws PersistanceException {
 
-    Leader leader = EntityManager.find(Leader.Finder.ById, leaderId, Leader.DEFAULT_PARTITION_VALUE);
+    HopLeader leader = EntityManager.find(HopLeader.Finder.ById, leaderId, HopLeader.DEFAULT_PARTITION_VALUE);
 
     if (leader == null) {
       return false;
@@ -225,13 +226,13 @@ public class LeaderElection extends Thread {
   }
 
   public long getMaxNamenodeId() throws PersistanceException {
-    List<Leader> namenodes = getAllNamenodesInternal();
+    List<HopLeader> namenodes = getAllNamenodesInternal();
     return getMaxNamenodeId(namenodes);
   }
 
-  private static long getMaxNamenodeId(List<Leader> namenodes) {
+  private static long getMaxNamenodeId(List<HopLeader> namenodes) {
     long maxId = 0;
-    for (Leader lRecord : namenodes) {
+    for (HopLeader lRecord : namenodes) {
       if (lRecord.getId() > maxId) {
         maxId = lRecord.getId();
       }
@@ -244,28 +245,28 @@ public class LeaderElection extends Thread {
     // insert the row. if it exists then update it
     // otherwise create a new row
     
-    Leader leader = new Leader(id, counter, System.currentTimeMillis(), hostname);
+    HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
     LOG.info(hostname+") Adding/updating row "+leader.toString());
     EntityManager.add(leader);
   }
 
   private long getLeaderRowCount() throws IOException, PersistanceException {
-    return EntityManager.count(Leader.Counter.All);
+    return EntityManager.count(HopLeader.Counter.All);
   }
   
-  private List<Leader> getAllNameNodes() throws IOException, PersistanceException {
-    return (List<Leader>)EntityManager.findList(Leader.Finder.All);
+  private List<HopLeader> getAllNameNodes() throws IOException, PersistanceException {
+    return (List<HopLeader>)EntityManager.findList(HopLeader.Finder.All);
   }
 
-  private List<Leader> getActiveNamenodesInternal(long counter, long totalNamenodes) throws PersistanceException {
+  private List<HopLeader> getActiveNamenodesInternal(long counter, long totalNamenodes) throws PersistanceException {
     long condition = counter - totalNamenodes * missedHeartBeatThreshold;
-    List<Leader> list = (List<Leader>) EntityManager.findList(Leader.Finder.AllByCounterGTN, condition);
+    List<HopLeader> list = (List<HopLeader>) EntityManager.findList(HopLeader.Finder.AllByCounterGTN, condition);
     return list;
   }
 
-  private static long getMinNamenodeId(List<Leader> namenodes) {
+  private static long getMinNamenodeId(List<HopLeader> namenodes) {
     long minId = Long.MAX_VALUE;
-    for (Leader record : namenodes) {
+    for (HopLeader record : namenodes) {
       if (record.getId() < minId) {
         minId = record.getId();
       }
@@ -279,18 +280,18 @@ public class LeaderElection extends Thread {
     int totalNamenodes = getAllNamenodesInternal().size();
 
     // get all active namenodes
-    List<Leader> nns = getActiveNamenodesInternal(maxCounter, totalNamenodes);
+    List<HopLeader> nns = getActiveNamenodesInternal(maxCounter, totalNamenodes);
 
     return makeSortedActiveNamenodeList(nns);
   }
 
   public void removePrevoiouslyElectedLeaders(long id) throws PersistanceException {
-    List<Leader> prevLeaders = getPreceedingNamenodesInternal(id);
+    List<HopLeader> prevLeaders = getPreceedingNamenodesInternal(id);
     // Sort the leaders based on the id to avoid the scenario that there are two NNs
     // as leaders and both want to remove all preceding leaders which could result to
     // deadlock.
     Collections.sort(prevLeaders);
-    for (Leader l : prevLeaders) {
+    for (HopLeader l : prevLeaders) {
       removeLeaderRow(l);
     }
   }
@@ -303,16 +304,16 @@ public class LeaderElection extends Thread {
       return;
     }
 
-    List<Leader> activeNameNodes = getActiveNamenodesInternal(maxCounter, totalNamenodes);
-    List<Leader> allNameNodes = getAllNameNodes();
+    List<HopLeader> activeNameNodes = getActiveNamenodesInternal(maxCounter, totalNamenodes);
+    List<HopLeader> allNameNodes = getAllNameNodes();
 
     deleteInactiveNameNodes(allNameNodes, activeNameNodes);
 
   }
 
-  private void deleteInactiveNameNodes(List<Leader> allNameNodes, List<Leader> activeNameNodes)
+  private void deleteInactiveNameNodes(List<HopLeader> allNameNodes, List<HopLeader> activeNameNodes)
           throws PersistanceException {
-    for (Leader leader : allNameNodes) {
+    for (HopLeader leader : allNameNodes) {
       if (!activeNameNodes.contains(leader)) {
         removeLeaderRow(leader);
       }
@@ -320,20 +321,20 @@ public class LeaderElection extends Thread {
 
   }
 
-  private void removeLeaderRow(Leader leader) throws PersistanceException {
+  private void removeLeaderRow(HopLeader leader) throws PersistanceException {
     EntityManager.remove(leader);
   }
 
-  private List<Leader> getPreceedingNamenodesInternal(long id) throws PersistanceException {
-    List<Leader> list = (List<Leader>) EntityManager.findList(Leader.Finder.AllByIDLT, id);
+  private List<HopLeader> getPreceedingNamenodesInternal(long id) throws PersistanceException {
+    List<HopLeader> list = (List<HopLeader>) EntityManager.findList(HopLeader.Finder.AllByIDLT, id);
     return list;
   }
   
   
  // Make sortedNNlist
-  private SortedActiveNamenodeList makeSortedActiveNamenodeList(List<Leader> nns){
+  private SortedActiveNamenodeList makeSortedActiveNamenodeList(List<HopLeader> nns){
     List<ActiveNamenode> activeNameNodeList = new ArrayList<ActiveNamenode>();    
-    for (Leader l : nns) {
+    for (HopLeader l : nns) {
       String hostNameNPort = l.getHostName();
       StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
       String hostName = st.nextToken();

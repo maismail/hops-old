@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hdfs.server.blockmanagement;
+package se.sics.hop.metadata.persistence.blockmanagement;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
 import se.sics.hop.metadata.persistence.EntityManager;
 import se.sics.hop.metadata.persistence.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
