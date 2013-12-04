@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 import se.sics.hop.metadata.persistence.HOPBlockIDGen;
 import se.sics.hop.metadata.persistence.HOPTXnChkPtsIDs;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
@@ -5058,7 +5059,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Lease lease = (Lease) getParams()[0];
-        for (LeasePath path : lease.getPaths()) {
+        for (HopLeasePath path : lease.getPaths()) {
           final INodeFileUnderConstruction cons;
           try {
             cons = INodeFileUnderConstruction.valueOf(dir.getINode(path.getPath()), path.getPath());

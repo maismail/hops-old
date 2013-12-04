@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
 
+import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
 import se.sics.hop.metadata.persistence.entity.HopLeader;
 import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
@@ -19,9 +20,12 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
 import se.sics.hop.metadata.persistence.DALDriver;
 import se.sics.hop.metadata.persistence.DALStorageFactory;
 import se.sics.hop.metadata.persistence.StorageConnector;
+import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 
 /**
  *
@@ -137,7 +141,7 @@ public class StorageFactory {
 //    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
 //    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
     entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class))));
-//    entityContexts.put(LeasePath.class, new LeasePathContext(leasePathDataAccess));
+    entityContexts.put(HopLeasePath.class, new LeasePathContext((LeasePathDataAccess)getDataAccess(LeasePathDataAccess.class)));
 //    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
 //    InodeContext inodeContext = new InodeContext(inodeDataAccess);
 //    entityContexts.put(INode.class, inodeContext);

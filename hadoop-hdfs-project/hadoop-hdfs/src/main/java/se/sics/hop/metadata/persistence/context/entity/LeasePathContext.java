@@ -1,35 +1,33 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.LeasePath;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.context.StorageCallPreventedException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
-import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 
 /**
  *
  * @author Hooman <hooman@sics.se>
  */
-public class LeasePathContext extends EntityContext<LeasePath> {
+public class LeasePathContext extends EntityContext<HopLeasePath> {
 
-  private Map<Integer, Collection<LeasePath>> holderLeasePaths = new HashMap<Integer, Collection<LeasePath>>();
-  private Map<LeasePath, LeasePath> leasePaths = new HashMap<LeasePath, LeasePath>();
-  private Map<LeasePath, LeasePath> newLPaths = new HashMap<LeasePath, LeasePath>();
-  private Map<LeasePath, LeasePath> modifiedLPaths = new HashMap<LeasePath, LeasePath>();
-  private Map<LeasePath, LeasePath> removedLPaths = new HashMap<LeasePath, LeasePath>();
-  private Map<String, LeasePath> pathToLeasePath = new HashMap<String, LeasePath>();
+  private Map<Integer, Collection<HopLeasePath>> holderLeasePaths = new HashMap<Integer, Collection<HopLeasePath>>();
+  private Map<HopLeasePath, HopLeasePath> leasePaths = new HashMap<HopLeasePath, HopLeasePath>();
+  private Map<HopLeasePath, HopLeasePath> newLPaths = new HashMap<HopLeasePath, HopLeasePath>();
+  private Map<HopLeasePath, HopLeasePath> modifiedLPaths = new HashMap<HopLeasePath, HopLeasePath>();
+  private Map<HopLeasePath, HopLeasePath> removedLPaths = new HashMap<HopLeasePath, HopLeasePath>();
+  private Map<String, HopLeasePath> pathToLeasePath = new HashMap<String, HopLeasePath>();
   private boolean allLeasePathsRead = false;
   private LeasePathDataAccess dataAccess;
 
@@ -38,7 +36,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
   }
 
   @Override
-  public void add(LeasePath lPath) throws PersistanceException {
+  public void add(HopLeasePath lPath) throws PersistanceException {
     if (removedLPaths.containsKey(lPath)) {
       throw new TransactionContextException("Removed lease-path passed to be persisted");
     }
@@ -50,7 +48,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
       if (holderLeasePaths.containsKey(lPath.getHolderId())) {
         holderLeasePaths.get(lPath.getHolderId()).add(lPath);
       } else {
-        TreeSet<LeasePath> lSet = new TreeSet<LeasePath>();
+        TreeSet<HopLeasePath> lSet = new TreeSet<HopLeasePath>();
         lSet.add(lPath);
         holderLeasePaths.put(lPath.getHolderId(), lSet);
       }
@@ -77,9 +75,9 @@ public class LeasePathContext extends EntityContext<LeasePath> {
   }
 
   @Override
-  public LeasePath find(FinderType<LeasePath> finder, Object... params) throws PersistanceException {
-    LeasePath.Finder lFinder = (LeasePath.Finder) finder;
-    LeasePath result = null;
+  public HopLeasePath find(FinderType<HopLeasePath> finder, Object... params) throws PersistanceException {
+    HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
+    HopLeasePath result = null;
 
     switch (lFinder) {
       case ByPKey:
@@ -103,9 +101,9 @@ public class LeasePathContext extends EntityContext<LeasePath> {
   }
 
   @Override
-  public Collection<LeasePath> findList(FinderType<LeasePath> finder, Object... params) throws PersistanceException {
-    LeasePath.Finder lFinder = (LeasePath.Finder) finder;
-    Collection<LeasePath> result = new TreeSet<LeasePath>();
+  public Collection<HopLeasePath> findList(FinderType<HopLeasePath> finder, Object... params) throws PersistanceException {
+    HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
+    Collection<HopLeasePath> result = new TreeSet<HopLeasePath>();
 
     switch (lFinder) {
       case ByHolderId:
@@ -137,8 +135,8 @@ public class LeasePathContext extends EntityContext<LeasePath> {
       case All:
         if (allLeasePathsRead) {
           log("find-all-lpaths", CacheHitState.HIT);
-          result = new TreeSet<LeasePath>();
-          for (LeasePath lp : leasePaths.values()) {
+          result = new TreeSet<HopLeasePath>();
+          for (HopLeasePath lp : leasePaths.values()) {
             if (lp != null) {
               result.add(lp);
             }
@@ -171,7 +169,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
     }
 
   @Override
-  public void remove(LeasePath lPath) throws PersistanceException {
+  public void remove(HopLeasePath lPath) throws PersistanceException {
     if (leasePaths.remove(lPath) == null) {
       throw new TransactionContextException("Unattached lease-path passed to be removed");
     }
@@ -180,7 +178,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
     newLPaths.remove(lPath);
     modifiedLPaths.remove(lPath);
     if (holderLeasePaths.containsKey(lPath.getHolderId())) {
-      Collection<LeasePath> lSet = holderLeasePaths.get(lPath.getHolderId());
+      Collection<HopLeasePath> lSet = holderLeasePaths.get(lPath.getHolderId());
       lSet.remove(lPath);
       if (lSet.isEmpty()) {
         holderLeasePaths.remove(lPath.getHolderId());
@@ -196,7 +194,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
   }
 
   @Override
-  public void update(LeasePath lPath) throws PersistanceException {
+  public void update(HopLeasePath lPath) throws PersistanceException {
     if (removedLPaths.containsKey(lPath)) {
       throw new TransactionContextException("Removed lease-path passed to be persisted");
     }
@@ -208,7 +206,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
       if (holderLeasePaths.containsKey(lPath.getHolderId())) {
         holderLeasePaths.get(lPath.getHolderId()).add(lPath);
       } else {
-        TreeSet<LeasePath> lSet = new TreeSet<LeasePath>();
+        TreeSet<HopLeasePath> lSet = new TreeSet<HopLeasePath>();
         lSet.add(lPath);
         holderLeasePaths.put(lPath.getHolderId(), lSet);
       }
@@ -218,10 +216,10 @@ public class LeasePathContext extends EntityContext<LeasePath> {
             new String[]{"path", lPath.getPath(), "hid", Long.toString(lPath.getHolderId())});
   }
 
-  private TreeSet<LeasePath> syncLeasePathInstances(Collection<LeasePath> list, boolean allRead) {
-    TreeSet<LeasePath> finalList = new TreeSet<LeasePath>();
+  private TreeSet<HopLeasePath> syncLeasePathInstances(Collection<HopLeasePath> list, boolean allRead) {
+    TreeSet<HopLeasePath> finalList = new TreeSet<HopLeasePath>();
 
-    for (LeasePath lPath : list) {
+    for (HopLeasePath lPath : list) {
       if (!removedLPaths.containsKey(lPath)) {
         if (leasePaths.containsKey(lPath)) {
           if (leasePaths.get(lPath) == null) {
@@ -243,7 +241,7 @@ public class LeasePathContext extends EntityContext<LeasePath> {
           if (holderLeasePaths.containsKey(lPath.getHolderId())) {
             holderLeasePaths.get(lPath.getHolderId()).add(lPath);
           } else {
-            TreeSet<LeasePath> lSet = new TreeSet<LeasePath>();
+            TreeSet<HopLeasePath> lSet = new TreeSet<HopLeasePath>();
             lSet.add(lPath);
             holderLeasePaths.put(lPath.getHolderId(), lSet);
           }
@@ -254,9 +252,9 @@ public class LeasePathContext extends EntityContext<LeasePath> {
     return finalList;
   }
 
-  private TreeSet<LeasePath> getCachedLpsByPrefix(String prefix) {
-    TreeSet<LeasePath> hits = new TreeSet<LeasePath>();
-    for (LeasePath lp : leasePaths.values()) {
+  private TreeSet<HopLeasePath> getCachedLpsByPrefix(String prefix) {
+    TreeSet<HopLeasePath> hits = new TreeSet<HopLeasePath>();
+    for (HopLeasePath lp : leasePaths.values()) {
       if (lp.getPath().contains(prefix)) {
         hits.add(lp);
       }

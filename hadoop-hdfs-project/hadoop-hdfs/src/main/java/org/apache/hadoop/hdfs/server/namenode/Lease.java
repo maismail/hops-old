@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Collection;
 import java.util.TreeSet;
@@ -39,7 +40,7 @@ public class Lease implements Comparable<Lease> {
   }
   private final String holder;
   private long lastUpdate;
-  private Collection<LeasePath> paths = null;
+  private Collection<HopLeasePath> paths = null;
   private int holderID; 
 
   public Lease(String holder, int holderID, long lastUpd) {
@@ -52,7 +53,7 @@ public class Lease implements Comparable<Lease> {
     this.lastUpdate = lastUpd;
   }
 
-  public void setPaths(TreeSet<LeasePath> paths) {
+  public void setPaths(TreeSet<HopLeasePath> paths) {
     this.paths = paths;
   }
   
@@ -68,16 +69,16 @@ public class Lease implements Comparable<Lease> {
     return this.holderID;
   }
 
-  public boolean removePath(LeasePath lPath) throws PersistanceException {
+  public boolean removePath(HopLeasePath lPath) throws PersistanceException {
     return getPaths().remove(lPath);
   }
 
-  public void addPath(LeasePath lPath) throws PersistanceException {
+  public void addPath(HopLeasePath lPath) throws PersistanceException {
     getPaths().add(lPath);
   }
 
-  public void addFirstPath(LeasePath lPath) {
-    this.paths = new TreeSet<LeasePath>();
+  public void addFirstPath(HopLeasePath lPath) {
+    this.paths = new TreeSet<HopLeasePath>();
     this.paths.add(lPath);
   }
 
@@ -143,9 +144,9 @@ public class Lease implements Comparable<Lease> {
     return holder.hashCode();
   }
 
-  public Collection<LeasePath> getPaths() throws PersistanceException {
+  public Collection<HopLeasePath> getPaths() throws PersistanceException {
     if (paths == null) {
-      paths = EntityManager.findList(LeasePath.Finder.ByHolderId, holderID);
+      paths = EntityManager.findList(HopLeasePath.Finder.ByHolderId, holderID);
     }
 
     return paths;
@@ -155,7 +156,7 @@ public class Lease implements Comparable<Lease> {
     return holder;
   }
 
-  void replacePath(LeasePath oldpath, LeasePath newpath) throws PersistanceException {
+  void replacePath(HopLeasePath oldpath, HopLeasePath newpath) throws PersistanceException {
     getPaths().remove(oldpath);
     getPaths().add(newpath);
   }

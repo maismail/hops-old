@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,15 +23,14 @@ import java.util.List;
 import java.util.Map;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
-import se.sics.hop.metadata.persistence.entity.HopLeader;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
-import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.entity.HopLeader;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 
 /**
  *
@@ -256,16 +254,16 @@ public class LeaderContext extends EntityContext<HopLeader> {
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
-        // lock type is checked after when list lenght is checked 
-        // because some times in the tx handler the acquire lock 
-        // function is empty and in that case tlm will throw 
-        // null pointer exceptions
+    // lock type is checked after when list lenght is checked 
+    // because some times in the tx handler the acquire lock 
+    // function is empty and in that case tlm will throw 
+    // null pointer exceptions
 
-        if ((removedLeaders.values().size() != 0
-                || modifiedLeaders.values().size() != 0)
-                && lks.getLeaderLock()!= TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade leader locks");
-        }  
+    if ((removedLeaders.values().size() != 0
+            || modifiedLeaders.values().size() != 0)
+            && lks.getLeaderLock() != TransactionLockTypes.LockType.WRITE) {
+      throw new LockUpgradeException("Trying to upgrade leader locks");
+    }
     dataAccess.prepare(removedLeaders.values(), newLeaders.values(), modifiedLeaders.values());
   }
 

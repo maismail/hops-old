@@ -18,7 +18,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import org.apache.hadoop.hdfs.server.namenode.LeasePath;
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.persistence.EntityManager;
 import se.sics.hop.metadata.persistence.LightWeightRequestHandler;
@@ -27,7 +27,7 @@ import se.sics.hop.metadata.persistence.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -210,8 +210,8 @@ public class INodeUtil {
       return sortedPaths;
     }
     LeasePathDataAccess pda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
-    Collection<LeasePath> rclPaths = pda.findByHolderId(rcLease.getHolderID());
-    for (LeasePath lp : rclPaths) {
+    Collection<HopLeasePath> rclPaths = pda.findByHolderId(rcLease.getHolderID());
+    for (HopLeasePath lp : rclPaths) {
       sortedPaths.add(lp.getPath()); // sorts paths in order to lock paths in the lexicographic order.
     }
     return sortedPaths;

@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.IOException;
@@ -52,7 +53,7 @@ import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
 import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
@@ -120,7 +121,7 @@ public class LeaseManager {
 
   /** @return the lease containing src */
   public Lease getLeaseByPath(String src) throws PersistanceException {
-    LeasePath leasePath = EntityManager.find(LeasePath.Finder.ByPKey, src);
+    HopLeasePath leasePath = EntityManager.find(HopLeasePath.Finder.ByPKey, src);
     if (leasePath != null) {
       int holderID = leasePath.getHolderId();
       Lease lease = EntityManager.find(Lease.Finder.ByHolderId, holderID);
@@ -161,7 +162,7 @@ public class LeaseManager {
       renewLease(lease);
     }
 
-    LeasePath lPath = new LeasePath(src, lease.getHolderID());
+    HopLeasePath lPath = new HopLeasePath(src, lease.getHolderID());
     lease.addFirstPath(lPath);
     EntityManager.add(lPath);
 
@@ -171,7 +172,7 @@ public class LeaseManager {
   /**
    * Remove the specified lease and src.
    */
-  void removeLease(Lease lease, LeasePath src) throws PersistanceException {
+  void removeLease(Lease lease, HopLeasePath src) throws PersistanceException {
     if (lease.removePath(src)) {
       EntityManager.remove(src);
     } else {
@@ -189,7 +190,7 @@ public class LeaseManager {
   void removeLease(String holder, String src) throws PersistanceException {
     Lease lease = getLease(holder);
     if (lease != null) {
-      removeLease(lease, new LeasePath(src, lease.getHolderID()));
+      removeLease(lease, new HopLeasePath(src, lease.getHolderID()));
     } else {
       LOG.warn("Removing non-existent lease! holder=" + holder +
           " src=" + src);
@@ -216,7 +217,7 @@ public class LeaseManager {
     assert newHolder != null : "new lease holder is null";
     if (lease != null) {
       // Removing lease-path souldn't be persisted in entity-manager since we want to add it to another lease.
-      if (!lease.removePath(new LeasePath(src, lease.getHolderID()))) {
+      if (!lease.removePath(new HopLeasePath(src, lease.getHolderID()))) {
         LOG.error(src + " not found in lease.paths (=" + lease.getPaths() + ")");
       }
 
@@ -227,16 +228,16 @@ public class LeaseManager {
     }
 
     Lease newLease = getLease(newHolder);
-    LeasePath lPath = null;
+    HopLeasePath lPath = null;
     if (newLease == null) {
       int holderID = DFSUtil.getRandom().nextInt();
       newLease = new Lease(newHolder, holderID, now());
       EntityManager.add(newLease);
-      lPath = new LeasePath(src, newLease.getHolderID());
+      lPath = new HopLeasePath(src, newLease.getHolderID());
       newLease.addFirstPath(lPath); // [lock] First time, so no need to look for lease-paths
     } else {
       renewLease(newLease);
-      lPath = new LeasePath(src, newLease.getHolderID());
+      lPath = new HopLeasePath(src, newLease.getHolderID());
       newLease.addPath(lPath);
     }
     // update lease-paths' holder
@@ -255,7 +256,7 @@ public class LeaseManager {
     if (lease != null) {
       String src = null;
 
-      for (LeasePath lpath : lease.getPaths()) {
+      for (HopLeasePath lpath : lease.getPaths()) {
         if (lpath.getPath().equals(pendingFile.getFullPathName())) {
           src = lpath.getPath();
           break;
@@ -301,12 +302,12 @@ public class LeaseManager {
     }
 
     final int len = src.length();
-    for(Map.Entry<LeasePath, Lease> entry
+    for(Map.Entry<HopLeasePath, Lease> entry
         : findLeaseWithPrefixPath(src).entrySet()) {
-      final LeasePath oldpath = entry.getKey();
+      final HopLeasePath oldpath = entry.getKey();
       final Lease lease = entry.getValue();
       // replace stem of src with new destination
-      final LeasePath newpath = new LeasePath(dst + oldpath.getPath().substring(len), lease.getHolderID());
+      final HopLeasePath newpath = new HopLeasePath(dst + oldpath.getPath().substring(len), lease.getHolderID());
       if (LOG.isDebugEnabled()) {
         LOG.debug("changeLease: replacing " + oldpath + " with " + newpath);
       }
@@ -318,7 +319,7 @@ public class LeaseManager {
   }
 
   void removeLeaseWithPrefixPath(String prefix) throws PersistanceException {
-    for(Map.Entry<LeasePath, Lease> entry
+    for(Map.Entry<HopLeasePath, Lease> entry
         : findLeaseWithPrefixPath(prefix).entrySet()) {
       if (LOG.isDebugEnabled()) {
         LOG.debug(LeaseManager.class.getSimpleName()
@@ -329,16 +330,16 @@ public class LeaseManager {
   }
   
   //HOP: bug fix changes HDFS-4242
-  private Map<LeasePath, Lease> findLeaseWithPrefixPath(String prefix) throws PersistanceException {
+  private Map<HopLeasePath, Lease> findLeaseWithPrefixPath(String prefix) throws PersistanceException {
     if (LOG.isDebugEnabled()) {
       LOG.debug(LeaseManager.class.getSimpleName() + ".findLease: prefix=" + prefix);
     }
 
-    Collection<LeasePath> leasePathSet = EntityManager.findList(LeasePath.Finder.ByPrefix, prefix);
-    final Map<LeasePath, Lease> entries = new HashMap<LeasePath, Lease>();
+    Collection<HopLeasePath> leasePathSet = EntityManager.findList(HopLeasePath.Finder.ByPrefix, prefix);
+    final Map<HopLeasePath, Lease> entries = new HashMap<HopLeasePath, Lease>();
     final int srclen = prefix.length();
 
-    for (LeasePath lPath : leasePathSet) {
+    for (HopLeasePath lPath : leasePathSet) {
       if (!lPath.getPath().startsWith(prefix)) {
         LOG.warn("LeasePath fetched by prefix does not start with the prefix: \n"
                 + "LeasePath: " + lPath + "\t Prefix: " + prefix);
@@ -514,16 +515,16 @@ public class LeaseManager {
 
     LOG.info("Lease " + oldest + " has expired hard limit");
 
-    final List<LeasePath> removing = new ArrayList<LeasePath>();
+    final List<HopLeasePath> removing = new ArrayList<HopLeasePath>();
     // need to create a copy of the oldest lease paths, becuase 
     // internalReleaseLease() removes paths corresponding to empty files,
     // i.e. it needs to modify the collection being iterated over
     // causing ConcurrentModificationException
-    Collection<LeasePath> paths = oldest.getPaths();
+    Collection<HopLeasePath> paths = oldest.getPaths();
     assert paths != null : "The lease " + oldest.toString() + " has no path.";
-    LeasePath[] leasePaths = new LeasePath[paths.size()];
+    HopLeasePath[] leasePaths = new HopLeasePath[paths.size()];
     paths.toArray(leasePaths);
-    for (LeasePath lPath : leasePaths) {
+    for (HopLeasePath lPath : leasePaths) {
       try {
         boolean leaseReleased = false;
         leaseReleased = fsnamesystem.internalReleaseLease(oldest, lPath.getPath(),
@@ -548,7 +549,7 @@ public class LeaseManager {
       }
     }
 
-    for (LeasePath lPath : removing) {
+    for (HopLeasePath lPath : removing) {
       if (oldest.getPaths().contains(lPath)) {
         removeLease(oldest, lPath);
       }

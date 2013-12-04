@@ -31,7 +31,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
 import se.sics.hop.metadata.persistence.entity.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import org.apache.hadoop.hdfs.server.namenode.LeasePath;
+import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
@@ -156,7 +156,7 @@ public class TransactionLockAcquirer {
     }
     leaseResults.add(lease);
 
-    List<LeasePath> lpResults = acquireLeasePathsLock();
+    List<HopLeasePath> lpResults = acquireLeasePathsLock();
     if (lpResults.size() > sortedPaths.size()) {
       return locks; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
@@ -173,7 +173,7 @@ public class TransactionLockAcquirer {
    * @param leasePath
    */
   public TransactionLocks acquireByLeasePath(String leasePath, TransactionLockTypes.LockType leasePathLock, TransactionLockTypes.LockType leaseLock) throws PersistanceException {
-    LeasePath lp = acquireLock(leasePathLock, LeasePath.Finder.ByPKey, leasePath);
+    HopLeasePath lp = acquireLock(leasePathLock, HopLeasePath.Finder.ByPKey, leasePath);
     if (lp != null) {
       acquireLock(leaseLock, Lease.Finder.ByHolderId, lp.getHolderId());
     }
@@ -265,11 +265,11 @@ public class TransactionLockAcquirer {
     }
   }
 
-  private List<LeasePath> acquireLeasePathsLock() throws PersistanceException {
-    List<LeasePath> lPaths = new LinkedList<LeasePath>();
+  private List<HopLeasePath> acquireLeasePathsLock() throws PersistanceException {
+    List<HopLeasePath> lPaths = new LinkedList<HopLeasePath>();
     if (leaseResults != null) {
       for (Lease l : leaseResults) {
-        Collection<LeasePath> result = acquireLockList(locks.getLpLock(), LeasePath.Finder.ByHolderId, l.getHolderID());
+        Collection<HopLeasePath> result = acquireLockList(locks.getLpLock(), HopLeasePath.Finder.ByHolderId, l.getHolderID());
         if (!l.getHolder().equals(HdfsServerConstants.NAMENODE_LEASE_HOLDER)) { // We don't need to keep the lps result for namenode-lease. 
           lPaths.addAll(result);
         }
