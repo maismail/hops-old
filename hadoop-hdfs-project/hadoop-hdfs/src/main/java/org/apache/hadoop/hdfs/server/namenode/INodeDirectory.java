@@ -29,8 +29,8 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import static org.apache.hadoop.hdfs.server.namenode.INode.NON_EXISTING_ID;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**
  * Directory INode class.

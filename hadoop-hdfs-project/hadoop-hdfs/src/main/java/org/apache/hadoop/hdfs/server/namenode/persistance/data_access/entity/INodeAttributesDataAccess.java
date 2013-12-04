@@ -17,7 +17,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity;
 
 import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

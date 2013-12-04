@@ -1,7 +1,7 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.util.Comparator;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import se.sics.hop.metadata.persistence.FinderType;
 
 /**
  * This class holds the information of one replica of a block in one datanode.

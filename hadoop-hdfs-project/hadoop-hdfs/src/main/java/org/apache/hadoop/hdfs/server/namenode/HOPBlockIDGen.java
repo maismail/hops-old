@@ -15,7 +15,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
 
 /**

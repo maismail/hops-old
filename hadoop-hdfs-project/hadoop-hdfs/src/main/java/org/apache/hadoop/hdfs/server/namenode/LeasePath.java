@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import se.sics.hop.metadata.persistence.FinderType;
 
 /**
  *

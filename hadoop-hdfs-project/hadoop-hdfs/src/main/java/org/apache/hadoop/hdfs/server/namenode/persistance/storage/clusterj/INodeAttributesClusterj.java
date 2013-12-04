@@ -22,7 +22,7 @@ import com.mysql.clusterj.annotation.PrimaryKey;
 import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.INodeAttributesDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

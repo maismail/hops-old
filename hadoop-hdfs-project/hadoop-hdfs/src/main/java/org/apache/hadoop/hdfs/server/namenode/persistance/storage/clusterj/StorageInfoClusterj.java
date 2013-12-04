@@ -6,7 +6,7 @@ import com.mysql.clusterj.annotation.PersistenceCapable;
 import com.mysql.clusterj.annotation.PrimaryKey;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

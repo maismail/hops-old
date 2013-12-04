@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance;
 
+import se.sics.hop.metadata.persistence.FinderType;
 import java.util.EnumMap;
 
 /**

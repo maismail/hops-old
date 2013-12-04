@@ -35,9 +35,9 @@ import com.google.common.primitives.SignedBytes;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.

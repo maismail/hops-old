@@ -25,10 +25,10 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given

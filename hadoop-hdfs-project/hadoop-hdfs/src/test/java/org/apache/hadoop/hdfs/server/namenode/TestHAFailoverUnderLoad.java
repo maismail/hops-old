@@ -6,7 +6,7 @@ import java.net.ConnectException;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
 import org.apache.commons.logging.Log;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 import org.apache.log4j.Level;
 import org.apache.commons.logging.LogFactory;
@@ -23,7 +23,7 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
+import se.sics.hop.metadata.persistence.EntityManager;
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Test;
 

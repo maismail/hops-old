@@ -20,12 +20,12 @@ package org.apache.hadoop.hdfs.server.common;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.RequestHandler;
+import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
 
 /****************************************************************

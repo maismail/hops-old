@@ -28,10 +28,10 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
+import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.metadata.persistence.LightWeightRequestHandler;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InvalidateBlockDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 

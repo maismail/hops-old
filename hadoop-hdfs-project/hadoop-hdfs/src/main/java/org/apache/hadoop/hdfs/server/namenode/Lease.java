@@ -3,10 +3,10 @@ package org.apache.hadoop.hdfs.server.namenode;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Collection;
 import java.util.TreeSet;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**
  * **********************************************************

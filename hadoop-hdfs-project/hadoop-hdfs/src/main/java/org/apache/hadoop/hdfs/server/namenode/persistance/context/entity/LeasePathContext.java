@@ -1,21 +1,22 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
+import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.LeasePath;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.context.StorageCallPreventedException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.context.TransactionContextException;
+import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.context.StorageCallPreventedException;
+import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeasePathDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.LockUpgradeException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

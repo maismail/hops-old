@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
 
+import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -7,13 +8,13 @@ import java.util.List;
 import java.util.Map;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import static org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext.log;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import static se.sics.hop.metadata.persistence.context.entity.EntityContext.log;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.INodeAttributesDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

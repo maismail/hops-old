@@ -17,7 +17,7 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockTokenKeyDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.io.DataOutputBuffer;
 
 /**

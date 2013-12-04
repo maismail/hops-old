@@ -18,7 +18,7 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /** 
  * This interface is used by the block manager to expose a

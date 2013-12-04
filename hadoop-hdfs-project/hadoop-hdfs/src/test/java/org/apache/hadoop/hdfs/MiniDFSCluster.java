@@ -108,7 +108,7 @@ import com.mysql.clusterj.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockTokenKeyClusterj;

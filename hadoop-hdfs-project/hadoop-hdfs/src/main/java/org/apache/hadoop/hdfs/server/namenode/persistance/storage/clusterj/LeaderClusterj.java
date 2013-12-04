@@ -15,7 +15,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.server.namenode.Leader;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaderDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *

@@ -29,12 +29,12 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
+import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
 import org.junit.Test;
 
 public class TestFSNamesystem {

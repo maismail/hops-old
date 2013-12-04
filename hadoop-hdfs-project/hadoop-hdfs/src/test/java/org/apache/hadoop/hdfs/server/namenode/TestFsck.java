@@ -80,14 +80,14 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.persistence.lock.TransactionLocks;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.persistence.RequestHandler;
+import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
 
 /**
  * A JUnit test for doing fsck

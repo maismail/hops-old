@@ -2,8 +2,8 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.util.Collections;
 import java.util.Comparator;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.FinderType;
 
 public class UnderReplicatedBlock {
   public static enum Counter implements CounterType<UnderReplicatedBlock> {
