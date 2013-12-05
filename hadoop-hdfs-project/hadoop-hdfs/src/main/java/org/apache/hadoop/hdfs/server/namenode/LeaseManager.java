@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.persistence.entity.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.IOException;

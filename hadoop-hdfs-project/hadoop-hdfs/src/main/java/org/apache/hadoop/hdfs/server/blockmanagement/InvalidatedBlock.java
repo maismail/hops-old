@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.HopReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopReplica;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 

@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;

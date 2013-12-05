@@ -2,7 +2,7 @@ package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
-import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;

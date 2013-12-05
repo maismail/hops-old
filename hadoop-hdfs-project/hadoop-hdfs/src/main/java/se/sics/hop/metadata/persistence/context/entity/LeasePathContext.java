@@ -10,7 +10,7 @@ import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.context.StorageCallPreventedException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;

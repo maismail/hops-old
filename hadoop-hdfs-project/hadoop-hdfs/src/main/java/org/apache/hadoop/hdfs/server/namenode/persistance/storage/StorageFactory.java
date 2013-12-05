@@ -2,7 +2,7 @@ package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
 
 import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
-import se.sics.hop.metadata.persistence.entity.HopLeader;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeader;
 import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
@@ -31,10 +31,10 @@ import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
-import se.sics.hop.metadata.persistence.entity.HopExcessReplica;
-import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
-import se.sics.hop.metadata.persistence.entity.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 
 /**
  *

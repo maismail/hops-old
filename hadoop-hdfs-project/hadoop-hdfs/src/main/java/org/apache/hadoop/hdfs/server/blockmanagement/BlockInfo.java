@@ -16,8 +16,8 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.HopReplica;
-import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;

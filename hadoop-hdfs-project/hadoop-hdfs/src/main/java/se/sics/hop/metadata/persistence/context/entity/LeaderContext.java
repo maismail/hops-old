@@ -26,7 +26,7 @@ import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopLeader;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeader;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;

@@ -18,7 +18,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.metadata.persistence.entity.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.transcation.LightWeightRequestHandler;

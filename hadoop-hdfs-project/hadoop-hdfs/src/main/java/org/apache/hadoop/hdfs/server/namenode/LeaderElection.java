@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.persistence.entity.HopLeader;
+import se.sics.hop.metadata.persistence.entity.hop.HopLeader;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;

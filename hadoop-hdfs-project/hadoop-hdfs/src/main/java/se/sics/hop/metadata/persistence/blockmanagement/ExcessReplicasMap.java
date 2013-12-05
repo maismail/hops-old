@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.persistence.entity.HopExcessReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;

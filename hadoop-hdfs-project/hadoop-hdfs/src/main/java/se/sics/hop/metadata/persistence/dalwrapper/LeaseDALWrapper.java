@@ -19,7 +19,7 @@ import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.persistence.DALWrapper;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopLease;
+import se.sics.hop.metadata.persistence.entity.hdfs.HopLease;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
