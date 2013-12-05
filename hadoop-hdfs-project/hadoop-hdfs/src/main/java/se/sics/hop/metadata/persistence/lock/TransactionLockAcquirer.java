@@ -20,7 +20,7 @@ import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
-import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
+import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import se.sics.hop.metadata.persistence.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -412,7 +412,7 @@ public class TransactionLockAcquirer {
     }
 
     if (locks.getUrbLock() != null) {
-      acquireBlockRelatedLock(locks.getUrbLock(), UnderReplicatedBlock.Finder.ByBlockId);
+      acquireBlockRelatedLock(locks.getUrbLock(), HopUnderReplicatedBlock.Finder.ByBlockId);
     }
 
     if (locks.getPbLock() != null) {

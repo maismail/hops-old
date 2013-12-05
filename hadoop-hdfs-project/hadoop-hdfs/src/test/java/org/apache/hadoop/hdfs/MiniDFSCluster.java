@@ -107,7 +107,7 @@ import com.google.common.collect.Lists;
 import com.mysql.clusterj.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
+import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
@@ -119,7 +119,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.Lease
 import se.sics.hop.metadata.persistence.ndb.dalimpl.LeasePathClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaUnderConstructionClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.UnderReplicatedBlockClusterj;
+import se.sics.hop.metadata.persistence.ndb.dalimpl.UnderReplicatedBlockClusterj;
 
 /**
  * This class creates a single-process DFS cluster for junit testing.

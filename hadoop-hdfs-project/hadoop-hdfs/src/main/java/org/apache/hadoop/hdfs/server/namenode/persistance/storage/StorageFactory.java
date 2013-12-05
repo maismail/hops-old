@@ -25,6 +25,7 @@ import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.InvalidatedBlockContext;
 import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
+import se.sics.hop.metadata.persistence.context.entity.UnderReplicatedBlockContext;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
@@ -33,11 +34,13 @@ import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 
 /**
  *
@@ -163,7 +166,7 @@ public class StorageFactory {
 //    entityContexts.put(INodeSymlink.class, inodeContext);
 //    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
     entityContexts.put(HopCorruptReplica.class, new CorruptReplicaContext((CorruptReplicaDataAccess)getDataAccess(CorruptReplicaDataAccess.class)));
-//    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
+    entityContexts.put(HopUnderReplicatedBlock.class, new UnderReplicatedBlockContext((UnderReplicatedBlockDataAccess) getDataAccess(UnderReplicatedBlockDataAccess.class)));
 //    entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess)getDataAccess(LeaderDataAccess.class)));
 //    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(blockTokenKeyDataAccess));

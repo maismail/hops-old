@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +39,7 @@ import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
@@ -253,7 +254,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @return true if the block was found and removed from one of the priority queues
    */
   boolean remove(Block block, int priLevel) throws PersistanceException {
-    UnderReplicatedBlock urb = getUnderReplicatedBlock(block);
+    HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if(priLevel >= 0 && priLevel < LEVEL 
             && remove(urb)) {
       if(NameNode.blockStateChangeLog.isDebugEnabled()) {
@@ -529,7 +530,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 //    return false;
 //  }
   
-  private boolean remove(UnderReplicatedBlock urb) throws PersistanceException {
+  private boolean remove(HopUnderReplicatedBlock urb) throws PersistanceException {
     if (urb != null) {
       removeUnderReplicatedBlock(urb);
       return true;
@@ -539,9 +540,9 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    
   // return true if it does not exist other wise return false
   private boolean add(Block block, int priLevel) throws PersistanceException {
-    UnderReplicatedBlock urb = getUnderReplicatedBlock(block);
+    HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if (urb == null) {
-      addUnderReplicatedBlock(new UnderReplicatedBlock(priLevel, block.getBlockId()));
+      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId()));
       return true;
     }
     return false;
@@ -553,8 +554,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   private void fillPriorityQueues(int level) throws IOException{
     resetPrioriryQueue();
-    Collection<UnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
-    for(UnderReplicatedBlock urb : allUrb){
+    Collection<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
+    for(HopUnderReplicatedBlock urb : allUrb){
       Block blk = getBlock(urb);
       if(blk != null)
         priorityQueuestmp.get(urb.getLevel()).add(blk);
@@ -568,12 +569,12 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }
   }
   
-  private UnderReplicatedBlock getUnderReplicatedBlock(Block blk) throws PersistanceException{
-     return EntityManager.find(UnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId());
+  private HopUnderReplicatedBlock getUnderReplicatedBlock(Block blk) throws PersistanceException{
+     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId());
   }
  
-  private Collection<UnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
-    return (List<UnderReplicatedBlock>) new LightWeightRequestHandler(OperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
+  private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
+    return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(OperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
@@ -587,7 +588,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }.handle(null);
   }
   
-  private Block getBlock(final UnderReplicatedBlock urb) throws IOException{
+  private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
     return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -609,15 +610,15 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }.handle(null);
   }
   
-  private void addUnderReplicatedBlock(UnderReplicatedBlock urb) throws PersistanceException {
+  private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.add(urb);
   }
 
-  private void updateUnderReplicatedBlock(UnderReplicatedBlock urb) throws PersistanceException {
+  private void updateUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.update(urb);
   }
   
-  private void removeUnderReplicatedBlock(UnderReplicatedBlock urb) throws PersistanceException {
+  private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.remove(urb);
   }
 }

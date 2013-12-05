@@ -1,10 +1,10 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import java.util.*;
 import java.util.Map.Entry;
-import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
+import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
@@ -19,13 +19,13 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author kamal hakimzadeh <kamal@sics.se>
  */
-public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBlock> {
+public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicatedBlock> {
 
-  private Map<Long, UnderReplicatedBlock> urBlocks = new HashMap<Long, UnderReplicatedBlock>();
-  private Map<Integer, HashSet<UnderReplicatedBlock>> levelToReplicas = new HashMap<Integer, HashSet<UnderReplicatedBlock>>();
-  private Map<Long, UnderReplicatedBlock> newurBlocks = new HashMap<Long, UnderReplicatedBlock>();
-  private Map<Long, UnderReplicatedBlock> modifiedurBlocks = new HashMap<Long, UnderReplicatedBlock>();
-  private Map<Long, UnderReplicatedBlock> removedurBlocks = new HashMap<Long, UnderReplicatedBlock>();
+  private Map<Long, HopUnderReplicatedBlock> urBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
+  private Map<Integer, HashSet<HopUnderReplicatedBlock>> levelToReplicas = new HashMap<Integer, HashSet<HopUnderReplicatedBlock>>();
+  private Map<Long, HopUnderReplicatedBlock> newurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
+  private Map<Long, HopUnderReplicatedBlock> modifiedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
+  private Map<Long, HopUnderReplicatedBlock> removedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
   private boolean allUrBlocksRead = false;
   private UnderReplicatedBlockDataAccess dataAccess;
 
@@ -34,7 +34,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
   }
 
   @Override
-  public void add(UnderReplicatedBlock entity) throws PersistanceException {
+  public void add(HopUnderReplicatedBlock entity) throws PersistanceException {
     if (removedurBlocks.get(entity.getBlockId()) != null) {
 //      throw new TransactionContextException("Removed under replica passed to be persisted");
         removedurBlocks.remove(entity.getBlockId());  
@@ -61,7 +61,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
 
   @Override
   public int count(CounterType counter, Object... params) throws PersistanceException {
-    UnderReplicatedBlock.Counter urCounter = (UnderReplicatedBlock.Counter) counter;
+    HopUnderReplicatedBlock.Counter urCounter = (HopUnderReplicatedBlock.Counter) counter;
 
     switch (urCounter) {
       case All:
@@ -81,8 +81,8 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
   }
 
   @Override
-  public Collection<UnderReplicatedBlock> findList(FinderType<UnderReplicatedBlock> finder, Object... params) throws PersistanceException {
-    UnderReplicatedBlock.Finder urFinder = (UnderReplicatedBlock.Finder) finder;
+  public Collection<HopUnderReplicatedBlock> findList(FinderType<HopUnderReplicatedBlock> finder, Object... params) throws PersistanceException {
+    HopUnderReplicatedBlock.Finder urFinder = (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
       case All:
         if (allUrBlocksRead) {
@@ -93,13 +93,13 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
           syncUnderReplicatedBlockInstances(dataAccess.findAll());
           allUrBlocksRead = true;
         }
-        List<UnderReplicatedBlock> result = new ArrayList();
-        for (UnderReplicatedBlock urb : urBlocks.values()) {
+        List<HopUnderReplicatedBlock> result = new ArrayList();
+        for (HopUnderReplicatedBlock urb : urBlocks.values()) {
           if (urb != null) {
             result.add(urb);
           }
         }
-        Collections.sort(result, UnderReplicatedBlock.Order.ByLevel);
+        Collections.sort(result, HopUnderReplicatedBlock.Order.ByLevel);
         return result;
       case ByLevel:
         Integer level = (Integer) params[0];
@@ -113,7 +113,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
         if (levelToReplicas.containsKey(level)) {
           return new ArrayList(levelToReplicas.get(level));
         } else {
-          return new ArrayList<UnderReplicatedBlock>();
+          return new ArrayList<HopUnderReplicatedBlock>();
         }
     }
 
@@ -121,8 +121,8 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
   }
 
   @Override
-  public UnderReplicatedBlock find(FinderType<UnderReplicatedBlock> finder, Object... params) throws PersistanceException {
-    UnderReplicatedBlock.Finder urFinder = (UnderReplicatedBlock.Finder) finder;
+  public HopUnderReplicatedBlock find(FinderType<HopUnderReplicatedBlock> finder, Object... params) throws PersistanceException {
+    HopUnderReplicatedBlock.Finder urFinder = (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
@@ -132,7 +132,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
         }
         log("find-urblock-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
         aboutToAccessStorage();
-        UnderReplicatedBlock block = dataAccess.findByBlockId(blockId);
+        HopUnderReplicatedBlock block = dataAccess.findByBlockId(blockId);
         urBlocks.put(blockId, block);
         return block;
     }
@@ -157,7 +157,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
   }
 
   @Override
-  public void remove(UnderReplicatedBlock entity) throws PersistanceException {
+  public void remove(HopUnderReplicatedBlock entity) throws PersistanceException {
 
     if (!urBlocks.containsKey(entity.getBlockId())) {
       throw new TransactionContextException("Unattached under replica [blk:" + entity.getBlockId() + ", level: " + entity.getLevel() + " ] passed to be removed");
@@ -183,7 +183,7 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
   }
 
   @Override
-  public void update(UnderReplicatedBlock entity) throws PersistanceException {
+  public void update(HopUnderReplicatedBlock entity) throws PersistanceException {
     if (removedurBlocks.get(entity.getBlockId()) != null) {
       throw new TransactionContextException("Removed under replica passed to be persisted");
     }
@@ -195,10 +195,10 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
               "level", Integer.toString(entity.getLevel())});
   }
 
-  private List<UnderReplicatedBlock> syncUnderReplicatedBlockInstances(List<UnderReplicatedBlock> blocks) {
-    ArrayList<UnderReplicatedBlock> finalList = new ArrayList<UnderReplicatedBlock>();
+  private List<HopUnderReplicatedBlock> syncUnderReplicatedBlockInstances(List<HopUnderReplicatedBlock> blocks) {
+    ArrayList<HopUnderReplicatedBlock> finalList = new ArrayList<HopUnderReplicatedBlock>();
 
-    for (UnderReplicatedBlock block : blocks) {
+    for (HopUnderReplicatedBlock block : blocks) {
       if (removedurBlocks.containsKey(block.getBlockId())) {
         continue;
       }
@@ -216,10 +216,10 @@ public class UnderReplicatedBlockContext extends EntityContext<UnderReplicatedBl
     return finalList;
   }
 
-  private void addNewReplica(UnderReplicatedBlock block) {
+  private void addNewReplica(HopUnderReplicatedBlock block) {
     urBlocks.put(block.getBlockId(), block);
     if (!levelToReplicas.containsKey(block.getLevel())) {
-      levelToReplicas.put(block.getLevel(), new HashSet<UnderReplicatedBlock>());
+      levelToReplicas.put(block.getLevel(), new HashSet<HopUnderReplicatedBlock>());
     }
     levelToReplicas.get(block.getLevel()).add(block);
   }
