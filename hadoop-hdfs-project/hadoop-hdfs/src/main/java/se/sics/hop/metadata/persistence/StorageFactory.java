@@ -1,4 +1,4 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
+package se.sics.hop.metadata.persistence;
 
 import se.sics.hop.metadata.persistence.context.entity.ReplicaUnderConstructionContext;
 import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;

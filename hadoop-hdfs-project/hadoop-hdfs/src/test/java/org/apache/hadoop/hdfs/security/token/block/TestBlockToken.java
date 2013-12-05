@@ -84,7 +84,7 @@ import com.google.protobuf.BlockingService;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 
 /** Unit tests for block tokens */
 public class TestBlockToken {

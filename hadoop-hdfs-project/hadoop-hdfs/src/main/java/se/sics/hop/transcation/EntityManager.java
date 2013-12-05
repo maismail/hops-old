@@ -8,7 +8,7 @@ import se.sics.hop.metadata.persistence.context.TransactionContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.StorageConnector;

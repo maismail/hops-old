@@ -221,7 +221,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;

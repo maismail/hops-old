@@ -55,7 +55,7 @@ import se.sics.hop.transcation.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 
 /**
  * LeaseManager does the lease housekeeping for writing on files.   

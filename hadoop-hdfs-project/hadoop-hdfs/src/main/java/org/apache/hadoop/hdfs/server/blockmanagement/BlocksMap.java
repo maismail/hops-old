@@ -32,7 +32,7 @@ import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 
 /**
  * This class maintains the map from a block to its metadata.

@@ -41,7 +41,7 @@ import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import org.junit.Test;
 
 

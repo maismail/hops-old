@@ -81,7 +81,7 @@ import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.io.EnumSetWritable;
 import org.apache.hadoop.io.IOUtils;

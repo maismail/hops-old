@@ -109,7 +109,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.BlockTokenKeyClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.INodeAttributesClusterj;

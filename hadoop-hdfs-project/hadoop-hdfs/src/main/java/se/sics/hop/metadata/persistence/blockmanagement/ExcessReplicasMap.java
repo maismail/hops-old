@@ -25,7 +25,7 @@ import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.StorageFactory;
 import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 
 /**
