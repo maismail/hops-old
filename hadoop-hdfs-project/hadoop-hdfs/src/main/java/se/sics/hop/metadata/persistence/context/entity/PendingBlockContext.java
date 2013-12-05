@@ -1,17 +1,15 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.PendingBlockDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -25,9 +23,9 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   private Map<Long, PendingBlockInfo> modifiedPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> removedPendings = new HashMap<Long, PendingBlockInfo>();
   private boolean allPendingRead = false;
-  private PendingBlockDataAccess dataAccess;
+  private PendingBlockInfoDALWrapper dataAccess;
 
-  public PendingBlockContext(PendingBlockDataAccess dataAccess) {
+  public PendingBlockContext(PendingBlockInfoDALWrapper dataAccess) {
     this.dataAccess = dataAccess;
   }
 
