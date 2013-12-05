@@ -11,7 +11,7 @@ import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContext;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.CountHelper;

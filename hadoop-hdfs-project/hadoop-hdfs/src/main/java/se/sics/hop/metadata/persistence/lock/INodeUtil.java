@@ -24,7 +24,7 @@ import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;

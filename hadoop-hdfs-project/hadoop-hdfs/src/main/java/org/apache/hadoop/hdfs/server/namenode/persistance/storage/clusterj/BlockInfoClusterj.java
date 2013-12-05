@@ -16,7 +16,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
+import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.CountHelper;
 

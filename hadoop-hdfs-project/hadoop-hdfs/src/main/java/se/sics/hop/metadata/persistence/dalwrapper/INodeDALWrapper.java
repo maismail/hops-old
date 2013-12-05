@@ -32,7 +32,7 @@ import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.hop.metadata.persistence.DALWrapper;
 import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopINode;
+import se.sics.hop.metadata.persistence.entity.hdfs.HopINode;
 import se.sics.hop.metadata.persistence.exceptions.HopEnitityInitializationError;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 

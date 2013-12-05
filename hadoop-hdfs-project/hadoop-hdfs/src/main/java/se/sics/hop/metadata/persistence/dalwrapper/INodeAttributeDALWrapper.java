@@ -19,7 +19,7 @@ import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import se.sics.hop.metadata.persistence.DALWrapper;
 import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
-import se.sics.hop.metadata.persistence.entity.HopINodeAttributes;
+import se.sics.hop.metadata.persistence.entity.hdfs.HopINodeAttributes;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
