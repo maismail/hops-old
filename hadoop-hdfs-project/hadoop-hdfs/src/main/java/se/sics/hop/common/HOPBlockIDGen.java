@@ -16,7 +16,7 @@
 package se.sics.hop.common;
 
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
+import se.sics.hop.metadata.persistence.context.Variables;
 
 /**
  *

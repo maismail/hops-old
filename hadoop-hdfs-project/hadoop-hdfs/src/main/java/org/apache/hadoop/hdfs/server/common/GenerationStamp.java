@@ -26,7 +26,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
+import se.sics.hop.metadata.persistence.context.Variables;
 
 /****************************************************************
  * A GenerationStamp is a Hadoop FS primitive, identified by a long.

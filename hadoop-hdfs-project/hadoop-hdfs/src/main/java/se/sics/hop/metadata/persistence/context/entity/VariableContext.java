@@ -1,6 +1,5 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.Collection;
 import java.util.EnumMap;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
@@ -8,8 +7,8 @@ import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.VariablesDataAccess;
+import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
+import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
@@ -17,18 +16,18 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class VariablesContext extends EntityContext<Variable> {
+public class VariableContext extends EntityContext<HopVariable> {
 
-  private EnumMap<Variable.Finder, Variable> variables = new EnumMap<Variable.Finder, Variable>(Variable.Finder.class);
-  private EnumMap<Variable.Finder, Variable> modifiedVariables = new EnumMap<Variable.Finder, Variable>(Variable.Finder.class);
-  private VariablesDataAccess da;
+  private EnumMap<HopVariable.Finder, HopVariable> variables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
+  private EnumMap<HopVariable.Finder, HopVariable> modifiedVariables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
+  private VariableDataAccess da;
 
-  public VariablesContext(VariablesDataAccess da) {
+  public VariableContext(VariableDataAccess da) {
     this.da = da;
   }
 
   @Override
-  public void add(Variable entity) throws PersistanceException {
+  public void add(HopVariable entity) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -41,14 +40,14 @@ public class VariablesContext extends EntityContext<Variable> {
   }
 
   @Override
-  public int count(CounterType<Variable> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopVariable> counter, Object... params) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public Variable find(FinderType<Variable> finder, Object... params) throws PersistanceException {
-    Variable.Finder varType = (Variable.Finder) finder;
-    Variable var = null;
+  public HopVariable find(FinderType<HopVariable> finder, Object... params) throws PersistanceException {
+    HopVariable.Finder varType = (HopVariable.Finder) finder;
+    HopVariable var = null;
     if (variables.containsKey(varType)) {
       log("find-" + varType.toString(), CacheHitState.HIT);
       var = variables.get(varType);
@@ -62,13 +61,13 @@ public class VariablesContext extends EntityContext<Variable> {
   }
 
   @Override
-  public Collection<Variable> findList(FinderType<Variable> finder, Object... params) throws PersistanceException {
+  public Collection<HopVariable> findList(FinderType<HopVariable> finder, Object... params) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
-    for (Variable.Finder varType : modifiedVariables.keySet()) {
+    for (HopVariable.Finder varType : modifiedVariables.keySet()) {
       switch (varType) {
         case GenerationStamp:
           if (lks.getGenerationStampLock() != TransactionLockTypes.LockType.WRITE) {
@@ -87,7 +86,7 @@ public class VariablesContext extends EntityContext<Variable> {
   }
 
   @Override
-  public void remove(Variable var) throws PersistanceException {
+  public void remove(HopVariable var) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -97,7 +96,7 @@ public class VariablesContext extends EntityContext<Variable> {
   }
 
   @Override
-  public void update(Variable var) throws PersistanceException {
+  public void update(HopVariable var) throws PersistanceException {
     modifiedVariables.put(var.getType(), var);
     variables.put(var.getType(), var);
     log(

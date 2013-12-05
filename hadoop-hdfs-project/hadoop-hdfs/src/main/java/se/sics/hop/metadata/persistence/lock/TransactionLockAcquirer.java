@@ -42,7 +42,7 @@ import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockTyp
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.READ_COMMITTED;
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.WRITE;
 import se.sics.hop.transcation.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
+import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 
 /**
  *
@@ -434,11 +434,11 @@ public class TransactionLockAcquirer {
     }
 
     if (locks.getGenerationStampLock() != null) {
-      acquireLock(locks.getGenerationStampLock(), Variable.Finder.GenerationStamp);
+      acquireLock(locks.getGenerationStampLock(), HopVariable.Finder.GenerationStamp);
     }
 
     if (locks.getBlockIdCounterLock() != null) {
-      acquireLock(locks.getBlockIdCounterLock(), Variable.Finder.BlockID);
+      acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
     }
   }
 
