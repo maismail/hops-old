@@ -118,7 +118,7 @@ import se.sics.hop.metadata.persistence.ndb.dalimpl.LeaderClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.LeasePathClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaUnderConstructionClusterj;
+import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaUnderConstructionClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.UnderReplicatedBlockClusterj;
 
 /**

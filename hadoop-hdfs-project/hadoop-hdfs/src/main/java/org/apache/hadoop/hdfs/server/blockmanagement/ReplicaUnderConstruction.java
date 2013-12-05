@@ -4,6 +4,7 @@ import java.util.Comparator;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 
 /**
  * ReplicaUnderConstruction contains information about replicas while they are
@@ -13,7 +14,7 @@ import se.sics.hop.metadata.persistence.FinderType;
  *
  * @author Kamal Hakimzadeh <kamal@sics.se>
  */
-public class ReplicaUnderConstruction extends IndexedReplica {
+public class ReplicaUnderConstruction extends HopIndexedReplica {
 
   public static enum Finder implements FinderType<ReplicaUnderConstruction> {
 

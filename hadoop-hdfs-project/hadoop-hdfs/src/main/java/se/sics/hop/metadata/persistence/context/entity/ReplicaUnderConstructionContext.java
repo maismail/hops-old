@@ -1,8 +1,8 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.ArrayList;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.ReplicaUnderConstruntionDataAccess;
+import se.sics.hop.metadata.persistence.dal.ReplicaUnderConstructionDataAccess;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +15,7 @@ import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.dalwrapper.ReplicaUnderConstructionDALWrapper;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -29,9 +30,9 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> newReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> removedReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
   private Map<Long, List<ReplicaUnderConstruction>> blockReplicasUCAll = new HashMap<Long, List<ReplicaUnderConstruction>>();
-  private ReplicaUnderConstruntionDataAccess dataAccess;
+  private ReplicaUnderConstructionDALWrapper dataAccess;
 
-  public ReplicaUnderConstructionContext(ReplicaUnderConstruntionDataAccess dataAccess) {
+  public ReplicaUnderConstructionContext(ReplicaUnderConstructionDALWrapper dataAccess) {
     this.dataAccess = dataAccess;
   }
 
