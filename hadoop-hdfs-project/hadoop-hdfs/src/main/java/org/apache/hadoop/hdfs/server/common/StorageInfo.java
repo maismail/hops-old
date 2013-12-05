@@ -36,10 +36,11 @@ import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.StorageInfoDataAccess;
+import se.sics.hop.metadata.persistence.dal.StorageInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.util.Time;
+import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 
 /**
  * Common class for storage information.
@@ -128,7 +129,7 @@ public class StorageInfo {
     LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        StorageInfoDALWrapper da = StorageFactory.getStorageInfoDataAccess();
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
       }
     };
@@ -144,7 +145,7 @@ public class StorageInfo {
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
         String bpid = newBlockPoolID();
-        StorageInfoDataAccess da = (StorageInfoDataAccess) StorageFactory.getDataAccess(StorageInfoDataAccess.class);
+        StorageInfoDALWrapper da = StorageFactory.getStorageInfoDataAccess();
         da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
                 conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID_KEY, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
                 clusterId, 0L, bpid));

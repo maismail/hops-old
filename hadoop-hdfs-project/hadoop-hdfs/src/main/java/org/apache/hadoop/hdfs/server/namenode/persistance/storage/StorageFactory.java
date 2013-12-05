@@ -37,9 +37,11 @@ import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.StorageInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
+import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
@@ -73,6 +75,7 @@ public class StorageFactory {
 //  private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
   private static boolean isInitialized = false;
   private static DALStorageFactory dStorageFactory;
+  private static StorageInfoDALWrapper storageInfoDAL;
   
 //  private static void initDataAccessMap() {
 //    dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
@@ -183,4 +186,12 @@ public class StorageFactory {
 //    return dataAccessMap.get(type);
     return dStorageFactory.getDataAccess(type);
   }
+  
+  public static StorageInfoDALWrapper getStorageInfoDataAccess(){
+    if(storageInfoDAL == null){
+      storageInfoDAL = new StorageInfoDALWrapper((StorageInfoDataAccess)getDataAccess(StorageInfoDataAccess.class));
+    }
+    return storageInfoDAL;
+  }
+  
 }
