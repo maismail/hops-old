@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.metadata.persistence.entity.HopReplica;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 
@@ -7,7 +8,7 @@ import se.sics.hop.metadata.persistence.FinderType;
  *
  * @author Hooman <hooman@sics.se>
  */
-public class ExcessReplica extends Replica {
+public class ExcessReplica extends HopReplica {
 
   public static enum Counter implements CounterType<ExcessReplica> {
 

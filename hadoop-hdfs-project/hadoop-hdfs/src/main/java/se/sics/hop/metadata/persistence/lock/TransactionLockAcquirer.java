@@ -16,7 +16,7 @@ import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
-import org.apache.hadoop.hdfs.server.blockmanagement.IndexedReplica;
+import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
@@ -392,7 +392,7 @@ public class TransactionLockAcquirer {
 //HOP if (blockResults != null && !blockResults.isEmpty()) //[S] commented this to bring null in to the cache for invalid/deleted blocks
 //    {
     if (locks.getReplicaLock() != null) {
-      acquireReplicasLock(locks.getReplicaLock(), IndexedReplica.Finder.ByBlockId);
+      acquireReplicasLock(locks.getReplicaLock(), HopIndexedReplica.Finder.ByBlockId);
     }
 
     if (locks.getCrLock() != null) {

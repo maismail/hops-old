@@ -198,7 +198,7 @@ public class CorruptReplicasMap{
     Collection<CorruptReplica> corruptReplicas = getAllCorruptReplicas();
     if (corruptReplicas != null) {
       for (CorruptReplica replica : corruptReplicas) {
-        sortedIds.add(replica.blockId);
+        sortedIds.add(replica.getBlockId());
       }
     }
     

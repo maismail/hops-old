@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj;
 
+import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaClusterj;
 import com.mysql.clusterj.Query;
 import com.mysql.clusterj.Session;
 import com.mysql.clusterj.annotation.Column;
