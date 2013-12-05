@@ -1,5 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance.storage;
 
+import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
 import se.sics.hop.metadata.persistence.entity.HopLeader;
 import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
@@ -25,11 +26,13 @@ import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
+import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
+import se.sics.hop.metadata.persistence.entity.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 
@@ -144,7 +147,7 @@ public class StorageFactory {
 //    entityContexts.put(BlockInfoUnderConstruction.class, bicj);
 //    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
     entityContexts.put(HopIndexedReplica.class, new ReplicaContext((ReplicaDataAccess) getDataAccess(ReplicaDataAccess.class)));
-//    entityContexts.put(ExcessReplica.class, new ExcessReplicaContext(excessReplicaDataAccess));
+    entityContexts.put(HopExcessReplica.class, new ExcessReplicaContext((ExcessReplicaDataAccess) getDataAccess(ExcessReplicaDataAccess.class)));
 //    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
     entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class))));
     entityContexts.put(HopLeasePath.class, new LeasePathContext((LeasePathDataAccess)getDataAccess(LeasePathDataAccess.class)));

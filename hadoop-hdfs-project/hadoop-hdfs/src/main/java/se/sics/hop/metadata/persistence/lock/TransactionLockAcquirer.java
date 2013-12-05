@@ -15,7 +15,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
-import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
+import se.sics.hop.metadata.persistence.entity.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
 import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
@@ -400,7 +400,7 @@ public class TransactionLockAcquirer {
     }
 
     if (locks.getErLock() != null) {
-      acquireReplicasLock(locks.getErLock(), ExcessReplica.Finder.ByBlockId);
+      acquireReplicasLock(locks.getErLock(), HopExcessReplica.Finder.ByBlockId);
     }
 
     if (locks.getRucLock() != null) {

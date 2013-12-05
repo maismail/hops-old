@@ -1,8 +1,8 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
-import org.apache.hadoop.hdfs.server.blockmanagement.ExcessReplica;
+import se.sics.hop.metadata.persistence.entity.HopExcessReplica;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
@@ -10,7 +10,7 @@ import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
@@ -18,13 +18,13 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Hooman <hooman@sics.se>
  */
-public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
+public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
 
-  private Map<ExcessReplica, ExcessReplica> exReplicas = new HashMap<ExcessReplica, ExcessReplica>();
-  private Map<Long, TreeSet<ExcessReplica>> blockIdToExReplica = new HashMap<Long, TreeSet<ExcessReplica>>();
-  private Map<String, TreeSet<ExcessReplica>> storageIdToExReplica = new HashMap<String, TreeSet<ExcessReplica>>();
-  private Map<ExcessReplica, ExcessReplica> newExReplica = new HashMap<ExcessReplica, ExcessReplica>();
-  private Map<ExcessReplica, ExcessReplica> removedExReplica = new HashMap<ExcessReplica, ExcessReplica>();
+  private Map<HopExcessReplica, HopExcessReplica> exReplicas = new HashMap<HopExcessReplica, HopExcessReplica>();
+  private Map<Long, TreeSet<HopExcessReplica>> blockIdToExReplica = new HashMap<Long, TreeSet<HopExcessReplica>>();
+  private Map<String, TreeSet<HopExcessReplica>> storageIdToExReplica = new HashMap<String, TreeSet<HopExcessReplica>>();
+  private Map<HopExcessReplica, HopExcessReplica> newExReplica = new HashMap<HopExcessReplica, HopExcessReplica>();
+  private Map<HopExcessReplica, HopExcessReplica> removedExReplica = new HashMap<HopExcessReplica, HopExcessReplica>();
   private ExcessReplicaDataAccess dataAccess;
   private int nullCount = 0;
 
@@ -33,7 +33,7 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
   }
 
   @Override
-  public void add(ExcessReplica exReplica) throws TransactionContextException {
+  public void add(HopExcessReplica exReplica) throws TransactionContextException {
     if (removedExReplica.containsKey(exReplica)) {
       throw new TransactionContextException("Removed excess-replica passed to be persisted");
     }
@@ -60,8 +60,8 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
   }
 
   @Override
-  public int count(CounterType<ExcessReplica> counter, Object... params) throws PersistanceException {
-    ExcessReplica.Counter eCounter = (ExcessReplica.Counter) counter;
+  public int count(CounterType<HopExcessReplica> counter, Object... params) throws PersistanceException {
+    HopExcessReplica.Counter eCounter = (HopExcessReplica.Counter) counter;
     switch (eCounter) {
       case All:
         log("count-all-excess");
@@ -72,16 +72,16 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
   }
 
   @Override
-  public ExcessReplica find(FinderType<ExcessReplica> finder,
+  public HopExcessReplica find(FinderType<HopExcessReplica> finder,
           Object... params) throws PersistanceException {
-    ExcessReplica.Finder eFinder = (ExcessReplica.Finder) finder;
-    ExcessReplica result = null;
+    HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
+    HopExcessReplica result = null;
 
     switch (eFinder) {
       case ByPKey:
         long blockId = (Long) params[0];
         String storageId = (String) params[1];
-        ExcessReplica searchKey = new ExcessReplica(storageId, blockId);
+        HopExcessReplica searchKey = new HopExcessReplica(storageId, blockId);
         if (blockIdToExReplica.containsKey(blockId) && !blockIdToExReplica.get(blockId).contains(searchKey)) {
           log("find-excess-by-pk-not-exist", CacheHitState.HIT,
                   new String[]{"bid", Long.toString(blockId), "sid", storageId});
@@ -111,9 +111,9 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
   }
 
   @Override
-  public Collection<ExcessReplica> findList(FinderType<ExcessReplica> finder, Object... params) throws PersistanceException {
-    ExcessReplica.Finder eFinder = (ExcessReplica.Finder) finder;
-    TreeSet<ExcessReplica> result = null;
+  public Collection<HopExcessReplica> findList(FinderType<HopExcessReplica> finder, Object... params) throws PersistanceException {
+    HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
+    TreeSet<HopExcessReplica> result = null;
 
     switch (eFinder) {
       case ByStorageId:
@@ -123,7 +123,7 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
         } else {
           log("find-excess-by-storageid", CacheHitState.LOSS, new String[]{"sid", sId});
           aboutToAccessStorage();
-          TreeSet<ExcessReplica> syncSet = syncExcessReplicaInstances(dataAccess.findExcessReplicaByStorageId(sId));
+          TreeSet<HopExcessReplica> syncSet = syncExcessReplicaInstances(dataAccess.findExcessReplicaByStorageId(sId));
           storageIdToExReplica.put(sId, syncSet);
         }
         result = storageIdToExReplica.get(sId);
@@ -135,7 +135,7 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
         } else {
           log("find-excess-by-blockId", CacheHitState.LOSS, new String[]{"bid", String.valueOf(bId)});
           aboutToAccessStorage();
-          TreeSet<ExcessReplica> syncSet = syncExcessReplicaInstances(dataAccess.findExcessReplicaByBlockId(bId));
+          TreeSet<HopExcessReplica> syncSet = syncExcessReplicaInstances(dataAccess.findExcessReplicaByBlockId(bId));
           blockIdToExReplica.put(bId, syncSet);
         }
         result = blockIdToExReplica.get(bId);
@@ -160,7 +160,7 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
     }
 
   @Override
-  public void remove(ExcessReplica exReplica) throws PersistanceException {
+  public void remove(HopExcessReplica exReplica) throws PersistanceException {
     if (exReplicas.remove(exReplica) == null) {
       throw new TransactionContextException("Unattached excess-replica passed to be removed");
     }
@@ -177,14 +177,14 @@ public class ExcessReplicaContext extends EntityContext<ExcessReplica> {
   }
 
   @Override
-  public void update(ExcessReplica entity) throws PersistanceException {
+  public void update(HopExcessReplica entity) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
-  private TreeSet<ExcessReplica> syncExcessReplicaInstances(List<ExcessReplica> list) {
-    TreeSet<ExcessReplica> replicaSet = new TreeSet<ExcessReplica>();
+  private TreeSet<HopExcessReplica> syncExcessReplicaInstances(List<HopExcessReplica> list) {
+    TreeSet<HopExcessReplica> replicaSet = new TreeSet<HopExcessReplica>();
 
-    for (ExcessReplica replica : list) {
+    for (HopExcessReplica replica : list) {
       if (!removedExReplica.containsKey(replica)) {
         if (exReplicas.containsKey(replica)) {
           if (exReplicas.get(replica) == null) {
