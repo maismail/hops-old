@@ -21,6 +21,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
 import se.sics.hop.metadata.persistence.DALDriver;
 import se.sics.hop.metadata.persistence.DALStorageFactory;
 import se.sics.hop.metadata.persistence.StorageConnector;
+import se.sics.hop.metadata.persistence.context.entity.BlockInfoContext;
 import se.sics.hop.metadata.persistence.context.entity.BlockTokenKeyContext;
 import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.InvalidatedBlockContext;
@@ -28,6 +29,7 @@ import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.UnderReplicatedBlockContext;
 import se.sics.hop.metadata.persistence.context.entity.VariableContext;
+import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
@@ -40,6 +42,7 @@ import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.StorageInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
+import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
@@ -156,9 +159,9 @@ public class StorageFactory {
 
   public static Map<Class, EntityContext> createEntityContexts() {
     Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
-//    BlockInfoContext bicj = new BlockInfoContext(blockInfoDataAccess);
-//    entityContexts.put(BlockInfo.class, bicj);
-//    entityContexts.put(BlockInfoUnderConstruction.class, bicj);
+    BlockInfoContext bic = new BlockInfoContext(new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class)));
+    entityContexts.put(BlockInfo.class, bic);
+    entityContexts.put(BlockInfoUnderConstruction.class, bic);
 //    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
     entityContexts.put(HopIndexedReplica.class, new ReplicaContext((ReplicaDataAccess) getDataAccess(ReplicaDataAccess.class)));
     entityContexts.put(HopExcessReplica.class, new ExcessReplicaContext((ExcessReplicaDataAccess) getDataAccess(ExcessReplicaDataAccess.class)));

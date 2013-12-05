@@ -1,9 +1,7 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
@@ -14,8 +12,8 @@ import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.mysqlserver.CountHelper;
 import org.apache.log4j.Logger;
+import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
 
 /**
  *
@@ -30,10 +28,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   protected Map<Long, BlockInfo> removedBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, List<BlockInfo>> inodeBlocks = new HashMap<Long, List<BlockInfo>>();
   protected boolean allBlocksRead = false;
-  BlockInfoDataAccess dataAccess;
+  BlockInfoDALWrapper dataAccess;
   private int nullCount = 0;
 
-  public BlockInfoContext(BlockInfoDataAccess dataAccess) {
+  public BlockInfoContext(BlockInfoDALWrapper dataAccess) {
     this.dataAccess = dataAccess;
   }
 

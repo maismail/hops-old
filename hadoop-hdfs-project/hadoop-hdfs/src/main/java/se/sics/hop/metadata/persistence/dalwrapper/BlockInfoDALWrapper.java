@@ -1,0 +1,97 @@
+/*
+ * Copyright 2013 Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package se.sics.hop.metadata.persistence.dalwrapper;
+
+import java.util.Collection;
+import java.util.List;
+import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
+import se.sics.hop.metadata.persistence.DALWrapper;
+import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.persistence.entity.hdfs.HopBlockInfo;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
+
+/**
+ *
+ * @author Mahmoud Ismail <maism@sics.se>
+ */
+public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> {
+
+  private final BlockInfoDataAccess dataAccess;
+
+  public BlockInfoDALWrapper(BlockInfoDataAccess dataAccess) {
+    this.dataAccess = dataAccess;
+  }
+
+  public int countAll() throws StorageException {
+    return dataAccess.countAll();
+  }
+
+  public BlockInfo findById(long blockId) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findById(blockId));
+  }
+
+  public List<BlockInfo> findByInodeId(long id) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
+  }
+
+  public List<BlockInfo> findAllBlocks() throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findAllBlocks());
+  }
+
+  public List<BlockInfo> findByStorageId(String storageId) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
+  }
+
+  public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {
+    dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
+  }
+
+  @Override
+  public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass) throws StorageException {
+    HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
+            hdfsClass.getGenerationStamp(), hdfsClass.getBlockUCState().ordinal(), hdfsClass.getTimestamp());
+    if (hdfsClass instanceof BlockInfoUnderConstruction) {
+      BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) hdfsClass;
+      hopBlkInfo.setPrimaryNodeIndex(ucBlock.getPrimaryNodeIndex());
+      hopBlkInfo.setBlockRecoveryId(ucBlock.getBlockRecoveryId());
+    }
+    return hopBlkInfo;
+  }
+
+  @Override
+  public BlockInfo convertDALtoHDFS(HopBlockInfo dalClass) throws StorageException {
+    Block b = new Block(dalClass.getBlockId(), dalClass.getNumBytes(), dalClass.getGenerationStamp());
+    BlockInfo blockInfo = null;
+
+    if (dalClass.getBlockUCState() > 0) { //UNDER_CONSTRUCTION, UNDER_RECOVERY, COMMITED
+      blockInfo = new BlockInfoUnderConstruction(b);
+      ((BlockInfoUnderConstruction) blockInfo).setBlockUCStateNoPersistance(HdfsServerConstants.BlockUCState.values()[dalClass.getBlockUCState()]);
+      ((BlockInfoUnderConstruction) blockInfo).setPrimaryNodeIndexNoPersistance(dalClass.getPrimaryNodeIndex());
+      ((BlockInfoUnderConstruction) blockInfo).setBlockRecoveryIdNoPersistance(dalClass.getBlockRecoveryId());
+    } else if (dalClass.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal()) {
+      blockInfo = new BlockInfo(b);
+    }
+
+    blockInfo.setINodeIdNoPersistance(dalClass.getInodeId());
+    blockInfo.setTimestampNoPersistance(dalClass.getTimeStamp());
+    blockInfo.setBlockIndexNoPersistance(dalClass.getBlockIndex());
+
+    return blockInfo;
+  }
+}
