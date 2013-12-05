@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -28,7 +29,7 @@ import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
@@ -67,7 +68,7 @@ public class CorruptReplicasMap{
     }
     
     if (!nodes.contains(dn)) {
-      addCorruptReplicaToDB(new CorruptReplica(blk.getBlockId(), dn.getStorageID()));
+      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getStorageID()));
       NameNode.blockStateChangeLog.info("BLOCK NameSystem.addToCorruptReplicasMap: "+
                                    blk.getBlockName() +
                                    " added as corrupt on " + dn +
@@ -89,9 +90,9 @@ public class CorruptReplicasMap{
    * @param blk Block to be removed
    */
   void removeFromCorruptReplicasMap(Block blk) throws PersistanceException {
-    Collection<CorruptReplica> corruptReplicas = getCorruptReplicas(blk);
+    Collection<HopCorruptReplica> corruptReplicas = getCorruptReplicas(blk);
     if (corruptReplicas != null) {
-      for (CorruptReplica cr : corruptReplicas) {
+      for (HopCorruptReplica cr : corruptReplicas) {
         removeCorruptReplicaFromDB(cr);
       }
     }
@@ -111,7 +112,7 @@ public class CorruptReplicasMap{
     }
 
     if (datanodes.contains(datanode)) {
-      removeCorruptReplicaFromDB(new CorruptReplica(blk.getBlockId(), datanode.getStorageID()));
+      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getStorageID()));
       return true;
     } else {
       return false;
@@ -130,10 +131,10 @@ public class CorruptReplicasMap{
     //HOPS datanodeMgr is null in some tests
     if (datanodeMgr == null) return new ArrayList<DatanodeDescriptor>();  
     
-    Collection<CorruptReplica> corruptReplicas = getCorruptReplicas(blk);
+    Collection<HopCorruptReplica> corruptReplicas = getCorruptReplicas(blk);
     Collection<DatanodeDescriptor> dnds = new TreeSet<DatanodeDescriptor>();
     if(corruptReplicas != null){
-      for(CorruptReplica cr : corruptReplicas){
+      for(HopCorruptReplica cr : corruptReplicas){
         DatanodeDescriptor dn = datanodeMgr.getDatanode(cr.getStorageId());
         if(dn!=null){
             dnds.add(dn);
@@ -195,9 +196,9 @@ public class CorruptReplicasMap{
     
     SortedSet<Long> sortedIds = new TreeSet<Long>();
     
-    Collection<CorruptReplica> corruptReplicas = getAllCorruptReplicas();
+    Collection<HopCorruptReplica> corruptReplicas = getAllCorruptReplicas();
     if (corruptReplicas != null) {
-      for (CorruptReplica replica : corruptReplicas) {
+      for (HopCorruptReplica replica : corruptReplicas) {
         sortedIds.add(replica.getBlockId());
       }
     }
@@ -237,12 +238,12 @@ public class CorruptReplicasMap{
     return ret;
   }  
   
-  private Collection<CorruptReplica> getCorruptReplicas(Block blk) throws PersistanceException {
-    return EntityManager.findList(CorruptReplica.Finder.ByBlockId, blk.getBlockId());
+  private Collection<HopCorruptReplica> getCorruptReplicas(Block blk) throws PersistanceException {
+    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId());
   }
 
-  private Collection<CorruptReplica> getAllCorruptReplicas() throws IOException {
-    return (Collection<CorruptReplica>) new LightWeightRequestHandler(OperationType.GET_ALL_CORRUPT_REPLICAS) {
+  private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {
+    return (Collection<HopCorruptReplica>) new LightWeightRequestHandler(OperationType.GET_ALL_CORRUPT_REPLICAS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         CorruptReplicaDataAccess crDa = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
@@ -252,11 +253,11 @@ public class CorruptReplicasMap{
   }
   
   
-  private void addCorruptReplicaToDB(CorruptReplica cr) throws PersistanceException {
+  private void addCorruptReplicaToDB(HopCorruptReplica cr) throws PersistanceException {
     EntityManager.add(cr);
   }
 
-  private void removeCorruptReplicaFromDB(CorruptReplica cr) throws PersistanceException {
+  private void removeCorruptReplicaFromDB(HopCorruptReplica cr) throws PersistanceException {
     EntityManager.remove(cr);
   }
 }

@@ -20,13 +20,16 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.*;
 import se.sics.hop.metadata.persistence.DALDriver;
 import se.sics.hop.metadata.persistence.DALStorageFactory;
 import se.sics.hop.metadata.persistence.StorageConnector;
+import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
+import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.entity.HopLeasePath;
 
@@ -153,7 +156,7 @@ public class StorageFactory {
 //    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
 //    entityContexts.put(INodeSymlink.class, inodeContext);
 //    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
-//    entityContexts.put(CorruptReplica.class, new CorruptReplicaContext(corruptReplicaDataAccess));
+    entityContexts.put(HopCorruptReplica.class, new CorruptReplicaContext((CorruptReplicaDataAccess)getDataAccess(CorruptReplicaDataAccess.class)));
 //    entityContexts.put(UnderReplicatedBlock.class, new UnderReplicatedBlockContext(underReplicatedBlockDataAccess));
 //    entityContexts.put(Variable.class, new VariablesContext(variablesDataAccess));
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess)getDataAccess(LeaderDataAccess.class)));

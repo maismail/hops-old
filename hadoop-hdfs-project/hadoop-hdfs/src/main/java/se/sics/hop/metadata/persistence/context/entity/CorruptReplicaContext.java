@@ -1,8 +1,8 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
-import org.apache.hadoop.hdfs.server.blockmanagement.CorruptReplica;
+import se.sics.hop.metadata.persistence.entity.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
@@ -10,7 +10,7 @@ import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
@@ -18,12 +18,12 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author kamal hakimzadeh <kamal@sics.se>
  */
-public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
+public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
 
 //  protected Map<CorruptReplica, CorruptReplica> corruptReplicas = new HashMap<CorruptReplica, CorruptReplica>();
-  protected Map<Long, Set<CorruptReplica>> blockCorruptReplicas = new HashMap<Long, Set<CorruptReplica>>();
-  protected Map<CorruptReplica, CorruptReplica> newCorruptReplicas = new HashMap<CorruptReplica, CorruptReplica>();
-  protected Map<CorruptReplica, CorruptReplica> removedCorruptReplicas = new HashMap<CorruptReplica, CorruptReplica>();
+  protected Map<Long, Set<HopCorruptReplica>> blockCorruptReplicas = new HashMap<Long, Set<HopCorruptReplica>>();
+  protected Map<HopCorruptReplica, HopCorruptReplica> newCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
+  protected Map<HopCorruptReplica, HopCorruptReplica> removedCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
   protected boolean allCorruptBlocksRead = false;
   private CorruptReplicaDataAccess dataAccess;
 //  private int nullCount = 0;
@@ -33,7 +33,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
   @Override
-  public void add(CorruptReplica entity) throws PersistanceException {
+  public void add(HopCorruptReplica entity) throws PersistanceException {
     if (removedCorruptReplicas.get(entity) != null) {
       throw new TransactionContextException("Removed corrupt replica passed to be persisted");
     }
@@ -42,10 +42,10 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
 //    }
 //    corruptReplicas.put(entity, entity);
     newCorruptReplicas.put(entity, entity);
-    Set<CorruptReplica> list = blockCorruptReplicas.get(entity.getBlockId());
+    Set<HopCorruptReplica> list = blockCorruptReplicas.get(entity.getBlockId());
     if(list == null)
     {
-        list = new TreeSet<CorruptReplica>();
+        list = new TreeSet<HopCorruptReplica>();
         blockCorruptReplicas.put(entity.getBlockId(), list);
     }
     list.add(entity);
@@ -66,7 +66,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
   @Override
-  public int count(CounterType<CorruptReplica> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopCorruptReplica> counter, Object... params) throws PersistanceException {
 //    CorruptReplica.Counter cCounter = (CorruptReplica.Counter) counter;
 //
 //    switch (cCounter) {
@@ -84,7 +84,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
   @Override
-  public CorruptReplica find(FinderType<CorruptReplica> finder, Object... params) throws PersistanceException {
+  public HopCorruptReplica find(FinderType<HopCorruptReplica> finder, Object... params) throws PersistanceException {
 //    CorruptReplica.Finder cFinder = (CorruptReplica.Finder) finder;
 //
 //    switch (cFinder) {
@@ -118,8 +118,8 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
   @Override
-  public Collection<CorruptReplica> findList(FinderType<CorruptReplica> finder, Object... params) throws PersistanceException {
-    CorruptReplica.Finder cFinder = (CorruptReplica.Finder) finder;
+  public Collection<HopCorruptReplica> findList(FinderType<HopCorruptReplica> finder, Object... params) throws PersistanceException {
+    HopCorruptReplica.Finder cFinder = (HopCorruptReplica.Finder) finder;
 
     switch (cFinder) {
 //      case All:
@@ -146,7 +146,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
         }
         log("find-corrupts-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
         aboutToAccessStorage();
-        Set<CorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId));
+        Set<HopCorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId));
         blockCorruptReplicas.put(blockId, list);
         return new ArrayList(blockCorruptReplicas.get(blockId)); // Shallow copy
 
@@ -171,7 +171,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
     }
 
   @Override
-  public void remove(CorruptReplica entity) throws PersistanceException {
+  public void remove(HopCorruptReplica entity) throws PersistanceException {
 //    corruptReplicas.remove(entity);
     newCorruptReplicas.remove(entity);
     removedCorruptReplicas.put(entity, entity);
@@ -188,7 +188,7 @@ public class CorruptReplicaContext extends EntityContext<CorruptReplica> {
   }
 
   @Override
-  public void update(CorruptReplica entity) throws PersistanceException {
+  public void update(HopCorruptReplica entity) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
