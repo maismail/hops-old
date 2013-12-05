@@ -13,7 +13,8 @@ import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import static se.sics.hop.metadata.persistence.context.entity.EntityContext.log;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.INodeAttributesDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.persistence.dalwrapper.INodeAttributeDALWrapper;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -61,9 +62,9 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
         }
     }
     private Map<Long, AttributeWrapper> cachedRows = new HashMap<Long, AttributeWrapper>();
-    private INodeAttributesDataAccess da;
+    private INodeAttributeDALWrapper da;
 
-    public INodeAttributesContext(INodeAttributesDataAccess da) {
+    public INodeAttributesContext(INodeAttributeDALWrapper da) {
         this.da = da;
     }
 

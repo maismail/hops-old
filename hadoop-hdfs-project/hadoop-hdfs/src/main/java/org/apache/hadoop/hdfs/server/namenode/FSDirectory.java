@@ -67,8 +67,8 @@ import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.INodeAttributesDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /*************************************************
@@ -2016,7 +2016,7 @@ public class FSDirectory implements Closeable {
       LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
-          InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+          INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
           return da.countAll();
         }
       };
@@ -2250,7 +2250,7 @@ public class FSDirectory implements Closeable {
        @Override
        public Object performTask() throws PersistanceException {
           INodeDirectoryWithQuota newRootINode = null;
-         InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+         INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
          INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
          if (rootInode == null || overwrite == true) {
            newRootINode = INodeDirectoryWithQuota.createRootDir(ps);

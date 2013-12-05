@@ -25,7 +25,7 @@ import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
@@ -116,7 +116,7 @@ public class INodeUtil {
             "Read inode with no transaction by parent-id=%d, name=%s",
             parentId,
             name));
-    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
     return da.findInodeByNameAndParentId(name, parentId);
   }
 
@@ -225,7 +225,7 @@ public class INodeUtil {
     LOG.info(String.format(
             "Read inode with no transaction by id=%d",
             id));
-    InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
     return da.findInodeById(id);
   }
 

@@ -1,4 +1,4 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
@@ -12,16 +12,18 @@ import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.log4j.NDC;
+import se.sics.hop.metadata.persistence.dalwrapper.INodeAttributeDALWrapper;
+import se.sics.hop.metadata.persistence.dalwrapper.INodeDALWrapper;
 
 /**
  *
  * @author Hooman <hooman@sics.se>
  */
-public class InodeContext extends EntityContext<INode> {
+public class INodeContext extends EntityContext<INode> {
 
   /**
    * Mappings
@@ -32,9 +34,9 @@ public class InodeContext extends EntityContext<INode> {
   protected Map<Long, INode> newInodes = new HashMap<Long, INode>();
   protected Map<Long, INode> modifiedInodes = new HashMap<Long, INode>();
   protected Map<Long, INode> removedInodes = new HashMap<Long, INode>();
-  InodeDataAccess dataAccess;
+  protected INodeDALWrapper dataAccess;
 
-  public InodeContext(InodeDataAccess dataAccess) {
+  public INodeContext(INodeDALWrapper dataAccess) {
     this.dataAccess = dataAccess;
   }
 
