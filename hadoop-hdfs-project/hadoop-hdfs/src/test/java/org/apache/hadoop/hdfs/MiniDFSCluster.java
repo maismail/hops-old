@@ -111,7 +111,7 @@ import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockTokenKeyClusterj;
+import se.sics.hop.metadata.persistence.ndb.dalimpl.BlockTokenKeyClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.INodeAttributesClusterj;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
 import se.sics.hop.metadata.persistence.ndb.dalimpl.LeaderClusterj;

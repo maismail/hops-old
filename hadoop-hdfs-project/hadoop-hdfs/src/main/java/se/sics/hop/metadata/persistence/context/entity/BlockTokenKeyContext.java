@@ -1,6 +1,5 @@
-package org.apache.hadoop.hdfs.server.namenode.persistance.context.entity;
+package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -13,8 +12,9 @@ import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockTokenKeyDataAccess;
+import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -27,13 +27,13 @@ public class BlockTokenKeyContext extends EntityContext<BlockKey> {
   protected Map<Integer, BlockKey> newKeys = new HashMap<Integer, BlockKey>();
   protected Map<Integer, BlockKey> modifiedKeys = new HashMap<Integer, BlockKey>();
   protected Map<Integer, BlockKey> removedKeys = new HashMap<Integer, BlockKey>();
-  BlockTokenKeyDataAccess dataAccess;
+  BlockTokenDALWrapper dataAccess;
   protected boolean allKeysRead = false;
   protected BlockKey currKey;
   protected BlockKey nextKey;
   private int nullCount = 0;
 
-  public BlockTokenKeyContext(BlockTokenKeyDataAccess dataAccess) {
+  public BlockTokenKeyContext(BlockTokenDALWrapper dataAccess) {
     this.dataAccess = dataAccess;
   }
 
