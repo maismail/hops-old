@@ -29,7 +29,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import static org.apache.hadoop.hdfs.server.namenode.INode.NON_EXISTING_ID;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**

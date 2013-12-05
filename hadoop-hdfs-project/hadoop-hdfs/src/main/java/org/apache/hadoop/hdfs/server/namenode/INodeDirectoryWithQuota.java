@@ -21,7 +21,7 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**

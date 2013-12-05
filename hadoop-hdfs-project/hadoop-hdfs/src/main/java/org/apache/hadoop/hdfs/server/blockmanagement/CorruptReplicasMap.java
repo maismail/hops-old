@@ -24,10 +24,10 @@ import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.Server;
 
 import java.util.*;
-import se.sics.hop.metadata.persistence.EntityManager;
-import se.sics.hop.metadata.persistence.LightWeightRequestHandler;
+import se.sics.hop.transcation.EntityManager;
+import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
+import se.sics.hop.transcation.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.CorruptReplicaDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 

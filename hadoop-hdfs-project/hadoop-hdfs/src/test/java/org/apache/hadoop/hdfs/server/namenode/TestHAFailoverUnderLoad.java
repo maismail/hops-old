@@ -23,7 +23,7 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import org.apache.hadoop.io.IOUtils;
 import org.junit.Test;
 

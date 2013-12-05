@@ -26,7 +26,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.persistence.CounterType;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 

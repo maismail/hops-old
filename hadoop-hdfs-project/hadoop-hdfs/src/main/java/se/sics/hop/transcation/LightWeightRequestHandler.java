@@ -1,4 +1,4 @@
-package se.sics.hop.metadata.persistence;
+package se.sics.hop.transcation;
 
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
@@ -7,6 +7,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.StorageConnector;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 import org.apache.log4j.NDC;
+import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**

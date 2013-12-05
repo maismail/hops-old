@@ -10,7 +10,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.RequestHandler;
+import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;

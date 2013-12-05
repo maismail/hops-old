@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.sics.hop.metadata.persistence;
+package se.sics.hop.common;
 
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;

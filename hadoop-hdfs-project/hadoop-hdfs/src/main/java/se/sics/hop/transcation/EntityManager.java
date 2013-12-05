@@ -1,4 +1,4 @@
-package se.sics.hop.metadata.persistence;
+package se.sics.hop.transcation;
 
 import java.util.Collection;
 import java.util.Map;
@@ -9,6 +9,9 @@ import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.persistence.CounterType;
+import se.sics.hop.metadata.persistence.FinderType;
+import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**

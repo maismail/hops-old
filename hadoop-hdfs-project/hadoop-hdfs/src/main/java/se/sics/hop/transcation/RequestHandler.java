@@ -1,5 +1,5 @@
 
-package se.sics.hop.metadata.persistence;
+package se.sics.hop.transcation;
 
 import java.io.IOException;
 import org.apache.commons.logging.Log;

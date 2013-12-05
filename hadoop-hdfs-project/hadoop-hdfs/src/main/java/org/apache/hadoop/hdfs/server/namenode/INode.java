@@ -35,7 +35,7 @@ import com.google.common.primitives.SignedBytes;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 

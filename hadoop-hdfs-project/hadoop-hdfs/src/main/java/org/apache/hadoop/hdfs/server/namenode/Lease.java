@@ -5,7 +5,7 @@ import com.google.common.annotations.VisibleForTesting;
 import java.util.Collection;
 import java.util.TreeSet;
 import se.sics.hop.metadata.persistence.CounterType;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 

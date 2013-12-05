@@ -33,8 +33,8 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
-import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
+import se.sics.hop.transcation.RequestHandler.OperationType;
+import se.sics.hop.transcation.TransactionalRequestHandler;
 import org.junit.Test;
 
 public class TestFSNamesystem {

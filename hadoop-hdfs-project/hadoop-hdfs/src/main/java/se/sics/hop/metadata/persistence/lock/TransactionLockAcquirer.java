@@ -41,7 +41,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveTy
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.READ;
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.READ_COMMITTED;
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.WRITE;
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import org.apache.hadoop.hdfs.server.namenode.persistance.Variable;
 
 /**

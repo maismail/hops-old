@@ -25,11 +25,11 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.persistence.EntityManager;
-import se.sics.hop.metadata.persistence.LightWeightRequestHandler;
+import se.sics.hop.transcation.EntityManager;
+import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
-import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
+import se.sics.hop.transcation.RequestHandler.OperationType;
+import se.sics.hop.transcation.TransactionalRequestHandler;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;

@@ -44,8 +44,8 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveTy
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
+import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.transcation.RequestHandler.OperationType;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;

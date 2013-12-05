@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.server.namenode.persistance;
 
-import se.sics.hop.metadata.persistence.EntityManager;
+import se.sics.hop.transcation.EntityManager;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 
 /**

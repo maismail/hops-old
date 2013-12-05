@@ -18,8 +18,8 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import se.sics.hop.metadata.persistence.entity.HopLeasePath;
-import se.sics.hop.metadata.persistence.HOPBlockIDGen;
-import se.sics.hop.metadata.persistence.HOPTXnChkPtsIDs;
+import se.sics.hop.common.HOPBlockIDGen;
+import se.sics.hop.common.HOPTXnChkPtsIDs;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.FS_TRASH_INTERVAL_KEY;
@@ -220,9 +220,9 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveTy
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.TransactionalRequestHandler;
+import se.sics.hop.transcation.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
-import se.sics.hop.metadata.persistence.RequestHandler.OperationType;
+import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 

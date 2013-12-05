@@ -1,16 +1,12 @@
-package se.sics.hop.metadata.persistence;
+package se.sics.hop.transcation;
 
 import com.mysql.clusterj.ClusterJException;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import static se.sics.hop.metadata.persistence.RequestHandler.log;
-import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import se.sics.hop.metadata.persistence.context.TransactionLockAcquireFailure;
+import static se.sics.hop.transcation.RequestHandler.log;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import org.apache.hadoop.ipc.RemoteException;
 import org.apache.log4j.NDC;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
