@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.persistence.dal.InvalidateBlockDataAccess;
 import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
 
 /**
@@ -70,7 +71,7 @@ class InvalidateBlocks {
    * 
    */
   boolean contains(final String storageID, final Block block) throws PersistanceException {
-    InvalidatedBlock blkFound = findBlock(block.getBlockId(), storageID);
+    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), storageID);
     if (blkFound == null) {
       return false;
     }
@@ -83,7 +84,7 @@ class InvalidateBlocks {
    */
   void add(final Block block, final DatanodeInfo datanode,
       final boolean log) throws PersistanceException {
-    InvalidatedBlock invBlk = new InvalidatedBlock(datanode.getStorageID(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes());
+    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanode.getStorageID(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes());
     if (add(invBlk)) {
       if (log) {
         NameNode.blockStateChangeLog.info("BLOCK* " + getClass().getSimpleName()
@@ -94,9 +95,9 @@ class InvalidateBlocks {
 
   /** Remove a storage from the invalidatesSet */
   void remove(final String storageID) throws IOException {
-    List<InvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageID);
+    List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageID);
     if(invBlocks != null){
-      for(InvalidatedBlock invBlk : invBlocks){
+      for(HopInvalidatedBlock invBlk : invBlocks){
         if(invBlk != null){
           removeInvBlockTx(invBlk);
         }
@@ -106,14 +107,14 @@ class InvalidateBlocks {
 
   /** Remove the block from the specified storage. */
   void remove(final String storageID, final Block block) throws PersistanceException {
-    removeInvalidatedBlockFromDB(new InvalidatedBlock(storageID, block.getBlockId(), block.getGenerationStamp(), block.getNumBytes()));
+    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(storageID, block.getBlockId(), block.getGenerationStamp(), block.getNumBytes()));
   }
 
   /** Print the contents to out. */
   void dump(final PrintWriter out) throws PersistanceException {
-    List<InvalidatedBlock> invBlocks = findAllInvalidatedBlocks();
+    List<HopInvalidatedBlock> invBlocks = findAllInvalidatedBlocks();
     HashSet<String> storageIds = new HashSet<String>();
-    for (InvalidatedBlock ib : invBlocks) {
+    for (HopInvalidatedBlock ib : invBlocks) {
       storageIds.add(ib.getStorageId());
     }
     final int size = storageIds.size();
@@ -124,8 +125,8 @@ class InvalidateBlocks {
     }
 
     for (String sId : storageIds) {
-      HashSet<InvalidatedBlock> invSet = new HashSet<InvalidatedBlock>();
-      for (InvalidatedBlock ib : invBlocks) {
+      HashSet<HopInvalidatedBlock> invSet = new HashSet<HopInvalidatedBlock>();
+      for (HopInvalidatedBlock ib : invBlocks) {
         if (ib.getStorageId().equals(sId)) {
           invSet.add(ib);
         }
@@ -145,10 +146,10 @@ class InvalidateBlocks {
         return da.findAllInvalidatedBlocks();
       }
     };
-    List<InvalidatedBlock> invBlocks = (List<InvalidatedBlock>) getAllInvBlocksHandler.handle(null);
+    List<HopInvalidatedBlock> invBlocks = (List<HopInvalidatedBlock>) getAllInvBlocksHandler.handle(null);
     HashSet<String> storageIds = new HashSet<String>();
     if (invBlocks != null) {
-      for (InvalidatedBlock ib : invBlocks) {
+      for (HopInvalidatedBlock ib : invBlocks) {
         storageIds.add(ib.getStorageId());
       }
     }
@@ -176,16 +177,16 @@ class InvalidateBlocks {
 
   private List<Block> invalidateWork(
       final String storageId, final DatanodeDescriptor dn) throws IOException {
-    final List<InvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageId);
+    final List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageId);
     if (invBlocks == null || invBlocks.isEmpty()) {
       return null;
     }
     // # blocks that can be sent in one message is limited
     final int limit = datanodeManager.blockInvalidateLimit;
     final List<Block> toInvalidate = new ArrayList<Block>(limit);
-    final Iterator<InvalidatedBlock> it = invBlocks.iterator();
+    final Iterator<HopInvalidatedBlock> it = invBlocks.iterator();
     for (int count = 0; count < limit && it.hasNext(); count++) {
-      InvalidatedBlock invBlock = it.next();
+      HopInvalidatedBlock invBlock = it.next();
       toInvalidate.add(new Block(invBlock.getBlockId(),
               invBlock.getNumBytes(), invBlock.getGenerationStamp()));
       removeInvBlockTx(invBlock);
@@ -207,8 +208,8 @@ class InvalidateBlocks {
   
   
   
-  private boolean add(InvalidatedBlock invBlk) throws PersistanceException {
-    InvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId());
+  private boolean add(HopInvalidatedBlock invBlk) throws PersistanceException {
+    HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId());
     if (found == null) {
       addInvalidatedBlockToDB(invBlk);
       return true;
@@ -216,8 +217,8 @@ class InvalidateBlocks {
     return false;
   }
   
-  private List<InvalidatedBlock> findInvBlocksbyStorageId(final String sid) throws IOException {
-    return (List<InvalidatedBlock>) new LightWeightRequestHandler(OperationType.GET_INV_BLKS_BY_STORAGEID) {
+  private List<HopInvalidatedBlock> findInvBlocksbyStorageId(final String sid) throws IOException {
+    return (List<HopInvalidatedBlock>) new LightWeightRequestHandler(OperationType.GET_INV_BLKS_BY_STORAGEID) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
@@ -226,7 +227,7 @@ class InvalidateBlocks {
     }.handle(null);
   }
 
-  private void removeInvBlockTx(final InvalidatedBlock ib) throws IOException {    
+  private void removeInvBlockTx(final HopInvalidatedBlock ib) throws IOException {    
      new LightWeightRequestHandler(OperationType.RM_INV_BLK) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -237,20 +238,20 @@ class InvalidateBlocks {
     }.handle(null);
   }
   
-  private InvalidatedBlock findBlock(long blkId, String storageID) throws PersistanceException {
-    return (InvalidatedBlock) EntityManager.find(InvalidatedBlock.Finder.ByPrimaryKey, blkId, storageID);
+  private HopInvalidatedBlock findBlock(long blkId, String storageID) throws PersistanceException {
+    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPrimaryKey, blkId, storageID);
   }
   
-  private void addInvalidatedBlockToDB(InvalidatedBlock invBlk) throws PersistanceException {
+  private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws PersistanceException {
     EntityManager.add(invBlk);
   }
   
-  private void removeInvalidatedBlockFromDB(InvalidatedBlock invBlk) throws PersistanceException {
+  private void removeInvalidatedBlockFromDB(HopInvalidatedBlock invBlk) throws PersistanceException {
     EntityManager.remove(invBlk);
   }
   
-  private List<InvalidatedBlock> findAllInvalidatedBlocks() throws PersistanceException{
-    return (List<InvalidatedBlock>) EntityManager.findList(InvalidatedBlock.Finder.All);
+  private List<HopInvalidatedBlock> findAllInvalidatedBlocks() throws PersistanceException{
+    return (List<HopInvalidatedBlock>) EntityManager.findList(HopInvalidatedBlock.Finder.All);
   }
   
 }

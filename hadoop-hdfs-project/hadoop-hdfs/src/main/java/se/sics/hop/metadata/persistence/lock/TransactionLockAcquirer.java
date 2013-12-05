@@ -17,7 +17,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
-import org.apache.hadoop.hdfs.server.blockmanagement.InvalidatedBlock;
+import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
@@ -408,7 +408,7 @@ public class TransactionLockAcquirer {
     }
 
     if (locks.getInvLocks() != null) {
-      acquireReplicasLock(locks.getInvLocks(), InvalidatedBlock.Finder.ByBlockId);
+      acquireReplicasLock(locks.getInvLocks(), HopInvalidatedBlock.Finder.ByBlockId);
     }
 
     if (locks.getUrbLock() != null) {

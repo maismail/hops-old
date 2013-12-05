@@ -22,11 +22,13 @@ import se.sics.hop.metadata.persistence.DALDriver;
 import se.sics.hop.metadata.persistence.DALStorageFactory;
 import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
+import se.sics.hop.metadata.persistence.context.entity.InvalidatedBlockContext;
 import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
@@ -34,6 +36,7 @@ import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 
 /**
@@ -148,7 +151,7 @@ public class StorageFactory {
 //    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(replicaUnderConstruntionDataAccess));
     entityContexts.put(HopIndexedReplica.class, new ReplicaContext((ReplicaDataAccess) getDataAccess(ReplicaDataAccess.class)));
     entityContexts.put(HopExcessReplica.class, new ExcessReplicaContext((ExcessReplicaDataAccess) getDataAccess(ExcessReplicaDataAccess.class)));
-//    entityContexts.put(InvalidatedBlock.class, new InvalidatedBlockContext(invalidateBlockDataAccess));
+    entityContexts.put(HopInvalidatedBlock.class, new InvalidatedBlockContext((InvalidateBlockDataAccess) getDataAccess(InvalidateBlockDataAccess.class)));
     entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class))));
     entityContexts.put(HopLeasePath.class, new LeasePathContext((LeasePathDataAccess)getDataAccess(LeasePathDataAccess.class)));
 //    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pendingBlockDataAccess));
