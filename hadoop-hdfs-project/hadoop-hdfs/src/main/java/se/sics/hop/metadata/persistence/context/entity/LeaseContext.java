@@ -8,8 +8,8 @@ import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
-import se.sics.hop.metadata.persistence.dalwrapper.LeaseDALWrapper;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
+import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -29,9 +29,9 @@ public class LeaseContext extends EntityContext<Lease> {
   private boolean allLeasesRead = false;
   private int byHoldernullCount = 0;
   private int byIdNullCount = 0;
-  private LeaseDALWrapper dataAccess;
+  private LeaseDataAccess<Lease> dataAccess;
 
-  public LeaseContext(LeaseDALWrapper dataAccess) {
+  public LeaseContext(LeaseDataAccess<Lease> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

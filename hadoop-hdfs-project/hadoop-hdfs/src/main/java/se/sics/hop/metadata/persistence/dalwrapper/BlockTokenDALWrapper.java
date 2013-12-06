@@ -31,31 +31,36 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> {
+public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> implements BlockTokenKeyDataAccess<BlockKey>{
 
-  private final BlockTokenKeyDataAccess dataAccess;
+  private final BlockTokenKeyDataAccess<HopBlockKey> dataAccess;
   
-  public BlockTokenDALWrapper(BlockTokenKeyDataAccess dataAccess){
+  public BlockTokenDALWrapper(BlockTokenKeyDataAccess<HopBlockKey> dataAccess){
     this.dataAccess = dataAccess;
   }
   
   
+  @Override
   public BlockKey findByKeyId(int id) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByKeyId(id));
   }
 
+  @Override
   public BlockKey findByKeyType(short type) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByKeyType(type));
   }
 
+  @Override
   public List<BlockKey> findAll() throws StorageException {
     return (List<BlockKey>) convertDALtoHDFS(dataAccess.findAll());
   }
 
+  @Override
   public void prepare(Collection<BlockKey> removed, Collection<BlockKey> newed, Collection<BlockKey> modified) throws StorageException {
    dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }
 
+  @Override
   public void removeAll() throws StorageException {
     dataAccess.removeAll();
   }

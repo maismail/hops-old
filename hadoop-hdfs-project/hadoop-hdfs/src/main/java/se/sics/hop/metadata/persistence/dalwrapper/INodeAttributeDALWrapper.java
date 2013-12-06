@@ -26,42 +26,44 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author salman
  */
-public class INodeAttributeDALWrapper extends DALWrapper<INodeAttributes, HopINodeAttributes> {
+public class INodeAttributeDALWrapper extends DALWrapper<INodeAttributes, HopINodeAttributes> implements INodeAttributesDataAccess<INodeAttributes> {
 
-    private INodeAttributesDataAccess dataAccess;
+  private INodeAttributesDataAccess<HopINodeAttributes> dataAccess;
 
-    public INodeAttributeDALWrapper(INodeAttributesDataAccess dataAccess) {
-        this.dataAccess = dataAccess;
-    }
+  public INodeAttributeDALWrapper(INodeAttributesDataAccess<HopINodeAttributes> dataAccess) {
+    this.dataAccess = dataAccess;
+  }
 
-    public INodeAttributes findAttributesByPk(long inodeId) throws StorageException {
-        return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId));
-    }
+  @Override
+  public INodeAttributes findAttributesByPk(long inodeId) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId));
+  }
 
-    public void prepare(Collection<INodeAttributes> modified, Collection<INodeAttributes> removed) throws StorageException {
-        dataAccess.prepare(convertHDFStoDAL(modified), convertHDFStoDAL(removed));
+  @Override
+  public void prepare(Collection<INodeAttributes> modified, Collection<INodeAttributes> removed) throws StorageException {
+    dataAccess.prepare(convertHDFStoDAL(modified), convertHDFStoDAL(removed));
 
-    }
+  }
 
-    @Override
-    public HopINodeAttributes convertHDFStoDAL(INodeAttributes attribute) throws StorageException {
-        HopINodeAttributes hia = new HopINodeAttributes(
-                attribute.getInodeId(),
-                attribute.getNsQuota(),
-                attribute.getNsCount(),
-                attribute.getDsQuota(),
-                attribute.getDiskspace());
-        return hia;
-    }
+  @Override
+  public HopINodeAttributes convertHDFStoDAL(INodeAttributes attribute) throws StorageException {
+    HopINodeAttributes hia = new HopINodeAttributes(
+            attribute.getInodeId(),
+            attribute.getNsQuota(),
+            attribute.getNsCount(),
+            attribute.getDsQuota(),
+            attribute.getDiskspace());
+    return hia;
+  }
 
-    @Override
-    public INodeAttributes convertDALtoHDFS(HopINodeAttributes hia) throws StorageException {
-        INodeAttributes iNodeAttributes = new INodeAttributes(
-                hia.getInodeId(),
-                hia.getNsQuota(),
-                hia.getNsCount(),
-                hia.getDsQuota(),
-                hia.getDiskspace());
-        return iNodeAttributes;
-    }
+  @Override
+  public INodeAttributes convertDALtoHDFS(HopINodeAttributes hia) throws StorageException {
+    INodeAttributes iNodeAttributes = new INodeAttributes(
+            hia.getInodeId(),
+            hia.getNsQuota(),
+            hia.getNsCount(),
+            hia.getDsQuota(),
+            hia.getDiskspace());
+    return iNodeAttributes;
+  }
 }

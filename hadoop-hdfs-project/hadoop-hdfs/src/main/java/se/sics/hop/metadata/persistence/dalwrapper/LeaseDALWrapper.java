@@ -26,39 +26,46 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class LeaseDALWrapper extends DALWrapper<Lease, HopLease>{
-  
-  private final LeaseDataAccess dataAccess;
-  
-  public LeaseDALWrapper(LeaseDataAccess dataAcess){
+public class LeaseDALWrapper extends DALWrapper<Lease, HopLease> implements LeaseDataAccess<Lease> {
+
+  private final LeaseDataAccess<HopLease> dataAccess;
+
+  public LeaseDALWrapper(LeaseDataAccess<HopLease> dataAcess) {
     this.dataAccess = dataAcess;
   }
-  
-  public int countAll() throws StorageException{
+
+  @Override
+  public int countAll() throws StorageException {
     return dataAccess.countAll();
   }
 
-  public Collection<Lease> findByTimeLimit(long timeLimit) throws StorageException{
+  @Override
+  public Collection<Lease> findByTimeLimit(long timeLimit) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByTimeLimit(timeLimit));
   }
 
-  public Collection<Lease> findAll() throws StorageException{
+  @Override
+  public Collection<Lease> findAll() throws StorageException {
     return convertDALtoHDFS(dataAccess.findAll());
   }
 
-  public Lease findByPKey(String holder) throws StorageException{
+  @Override
+  public Lease findByPKey(String holder) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByPKey(holder));
   }
 
-  public Lease findByHolderId(int holderId) throws StorageException{
+  @Override
+  public Lease findByHolderId(int holderId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByHolderId(holderId));
   }
 
-  public void prepare(Collection<Lease> removed, Collection<Lease> newLeases, Collection<Lease> modified) throws StorageException{
+  @Override
+  public void prepare(Collection<Lease> removed, Collection<Lease> newLeases, Collection<Lease> modified) throws StorageException {
     dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newLeases), convertHDFStoDAL(modified));
   }
-  
-  public void removeAll() throws StorageException{
+
+  @Override
+  public void removeAll() throws StorageException {
     dataAccess.removeAll();
   }
 
@@ -69,8 +76,6 @@ public class LeaseDALWrapper extends DALWrapper<Lease, HopLease>{
 
   @Override
   public Lease convertDALtoHDFS(HopLease dalClass) {
-   return new Lease(dalClass.getHolder(), dalClass.getHolderId(), dalClass.getLastUpdate());
+    return new Lease(dalClass.getHolder(), dalClass.getHolderId(), dalClass.getLastUpdate());
   }
-  
-  
 }

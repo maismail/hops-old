@@ -129,7 +129,7 @@ public class StorageInfo {
     LightWeightRequestHandler getStorageInfoHandler = new LightWeightRequestHandler(OperationType.GET_STORAGE_INFO) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        StorageInfoDALWrapper da = StorageFactory.getStorageInfoDataAccess();
+        StorageInfoDataAccess<StorageInfo> da = (StorageInfoDataAccess)StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         return da.findByPk(StorageInfo.DEFAULT_ROW_ID);
       }
     };
@@ -145,7 +145,7 @@ public class StorageInfo {
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
         String bpid = newBlockPoolID();
-        StorageInfoDALWrapper da = StorageFactory.getStorageInfoDataAccess();
+        StorageInfoDataAccess<StorageInfo> da = (StorageInfoDataAccess)StorageFactory.getDataAccess(StorageInfoDataAccess.class);
         da.prepare(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
                 conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID_KEY, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
                 clusterId, 0L, bpid));

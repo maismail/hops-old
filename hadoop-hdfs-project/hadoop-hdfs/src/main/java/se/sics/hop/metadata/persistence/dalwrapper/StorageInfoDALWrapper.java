@@ -25,22 +25,24 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class StorageInfoDALWrapper extends DALWrapper<StorageInfo, HopStorageInfo> {
-  
-  private final StorageInfoDataAccess dataAccess;
-  
-  public StorageInfoDALWrapper(StorageInfoDataAccess dataAccess) {
+public class StorageInfoDALWrapper extends DALWrapper<StorageInfo, HopStorageInfo> implements StorageInfoDataAccess<StorageInfo> {
+
+  private final StorageInfoDataAccess<HopStorageInfo> dataAccess;
+
+  public StorageInfoDALWrapper(StorageInfoDataAccess<HopStorageInfo> dataAccess) {
     this.dataAccess = dataAccess;
   }
-  
+
+  @Override
   public StorageInfo findByPk(int infoType) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByPk(infoType));
   }
-  
+
+  @Override
   public void prepare(StorageInfo storageInfo) throws StorageException {
     dataAccess.prepare(convertHDFStoDAL(storageInfo));
   }
-  
+
   @Override
   public HopStorageInfo convertHDFStoDAL(StorageInfo hdfsClass) throws StorageException {
     return new HopStorageInfo(
@@ -51,7 +53,7 @@ public class StorageInfoDALWrapper extends DALWrapper<StorageInfo, HopStorageInf
             hdfsClass.getCTime(),
             hdfsClass.getBlockPoolId());
   }
-  
+
   @Override
   public StorageInfo convertDALtoHDFS(HopStorageInfo dalClass) throws StorageException {
     return new StorageInfo(dalClass.getLayoutVersion(), dalClass.getNamespaceId(), dalClass.getClusterId(), dalClass.getCreationTime(), dalClass.getBlockPoolId());

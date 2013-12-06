@@ -107,20 +107,8 @@ import com.google.common.collect.Lists;
 import com.mysql.clusterj.Session;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.StorageFactory;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.BlockTokenKeyClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.INodeAttributesClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.LeaderClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.LeasePathClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.ReplicaUnderConstructionClusterj;
-import se.sics.hop.metadata.persistence.ndb.dalimpl.UnderReplicatedBlockClusterj;
-
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.

@@ -62,9 +62,9 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
         }
     }
     private Map<Long, AttributeWrapper> cachedRows = new HashMap<Long, AttributeWrapper>();
-    private INodeAttributeDALWrapper da;
+    private INodeAttributesDataAccess<INodeAttributes> da;
 
-    public INodeAttributesContext(INodeAttributeDALWrapper da) {
+    public INodeAttributesContext(INodeAttributesDataAccess<INodeAttributes> da) {
         this.da = da;
     }
 

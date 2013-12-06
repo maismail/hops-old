@@ -12,6 +12,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.*;
 import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 import se.sics.hop.metadata.persistence.context.Variables;
@@ -23,6 +24,8 @@ import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.context.entity.BlockInfoContext;
 import se.sics.hop.metadata.persistence.context.entity.BlockTokenKeyContext;
 import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
+import se.sics.hop.metadata.persistence.context.entity.INodeAttributesContext;
+import se.sics.hop.metadata.persistence.context.entity.INodeContext;
 import se.sics.hop.metadata.persistence.context.entity.InvalidatedBlockContext;
 import se.sics.hop.metadata.persistence.context.entity.LeasePathContext;
 import se.sics.hop.metadata.persistence.context.entity.PendingBlockContext;
@@ -34,6 +37,8 @@ import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
 import se.sics.hop.metadata.persistence.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
@@ -46,9 +51,12 @@ import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
+import se.sics.hop.metadata.persistence.dalwrapper.INodeAttributeDALWrapper;
+import se.sics.hop.metadata.persistence.dalwrapper.INodeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.ReplicaUnderConstructionDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
+import se.sics.hop.metadata.persistence.entity.hdfs.HopINode;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
@@ -59,49 +67,14 @@ import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
 /**
  *
  * @author Hooman <hooman@sics.se>
+ * @author Mahmoud Ismail <maism@sics.se>
  */
 public class StorageFactory {
-
-//  private static StorageConnector defaultStorage;
-//  private static BlockInfoDataAccess blockInfoDataAccess;
-//  private static CorruptReplicaDataAccess corruptReplicaDataAccess;
-//  private static ExcessReplicaDataAccess excessReplicaDataAccess;
-//  private static InodeDataAccess inodeDataAccess;
-//  private static InvalidateBlockDataAccess invalidateBlockDataAccess;
-//  private static LeaseDataAccess leaseDataAccess;
-//  private static LeasePathDataAccess leasePathDataAccess;
-//  private static PendingBlockDataAccess pendingBlockDataAccess;
-//  private static ReplicaDataAccess replicaDataAccess;
-//  private static ReplicaUnderConstruntionDataAccess replicaUnderConstruntionDataAccess;
-//  private static UnderReplicatedBlockDataAccess underReplicatedBlockDataAccess;
-//  private static VariablesDataAccess variablesDataAccess;
-//  private static LeaderDataAccess leaderDataAccess;
-//  private static BlockTokenKeyDataAccess blockTokenKeyDataAccess;
-//  private static StorageInfoDataAccess storageInfoDataAccess;
-//  private static INodeAttributesDataAccess iNodeAttributesDataAccess;
-//  private static Map<Class, EntityDataAccess> dataAccessMap = new HashMap<Class, EntityDataAccess>();
+  
   private static boolean isInitialized = false;
   private static DALStorageFactory dStorageFactory;
-  private static StorageInfoDALWrapper storageInfoDAL;
+  private static Map<Class, EntityDataAccess> dataAccessWrappers = new HashMap<Class, EntityDataAccess>();
   
-//  private static void initDataAccessMap() {
-//    dataAccessMap.put(blockInfoDataAccess.getClass().getSuperclass(), blockInfoDataAccess);
-//    dataAccessMap.put(corruptReplicaDataAccess.getClass().getSuperclass(), corruptReplicaDataAccess);
-//    dataAccessMap.put(excessReplicaDataAccess.getClass().getSuperclass(), excessReplicaDataAccess);
-//    dataAccessMap.put(inodeDataAccess.getClass().getSuperclass(), inodeDataAccess);
-//    dataAccessMap.put(invalidateBlockDataAccess.getClass().getSuperclass(), invalidateBlockDataAccess);
-//    dataAccessMap.put(leaseDataAccess.getClass().getSuperclass(), leaseDataAccess);
-//    dataAccessMap.put(leasePathDataAccess.getClass().getSuperclass(), leasePathDataAccess);
-//    dataAccessMap.put(pendingBlockDataAccess.getClass().getSuperclass(), pendingBlockDataAccess);
-//    dataAccessMap.put(replicaDataAccess.getClass().getSuperclass(), replicaDataAccess);
-//    dataAccessMap.put(replicaUnderConstruntionDataAccess.getClass().getSuperclass(), replicaUnderConstruntionDataAccess);
-//    dataAccessMap.put(underReplicatedBlockDataAccess.getClass().getSuperclass(), underReplicatedBlockDataAccess);
-//    dataAccessMap.put(variablesDataAccess.getClass().getSuperclass(), variablesDataAccess);
-//    dataAccessMap.put(leaderDataAccess.getClass().getSuperclass(), leaderDataAccess);
-//    dataAccessMap.put(blockTokenKeyDataAccess.getClass().getSuperclass(), blockTokenKeyDataAccess);
-//    dataAccessMap.put(storageInfoDataAccess.getClass().getSuperclass(), storageInfoDataAccess);
-//    dataAccessMap.put(iNodeAttributesDataAccess.getClass().getSuperclass(), iNodeAttributesDataAccess);
-//  }
 
   public static StorageConnector getConnector() {
     return dStorageFactory.getConnector();
@@ -163,42 +136,65 @@ public class StorageFactory {
 
   public static Map<Class, EntityContext> createEntityContexts() {
     Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
-    BlockInfoContext bic = new BlockInfoContext(new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class)));
+    
+    BlockInfoDataAccess<BlockInfo> bida = new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class));
+    dataAccessWrappers.put(BlockInfoDataAccess.class, bida);
+    BlockInfoContext bic = new BlockInfoContext(bida);
     entityContexts.put(BlockInfo.class, bic);
     entityContexts.put(BlockInfoUnderConstruction.class, bic);
-    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(new ReplicaUnderConstructionDALWrapper((ReplicaUnderConstructionDataAccess)getDataAccess(ReplicaUnderConstructionDataAccess.class))));
+    
+    ReplicaUnderConstructionDataAccess<ReplicaUnderConstruction> rucda = new ReplicaUnderConstructionDALWrapper((ReplicaUnderConstructionDataAccess)getDataAccess(ReplicaUnderConstructionDataAccess.class));
+    dataAccessWrappers.put(ReplicaUnderConstructionDataAccess.class, rucda);
+    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext(rucda));
+    
     entityContexts.put(HopIndexedReplica.class, new ReplicaContext((ReplicaDataAccess) getDataAccess(ReplicaDataAccess.class)));
     entityContexts.put(HopExcessReplica.class, new ExcessReplicaContext((ExcessReplicaDataAccess) getDataAccess(ExcessReplicaDataAccess.class)));
     entityContexts.put(HopInvalidatedBlock.class, new InvalidatedBlockContext((InvalidateBlockDataAccess) getDataAccess(InvalidateBlockDataAccess.class)));
-    entityContexts.put(Lease.class, new LeaseContext(new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class))));
+    
+    LeaseDataAccess<Lease> lda = new LeaseDALWrapper((LeaseDataAccess)getDataAccess(LeaseDataAccess.class));
+    dataAccessWrappers.put(LeaseDataAccess.class, lda);
+    entityContexts.put(Lease.class, new LeaseContext(lda));
+    
     entityContexts.put(HopLeasePath.class, new LeasePathContext((LeasePathDataAccess)getDataAccess(LeasePathDataAccess.class)));
-    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(new PendingBlockInfoDALWrapper((PendingBlockDataAccess)getDataAccess(PendingBlockDataAccess.class))));
-//    InodeContext inodeContext = new InodeContext(inodeDataAccess);
-//    entityContexts.put(INode.class, inodeContext);
-//    entityContexts.put(INodeDirectory.class, inodeContext);
-//    entityContexts.put(INodeFile.class, inodeContext);
-//    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
-//    entityContexts.put(INodeSymlink.class, inodeContext);
-//    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
+    
+    PendingBlockDataAccess<PendingBlockInfo> pbida = new PendingBlockInfoDALWrapper((PendingBlockDataAccess)getDataAccess(PendingBlockDataAccess.class));
+    dataAccessWrappers.put(PendingBlockDataAccess.class, pbida);
+    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext(pbida));
+    
+    INodeDataAccess<INode> inda = new INodeDALWrapper((INodeDataAccess) getDataAccess(INodeDataAccess.class));
+    dataAccessWrappers.put(INodeDataAccess.class, inda);
+    INodeContext inodeContext = new INodeContext(inda);
+    entityContexts.put(INode.class, inodeContext);
+    entityContexts.put(INodeDirectory.class, inodeContext);
+    entityContexts.put(INodeFile.class, inodeContext);
+    entityContexts.put(INodeDirectoryWithQuota.class, inodeContext);
+    entityContexts.put(INodeSymlink.class, inodeContext);
+    entityContexts.put(INodeFileUnderConstruction.class, inodeContext);
+    
     entityContexts.put(HopCorruptReplica.class, new CorruptReplicaContext((CorruptReplicaDataAccess)getDataAccess(CorruptReplicaDataAccess.class)));
     entityContexts.put(HopUnderReplicatedBlock.class, new UnderReplicatedBlockContext((UnderReplicatedBlockDataAccess) getDataAccess(UnderReplicatedBlockDataAccess.class)));
     entityContexts.put(HopVariable.class, new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class)));
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess)getDataAccess(LeaderDataAccess.class)));
-    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class))));
-//    entityContexts.put(INodeAttributes.class, new INodeAttributesContext(iNodeAttributesDataAccess));
+    
+    BlockTokenKeyDataAccess<BlockKey> btda = new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class));
+    dataAccessWrappers.put(BlockTokenKeyDataAccess.class, btda);
+    entityContexts.put(BlockKey.class, new BlockTokenKeyContext(btda));
+    
+    INodeAttributesDataAccess<INodeAttributes> inada = new INodeAttributeDALWrapper((INodeAttributesDataAccess)getDataAccess(INodeAttributesDataAccess.class));
+    dataAccessWrappers.put(INodeAttributesDataAccess.class, inada);
+    entityContexts.put(INodeAttributes.class, new INodeAttributesContext(inada));
+    
+    StorageInfoDataAccess<StorageInfo> sida = new StorageInfoDALWrapper((StorageInfoDataAccess)getDataAccess(StorageInfoDataAccess.class));
+    dataAccessWrappers.put(StorageInfoDataAccess.class, sida);
+    
     return entityContexts;
   }
 
   public static EntityDataAccess getDataAccess(Class type) {
 //    return dataAccessMap.get(type);
+    if(dataAccessWrappers.containsKey(type)){
+      return dataAccessWrappers.get(type);
+    }
     return dStorageFactory.getDataAccess(type);
   }
-  
-  public static StorageInfoDALWrapper getStorageInfoDataAccess(){
-    if(storageInfoDAL == null){
-      storageInfoDAL = new StorageInfoDALWrapper((StorageInfoDataAccess)getDataAccess(StorageInfoDataAccess.class));
-    }
-    return storageInfoDAL;
-  }
-  
 }

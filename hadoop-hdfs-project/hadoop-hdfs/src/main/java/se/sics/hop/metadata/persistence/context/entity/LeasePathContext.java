@@ -29,9 +29,9 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   private Map<HopLeasePath, HopLeasePath> removedLPaths = new HashMap<HopLeasePath, HopLeasePath>();
   private Map<String, HopLeasePath> pathToLeasePath = new HashMap<String, HopLeasePath>();
   private boolean allLeasePathsRead = false;
-  private LeasePathDataAccess dataAccess;
+  private LeasePathDataAccess<HopLeasePath> dataAccess;
 
-  public LeasePathContext(LeasePathDataAccess dataAccess) {
+  public LeasePathContext(LeasePathDataAccess<HopLeasePath> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

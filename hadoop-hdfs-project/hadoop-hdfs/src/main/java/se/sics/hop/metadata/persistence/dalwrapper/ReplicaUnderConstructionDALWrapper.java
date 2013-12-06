@@ -28,27 +28,29 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class ReplicaUnderConstructionDALWrapper extends DALWrapper<ReplicaUnderConstruction, HopReplicaUnderConstruction> {
-
-  private final ReplicaUnderConstructionDataAccess dataAccces;
-
-  public ReplicaUnderConstructionDALWrapper(ReplicaUnderConstructionDataAccess dataAccess) {
+public class ReplicaUnderConstructionDALWrapper extends DALWrapper<ReplicaUnderConstruction, HopReplicaUnderConstruction> implements ReplicaUnderConstructionDataAccess<ReplicaUnderConstruction> {
+  
+  private final ReplicaUnderConstructionDataAccess<HopReplicaUnderConstruction> dataAccces;
+  
+  public ReplicaUnderConstructionDALWrapper(ReplicaUnderConstructionDataAccess<HopReplicaUnderConstruction>  dataAccess) {
     this.dataAccces = dataAccess;
   }
-
+  
+  @Override
   public List<ReplicaUnderConstruction> findReplicaUnderConstructionByBlockId(long blockId) throws StorageException {
     return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByBlockId(blockId));
   }
-
+  
+  @Override
   public void prepare(Collection<ReplicaUnderConstruction> removed, Collection<ReplicaUnderConstruction> newed, Collection<ReplicaUnderConstruction> modified) throws StorageException {
     dataAccces.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }
-
+  
   @Override
   public HopReplicaUnderConstruction convertHDFStoDAL(ReplicaUnderConstruction hdfsClass) throws StorageException {
     return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getIndex());
   }
-
+  
   @Override
   public ReplicaUnderConstruction convertDALtoHDFS(HopReplicaUnderConstruction dalClass) throws StorageException {
     return new ReplicaUnderConstruction(HdfsServerConstants.ReplicaState.values()[dalClass.getState()], dalClass.getStorageId(), dalClass.getBlockId(), dalClass.getIndex());

@@ -1,11 +1,8 @@
 package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import java.util.*;
-import java.util.Map.Entry;
 import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
@@ -27,9 +24,9 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   private Map<Long, HopUnderReplicatedBlock> modifiedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
   private Map<Long, HopUnderReplicatedBlock> removedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
   private boolean allUrBlocksRead = false;
-  private UnderReplicatedBlockDataAccess dataAccess;
+  private UnderReplicatedBlockDataAccess<HopUnderReplicatedBlock> dataAccess;
 
-  public UnderReplicatedBlockContext(UnderReplicatedBlockDataAccess dataAccess) {
+  public UnderReplicatedBlockContext( UnderReplicatedBlockDataAccess<HopUnderReplicatedBlock> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

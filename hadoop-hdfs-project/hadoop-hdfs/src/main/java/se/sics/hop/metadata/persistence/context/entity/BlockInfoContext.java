@@ -13,7 +13,6 @@ import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import org.apache.log4j.Logger;
-import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
 
 /**
  *
@@ -28,10 +27,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   protected Map<Long, BlockInfo> removedBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, List<BlockInfo>> inodeBlocks = new HashMap<Long, List<BlockInfo>>();
   protected boolean allBlocksRead = false;
-  BlockInfoDALWrapper dataAccess;
+  BlockInfoDataAccess<BlockInfo> dataAccess;
   private int nullCount = 0;
 
-  public BlockInfoContext(BlockInfoDALWrapper dataAccess) {
+  public BlockInfoContext(BlockInfoDataAccess<BlockInfo> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

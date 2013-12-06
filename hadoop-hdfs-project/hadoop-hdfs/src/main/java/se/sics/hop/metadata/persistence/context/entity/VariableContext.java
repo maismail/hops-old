@@ -20,9 +20,9 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   private EnumMap<HopVariable.Finder, HopVariable> variables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
   private EnumMap<HopVariable.Finder, HopVariable> modifiedVariables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
-  private VariableDataAccess da;
+  private VariableDataAccess<HopVariable, HopVariable.Finder> da;
 
-  public VariableContext(VariableDataAccess da) {
+  public VariableContext(VariableDataAccess<HopVariable, HopVariable.Finder>  da) {
     this.da = da;
   }
 

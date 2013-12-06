@@ -14,7 +14,6 @@ import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
-import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -27,13 +26,13 @@ public class BlockTokenKeyContext extends EntityContext<BlockKey> {
   protected Map<Integer, BlockKey> newKeys = new HashMap<Integer, BlockKey>();
   protected Map<Integer, BlockKey> modifiedKeys = new HashMap<Integer, BlockKey>();
   protected Map<Integer, BlockKey> removedKeys = new HashMap<Integer, BlockKey>();
-  BlockTokenDALWrapper dataAccess;
+  BlockTokenKeyDataAccess<BlockKey> dataAccess;
   protected boolean allKeysRead = false;
   protected BlockKey currKey;
   protected BlockKey nextKey;
   private int nullCount = 0;
 
-  public BlockTokenKeyContext(BlockTokenDALWrapper dataAccess) {
+  public BlockTokenKeyContext(BlockTokenKeyDataAccess<BlockKey> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

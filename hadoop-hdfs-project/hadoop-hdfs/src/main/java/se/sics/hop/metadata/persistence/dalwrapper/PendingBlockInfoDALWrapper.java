@@ -27,34 +27,40 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, HopPendingBlockInfo> {
+public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, HopPendingBlockInfo> implements PendingBlockDataAccess<PendingBlockInfo>{
 
-  private final PendingBlockDataAccess dataAccces;
+  private final PendingBlockDataAccess<HopPendingBlockInfo> dataAccces;
 
-  public PendingBlockInfoDALWrapper(PendingBlockDataAccess dataAccess) {
+  public PendingBlockInfoDALWrapper( PendingBlockDataAccess<HopPendingBlockInfo> dataAccess) {
     this.dataAccces = dataAccess;
   }
 
+  @Override
   public List<PendingBlockInfo> findByTimeLimitLessThan(long timeLimit) throws StorageException {
     return (List<PendingBlockInfo>) convertDALtoHDFS(dataAccces.findByTimeLimitLessThan(timeLimit));
   }
 
+  @Override
   public List<PendingBlockInfo> findAll() throws StorageException {
     return (List<PendingBlockInfo>) convertDALtoHDFS(dataAccces.findAll());
   }
 
+  @Override
   public PendingBlockInfo findByPKey(long blockId) throws StorageException {
     return convertDALtoHDFS(dataAccces.findByPKey(blockId));
   }
 
+  @Override
   public int countValidPendingBlocks(long timeLimit) throws StorageException {
     return dataAccces.countValidPendingBlocks(timeLimit);
   }
 
+  @Override
   public void prepare(Collection<PendingBlockInfo> removed, Collection<PendingBlockInfo> newed, Collection<PendingBlockInfo> modified) throws StorageException {
     dataAccces.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }
 
+  @Override
   public void removeAll() throws StorageException {
     dataAccces.removeAll();
   }

@@ -43,9 +43,9 @@ public class LeaderContext extends EntityContext<HopLeader> {
   private Map<Long, HopLeader> removedLeaders = new HashMap<Long, HopLeader>();
   private Map<Long, HopLeader> newLeaders = new HashMap<Long, HopLeader>();
   private boolean allRead = false;
-  private LeaderDataAccess dataAccess;
+  private LeaderDataAccess<HopLeader> dataAccess;
 
-  public LeaderContext(LeaderDataAccess dataAccess) {
+  public LeaderContext(LeaderDataAccess<HopLeader> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

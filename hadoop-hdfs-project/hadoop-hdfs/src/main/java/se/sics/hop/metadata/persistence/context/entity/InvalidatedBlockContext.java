@@ -26,9 +26,9 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   private Map<HopInvalidatedBlock, HopInvalidatedBlock> removedInvBlocks = new HashMap<HopInvalidatedBlock, HopInvalidatedBlock>();
   private boolean allInvBlocksRead = false;
   private int nullCount = 0;
-  private InvalidateBlockDataAccess dataAccess;
+  private InvalidateBlockDataAccess<HopInvalidatedBlock> dataAccess;
 
-  public InvalidatedBlockContext(InvalidateBlockDataAccess dataAccess) {
+  public InvalidatedBlockContext(InvalidateBlockDataAccess<HopInvalidatedBlock> dataAccess) {
     this.dataAccess = dataAccess;
   }
 

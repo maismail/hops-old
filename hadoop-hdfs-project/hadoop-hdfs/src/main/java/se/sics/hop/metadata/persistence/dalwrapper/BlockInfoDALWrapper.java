@@ -30,34 +30,40 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> {
+public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> implements BlockInfoDataAccess<BlockInfo>{
 
-  private final BlockInfoDataAccess dataAccess;
+  private final BlockInfoDataAccess<HopBlockInfo> dataAccess;
 
-  public BlockInfoDALWrapper(BlockInfoDataAccess dataAccess) {
+  public BlockInfoDALWrapper(BlockInfoDataAccess<HopBlockInfo> dataAccess) {
     this.dataAccess = dataAccess;
   }
 
+  @Override
   public int countAll() throws StorageException {
     return dataAccess.countAll();
   }
 
+  @Override
   public BlockInfo findById(long blockId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findById(blockId));
   }
 
+  @Override
   public List<BlockInfo> findByInodeId(long id) throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
   }
 
+  @Override
   public List<BlockInfo> findAllBlocks() throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findAllBlocks());
   }
 
+  @Override
   public List<BlockInfo> findByStorageId(String storageId) throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
   }
 
+  @Override
   public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {
     dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }

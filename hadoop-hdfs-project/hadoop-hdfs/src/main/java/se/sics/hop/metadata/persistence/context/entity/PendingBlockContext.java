@@ -9,7 +9,7 @@ import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.TransactionContextException;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
-import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
+import se.sics.hop.metadata.persistence.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
@@ -23,9 +23,9 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   private Map<Long, PendingBlockInfo> modifiedPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> removedPendings = new HashMap<Long, PendingBlockInfo>();
   private boolean allPendingRead = false;
-  private PendingBlockInfoDALWrapper dataAccess;
+  private PendingBlockDataAccess<PendingBlockInfo> dataAccess;
 
-  public PendingBlockContext(PendingBlockInfoDALWrapper dataAccess) {
+  public PendingBlockContext(PendingBlockDataAccess<PendingBlockInfo>  dataAccess) {
     this.dataAccess = dataAccess;
   }
 

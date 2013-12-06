@@ -1,9 +1,7 @@
 package se.sics.hop.metadata.persistence.context.entity;
 
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.*;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
@@ -25,10 +23,10 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   private Map<String, TreeSet<HopExcessReplica>> storageIdToExReplica = new HashMap<String, TreeSet<HopExcessReplica>>();
   private Map<HopExcessReplica, HopExcessReplica> newExReplica = new HashMap<HopExcessReplica, HopExcessReplica>();
   private Map<HopExcessReplica, HopExcessReplica> removedExReplica = new HashMap<HopExcessReplica, HopExcessReplica>();
-  private ExcessReplicaDataAccess dataAccess;
+  private ExcessReplicaDataAccess<HopExcessReplica>  dataAccess;
   private int nullCount = 0;
 
-  public ExcessReplicaContext(ExcessReplicaDataAccess dataAccess) {
+  public ExcessReplicaContext(ExcessReplicaDataAccess<HopExcessReplica>  dataAccess) {
     this.dataAccess = dataAccess;
   }
 

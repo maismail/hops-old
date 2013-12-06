@@ -5,15 +5,12 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.namenode.FSDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
@@ -26,10 +23,10 @@ import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.LeaseDataAccess;
 import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
 
 /**
  *
@@ -116,7 +113,7 @@ public class INodeUtil {
             "Read inode with no transaction by parent-id=%d, name=%s",
             parentId,
             name));
-    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+    INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
     return da.findInodeByNameAndParentId(name, parentId);
   }
 
@@ -173,7 +170,7 @@ public class INodeUtil {
       LightWeightRequestHandler handler = new LightWeightRequestHandler(RequestHandler.OperationType.TEST) {
           @Override
           public Object performTask() throws PersistanceException, IOException {
-              BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
               BlockInfo bInfo = bda.findById(blockId);
               return bInfo;
           }
@@ -204,7 +201,7 @@ public class INodeUtil {
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
     SortedSet<String> sortedPaths = new TreeSet<String>();
-    LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+    LeaseDataAccess<Lease> lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
     Lease rcLease = lda.findByPKey(holder);
     if (rcLease == null) {
       return sortedPaths;
@@ -225,7 +222,7 @@ public class INodeUtil {
     LOG.info(String.format(
             "Read inode with no transaction by id=%d",
             id));
-    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+    INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
     return da.findInodeById(id);
   }
 
