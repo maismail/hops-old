@@ -109,6 +109,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
+import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.persistence.dal.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
+import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.persistence.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.
@@ -2383,17 +2390,20 @@ public class MiniDFSCluster {
         }
         if (activeNameNodes == 0) {
             try {
-                Session session = (Session) StorageFactory.getConnector().obtainSession();
-                //lease is persisted in the edit logs
-//              session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-//              session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-                session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-                session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-                session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
-                session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
-                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
-                session.deletePersistentAll(INodeAttributesClusterj.INodeAttributesDTO.class);
-                session.flush();
+              StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+                      UnderReplicatedBlockDataAccess.class, LeaderDataAccess.class, BlockTokenKeyDataAccess.class, INodeAttributesDataAccess.class);
+              
+//                Session session = (Session) StorageFactory.getConnector().obtainSession();
+//                //lease is persisted in the edit logs
+////              session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+////              session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+//                session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+//                session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+//                session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
+//                session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
+//                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
+//                session.deletePersistentAll(INodeAttributesClusterj.INodeAttributesDTO.class);
+//                session.flush();
             } catch (StorageException e) {
                 LOG.error(e);
             }

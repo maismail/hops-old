@@ -9,18 +9,13 @@ import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.namenode.*;
-import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 import se.sics.hop.metadata.persistence.context.Variables;
+import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 import se.sics.hop.metadata.persistence.dalwrapper.LeaseDALWrapper;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.*;
-import se.sics.hop.metadata.persistence.DALDriver;
-import se.sics.hop.metadata.persistence.DALStorageFactory;
-import se.sics.hop.metadata.persistence.StorageConnector;
 import se.sics.hop.metadata.persistence.context.entity.BlockInfoContext;
 import se.sics.hop.metadata.persistence.context.entity.BlockTokenKeyContext;
 import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
@@ -56,7 +51,6 @@ import se.sics.hop.metadata.persistence.dalwrapper.INodeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.ReplicaUnderConstructionDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
-import se.sics.hop.metadata.persistence.entity.hdfs.HopINode;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
@@ -82,55 +76,9 @@ public class StorageFactory {
 
   public static void setConfiguration(Configuration conf) {
     if(isInitialized)  return;
+     Variables.registerDefaultValues();
      dStorageFactory = DALDriver.load("", "");
      dStorageFactory.setConfiguration(null);
-    
-//    Variables.registerDefaultValues();
-//    String storageType = conf.get(DFSConfigKeys.DFS_STORAGE_TYPE_KEY, 
-//            DFSConfigKeys.DFS_STORAGE_TYPE_DEFAULT);
-//    if (storageType.equals(DerbyConnector.DERBY_EMBEDDED)
-//            || storageType.equals(DerbyConnector.DERBY_NETWORK_SERVER)) {
-//      defaultStorage = DerbyConnector.INSTANCE;
-//      defaultStorage.setConfiguration(conf);
-////      blockInfoDataAccess = new BlockInfoDerby();
-////      corruptReplicaDataAccess = new CorruptReplicaDerby();
-////      excessReplicaDataAccess = new ExcessReplicaDerby();
-////      inodeDataAccess = new InodeDerby();
-////      invalidateBlockDataAccess = new InvalidatedBlockDerby();
-////      leaseDataAccess = new LeaseDerby();
-////      leasePathDataAccess = new LeasePathDerby();
-////      pendingBlockDataAccess = new PendingBlockDerby();
-////      replicaDataAccess = new ReplicaDerby();
-////      replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionDerby();
-////      underReplicatedBlockDataAccess = new UnderReplicatedBlockDerby();
-////      leaderDataAccess = new LeaderDerby();
-////      // TODO[Hooman]: Add derby data access for block token key.
-////      // TODO[Hooman]: Add derby data access for block generation stamp.
-////      // TODO[Hooman]: Add derby data access for storage info
-////      // TODO[Salman]: Add derby data access for INodeAttributes
-//    } else if (storageType.equals("clusterj")) {
-//      defaultStorage = ClusterjConnector.INSTANCE;
-//      MysqlServerConnector.INSTANCE.setConfiguration(conf);
-//      defaultStorage.setConfiguration(conf);
-//      blockInfoDataAccess = new BlockInfoClusterj();
-//      corruptReplicaDataAccess = new CorruptReplicaClusterj();
-//      excessReplicaDataAccess = new ExcessReplicaClusterj();
-//      inodeDataAccess = new InodeClusterj();
-//      invalidateBlockDataAccess = new InvalidatedBlockClusterj();
-//      leaseDataAccess = new LeaseClusterj();
-//      leasePathDataAccess = new LeasePathClusterj();
-//      pendingBlockDataAccess = new PendingBlockClusterj();
-//      replicaDataAccess = new ReplicaClusterj();
-//      replicaUnderConstruntionDataAccess = new ReplicaUnderConstructionClusterj();
-//      underReplicatedBlockDataAccess = new UnderReplicatedBlockClusterj();
-//      variablesDataAccess = new VariablesClusterj();
-//      leaderDataAccess = new LeaderClusterj();
-//      blockTokenKeyDataAccess = new BlockTokenKeyClusterj();
-//      storageInfoDataAccess = new StorageInfoClusterj();
-//      iNodeAttributesDataAccess = new INodeAttributesClusterj();
-//    }
-//
-//    initDataAccessMap();
     isInitialized = true;
   }
 
@@ -191,7 +139,6 @@ public class StorageFactory {
   }
 
   public static EntityDataAccess getDataAccess(Class type) {
-//    return dataAccessMap.get(type);
     if(dataAccessWrappers.containsKey(type)){
       return dataAccessWrappers.get(type);
     }
