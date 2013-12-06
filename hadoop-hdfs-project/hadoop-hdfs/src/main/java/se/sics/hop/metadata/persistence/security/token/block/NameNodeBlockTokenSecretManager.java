@@ -105,7 +105,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   @Override
-  boolean updateKeys() throws IOException {
+  public boolean updateKeys() throws IOException {
     if (!isMaster) {
       return false;
     }

@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.persistence.LeaderElection;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -450,7 +451,6 @@ public class NameNode {
     //START_HOP_CODE
     // Initialize the leader election algorithm (only once rpc server is created)
     leaderElection = new LeaderElection(conf, this);
-    leaderElection.initialize();
     //END_HOP_CODE
     
     try {
@@ -1519,7 +1519,7 @@ public class NameNode {
   /**
    * Sets a new id incase of crash
    */
-  void setId(long id) {
+  public void setId(long id) {
     this.id = id;
     namesystem.setNameNodeId(id);
   }
@@ -1536,12 +1536,12 @@ public class NameNode {
   /**
    * Set the role for Namenode
    */
-  synchronized void setRole(NamenodeRole role) {
+  public synchronized void setRole(NamenodeRole role) {
     this.role = role;
     namesystem.setNameNodeRole(role);
   }
   
-  synchronized void setNameNodeList(SortedActiveNamenodeList list){
+  public synchronized void setNameNodeList(SortedActiveNamenodeList list){
     this.nnList = list;
   }
 

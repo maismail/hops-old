@@ -215,7 +215,7 @@ public class BlockTokenSecretManager extends
   /**
    * Update block keys, only to be used in master mode
    */
-  synchronized boolean updateKeys() throws IOException {
+  public synchronized boolean updateKeys() throws IOException {
     if (!isMaster)
       return false;
 
