@@ -78,7 +78,7 @@ public class StorageFactory {
   public static void setConfiguration(Configuration conf) {
     if(isInitialized)  return;
      Variables.registerDefaultValues();
-     String jarFile="/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
+     String jarFile="/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
     try {
       dStorageFactory = DALDriver.load(jarFile, "se.sics.hop.metadata.persistence.ndb.NdbStorageFactory");
     } catch (MalformedURLException ex) {

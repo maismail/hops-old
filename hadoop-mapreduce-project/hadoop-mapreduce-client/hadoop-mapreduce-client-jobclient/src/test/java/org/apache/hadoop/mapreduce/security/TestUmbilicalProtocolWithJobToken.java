@@ -72,13 +72,13 @@ public class TestUmbilicalProtocolWithJobToken {
     UserGroupInformation.setConfiguration(conf);
   }
 
-  static {
-    ((Log4JLogger) Client.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger) Server.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger) SaslRpcClient.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger) SaslRpcServer.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger) SaslInputStream.LOG).getLogger().setLevel(Level.ALL);
-  }
+//  static {
+//    ((Log4JLogger) Client.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger) Server.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger) SaslRpcClient.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger) SaslRpcServer.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger) SaslInputStream.LOG).getLogger().setLevel(Level.ALL);
+//  }
 
   @Test
   public void testJobTokenRpc() throws Exception {
