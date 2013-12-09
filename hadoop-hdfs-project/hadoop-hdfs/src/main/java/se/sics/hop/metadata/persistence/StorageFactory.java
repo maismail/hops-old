@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.persistence;
 
+import java.net.MalformedURLException;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaUnderConstructionContext;
 import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
@@ -77,7 +78,18 @@ public class StorageFactory {
   public static void setConfiguration(Configuration conf) {
     if(isInitialized)  return;
      Variables.registerDefaultValues();
-     dStorageFactory = DALDriver.load("", "");
+     String jarFile="/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
+    try {
+      dStorageFactory = DALDriver.load(jarFile, "se.sics.hop.metadata.persistence.ndb.NdbStorageFactory");
+    } catch (MalformedURLException ex) {
+      ex.printStackTrace();
+    } catch (ClassNotFoundException ex) {
+      ex.printStackTrace();
+    } catch (InstantiationException ex) {
+     ex.printStackTrace();
+    } catch (IllegalAccessException ex) {
+      ex.printStackTrace();
+    }
      dStorageFactory.setConfiguration(null);
     isInitialized = true;
   }
