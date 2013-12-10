@@ -45,17 +45,25 @@ public class StorageInfoDALWrapper extends DALWrapper<StorageInfo, HopStorageInf
 
   @Override
   public HopStorageInfo convertHDFStoDAL(StorageInfo hdfsClass) throws StorageException {
-    return new HopStorageInfo(
-            hdfsClass.DEFAULT_ROW_ID,
-            hdfsClass.getLayoutVersion(),
-            hdfsClass.getNamespaceID(),
-            hdfsClass.getClusterID(),
-            hdfsClass.getCTime(),
-            hdfsClass.getBlockPoolId());
+    if (hdfsClass != null) {
+      return new HopStorageInfo(
+              hdfsClass.DEFAULT_ROW_ID,
+              hdfsClass.getLayoutVersion(),
+              hdfsClass.getNamespaceID(),
+              hdfsClass.getClusterID(),
+              hdfsClass.getCTime(),
+              hdfsClass.getBlockPoolId());
+    } else {
+      return null;
+    }
   }
 
   @Override
   public StorageInfo convertDALtoHDFS(HopStorageInfo dalClass) throws StorageException {
-    return new StorageInfo(dalClass.getLayoutVersion(), dalClass.getNamespaceId(), dalClass.getClusterId(), dalClass.getCreationTime(), dalClass.getBlockPoolId());
+    if (dalClass != null) {
+      return new StorageInfo(dalClass.getLayoutVersion(), dalClass.getNamespaceId(), dalClass.getClusterId(), dalClass.getCreationTime(), dalClass.getBlockPoolId());
+    } else {
+      return null;
+    }
   }
 }

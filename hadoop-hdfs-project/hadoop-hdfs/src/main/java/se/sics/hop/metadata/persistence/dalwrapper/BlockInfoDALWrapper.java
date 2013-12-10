@@ -70,6 +70,7 @@ public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> imp
 
   @Override
   public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass) throws StorageException {
+    if(hdfsClass != null){
     HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
             hdfsClass.getGenerationStamp(), hdfsClass.getBlockUCState().ordinal(), hdfsClass.getTimestamp());
     if (hdfsClass instanceof BlockInfoUnderConstruction) {
@@ -77,11 +78,15 @@ public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> imp
       hopBlkInfo.setPrimaryNodeIndex(ucBlock.getPrimaryNodeIndex());
       hopBlkInfo.setBlockRecoveryId(ucBlock.getBlockRecoveryId());
     }
-    return hopBlkInfo;
+    return hopBlkInfo;}
+    else{
+      return null;
+    }
   }
 
   @Override
   public BlockInfo convertDALtoHDFS(HopBlockInfo dalClass) throws StorageException {
+    if(dalClass != null){
     Block b = new Block(dalClass.getBlockId(), dalClass.getNumBytes(), dalClass.getGenerationStamp());
     BlockInfo blockInfo = null;
 
@@ -99,5 +104,8 @@ public class BlockInfoDALWrapper extends DALWrapper<BlockInfo, HopBlockInfo> imp
     blockInfo.setBlockIndexNoPersistance(dalClass.getBlockIndex());
 
     return blockInfo;
+    }else{
+      return null;
+    }
   }
 }

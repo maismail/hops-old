@@ -71,11 +71,19 @@ public class LeaseDALWrapper extends DALWrapper<Lease, HopLease> implements Leas
 
   @Override
   public HopLease convertHDFStoDAL(Lease hdfsClass) {
-    return new HopLease(hdfsClass.getHolder(), hdfsClass.getHolderID(), hdfsClass.getLastUpdate());
+    if (hdfsClass != null) {
+      return new HopLease(hdfsClass.getHolder(), hdfsClass.getHolderID(), hdfsClass.getLastUpdate());
+    } else {
+      return null;
+    }
   }
 
   @Override
   public Lease convertDALtoHDFS(HopLease dalClass) {
-    return new Lease(dalClass.getHolder(), dalClass.getHolderId(), dalClass.getLastUpdate());
+    if (dalClass != null) {
+      return new Lease(dalClass.getHolder(), dalClass.getHolderId(), dalClass.getLastUpdate());
+    } else {
+      return null;
+    }
   }
 }

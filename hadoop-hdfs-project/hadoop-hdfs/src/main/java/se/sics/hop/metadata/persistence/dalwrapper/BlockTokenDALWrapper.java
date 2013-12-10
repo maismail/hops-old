@@ -31,15 +31,14 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> implements BlockTokenKeyDataAccess<BlockKey>{
+public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> implements BlockTokenKeyDataAccess<BlockKey> {
 
   private final BlockTokenKeyDataAccess<HopBlockKey> dataAccess;
-  
-  public BlockTokenDALWrapper(BlockTokenKeyDataAccess<HopBlockKey> dataAccess){
+
+  public BlockTokenDALWrapper(BlockTokenKeyDataAccess<HopBlockKey> dataAccess) {
     this.dataAccess = dataAccess;
   }
-  
-  
+
   @Override
   public BlockKey findByKeyId(int id) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByKeyId(id));
@@ -57,20 +56,24 @@ public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> impl
 
   @Override
   public void prepare(Collection<BlockKey> removed, Collection<BlockKey> newed, Collection<BlockKey> modified) throws StorageException {
-   dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
+    dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }
 
   @Override
   public void removeAll() throws StorageException {
     dataAccess.removeAll();
   }
-  
+
   @Override
-  public HopBlockKey convertHDFStoDAL(BlockKey hdfsClass){
+  public HopBlockKey convertHDFStoDAL(BlockKey hdfsClass) {
     try {
-      DataOutputBuffer keyBytes = new DataOutputBuffer();
-      hdfsClass.write(keyBytes);
-      return new HopBlockKey(hdfsClass.getKeyId(), hdfsClass.getExpiryDate(), keyBytes.getData(), hdfsClass.getKeyType());
+      if (hdfsClass != null) {
+        DataOutputBuffer keyBytes = new DataOutputBuffer();
+        hdfsClass.write(keyBytes);
+        return new HopBlockKey(hdfsClass.getKeyId(), hdfsClass.getExpiryDate(), keyBytes.getData(), hdfsClass.getKeyType());
+      } else {
+        return null;
+      }
     } catch (IOException ex) {
       return null;
     }
@@ -79,14 +82,17 @@ public class BlockTokenDALWrapper extends DALWrapper<BlockKey, HopBlockKey> impl
   @Override
   public BlockKey convertDALtoHDFS(HopBlockKey dalClass) {
     try {
-      DataInputStream dis = new DataInputStream(new ByteArrayInputStream(dalClass.getKeyBytes()));
-      BlockKey bKey = new BlockKey();
-      bKey.readFields(dis);
-      bKey.setKeyType(dalClass.getKeyType());
-      return bKey;
+      if (dalClass != null) {
+        DataInputStream dis = new DataInputStream(new ByteArrayInputStream(dalClass.getKeyBytes()));
+        BlockKey bKey = new BlockKey();
+        bKey.readFields(dis);
+        bKey.setKeyType(dalClass.getKeyType());
+        return bKey;
+      } else {
+        return null;
+      }
     } catch (IOException ex) {
       return null;
     }
   }
-
 }

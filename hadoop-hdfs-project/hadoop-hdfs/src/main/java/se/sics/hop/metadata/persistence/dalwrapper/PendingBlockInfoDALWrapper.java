@@ -27,11 +27,11 @@ import se.sics.hop.metadata.persistence.exceptions.StorageException;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, HopPendingBlockInfo> implements PendingBlockDataAccess<PendingBlockInfo>{
+public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, HopPendingBlockInfo> implements PendingBlockDataAccess<PendingBlockInfo> {
 
   private final PendingBlockDataAccess<HopPendingBlockInfo> dataAccces;
 
-  public PendingBlockInfoDALWrapper( PendingBlockDataAccess<HopPendingBlockInfo> dataAccess) {
+  public PendingBlockInfoDALWrapper(PendingBlockDataAccess<HopPendingBlockInfo> dataAccess) {
     this.dataAccces = dataAccess;
   }
 
@@ -67,11 +67,19 @@ public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, Hop
 
   @Override
   public HopPendingBlockInfo convertHDFStoDAL(PendingBlockInfo hdfsClass) throws StorageException {
-    return new HopPendingBlockInfo(hdfsClass.getBlockId(), hdfsClass.getTimeStamp(), hdfsClass.getNumReplicas());
+    if (hdfsClass != null) {
+      return new HopPendingBlockInfo(hdfsClass.getBlockId(), hdfsClass.getTimeStamp(), hdfsClass.getNumReplicas());
+    } else {
+      return null;
+    }
   }
 
   @Override
   public PendingBlockInfo convertDALtoHDFS(HopPendingBlockInfo dalClass) throws StorageException {
-    return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
+    if (dalClass != dalClass) {
+      return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
+    } else {
+      return null;
+    }
   }
 }

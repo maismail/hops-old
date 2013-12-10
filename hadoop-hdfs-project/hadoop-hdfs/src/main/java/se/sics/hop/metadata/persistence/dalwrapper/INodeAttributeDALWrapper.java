@@ -47,23 +47,31 @@ public class INodeAttributeDALWrapper extends DALWrapper<INodeAttributes, HopINo
 
   @Override
   public HopINodeAttributes convertHDFStoDAL(INodeAttributes attribute) throws StorageException {
-    HopINodeAttributes hia = new HopINodeAttributes(
-            attribute.getInodeId(),
-            attribute.getNsQuota(),
-            attribute.getNsCount(),
-            attribute.getDsQuota(),
-            attribute.getDiskspace());
-    return hia;
+    if (attribute != null) {
+      HopINodeAttributes hia = new HopINodeAttributes(
+              attribute.getInodeId(),
+              attribute.getNsQuota(),
+              attribute.getNsCount(),
+              attribute.getDsQuota(),
+              attribute.getDiskspace());
+      return hia;
+    } else {
+      return null;
+    }
   }
 
   @Override
   public INodeAttributes convertDALtoHDFS(HopINodeAttributes hia) throws StorageException {
-    INodeAttributes iNodeAttributes = new INodeAttributes(
-            hia.getInodeId(),
-            hia.getNsQuota(),
-            hia.getNsCount(),
-            hia.getDsQuota(),
-            hia.getDiskspace());
-    return iNodeAttributes;
+    if (hia != null) {
+      INodeAttributes iNodeAttributes = new INodeAttributes(
+              hia.getInodeId(),
+              hia.getNsQuota(),
+              hia.getNsCount(),
+              hia.getDsQuota(),
+              hia.getDiskspace());
+      return iNodeAttributes;
+    } else {
+      return null;
+    }
   }
 }
