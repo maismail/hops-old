@@ -425,7 +425,7 @@ public class LeaseManager {
       public Object performTask() throws PersistanceException, IOException {
         long expiredTime = now() - hardLimit;
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
-        return da.findByTimeLimit(expiredTime);
+        return new TreeSet<Lease>(da.findByTimeLimit(expiredTime));
       }
     };
     
