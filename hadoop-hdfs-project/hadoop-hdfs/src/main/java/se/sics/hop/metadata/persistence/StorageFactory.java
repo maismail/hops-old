@@ -1,6 +1,5 @@
 package se.sics.hop.metadata.persistence;
 
-import java.net.MalformedURLException;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaUnderConstructionContext;
 import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
@@ -10,6 +9,7 @@ import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
@@ -57,6 +57,7 @@ import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
 import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException;
 
 /**
  *
@@ -74,22 +75,11 @@ public class StorageFactory {
     return dStorageFactory.getConnector();
   }
 
-  public static void setConfiguration(Configuration conf) {
+  public static void setConfiguration(Configuration conf) throws StorageInitializtionException{
     if(isInitialized)  return;
      Variables.registerDefaultValues();
-     String jarFile="/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
-    try {
-      dStorageFactory = DALDriver.load(jarFile, "se.sics.hop.metadata.persistence.ndb.NdbStorageFactory");
-    } catch (MalformedURLException ex) {
-      ex.printStackTrace();
-    } catch (ClassNotFoundException ex) {
-      ex.printStackTrace();
-    } catch (InstantiationException ex) {
-     ex.printStackTrace();
-    } catch (IllegalAccessException ex) {
-      ex.printStackTrace();
-    }
-     dStorageFactory.setConfiguration(null);
+     dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT), conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
+     dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
     isInitialized = true;
   }
 

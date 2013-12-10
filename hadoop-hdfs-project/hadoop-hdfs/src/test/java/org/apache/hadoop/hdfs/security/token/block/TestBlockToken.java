@@ -85,6 +85,7 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
 import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException;
 
 /** Unit tests for block tokens */
 public class TestBlockToken {
@@ -109,7 +110,7 @@ public class TestBlockToken {
   ExtendedBlock block3 = new ExtendedBlock("-10", -108L);
   
   @Before
-  public void disableKerberos() throws StorageException {
+  public void disableKerberos() throws StorageException, StorageInitializtionException {
     Configuration conf = new Configuration();
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "simple");
     UserGroupInformation.setConfiguration(conf);

@@ -31,27 +31,15 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 public class DFSConfigKeys extends CommonConfigurationKeys {
   
   //START_HOP_CODE
-  public static final String DFS_STORAGE_TYPE_KEY = "dfs.storage.type";
-  public static final String DFS_STORAGE_TYPE_DEFAULT = "clusterj";
-   
-  public static final String DFS_DB_CONNECTOR_STRING_KEY = "dfs.dbconnector.string";
-  public static final String DFS_DB_CONNECTOR_STRING_DEFAULT = "*** MYSQL CLUSTER HOST NAME HERE ****";
+  public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
+  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
+
+  public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
+  public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.persistence.ndb.NdbStorageFactory";
   
-  public static final String DFS_DB_DATABASE_NAME_KEY = "dfs.dbconnector.database";
-  public static final String DFS_DB_DATABASE_NAME_DEFAULT = "*** YOUR_DATABASE_NAME_HERE ***";
-  
-  public static final String DFS_DB_NUM_SESSION_FACTORIES_KEY = "dfs.dbconnector.num-session-factories";
-  public static final int    DFS_DB_NUM_SESSION_FACTORIES_DEFAULT = 3;
-  
-  public static final String DFS_STORAGE_MYSQL_USER_KEY = "dfs.storage.mysql.user";
-  public static final String DFS_STORAGE_MYSQL_USER_DEFAULT = "***  YOUR MYSQL USER NAME HERE ***";
-  
-  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_KEY = "dfs.storage.mysql.user.password";
-  public static final String DFS_STORAGE_MYSQL_USER_PASSWORD_DEFAULT = "*** YOUR MYSQL USER PASSWORD HERE ***";  
-  
-  public static final String DFS_STORAGE_MYSQL_PORT_KEY = "dfs.storage.mysql.port";
-  public static final String DFS_STORAGE_MYSQL_PORT_DEFAULT = "3306"; //3308
-  
+  public static final String DFS_STORAGE_DRIVER_CONFIG_FILE = "dfs.storage.driver.configfile";
+  public static final String DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT = "/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/classes/ndb-config.properties";
+
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
   
