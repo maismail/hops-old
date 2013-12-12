@@ -76,7 +76,7 @@ public class PendingBlockInfoDALWrapper extends DALWrapper<PendingBlockInfo, Hop
 
   @Override
   public PendingBlockInfo convertDALtoHDFS(HopPendingBlockInfo dalClass) throws StorageException {
-    if (dalClass != dalClass) {
+    if (dalClass != null) {
       return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
     } else {
       return null;
