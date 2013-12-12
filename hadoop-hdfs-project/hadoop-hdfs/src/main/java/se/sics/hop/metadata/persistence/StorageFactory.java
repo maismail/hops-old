@@ -65,39 +65,53 @@ import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException
  * @author Mahmoud Ismail <maism@sics.se>
  */
 public class StorageFactory {
-  
+
   private static boolean isInitialized = false;
   private static DALStorageFactory dStorageFactory;
   private static Map<Class, EntityDataAccess> dataAccessWrappers = new HashMap<Class, EntityDataAccess>();
-  
 
   public static StorageConnector getConnector() {
     return dStorageFactory.getConnector();
   }
 
-  public static void setConfiguration(Configuration conf) throws StorageInitializtionException{
-    if(isInitialized)  return;
-     Variables.registerDefaultValues();
-     dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT), conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
-     dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+  public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
+    if (isInitialized) {
+      return;
+    }
+    Variables.registerDefaultValues();
+    dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT), conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
+    dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+    initDataAccessWrappers();
     isInitialized = true;
+  }
+
+  private static void initDataAccessWrappers() {
+    dataAccessWrappers.clear();
+    dataAccessWrappers.put(BlockInfoDataAccess.class, new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class)));
+    dataAccessWrappers.put(ReplicaUnderConstructionDataAccess.class, new ReplicaUnderConstructionDALWrapper((ReplicaUnderConstructionDataAccess) getDataAccess(ReplicaUnderConstructionDataAccess.class)));
+    dataAccessWrappers.put(LeaseDataAccess.class, new LeaseDALWrapper((LeaseDataAccess) getDataAccess(LeaseDataAccess.class)));
+    dataAccessWrappers.put(PendingBlockDataAccess.class, new PendingBlockInfoDALWrapper((PendingBlockDataAccess) getDataAccess(PendingBlockDataAccess.class)));
+    dataAccessWrappers.put(INodeDataAccess.class, new INodeDALWrapper((INodeDataAccess) getDataAccess(INodeDataAccess.class)));
+    dataAccessWrappers.put(BlockTokenKeyDataAccess.class, new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
+    dataAccessWrappers.put(INodeAttributesDataAccess.class, new INodeAttributeDALWrapper((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
+    dataAccessWrappers.put(StorageInfoDataAccess.class, new StorageInfoDALWrapper((StorageInfoDataAccess) getDataAccess(StorageInfoDataAccess.class)));
   }
 
   public static Map<Class, EntityContext> createEntityContexts() {
     Map<Class, EntityContext> entityContexts = new HashMap<Class, EntityContext>();
 
-    BlockInfoContext bic = new BlockInfoContext((BlockInfoDataAccess) getDataAccessWrapper(BlockInfoDataAccess.class));
+    BlockInfoContext bic = new BlockInfoContext((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class));
     entityContexts.put(BlockInfo.class, bic);
     entityContexts.put(BlockInfoUnderConstruction.class, bic);
-    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext((ReplicaUnderConstructionDataAccess) getDataAccessWrapper(ReplicaUnderConstructionDataAccess.class)));
+    entityContexts.put(ReplicaUnderConstruction.class, new ReplicaUnderConstructionContext((ReplicaUnderConstructionDataAccess) getDataAccess(ReplicaUnderConstructionDataAccess.class)));
     entityContexts.put(HopIndexedReplica.class, new ReplicaContext((ReplicaDataAccess) getDataAccess(ReplicaDataAccess.class)));
     entityContexts.put(HopExcessReplica.class, new ExcessReplicaContext((ExcessReplicaDataAccess) getDataAccess(ExcessReplicaDataAccess.class)));
     entityContexts.put(HopInvalidatedBlock.class, new InvalidatedBlockContext((InvalidateBlockDataAccess) getDataAccess(InvalidateBlockDataAccess.class)));
-    entityContexts.put(Lease.class, new LeaseContext((LeaseDataAccess) getDataAccessWrapper(LeaseDataAccess.class)));
+    entityContexts.put(Lease.class, new LeaseContext((LeaseDataAccess) getDataAccess(LeaseDataAccess.class)));
     entityContexts.put(HopLeasePath.class, new LeasePathContext((LeasePathDataAccess) getDataAccess(LeasePathDataAccess.class)));
-    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext((PendingBlockDataAccess) getDataAccessWrapper(PendingBlockDataAccess.class)));
+    entityContexts.put(PendingBlockInfo.class, new PendingBlockContext((PendingBlockDataAccess) getDataAccess(PendingBlockDataAccess.class)));
 
-    INodeContext inodeContext = new INodeContext((INodeDataAccess) getDataAccessWrapper(INodeDataAccess.class));
+    INodeContext inodeContext = new INodeContext((INodeDataAccess) getDataAccess(INodeDataAccess.class));
     entityContexts.put(INode.class, inodeContext);
     entityContexts.put(INodeDirectory.class, inodeContext);
     entityContexts.put(INodeFile.class, inodeContext);
@@ -109,38 +123,11 @@ public class StorageFactory {
     entityContexts.put(HopUnderReplicatedBlock.class, new UnderReplicatedBlockContext((UnderReplicatedBlockDataAccess) getDataAccess(UnderReplicatedBlockDataAccess.class)));
     entityContexts.put(HopVariable.class, new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class)));
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess) getDataAccess(LeaderDataAccess.class)));
-    entityContexts.put(BlockKey.class, new BlockTokenKeyContext((BlockTokenKeyDataAccess) getDataAccessWrapper(BlockTokenKeyDataAccess.class)));
-    entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccessWrapper(INodeAttributesDataAccess.class)));
+    entityContexts.put(BlockKey.class, new BlockTokenKeyContext((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
+    entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
 
-    getDataAccessWrapper(StorageInfoDataAccess.class);
 
     return entityContexts;
-  }
-
-  private static EntityDataAccess getDataAccessWrapper(Class type) {
-    EntityDataAccess daW = null;
-    if (dataAccessWrappers.containsKey(type)) {
-      return dataAccessWrappers.get(type);
-    }
-    if (type == BlockInfoDataAccess.class) {
-      daW = new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class));
-    } else if (type == ReplicaUnderConstructionDataAccess.class) {
-      daW = new ReplicaUnderConstructionDALWrapper((ReplicaUnderConstructionDataAccess) getDataAccess(ReplicaUnderConstructionDataAccess.class));
-    } else if (type == LeaseDataAccess.class) {
-      daW = new LeaseDALWrapper((LeaseDataAccess) getDataAccess(LeaseDataAccess.class));
-    } else if (type == PendingBlockDataAccess.class) {
-      daW = new PendingBlockInfoDALWrapper((PendingBlockDataAccess) getDataAccess(PendingBlockDataAccess.class));
-    } else if (type == INodeDataAccess.class) {
-      daW = new INodeDALWrapper((INodeDataAccess) getDataAccess(INodeDataAccess.class));
-    } else if (type == BlockTokenKeyDataAccess.class) {
-      daW = new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class));
-    } else if (type == INodeAttributesDataAccess.class) {
-      daW = new INodeAttributeDALWrapper((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class));
-    } else if (type == StorageInfoDataAccess.class) {
-      daW = new StorageInfoDALWrapper((StorageInfoDataAccess) getDataAccess(StorageInfoDataAccess.class));
-    }
-    dataAccessWrappers.put(type, daW);
-    return daW;
   }
 
   public static EntityDataAccess getDataAccess(Class type) {
