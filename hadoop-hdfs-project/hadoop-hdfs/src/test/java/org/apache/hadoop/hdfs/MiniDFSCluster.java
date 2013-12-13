@@ -2391,7 +2391,7 @@ public class MiniDFSCluster {
         if (activeNameNodes == 0) {
             try {
               StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
-                      UnderReplicatedBlockDataAccess.class, LeaderDataAccess.class, BlockTokenKeyDataAccess.class, INodeAttributesDataAccess.class);
+                      UnderReplicatedBlockDataAccess.class, LeaderDataAccess.class, BlockTokenKeyDataAccess.class);
               
 //                Session session = (Session) StorageFactory.getConnector().obtainSession();
 //                //lease is persisted in the edit logs
