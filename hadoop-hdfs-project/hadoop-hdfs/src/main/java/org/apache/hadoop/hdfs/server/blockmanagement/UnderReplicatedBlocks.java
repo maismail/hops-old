@@ -98,11 +98,12 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   static final int QUEUE_WITH_CORRUPT_BLOCKS = 4;
   
   private final List<Set<Block>> priorityQueuestmp = new ArrayList<Set<Block>>();
-  
+  private List<Integer> replIndex = new ArrayList<Integer>();
   /** Create an object. */
   UnderReplicatedBlocks() {
     for (int i = 0; i < LEVEL; i++) {
       priorityQueuestmp.add(new TreeSet<Block>());
+      replIndex.add(0);
     }
   }
 
@@ -623,11 +624,13 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   private List<Integer> getReplicationIndex() throws PersistanceException {
-    return Variables.getReplicationIndex();
+    //return Variables.getReplicationIndex();
+    return replIndex;
   }
 
   private void setReplicationIndex(List<Integer> replicationIndex) throws PersistanceException {
-    Variables.setReplicationIndex(replicationIndex);
+    //Variables.setReplicationIndex(replicationIndex);
+    replIndex = replicationIndex;
   }
   
 }
