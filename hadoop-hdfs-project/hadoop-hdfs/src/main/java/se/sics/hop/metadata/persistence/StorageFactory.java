@@ -14,7 +14,6 @@ import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
 import se.sics.hop.metadata.persistence.context.Variables;
-import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 import se.sics.hop.metadata.persistence.dalwrapper.LeaseDALWrapper;
 import se.sics.hop.metadata.persistence.context.entity.BlockInfoContext;
 import se.sics.hop.metadata.persistence.context.entity.BlockTokenKeyContext;
@@ -54,9 +53,12 @@ import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.persistence.entity.hop.HopIntArrayVariable;
 import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.persistence.entity.hop.HopLongVariable;
 import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
 import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException;
 
 /**
@@ -121,7 +123,10 @@ public class StorageFactory {
 
     entityContexts.put(HopCorruptReplica.class, new CorruptReplicaContext((CorruptReplicaDataAccess) getDataAccess(CorruptReplicaDataAccess.class)));
     entityContexts.put(HopUnderReplicatedBlock.class, new UnderReplicatedBlockContext((UnderReplicatedBlockDataAccess) getDataAccess(UnderReplicatedBlockDataAccess.class)));
-    entityContexts.put(HopVariable.class, new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class)));
+    VariableContext variableContext = new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class));
+    entityContexts.put(HopVariable.class, variableContext);
+    entityContexts.put(HopLongVariable.class, variableContext);
+    entityContexts.put(HopIntArrayVariable.class, variableContext);
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess) getDataAccess(LeaderDataAccess.class)));
     entityContexts.put(BlockKey.class, new BlockTokenKeyContext((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
     entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));

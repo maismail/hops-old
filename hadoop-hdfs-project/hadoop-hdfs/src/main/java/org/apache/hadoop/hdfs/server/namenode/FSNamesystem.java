@@ -18,8 +18,8 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
-import se.sics.hop.common.HOPBlockIDGen;
-import se.sics.hop.common.HOPTXnChkPtsIDs;
+import se.sics.hop.common.HopBlockIDGen;
+import se.sics.hop.common.HopTXnChkPtsIDs;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.FS_TRASH_INTERVAL_KEY;
@@ -2914,7 +2914,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   Block createNewBlock() throws IOException, PersistanceException {
     assert hasWriteLock();
-    Block b = new Block(HOPBlockIDGen.getUniqueBlockId(), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
+    Block b = new Block(HopBlockIDGen.getUniqueBlockId(), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
     nextGenerationStamp();
     b.setGenerationStampNoPersistance(getGenerationStamp());
@@ -4096,7 +4096,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private NNHAStatusHeartbeat createHaStatusHeartbeat() {
     HAState state = haContext.getState();
     return new NNHAStatusHeartbeat(state.getServiceState(),
-        HOPTXnChkPtsIDs.getLastAppliedOrWrittenTxId()); //HOP code change. privious code getFSImage().getLastAppliedOrWrittenTxId()
+        HopTXnChkPtsIDs.getLastAppliedOrWrittenTxId()); //HOP code change. privious code getFSImage().getLastAppliedOrWrittenTxId()
   }
 
   /**
@@ -4186,8 +4186,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   @Metric({"TransactionsSinceLastCheckpoint",
       "Number of transactions since last checkpoint"})
   public long getTransactionsSinceLastCheckpoint() {
-    return HOPTXnChkPtsIDs.getLastWrittenTxId() -         //HOP code changed
-        HOPTXnChkPtsIDs.getMostRecentCheckpointTxId();
+    return HopTXnChkPtsIDs.getLastWrittenTxId() -         //HOP code changed
+        HopTXnChkPtsIDs.getMostRecentCheckpointTxId();
   }
   
   @Metric({"TransactionsSinceLastLogRoll",
@@ -4198,20 +4198,20 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ) {
       return 0;
     } else {
-      return HOPTXnChkPtsIDs.getLastWrittenTxId() -     //HOP Code changed
-        HOPTXnChkPtsIDs.getCurSegmentTxId() + 1;
+      return HopTXnChkPtsIDs.getLastWrittenTxId() -     //HOP Code changed
+        HopTXnChkPtsIDs.getCurSegmentTxId() + 1;
     }
   }
   
   @Metric({"LastWrittenTransactionId", "Transaction ID written to the edit log"})
   public long getLastWrittenTransactionId() {
-    return HOPTXnChkPtsIDs.getLastWrittenTxId();      //HOP Code changed
+    return HopTXnChkPtsIDs.getLastWrittenTxId();      //HOP Code changed
   }
   
   @Metric({"LastCheckpointTime",
       "Time in milliseconds since the epoch of the last checkpoint"})
   public long getLastCheckpointTime() {
-    return HOPTXnChkPtsIDs.getMostRecentCheckpointTime(); //HOP Code changed
+    return HopTXnChkPtsIDs.getMostRecentCheckpointTime(); //HOP Code changed
   }
 
   /** @see ClientProtocol#getStats() */

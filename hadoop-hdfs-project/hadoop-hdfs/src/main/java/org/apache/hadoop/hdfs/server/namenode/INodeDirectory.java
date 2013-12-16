@@ -28,7 +28,7 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
-import static org.apache.hadoop.hdfs.server.namenode.INode.NON_EXISTING_ID;
+import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.transcation.EntityManager;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
@@ -293,7 +293,7 @@ public class INodeDirectory extends INode {
     }
 
     if (!node.exists()) {
-      node.setIdNoPersistance(Math.abs(DFSUtil.getRandom().nextLong()));
+      node.setIdNoPersistance(HopINodeIdGen.getUniqueINodeID());
       node.setParentNoPersistance(this);
       EntityManager.add(node);
       //add the INodeAttributes if it is Directory with Quota

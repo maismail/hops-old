@@ -23,7 +23,7 @@ package se.sics.hop.common;
  * 
  * we have to get rid of this fun
  */
-public class HOPTXnChkPtsIDs 
+public class HopTXnChkPtsIDs 
 {
   private static long txID = 0;
   private static long chkPtID = 0;  

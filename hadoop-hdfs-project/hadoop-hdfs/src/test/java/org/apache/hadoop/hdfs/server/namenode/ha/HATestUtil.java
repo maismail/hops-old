@@ -46,7 +46,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.base.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.sics.hop.common.HOPTXnChkPtsIDs;
+import se.sics.hop.common.HopTXnChkPtsIDs;
 
 /**
  * Static utility functions useful for testing HA.

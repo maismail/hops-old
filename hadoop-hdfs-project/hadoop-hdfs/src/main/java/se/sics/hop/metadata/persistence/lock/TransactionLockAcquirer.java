@@ -413,6 +413,7 @@ public class TransactionLockAcquirer {
 
     if (locks.getUrbLock() != null) {
       acquireBlockRelatedLock(locks.getUrbLock(), HopUnderReplicatedBlock.Finder.ByBlockId);
+      acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
     }
 
     if (locks.getPbLock() != null) {
@@ -439,6 +440,16 @@ public class TransactionLockAcquirer {
 
     if (locks.getBlockIdCounterLock() != null) {
       acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
+    }
+    
+    if (locks.getInodeLock() != null) {
+      LockType inodeIDLockType = LockType.WRITE;
+      if (locks.getInodeLock() == INodeLockType.READ) {
+        inodeIDLockType = LockType.READ;
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
+        inodeIDLockType = LockType.READ_COMMITTED;
+      }
+      acquireLock(inodeIDLockType, HopVariable.Finder.INodeID);
     }
   }
 

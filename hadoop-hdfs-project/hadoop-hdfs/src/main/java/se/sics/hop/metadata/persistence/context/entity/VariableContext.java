@@ -102,6 +102,6 @@ public class VariableContext extends EntityContext<HopVariable> {
     log(
             "updated-" + var.getType().toString(),
             CacheHitState.NA,
-            new String[]{"value", Long.toString(var.getValue())});
+            new String[]{"value", var.toString()});
   }
 }

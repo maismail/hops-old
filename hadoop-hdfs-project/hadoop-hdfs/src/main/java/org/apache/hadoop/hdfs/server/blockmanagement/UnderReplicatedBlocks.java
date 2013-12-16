@@ -41,6 +41,7 @@ import se.sics.hop.transcation.RequestHandler.OperationType;
 import se.sics.hop.transcation.TransactionalRequestHandler;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.persistence.context.Variables;
 
 /**
  * Keep prioritized queues of under replicated blocks.
@@ -98,14 +99,10 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   private final List<Set<Block>> priorityQueuestmp = new ArrayList<Set<Block>>();
   
-  /** Stores the replication index for each priority */
-  private Map<Integer, Integer> priorityToReplIdx = new HashMap<Integer, Integer>(LEVEL);
-  
   /** Create an object. */
   UnderReplicatedBlocks() {
     for (int i = 0; i < LEVEL; i++) {
       priorityQueuestmp.add(new TreeSet<Block>());
-      priorityToReplIdx.put(i, 0);
     }
   }
 
@@ -358,6 +355,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }
     
     fillPriorityQueues();
+    List<Integer> priorityToReplIdx = getReplicationIndex();
     
     int blockCount = 0;
     for (int priority = 0; priority < LEVEL; priority++) { 
@@ -390,11 +388,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         // reset all priorities replication index to 0 because there is no
         // recently added blocks in any list.
         for (int i = 0; i < LEVEL; i++) {
-          priorityToReplIdx.put(i, 0);
+          priorityToReplIdx.set(i, 0);
         }
         break;
       }
-      priorityToReplIdx.put(priority, replIndex); 
+      priorityToReplIdx.set(priority, replIndex); 
     }
     return blocksToReplicate;
   }
@@ -514,9 +512,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * 
    * @param priority  - int priority level
    */
-  public void decrementReplicationIndex(int priority) {
+  public void decrementReplicationIndex(int priority) throws PersistanceException {
+    List<Integer> priorityToReplIdx = getReplicationIndex();
     Integer replIdx = priorityToReplIdx.get(priority);
-    priorityToReplIdx.put(priority, --replIdx); 
+    priorityToReplIdx.set(priority, --replIdx);
+    setReplicationIndex(priorityToReplIdx);
   }
   
   
@@ -621,4 +621,13 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.remove(urb);
   }
+
+  private List<Integer> getReplicationIndex() throws PersistanceException {
+    return Variables.getReplicationIndex();
+  }
+
+  private void setReplicationIndex(List<Integer> replicationIndex) throws PersistanceException {
+    Variables.setReplicationIndex(replicationIndex);
+  }
+  
 }

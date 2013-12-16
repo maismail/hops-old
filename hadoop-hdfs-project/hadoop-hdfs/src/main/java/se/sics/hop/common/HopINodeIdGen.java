@@ -15,22 +15,19 @@
  */
 package se.sics.hop.common;
 
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.metadata.persistence.context.Variables;
+import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 
 /**
  *
- * @author salman
- *
- * this function was previously in FSImage.java.
- *
+ * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HOPBlockIDGen{
-
-  public static long getUniqueBlockId() throws PersistanceException {
-    long lastBlockId = Variables.getBlockId();
-    lastBlockId++;
-    Variables.setBlockId(lastBlockId);
-    return lastBlockId;
+public class HopINodeIdGen {
+  
+  public static long getUniqueINodeID() throws PersistanceException{
+    long lastInodeId =  Variables.getInodeId();
+    lastInodeId++;
+    Variables.setInodeId(lastInodeId);
+    return lastInodeId;
   }
 }
