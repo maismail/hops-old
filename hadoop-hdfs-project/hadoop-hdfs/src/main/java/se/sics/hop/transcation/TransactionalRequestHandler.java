@@ -1,6 +1,5 @@
 package se.sics.hop.transcation;
 
-import com.mysql.clusterj.ClusterJException;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
@@ -111,7 +110,7 @@ public abstract class TransactionalRequestHandler extends RequestHandler {
                     }else{
                         exception = ex;
                         rollback = true;
-                        if (ex instanceof StorageException || ex instanceof ClusterJException) {
+                        if (ex instanceof StorageException) {
                             retry = true;
                         } else {
                             retry = false;

@@ -15,8 +15,6 @@
  */
 package org.apache.hadoop.hdfs;
 
-import com.mysql.clusterj.ClusterJDatastoreException;
-import com.mysql.clusterj.ClusterJException;
 import java.io.IOException;
 import java.net.BindException;
 import java.net.ConnectException;
@@ -24,9 +22,9 @@ import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import org.apache.hadoop.ipc.RemoteException;
+import se.sics.hop.metadata.persistence.exceptions.StorageException;
 
 /**
  *
@@ -56,7 +54,7 @@ public class ExceptionCheck {
             
             if(unwrappedException != null && !(unwrappedException instanceof RemoteException)) { 
                 if (unwrappedException instanceof PersistanceException
-                    || unwrappedException instanceof ClusterJException) {
+                    || unwrappedException instanceof StorageException) {
                         return true;
                 }
             }

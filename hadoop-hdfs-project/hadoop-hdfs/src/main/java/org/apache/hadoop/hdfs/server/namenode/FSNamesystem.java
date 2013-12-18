@@ -165,7 +165,6 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
 import org.apache.hadoop.hdfs.server.common.Storage;
 import org.apache.hadoop.hdfs.server.common.Util;
-import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
 //import org.apache.hadoop.hdfs.server.namenode.ha.EditLogTailer; //HOP does not support it anymore
 import org.apache.hadoop.hdfs.server.namenode.ha.HAContext;
@@ -206,7 +205,6 @@ import org.mortbay.util.ajax.JSON;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
-import com.mysql.clusterj.ClusterJException;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
@@ -214,7 +212,6 @@ import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.metadata.persistence.lock.INodeUtil;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
@@ -3759,8 +3756,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           if(e instanceof StorageException ){
             throw (IOException)e;
           }
-        }catch (ClusterJException e){
-          throw e;
         }
         //END_HOP_CODE
       }
