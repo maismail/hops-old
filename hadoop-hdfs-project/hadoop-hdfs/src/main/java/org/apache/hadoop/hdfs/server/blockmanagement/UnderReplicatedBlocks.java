@@ -98,12 +98,10 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   static final int QUEUE_WITH_CORRUPT_BLOCKS = 4;
   
   private final List<Set<Block>> priorityQueuestmp = new ArrayList<Set<Block>>();
-  private List<Integer> replIndex = new ArrayList<Integer>();
   /** Create an object. */
   UnderReplicatedBlocks() {
     for (int i = 0; i < LEVEL; i++) {
       priorityQueuestmp.add(new TreeSet<Block>());
-      replIndex.add(0);
     }
   }
 
@@ -343,7 +341,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @return Return a list of block lists to be replicated. The block list index
    *         represents its replication priority.
    */
-  public List<List<Block>> chooseUnderReplicatedBlocks(
+  private List<List<Block>> chooseUnderReplicatedBlocksInt(
       int blocksToProcess) throws IOException {
     // initialize data structure for the return value
     List<List<Block>> blocksToReplicate = new ArrayList<List<Block>>(LEVEL);
@@ -355,7 +353,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       return blocksToReplicate;
     }
     
-    fillPriorityQueues();
     List<Integer> priorityToReplIdx = getReplicationIndex();
     
     int blockCount = 0;
@@ -531,6 +528,24 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 //    return false;
 //  }
   
+  public List<List<Block>> chooseUnderReplicatedBlocks(
+          final int blocksToProcess) throws IOException {
+    fillPriorityQueues();
+    return (List<List<Block>>) new TransactionalRequestHandler(OperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addUnderReplicatedBlock(LockType.WRITE);
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return chooseUnderReplicatedBlocksInt(blocksToProcess);
+      }
+    }.handle(null);
+  }
+  
   private boolean remove(HopUnderReplicatedBlock urb) throws PersistanceException {
     if (urb != null) {
       removeUnderReplicatedBlock(urb);
@@ -624,13 +639,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   private List<Integer> getReplicationIndex() throws PersistanceException {
-    //return Variables.getReplicationIndex();
-    return replIndex;
+    return Variables.getReplicationIndex();
   }
 
   private void setReplicationIndex(List<Integer> replicationIndex) throws PersistanceException {
-    //Variables.setReplicationIndex(replicationIndex);
-    replIndex = replicationIndex;
+    Variables.setReplicationIndex(replicationIndex);
   }
   
 }
