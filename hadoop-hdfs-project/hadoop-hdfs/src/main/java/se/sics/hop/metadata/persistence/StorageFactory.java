@@ -1,5 +1,11 @@
 package se.sics.hop.metadata.persistence;
 
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import se.sics.hop.metadata.persistence.context.entity.ReplicaUnderConstructionContext;
 import se.sics.hop.metadata.persistence.context.entity.ExcessReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.LeaderContext;
@@ -8,6 +14,8 @@ import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
@@ -81,12 +89,38 @@ public class StorageFactory {
       return;
     }
     Variables.registerDefaultValues();
-    dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT), conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
+    addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
+    dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
     dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
     initDataAccessWrappers();
     isInitialized = true;
   }
 
+  //[M]: just for testing purposes
+  private static void addToClassPath(String s) throws StorageInitializtionException {
+    try {
+      File f = new File(s);
+      URL u = f.toURI().toURL();
+      URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
+      Class urlClass = URLClassLoader.class;
+      Method method = urlClass.getDeclaredMethod("addURL", new Class[]{URL.class});
+      method.setAccessible(true);
+      method.invoke(urlClassLoader, new Object[]{u});
+    } catch (MalformedURLException ex) {
+      throw new StorageInitializtionException(ex);
+    } catch (IllegalAccessException ex) {
+      throw new StorageInitializtionException(ex);
+    } catch (IllegalArgumentException ex) {
+      throw new StorageInitializtionException(ex);
+    } catch (InvocationTargetException ex) {
+      throw new StorageInitializtionException(ex);
+    } catch (NoSuchMethodException ex) {
+      throw new StorageInitializtionException(ex);
+    } catch (SecurityException ex) {
+      throw new StorageInitializtionException(ex);
+    }
+  }
+  
   private static void initDataAccessWrappers() {
     dataAccessWrappers.clear();
     dataAccessWrappers.put(BlockInfoDataAccess.class, new BlockInfoDALWrapper((BlockInfoDataAccess) getDataAccess(BlockInfoDataAccess.class)));

@@ -38,7 +38,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.persistence.ndb.NdbStorageFactory";
   
   public static final String DFS_STORAGE_DRIVER_CONFIG_FILE = "dfs.storage.driver.configfile";
-  public static final String DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT = "/home/mahmoud/src/hopstart/hop-metadata-dal-impl-ndb/target/classes/ndb-config.properties";
+  public static final String DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT = "ndb-config.properties";
 
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
