@@ -1,16 +1,17 @@
 #!/bin/bash
 
 TestNames=$1
-MaxTime=1200;
+MaxTime=1200
 TestResultsParent=results
 AllTestsResults=$TestResultsParent/AllTestsResults.txt
 FAILED_DIR=$TestResultsParent/fail_tests_reports
 
 rm -rf $TestResultsParent
 mkdir -p $FAILED_DIR
-
+PID=$$
+mkdir -p /tmp/$PID
 for i in $(cat $TestNames); do
- UnitTestResult="/tmp/$i.HOP_Results"
+ UnitTestResult="/tmp/$PID/$i.HOP_Results"
  rm $UnitTestResult
  ./run_single_test.sh $i  $UnitTestResult $FAILED_DIR &
 
