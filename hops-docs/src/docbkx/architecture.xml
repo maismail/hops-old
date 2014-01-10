@@ -1,0 +1,1358 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/1999/xhtml"
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch07">
+    <title>Hadoop Open PaaS</title>
+    <para>
+    In this chapter, we introduce our implementation of the the Hadoop Filesystem,
+    where we introduce a new model for the NameNode that enables clusters with
+    larger, more configurable metadata than is currently found in Apache's HDFS.
+    We also introduce a Platform-as-a-Service (PaaS) model for our HDFS implementation,
+    showing how we automate the deployment of a cluster on cloud platforms, such as
+    Amazon Web Services (AWS) and OpenStack, as well as standard clusters.</para>   
+    <sect1>
+        <title>Highly Available Hadoop Filesystem (HDFS)</title>
+        <para>
+            Due to the rapid growth of data in recent years, distributed file systems have
+            gained widespread adoption. The new breed of distributed file systems reliably store
+            petabytes of data, and also provide rich abstractions for massively parallel data analytics <citation>5,7</citation>. 
+            The Hadoop Distributed File System (HDFS) <xref linkend="Borthakur2007"/> is a 
+            distributed, fault-tolerant file system designed to run on 
+            low-cost commodity hardware that scales to store petabytes of data, 
+            and is the file storage component of the Hadoop platform <citation>3,4</citation>. 
+            HDFS provides the storage layer for MapReduce, Hive, HBase, Spark and all other 
+            YARN applications, see <xref linkend="hadoop2"/>.
+            <figure xml:id="hadoop2">
+                <title>Hadoop v2</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/hadoop2.png" scale="60" align="center"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            
+            In 2013, HDFS v2 introduced a  highly available metadata architecture 
+            <citation>1</citation>, where the entire filesystem's metadata is 
+            stored in memory on a single node <citation>13</citation>, but changes to the metadata 
+            (<emphasis>edit log entries</emphasis>) are now replicated 
+            and persisted to a set of (at least three) Journal Nodes using a 
+            quorum-based replication algorithm, see <xref linkend="hdfsv2"/>.
+            In HDFS v2, a Primary and Secondary NameNode can be configured, 
+            where the Primary NameNode is  responsible for managing the metadata, and the Secondary NameNode 
+            keeps an eventually consistent copy of the metadata. The Secondary NameNode 
+            is kept in sync with the Primary by two mechanisms: firstly, by asynchronously applying all 
+            edit log entries that have been committed at the Journal Nodes, and 
+            secondly, receiving the same set of heartbeats from Data Nodes that are 
+            received by the Primary.
+            This Primary/Secondary replication model is also known as an Active/Standy or 
+            Master/Slave replication model, and was popularized by databases in the 1990s. HDFS' 
+            implementation of this eventually consistent replication model is more limited than in
+            the traditional relational database world, as all read and write requests are sent to 
+            the Primary. In typical Master/Slave configurations, writes are sent to the master, while
+            reads are load-balanced across slaves.
+            The reason all write requests are sent to the Primary to ensure a single consistent copy of the metadata. 
+            Read requests are also sent to the Primary, as reads at the Secondary could result in operations being executed
+            on stale metadata. This is a bigger problem for a filesystem, such as HDFS, 
+            than it would be for a Web 2.0  social media application with non-critical data, 
+            using a Master/Slave database setup. Thus, reads are only sent to the Primary. 
+            If the Primary fails, however, the Secondary needs to take over as Primary. Before it can take over, it first has to 
+            catch up with the set of edit log entries applied to Primary before it failed. 
+            The period of time before all outstanding edit log entries are applied at the Secondary before
+            it can take over may be up to tens of seconds, depending on the current load of the system and
+            the hardware and software setup.
+            Another limitation of the Primary/Secondary model, is that client and Data Nodes from 
+            HDFS need to have a consistent view of who the current Primary NameNode is. They do this by 
+            asking a Zookeeper coordination service that needs to run on at least 3 nodes to provide a fault
+            tolerant reliable service. Finally, the concurrency model supported by HDFS v2 is still 
+            multiple-readers, single-writer.
+            <figure xml:id="hdfsv2">
+                <title>HDFS v2 NameNode Primary/Secondary Replication Model</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/hdfsv2.png" scale="60" align="center"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+        </para>
+        <para> <emphasis>Hop HDFS</emphasis></para>
+        <para> In contrast, our implementation of HDFS, called <emphasis>Hop HDFS</emphasis>,
+            replaces the Primary-Secondary metadata model with shared, transactional memory,
+            implemented using a distributed, in-memory, shared-nothing database, MySQL Cluster (NDB)
+                <xref linkend="Manual2010"/> see  <xref linkend="hop-hdfs"/>. MySQL Cluster is a
+            real-time, ACID-complaint transactional database, with no single point of failure, that
+            has predictable, milisecond response times with the ability to service millions of
+            operations per second. By leveraging MySQL Cluster to store HDFS' metadata, the size of
+            HDFS' metadata is no longer limited to the amount of memory that can be managed on the
+            heap of JVM on a single node. Our solution involves storing the metadata in a
+            replicated, distributed, in-memory database that can scale up to several tens of nodes,
+            all while maintaining the consistency semantics of HDFS. We maintain the consistency of
+            the metadata, while providing high performance, all within a multiple-writer,
+            multiple-reader concurrency model. Multiple concurrent writers are now supported for the
+            filesystem as a whole, but single-writer concurrency is enforced at the inode level. Our
+            solution guarantees freedom from deadlock and progress by logically organizing inodes
+            (and their constituent blocks and replicas) into a hierarchy and having transactions
+            defining on a global order for transactions acquiring both explicit locks and implicit
+            locks on subtrees in the hierarchy; this solution is motivated by <xref
+                linkend="J.GrayR.LorieG.Putzolu1976"/> and <xref linkend="berenson1995critique"/>.
+                The use of a database, however, also has its drawbacks <citation>8,12</citation>. 
+            As the data now resides on remote hosts on the network, an excessive number of roundtrips to the database harms
+            system scalability and increases per-operation latencies. We ameliorate these problems
+            by introducing a snapshotting mechanism for transactions, where, at the beginning of a
+            transaction, all the resources it needs are aquired in the defined global order, while
+            simulatenously taking row-level locks for those resources. On transaction commit or
+            abort, the resources are freed. This solution enables NameNodes to perform operations on
+            a local copy (or snapshot) of the database state until such time as the transaction is
+            completed, thus reducing the number the number of roundtrips required to the database,
+            see <xref linkend="hdfs-snapshot"/> . </para>
+        <figure xml:id="hop-hdfs">
+            <title>Hop HDFS</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hop-hdfs.png" scale="40" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+    </sect1>
+
+    <sect1>                                
+        <title>Leader Election</title>
+        <para>
+        In HDFS, there are a number of background tasks that are problematic if
+        multiple NameNodes attempt to perform them concurrently. Examples of such
+        tasks include: 
+        <orderedlist>
+            <listitem>
+                <para>
+                replication monitoring,
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                lease management,
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                block token generation,
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                and the decomissioning of datanodes.
+                </para>
+            </listitem>
+        </orderedlist>
+        Without any coordination between NameNodes, and since all NameNodes have identical behaviour, 
+        we would have problems with many of these background tasks. For example,
+        if a block becomes under-replicated, several NameNodes could independently identify
+        this under-replicated state, and each would select a DataNode to replicate that block to. This would
+        cause multiple re-replications of the block, leading it to enter an over-replicated
+        state, upon which, multiple NameNodes could recognize this over-replicated state and attempt
+        to remove replicas, possibly leading to an under-replicated state - back where 
+        we started. 
+
+        We solve this coordination problem, by implementing a Leader Election Algorithm,
+        where only the leader NameNode is assigned the task of performing the above background tasks.
+        Our leader election algorithm uses the shared, transactional memory 
+        abstraction provided by MySQL Cluster to coordinate the election process.
+
+        </para>
+        <para>
+        <emphasis role="bold-italic">Definition: Correct NameNode</emphasis>
+            A correct NameNode is defined as an alive process that is 
+            is able to write to NDB in a bounded time interval.
+        </para>
+        <para>
+         <emphasis role="bold-italic">Definition: Leader NameNode</emphasis>
+            A leader NameNode is a NameNode from the set of NameNodes that  
+        is correct and is responsible for listening to DateNode heartbeats and 
+        assigning various tasks to them as well as responsible for managing background tasks.
+        </para>
+        
+        <para>
+        In a deployed system, the bounded time interval during which it is expected
+        that a NameNode can write to NDB is typically set to around 1 second. 
+
+        The properties that our leader election algorithm guarantee are:
+    <orderedlist>
+        <listitem>
+            <para>
+            <emphasis role="bold-italic">Completeness:</emphasis> after a bounded time interval, all correct NameNodes will detect every NameNode that has crashed.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+            <emphasis role="bold-italic">Agreement:</emphasis> after a bounded time interval, all correct NameNodes will recognize one among them as the leader.
+            All will agree to the same NameNode being the leader.
+            </para>
+        </listitem>
+        <listitem>
+            <para>
+            <emphasis role="bold-italic">Stability:</emphasis> If one correct NameNode is the leader, all previous leaders have crashed
+            </para>
+        </listitem>
+    </orderedlist>
+        </para>
+        <para>
+        <emphasis>Leader Election Algorithm</emphasis>
+        </para>
+        <para>
+            The leader election algorithm runs continuously at the NameNodes in rounds. 
+            Each NameNode is assigned an (integer) id. 
+            At any point in time, the correct NameNode with the lowest id is 
+            elected as the leader. The central focus of the algorithm is to detect failures 
+            and elect a new leader using heartbeats. We implement heartbeats as counters in 
+            a table in NDB. The algorithm is run at NameNodes in rounds (every nth second), 
+            and it is expected that each NameNode will send only one heartbeat per round, 
+            although our algorithm tolerates minor deviations, as explained later. 
+            NameNodes can discover who the leader is by reading the ids of correct 
+            NameNodes from a table in NDB. NDB's shared transactional memory 
+            allows all NameNodes to have a uniform view of the correct NameNodes in the system. 
+            We implemented our heartbeat model using the schema shown in <xref linkend="leader"/>. Some
+            sample records are also shown to show an example run of the algorithm.
+        </para>
+        <figure xml:id="leader">
+            <title>Leader Table in NDB</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/leader.png" scale="66" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+        <para>
+            Once a NameNode starts, it starts a rounds timer which periodically triggers
+            causing it to send a heartbeat to the NDB to indicate 
+            that it is currently active and running. The heartbeat is implemented by
+            a NameNode first reading the highest counter value in a LEADER table and
+            then updating its counter value in the LEADER table to be one higher than
+            the current highest counter value. A heartbeat, in effect, increments
+            the highest counter value. Heartbeats should be loosely synchronized by
+            configuring hosts to use Network Time Protocol, and setting equivalent timeouts
+            for triggering heartbeats at nodes.
+            To ensure serialized updates to counter values, when each NameNode 
+            reads the highest counter value, it acquires a table-level write lock on 
+            the LEADER table and only releases this lock after
+            it has updated its own counter value. All of these operations happen within 
+            a transaction, so that the lock is released in the event of a NameNode 
+            failure while updating the LEADER table. 
+        </para>
+        <para> <emphasis>Case-I: Failure-free scenario</emphasis></para>
+        <para>
+        In the case of no failures, after each round when all NameNodes have successfully
+        sent heartbeats, the highest value of the counter should have increased
+        by the number of correct NameNodes, and the value of each NameNode's counter 
+        should have increased by approximately the number of correct NameNodes.
+        We say approximately, as clock skew, network delays, and congestion may cause updates 
+        to arrive at varying times within a round. Assuming clock skews are not as 
+        large as the heartbeat interval and no congestion, all
+        NameNodes should succeed in sending one heartbeat at least every 2 rounds.
+        The above figure shows an example of counter values for 3 NameNodes 
+        with ids 1, 2 and 3 and their corresponding counter values as 23, 24 and 25 respectively.
+        For brevity, we designate a NameNode with an id of value x as NNx. From this 
+        example we see that NN1 has the lowest id and is therefore elected as the current leader in
+        the system.
+        </para>
+        <para> <emphasis>Case-II: Leader crash scenario</emphasis></para>
+        <para>
+            For numerous reasons, a NameNode may fail in sending a heartbeat to NDB 
+            a round, and, thus, fail to update its counter 
+            value in the LEADER table. The counter value for the NameNodes remains 
+            the same Namenodes would experience an irregular sequence of
+            counter values in each of these rows. For example, let’s say that NN1 
+            has crashed and the current counter value is now 6. This would allow 
+            NN2 and NN3 to progress in updating the counter with values 9 and 10 
+            while counter value for NN1 is still at value 6. In  <xref linkend="leader-example"/>, 
+            we can see a snapshot of the view on the LEADER table at this round (T0).
+            The figure shows non-consecutive counter values 6, 9 and 10 when we 
+            would expect something like 8, 9 and 10. As all NNs have a consistent view of these
+            counter values, so NN2 and NN3 can now agree that NN1 has crashed, and NN2 will 
+            become leader.
+        </para>
+
+        <figure xml:id="leader-example">
+            <title>Leader Table in NDB</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/leader-example.png" scale="50" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        <para><emphasis>Determining the leader</emphasis></para>
+        <para>
+            The next step is to detect an irregular sequence of counter values and to
+            decide if a new leader is to be elected. 
+            The basic idea to determine the leader is to determine which NameNode 
+            have counter values close enough to the current highest counter value to be
+            considered 'correct'. In the example given above, the highest counter value 
+            at round T2 (bottom table) is 11.
+            As we have 3 NameNodes in the system, we expect the counter values to
+            be in the range [9-11], although allowing for out-of-order heartbeats, 
+            the counter values could be in the range [7-10]. The upper-bound on 
+            out-of-order updates to counters is, by default, 2 rounds. That means
+            that a NameNode that is more than 2 rounds behind in updating its counter
+            value is no longer considered to be correct.
+            In the lower table, we can see that NN1 is now no longer considered correct,
+            as both NN2 and NN3 have succeeded in updating their counters 3 times 
+            before NN1 has updated its counter. Therefore, NN2 now becomes the new 
+            leader, as its counter value is within the range of 2 rounds from the max
+            counter value, and it has the lowest id of the remaining correct NNs.
+            Both NN2 and NN3 independently reach a decision about the new leader, NN2,
+            the next time they try to update their own counter.
+        </para>
+        <para><emphasis>Ensuring single leader dominance</emphasis></para>
+        <para>
+            Once a NameNode determines that it is the leader, the first thing it does
+            is to ensure that there are no other leaders in the system. This 
+            means that all previously elected leaders (or NameNodes with ids lower
+            than its own) have crashed. To ensure this, it enforces this rule by 
+            removing all records from the [LEADER] table for NNs with a lower id than 
+            its own.
+        </para>
+
+        <example xml:id="leader-election-NNs">
+            <title>Leader Election Algorithm at NameNodes</title>
+            <programlisting linenumbering="numbered">
+function updateCounter()
+    retrieve ([LEADER], maxCounter)
+    increment maxCounter
+// The entry for this NN may not exist if it crashed 
+// and was removed by another leader
+    if (!exists([LEADER], id) then 
+        id = retrieve([LEADER], max(id)) + 1
+    end if
+    store([LEADER], id, maxCounter)
+
+// The function that determines the current leader
+function select()
+    SELECT id FROM [LEADER]
+    WHERE counter  (max(counter) – count(id)) // returns all correct NNs
+    LIMIT 1 /*selects lowest id*/
+    return id
+
+// The function that returns the list of correct NNs
+function selectAll()
+    SELECT id FROM [LEADER]
+    WHERE counter &gt; (max(counter) – count(id)) // returns all correct NNs
+    ORDER BY id                              // the leader has the lowest id
+    return list(id)
+
+upon event &lt;init&gt; do
+    leader = NIL
+    updateCounter()
+    leader = select()
+
+// After every interval, the NameNode updates the counter
+upon event &lt;check&gt;
+    updateCounter()
+    leader = select()
+    // If this NN is elected the leader, remove previous leaders
+    if (leader == id) then
+        remove([LEADER],[ids &lt; leader])
+    end if
+
+upon event &lt; timeout&gt;
+    // Kill NN on timeouts, so DNs can connect to the next leader NN
+    shutdown()
+
+// Return the list of correct NNs in order of lowest ids
+upon event &lt;heartbeats&gt;
+    return selectAll()
+            </programlisting>
+        </example>
+
+        <example xml:id="leader-election-DNs">
+            <title>Detecting the Leader at DataNodes</title>
+            <programlisting  linenumbering="numbered">
+// The NN leader id is passed in upon initialization of DN
+upon event init&lt;list(id)&gt;
+    nnlist = list(id)
+    // The NN with the lowest id is the leader
+    leader = min(nnlist)
+
+// Update the list of NNs on every heartbeat response from Leader NN
+upon event &lt;heartbeat-response, list(id)&gt;
+    nnlist = list(id)
+    leader = min(nnlist)
+
+// On timeout from leader NN
+upon event &lt;timeout&gt;
+    // remove current leader from nnlist
+    remove(nnlist, leader)
+    // elect a new leader
+    leader = min(nnlist)
+            </programlisting>
+        </example>
+
+        <para>
+            All DataNodes are kept up-to-date with the current view of NameNodes in the system. This is done via
+            requesting the NameNodes for the current list of NameNodes. This is done via a simple RPC call. The
+            DataNodes get the list of NameNodes and assume the NameNode with the lowest id is the leader.
+            When NN1 had crashed, the DNs keep retrying for some amount of time and if they are not
+            successful at making contact with the NN it will remove it from the list and select the next NN who
+            could potentially be the leader. This would achieve [Property#2].
+            There can be two possibilities where (a) the DataNode contacts the next NN and if it is actually the
+            leader then the process flows normally. (b) The DataNode contacts the next NN in the list but who may
+            not be the leader (because it is possible that it has also crashed or a new NN has joined with a lower id).
+            This NN would then either provide the updated list of NameNodes, including the new leader, or not respond due
+            to failure. THe DataNode can continue querying all NameNodes until either it
+            is returned a list of correct nodes (including the id of the leader) or
+            all NameNodes have failed.
+            If there is a correct NameNode, eventually all correct DNs would recognize 
+            a correct NN as the leader thereby fulfilling [Property#1].
+        </para>
+        <para>
+            Case-II: Scenario when current leader thinks it is alive but cannot connect to NDB 
+            If NN1 is active and running, but it cannot update the LEADER table in NDB, then such a NameNode
+            is not considered correct as per definition. In this scenario, all DataNodes 
+            would always think that NN1 is the current leader as it can make
+            contact with that NN. But since the NN cannot update NDB, it has to kill itself and
+            shutdown (or restart) hoping that some other NameNode would eventually be elected the leader.
+            When NN1 is shutdown, DataNodes will keep retrying for some amount of time after some
+            point where they will switch to the next NameNode and try to determine the next NN leader.
+        </para>
+    </sect1>
+
+    <sect1>                                
+        <title>Ensuring Correctness of Hop HDFS</title>
+        <para>
+            One of the main challenges in migrating HDFS' metadata from the heap of
+            a single JVM to a relational database was ensuring the correctness of 
+            our approach. From a practical perspective, we ensure correctness by
+            ensuring that we have (almost) no failing unit tests from the extensive
+            suite of over 300 unit tests.
+            From a theoretical perspective, our solution provides for support for multiple
+            concurrent writers, so we need to show that our solution is free of both
+            deadlock and livelock.
+            Our first challenge was to migrate the state of HDFS from highly optimized
+            data structures in the NameNode to tables in NDB. We migrated a total
+            of 13 datastructures from HDFS' NameNode to tables in NDB, see <xref linkend="hop-er"/>.
+
+        <figure xml:id="hop-er">
+            <title>Entity-Relation Diagram for NameNode state in Hop-HDFS</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hopER.png" align="center" scale="50"/>
+                </imageobject>
+            </mediaobject>
+        </figure>   
+
+
+        <figure xml:id="hdfs-operations">
+            <title>HDFS Filesystem Operation Sequence Diagram</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-operations.png" scale="36" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>   
+        </para>
+        <para>
+        <emphasis>Transactions and Isolation Levels</emphasis>
+        </para>
+        <para>
+            We implemented each HDFS operation as a single transaction, where we begin the transaction, 
+            read and write the necessary meta-data from NDB, and then either commit, 
+            or in the case of failure, abort the transaction and then possibly retry
+            the transaction. An example of a HDFS filesystem operation that copies a file
+            from the local filesystem into HDFS is ilustrated in <xref linkend="hdfs-operations"/>.
+            In this example, we can see that the copyFromLocal soperation consists of a number 
+            of HDFS internal protocol messages (startFile, getAdditionalBlock, writeBlockData,
+            and getAdditionalBlock). Each protocol message sent to the NameNode is handled
+            within a single transaction. Transactions, however, only maintain consistency for individual
+            protocol messages, and HDFS maintains consistency for the filesystem between
+            transactions using leases on files. A lease is held throughout the duration
+            of the HDFS filesystem operation, and in the event of a failure, the
+            lease will eventually be released after a relatively long timeout.
+         </para>           
+         <para>
+            We implement our transactions using the MySQL CLuster database, also
+            known as NDB (Network Database). Read-committed is the only isolation level supported by NDB, and is
+            a general, cheap, and widely supported transaction isolation level. 
+            Read-committed isolation means a transaction may see new state from other
+            transactions that have completed while that transaction is executing.
+            The read-committed isolation level allows anomalies, such as
+            fuzzy reads, phantom reads, lost update, read skew and write skew <citation>2</citation>, that would
+            break the consistency of HDFS' file-system operations. 
+         </para>           
+         
+        <figure xml:id="deadlock-cycle">
+            <title>Locking in conflicting order can lead to Deadlock</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/deadlock-cycle.png" scale="75" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+        <figure xml:id="deadlock-upgrade">
+            <title>Lock upgrade can lead to Deadlock</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/deadlock-upgrade.png" scale="75" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+
+        <para>
+        <emphasis>Hierarchy of Resources</emphasis>
+        </para>
+        <para>
+            Filesystems, such as HDFS, have hierarchical namespaces, with directories
+            containing zero to many files. In unix-based filesystems, both 
+            files and directories are represented as inodes. A filesystem
+            hierarchy can be represented as a directed acyclic graph (DAG), when
+            symbolic links are resolved.
+            
+            We ensure deadlock freedom, by ensuring that all transactions lock
+            inodes in a consistent order, see <xref linkend="deadlock-cycle"/>. 
+            The consistent order is defined by the filesystem's DAG: 
+            the appropriate read or write locks are taken at inodes, starting at 
+            the root and traversing directories in a depth-first order to the leftmost
+            leaf, continuing until either the rightmost leaf inode is reached or 
+            all the inode locks have been acquired for this transaction.
+            The locks are then held for the duration of the transaction. 
+            Locks are not upgraded within a transaction, see <xref linkend="deadlock-upgrade"/>. 
+            Since all transactions acquire locks in the same order, there are 
+            no cycles, and since locks are not upgraded, there will be no 
+            lock-upgrade deadlocks.
+            
+            Locks also need to be acquired on data-structures used by inodes, such
+            as blocks, replicas, leases, corrupted-blocks, etc. In HDFS, an inode for
+            a file contains a variable number of fix-sized blocks 
+            (typically 512 MB), where each block is typically replicated on 3
+            DataNodes. When operations are performed on inodes or a constituent
+            part of an inode, we first take a write lock on the
+            inode itself, ensuring no other transactions can concurrently access
+            that inode or its constituent parts.
+         </para>           
+    </sect1>
+
+    <sect1>                                
+        <title>Snapshot layer</title>
+        <para>
+            To improve the performance of our solution, we take a snapshot of
+            the database state required for a transaction at the start of filesystem operations, 
+            store and mutate that state locally at the NameNode, and then 
+            finally commit any changes to that state at the
+            end of the transaction, see <xref linkend="snapshot"/>. 
+            This approach reduces the number of round-trips
+            to the database, helping to improve database throughput.
+        </para>            
+        <example xml:id="snapshot">
+            <title>Snapshotting at NameNodes</title>
+            <programlisting linenumbering="numbered">
+init: snapshot.clear
+
+operation doOperation
+    tx.begin
+    doSnapshot()
+    performTask()
+    tx.commit
+
+operation doSnapshot
+    S = total_order_sort(op.X)
+    foreach x in S do
+        if x is a parent then level = x.parent_level_lock
+        else level = x.strongest_lock_type
+        tx.lockLevel(level)
+        snapshot &lt;-tx.find(x.query)
+    
+operation performTask
+    //Operation Body, accessing only state stored in the snapshot
+</programlisting>
+</example>
+<para>
+For some filesystem operations, the presented algorithm is not complete enough 
+to ensure a total order on acquiring resources. For example, there may be an inode y 
+for which x is parent directory, and a lock on x should be acquired to access y. 
+Since y is not always supplied in the operation parameter list (as is the case for
+many internal HDFS protocol messages) we need to first
+discover y before we can lock it. Only then, can we start the main transaction, 
+where we lock y before locking x (based on our agreed global order for acquiring locks). 
+We solve this problem by breaking the filesystem operation up into two transactions. In the 
+first transaction we do not mutate state, we only resolve resources that need to 
+be locked in the second transaction. In the second transaction, we first validate
+that the resources/state we resolved in the first transaction is still valid, and if
+so, we then perform the standard transaction, acquiring locks and taking a 
+snapshot of the data. If the state in the second transaction is no longer valid,
+we can retry the whole operation, beginning at the first transaction, see 
+<xref linkend="snapshot-multi"/>.
+</para>
+
+        <example xml:id="snapshot-multi">
+            <title>Snapshotting at NameNodes using Two Transactions</title>
+            <programlisting linenumbering="numbered">
+init: snapshot.clear, restart = true, try = 0
+
+operation doOperation
+    while restart and try &lt; 3
+        restart = false
+        try = try + 1
+        if op.should_resolve_parent then
+            tx1.begin
+            resolve_parent(op.param)
+            tx1.commit
+
+        tx2.begin
+        doSnapshot()
+        if data from tx1 is not valid then 
+            tx.abort()
+            restart = true
+        else
+            performTask()
+            tx2.commit
+    end while	
+
+operation resolve_parent(y)
+    tx.lockLevel("read_commited")
+    tx.find(y.parent_query)
+
+operation doSnapshot
+	S = total_order_sort(op.X)
+	foreach x in S do
+		if x is a parent then level = x.parent_level_lock 
+                else level = x.strongest_lock_type
+		tx.lockLevel(level)
+		cache &lt;- tx.find(x.query)
+
+operation performTask
+	//Operation Body, accessing only state stored in the snapshot
+</programlisting>
+</example>
+
+    </sect1>
+
+    <sect1>                                
+        <title>Performance of Hop HDFS</title>
+        <para>We have recently re-written our code base to migrate to HDFS 2.2. 
+            Our code is now functionally complete, but it is too early to give read/write 
+            performance figures for our new implementation. 
+            Unpublished performance figures from an earlier prototype 
+            show that Hop-HDFS can scale to handle a similar number of read and write 
+            requests per unit time as Apache HDFS, but needing additional hardware
+            to do so. 
+            We have introduced a number of features to enable this high level of 
+            performance, including a snapshot layer at
+            NameNodes and row-level locking at the database level, rather than a system level lock
+            for update operations as is done in Apache HDFS. Our snapshotting layer involves a
+            transaction acquiring all resources it requires at the start of a primitive filesystem
+            operation, and performing local read/write operations on the snapshot copy, and then
+            finally committing or rolling back on transaction commit. </para>
+        <figure xml:id="hdfs-snapshot">
+            <title>Reduction in the number of DB roundtrips by snapshotting</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/hdfs-snapshot.png" scale="55" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        <para>
+            For improved performance, we have also implemented schema-aware partitioning of metadata across 
+            multiple hosts, ensuring all data related to a single inode hashes
+            to the same host, and can be retrieved in a single network hop.
+            This involved partitioning tables by inode-id, and when a transaction
+            is started that involves a single inode, we give a hint to NDB, using 
+            the ClusterJ API, that the transaction should start on data node containing
+            the data for that inode.
+        </para>
+        <para>
+            One positive aspect of HopHDFS is that the amount of metadata that can be
+            supported is vastly increased over Apache HDFS, and it is much more easy to modify. 
+            In Apache HDFS, the NameNode is limited to the maximum size of the JVM heap for a single node,
+            which in practice is around 100GB. In NDB, there are existing clusters
+            of 2TB, and larger clusters are feasible. However, we have measured
+            an expansion in the amount of memory that we require of around 43 percent.
+            Our plan is to use this extra metadata for features such as block-level 
+            indexing, which will be very useful for BAM files used to store 
+            whole sequenced genomes, and also access control information for files.
+            The lack of access control in HDFS is one enterprise-level feature that
+            is preventing the use of HDFS in storing sensitive data, such as 
+            genomic data.
+        </para>
+    </sect1>    
+        
+    <sect1>
+        <title>Hop: Platform-as-a-Service support for HDFS</title>
+        <para>HDFS exists as just one part of the larger Hadoop ecosystem 
+            for the storage and parallel processing of big data. As you 
+            can see in <xref linkend="arch-stack"/>, our goal is to build an 
+            architecture where HDFS is the main layer for storage, YARN is used to 
+            manage the allocation of computational resources, and we support a 
+            workflow manager and workflow language for Bioinformatics (Cuneform) 
+            as data-intensive computing support for BiobankCloud. 
+            Platform-as-a-Service (Paas) support is required at all layers in our
+            system. Security and data sharing are not covered in this diagram, as
+            they will be integrated in future phases of the project.</para>
+
+        <figure xml:id="arch-stack">
+            <title>Hop architecture</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/arch-stack.png" scale="55" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>    
+        <orderedlist>
+<!--            <listitem>
+                <para>
+                    <emphasis>Hop File System (Hop-FS)</emphasis>
+                    At the bottom layer of big data stack is Hop-FS a distributed file system based on Hadoop Distributed File System (HDFS) <xref linkend="Borthakur2007"/>. We revisited relational 
+                    representation of metadata to remove limitation of single metadata server and single point of failure. Our File System solution can scale up to several tens 
+                    of nodes, while maintaining the consistency semantics for the filesystem. We store the metadata on a shared-nothing, in-memory, partitioned database by 
+                    maintaining the consistency of the metadata, while providing high performance. Hop-FS also guarantees freedom from deadlock and progress.
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <emphasis>MySQL Cluster</emphasis>
+                    MySQL Cluster is a higly scalable, real-time, ACID-complaint transactional database.
+                    Designed around a distributed, multi-master architecture with no single point of failure <xref linkend="Manual2010"/>. 
+                    MySQL Cluster's real-time design delivers predictable, milisecond response times with 
+                    the ability to service millions of operations per second. In the case of our data platform, it is
+                    used to handle and manage the state of our multi-NameNode solution of our architecture.                                    
+                </para>
+            </listitem>-->
+            <listitem>
+                <para>
+                    <emphasis>YARN</emphasis>
+                    Yarn (Yet Another Resource Negotiator) manages the allocation of 
+                    computation and memory resources to tasks in  
+                    Hadoop clusters <xref linkend="Vavilapalli2013"/>. 
+                    It supports many processing models, not just Map-Reduce, by separating the old JobTracker
+                    into a Resource Manager, a Scheduler and Application Master. 
+                    The Application Master has the flexibility to 
+                    accommodate heterogeneous processes by implementing a wrapper 
+                    for each kind of application that runs over YARN, so that 
+                    the application itself manages processing resources allocated to it. 
+                    This enables the user  to process data intensive task like MapReduce jobs 
+                    or, in the BiobankCloud, to run a bioinformatics workflow engine 
+                    that makes use of YARN to handle and negotiate the 
+                    scheduling of its jobs.                                 
+                </para>
+            </listitem>
+            <listitem>
+                <para>
+                    <emphasis>Workflow Engine</emphasis>
+                    On top of YARN, the BiobankCloud workflow engine parses bioinformatic workflows 
+                    written in Cuneform into an execution model of arbitrary tasks. 
+                    For each task, it asks YARN for at least one container, 
+                    then for each container allocated task based on  the scheduling policy 
+                    it stages in data into HDFS, launches the task and stages out the result,
+                    if needed. The workflow engine and language are being developed
+                    by Humboldt University as part of the BiobankCloud project.
+                </para>
+            </listitem>
+        </orderedlist>
+
+        <para>
+        <emphasis>Hop PaaS</emphasis>
+        </para>
+        <para>Our PaaS for HDFS, as well as YARN and the Workflow Engine,
+            supports the automated deployment of a Hop cluster on Amazon Cloud, 
+            Open Stack or a bare metal cluster. We call it
+            Hadoop Open Platform-as-a-Service, or <emphasis>Hop</emphasis> for short, as it is
+            <emphasis>open</emphasis> - designed to be deployable on any cloud platform
+            or a bare-metal environment, not just those we currently support. 
+            Hop consists of a set of frameworks and libraries that we use to 
+            support the automated deploymented a Hadoop cluster from a website or
+            the command-line. The main technologies we have built our prototype PaaS
+            on are Chef and JClouds, but we are unifying all these technologies in 
+            an API based on a YAML that can be used to define a cluster that is
+            to be deployed, see <xref linkend="arch-deploy"/>. 
+            The other technologies we currently use are BitTorrent 
+            for improving the download speeds of installation binaries and virtual 
+            machine instances (AMIs in AWS) to pre-load software onto virtual machines.
+            The Hop Paas API (or YAML API) can currently be accessed by a 
+            Dashboard application that we have built to manage and adminster Hop clusters
+            , see <xref linkend="arch-helper"/>.
+        </para>
+        <figure xml:id="arch-deploy">
+            <title>Deploying a Hop cluster from our Portal Website</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/arch-deploy.png" scale="40" align="center"/>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        
+        <para> 
+            <figure xml:id="arch-helper">
+                <title>Hop PaaS API</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/arch-layers.png" scale="40" align="center"></imagedata>
+                    </imageobject>
+<!--                    <caption>
+                        <para>Hop PaaS API</para>
+                    </caption>-->
+                </mediaobject>
+            </figure>
+            <orderedlist>
+                <listitem>
+                    <para>
+                        <emphasis>YAML</emphasis>
+                        YAML (YAML Ain't  Markup Language) is markup language which takes concepts from
+                        programming languages such as C, Perl and Python, and ideas from XML. 
+                        We use YAML to define the cloud provider, the set of hosts and the services that will be installed on 
+                        those hosts, together making up a single cluster. This way, we can define a whole cluster
+                        in a single file, enabling easier management of clusters and even the sharing of
+                        cluster definitions.
+                        YAML syntax allows easy mappings of common data types found in high level languages like list, 
+                        associative arrays and scalar. It makes it suitable for tasks where humans are likely to
+                        view or edit data structures, such as configuration files or in our case, cluster
+                        definition files. Additionally, we make use of the open source parser SnakeYAML to parse
+                        the contents of our cluster definition files. The SnakeYAML parser transforms the given cluster 
+                        definition into consecutive stages such as defining security groups, virtual machine 
+                        allocation, bittorent, installation, validation and retry.
+                        An example of a simple cluster definition is given in <xref linkend="example-cluster-defn"/>. 
+                        The YAML file defines a cluster consisting of 6 nodes,
+                        with MySQL Cluster running exclusively on 2 nodes, Hadoop running exclusively on 3 nodes, and
+                        another node running both MySQL Cluster and Hadoop services. The example uses AWS as the cloud
+                        provider and default values for the AWS image, instanceType and region (shown later in Chapter 5). 
+                        There are many other parameters that can be overriden. 
+                        Our services map directly onto chef recipes for installing the services. 
+                        We are developing a model for explicitly handling recipe dependencies 
+                        in chef, so that dependent services such as Java don't need 
+                        to be explicitly defined as services in this cluster definition file.
+                            
+                        <example xml:id="example-cluster-defn">
+                            <title>Example Cluster Definition in Hop</title>
+                            <programlisting>
+name: simpleCluster                 
+
+provider:
+  name: aws-ec2
+
+nodes:
+- services: [ndb::dn]
+  number: 2
+
+- services: [ndb::mgm, ndb::mysqld, hop::namenode]
+  number: 1
+
+- services: [hop::namenode, hop::resourcemanager] 
+  number: 1
+
+- services: [hop::datanode, hop::nodemanager]
+  number: 2                                
+                            </programlisting>
+                        </example>
+                            
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Apache JClouds</emphasis>
+                        Apache JClouds is an open source multi-cloud api which allows us
+                        to write reusable code for creating, destroying, and bootstrapping virtual machines (VMs)
+                        on different cloud providers. The same code can be configured 
+                        to work with Amazon, OpenStack, Azure, and Rackspace VMs,
+                        and 26 other cloud providers. Through JClouds API, we can 
+                        deploy and port Hop to different cloud providers. 
+                        Hop parses cluster definition files, producing
+                        code that executes JCloud API calls to create, destroy and 
+                        bootstrap VMs.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Chef</emphasis>
+                        Chef is a systems infrastructure and configuration framework 
+                        that automates the deployment of applications to any 
+                        physical, virtual or cloud location. 
+                        When we create virtual machines (VMs) using JClouds,
+                        we receive information about the VM's IP address from the cloud provider 
+                        that we use to open a ssh connection to the machine and install the Chef client. 
+                        That is, JClouds installs chef during the bootstrap phase, 
+                        and once the chef client is installed on a host, 
+                        we can execute <emphasis>chef recipes</emphasis>
+                        to install software on the target host.
+                        The chef-client parses and executes a series of abstract definitions 
+                        (defined as recipes inside cookbooks) written in Ruby to install
+                        software on a host. With each definition, we describe 
+                        how a specific service should be installed and configured.
+                        The chef-client applies these definitions to deploy and 
+                        configure applications as specified. In most of the cases, 
+                        it is simple enough to let chef-client know which cookbooks and recipes
+                        it needs to apply, although recipes can be customized
+                        by users through parameterization. Although a Chef Server
+                        can be deployed to manage the chef clients, we instead use 
+                        simple python agents installed at hosts and our Dashboard application
+                        to manage clients. Our chef clients install recipes using 
+                        chef-solo from their local filesystem, 
+                        instead of downloading recipes from the Chef Server.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>BitTorrent and VMIs</emphasis>
+                        Chef recipse contain instructions for how to download
+                        and install software. However, some binaries are quite
+                        large, and if a large number of hosts (10s or 100s) attempt
+                        to download the same software package from the same Http
+                        Server at the same time, it can lead to congestion and
+                        slow deployment times. To handle this problem, we
+                        provide two solutions: firstly, when creating a VM image (VMI),
+                        you can specify an image that already has the software
+                        pre-installed. In AWS, this leads to fast startup times, but users
+                        lose the ability to parameterize chef recipes. In OpenStack, however,
+                        nodes all download the VMI from a Glance Http Server, so 
+                        we are back to the problem of slow download times
+                        due to overloading a single server.
+                        The other option we provide is to have nodes run a bittorent 
+                        server on our Dashboard to distribute binaries among clients.
+                        The Dashboard host becomes the seeder, and all clients contribute
+                        their upload bandwidth in sharing the binaries with one another.
+                        When the binaries are downloaded, the chef recipe can be executed,
+                        configuring the software and skipping over the step of downloading the binaries. 
+                        If there is a failure in the Bittorrent step, the chef recipe can download the
+                        binaries using the traditional Http server method. 
+                    </para>
+                </listitem>
+            </orderedlist>
+        </para>
+    </sect1>
+    
+    <bibliography>
+        <title>References</title>
+        
+        <bibliodiv>
+            <biblioentry xml:id="Vavilapalli2013">
+                <abbrev>1</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Vinod Kumar</firstname>
+                        <surname>Vavilapalli</surname>
+                    </author>
+                    <author>
+                        <firstname>Arun C</firstname>
+                        <surname>Murthy</surname>
+                    </author>
+                    <author>
+                        <firstname>Chris</firstname>
+                        <surname>Douglas</surname>
+                    </author>
+                    <author>
+                        <firstname>Sharad</firstname>
+                        <surname>Agarwal</surname>
+                    </author>
+                    <author>
+                        <firstname>Mahadev</firstname>
+                        <surname>Konar</surname>
+                    </author>
+                    <author>
+                        <firstname>Robert</firstname>
+                        <surname>Evans</surname>
+                    </author>
+                    <author>
+                        <firstname>Thomas</firstname>
+                        <surname>Graves</surname>
+                    </author>
+                    <author>
+                        <firstname>Jason</firstname>
+                        <surname>Lowe</surname>
+                    </author>
+                    <author>
+                        <firstname>Hitesh</firstname>
+                        <surname>Shah</surname>
+                    </author>
+                    <author>
+                        <firstname>Siddharth</firstname>
+                        <surname>Seth</surname>
+                    </author>
+                    <author>
+                        <firstname>Bikas</firstname>
+                        <surname>Saha</surname>
+                    </author>
+                    <author>
+                        <firstname>Carlo</firstname>
+                        <surname>Curino</surname>
+                    </author>
+                    <author>
+                        <firstname>Owen</firstname>
+                        <surname>O&#8217;Malley</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Radia</surname>
+                    </author>
+                    <author>
+                        <firstname>Benjamin</firstname>
+                        <surname>Reed</surname>
+                    </author>
+                    <author>
+                        <firstname>Eric</firstname>
+                        <surname>Baldeschwieler</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Apache Hadoop YARN: Yet Another Resource Negotiator</citetitle>
+                <citetitle pubwork="journal">2013 ACM Symposium on Cloud Computing (SoCC 2013)</citetitle>
+                <pubdate>2013</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://hortonworks.com/blog/apache&#45;hadoop&#45;yarn&#45;wins&#45;best&#45;paper&#45;award&#45;at&#45;socc&#45;2013/">http://hortonworks.com/blog/apache&#45;hadoop&#45;yarn&#45;wins&#45;best&#45;paper&#45;award&#45;at&#45;socc&#45;2013/</ulink>
+                </bibliomisc>
+            </biblioentry>
+            <biblioentry xml:id="berenson1995critique">
+                <abbrev>2</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Hal</firstname>
+                        <surname>Berenson</surname>
+                    </author>
+                    <author>
+                        <firstname>Phil</firstname>
+                        <surname>Bernstein</surname>
+                    </author>
+                    <author>
+                        <firstname>Jim</firstname>
+                        <surname>Gray</surname>
+                    </author>
+                    <author>
+                        <firstname>Jim</firstname>
+                        <surname>Melton</surname>
+                    </author>
+                    <author>
+                        <firstname>Elizabeth</firstname>
+                        <surname>O&#39;Neil</surname>
+                    </author>
+                    <author>
+                        <firstname>Patrick</firstname>
+                        <surname>O&#39;Neil</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">A critique of ANSI SQL isolation levels</citetitle>
+                <citetitle pubwork="journal">ACM SIGMOD Record</citetitle>
+                <publisher>
+                    <publishername>ACM</publishername>
+                </publisher>
+                <volumenum>24</volumenum> 
+                <artpagenums>1&#x2013;10</artpagenums> 
+                <pubdate>1995</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="Borthakur2007">
+                <abbrev>3</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>D</firstname>
+                        <surname>Borthakur</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The hadoop distributed file system: Architecture and design</citetitle>
+                <citetitle pubwork="journal">Hadoop Project Website</citetitle>
+                <artpagenums>1&#x2013;14</artpagenums> 
+                <pubdate>2007</pubdate>  
+<!--                <bibliomisc>
+                    <ulink url="http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf">http://cloudcomputing.googlecode.com/svn/trunk/&#63;&#63;/Hadoop\&#95;0.18\&#95;doc/hdfs\&#95;design.pdf</ulink>
+                </bibliomisc>-->
+                <abstract>
+                    <para>The Hadoop Distributed File System (HDFS) is a distributed file system designed to run on commodity hardware. It has many similarities with existing distributed file systems. However&#44; the differences from other distributed file systems are significant. HDFS is highly fault&#45;tolerant and is designed to be deployed on low&#45;cost hardware. HDFS provides high throughput access to application data and is suitable for applications that have large data sets. HDFS relaxes a few POSIX requirements to enable streaming access to file system data. HDFS was originally built as infrastructure for the Apache Nutch web search engine project. HDFS is part of the Apache Hadoop Core project. The project URL is http://hadoop.apache.org/core/.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Borthakur2011">
+                <abbrev>4</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Dhruba</firstname>
+                        <surname>Borthakur</surname>
+                    </author>
+                    <author>
+                        <firstname>Samuel</firstname>
+                        <surname>Rash</surname>
+                    </author>
+                    <author>
+                        <firstname>Rodrigo</firstname>
+                        <surname>Schmidt</surname>
+                    </author>
+                    <author>
+                        <firstname>Amitanand</firstname>
+                        <surname>Aiyer</surname>
+                    </author>
+                    <author>
+                        <firstname>Jonathan</firstname>
+                        <surname>Gray</surname>
+                    </author>
+                    <author>
+                        <firstname>Joydeep Sen</firstname>
+                        <surname>Sarma</surname>
+                    </author>
+                    <author>
+                        <firstname>Kannan</firstname>
+                        <surname>Muthukkaruppan</surname>
+                    </author>
+                    <author>
+                        <firstname>Nicolas</firstname>
+                        <surname>Spiegelberg</surname>
+                    </author>
+                    <author>
+                        <firstname>Hairong</firstname>
+                        <surname>Kuang</surname>
+                    </author>
+                    <author>
+                        <firstname>Karthik</firstname>
+                        <surname>Ranganathan</surname>
+                    </author>
+                    <author>
+                        <firstname>Dmytro</firstname>
+                        <surname>Molkov</surname>
+                    </author>
+                    <author>
+                        <firstname>Aravind</firstname>
+                        <surname>Menon</surname>
+                    </author> 
+
+                </authorgroup>
+                <citetitle pubwork="article">Apache hadoop goes realtime at Facebook</citetitle>
+                <artpagenums>1071</artpagenums> 
+                <pubdate>2011</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://dl.acm.org/citation.cfm&#63;id=1989323.1989438">http://dl.acm.org/citation.cfm&#63;id=1989323.1989438</ulink>
+                </bibliomisc>
+                <abstract>
+                    <para>Facebook recently deployed Facebook Messages&#44; its first ever user&#45;facing application built on the Apache Hadoop platform. Apache HBase is a database&#45;like layer built on Hadoop designed to support billions of messages per day. This paper describes the reasons why Facebook chose Hadoop and HBase over other systems such as Apache Cassandra and Voldemort and discusses the application&#39;s requirements for consistency&#44; availability&#44; partition tolerance&#44; data model and scalability. We explore the enhancements made to Hadoop to make it a more effective realtime system&#44; the tradeoffs we made while configuring the system&#44; and how this solution has significant advantages over the sharded MySQL database scheme used in other applications at Facebook and many other web&#45;scale companies. We discuss the motivations behind our design choices&#44; the challenges that we face in day&#45;to&#45;day operations&#44; and future capabilities and improvements still under development. We offer these observations on the deployment as a model for other companies who are contemplating a Hadoop&#45;based solution over traditional sharded RDBMS deployments.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Fetterly2011">
+                <abbrev>5</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Dennis</firstname>
+                        <surname>Fetterly</surname>
+                    </author>
+                    <author>
+                        <firstname>Maya</firstname>
+                        <surname>Haridasan</surname>
+                    </author>
+                    <author>
+                        <firstname>Michael</firstname>
+                        <surname>Isard</surname>
+                    </author>
+                    <author>
+                        <firstname>Swaminathan</firstname>
+                        <surname>Sundararaman</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">TidyFS: a simple and small distributed file system</citetitle>
+                <artpagenums>34</artpagenums> 
+                <pubdate>2011</pubdate>  
+                <bibliomisc>
+                    <ulink url="http://dl.acm.org/citation.cfm&#63;id=2002181.2002215">http://dl.acm.org/citation.cfm&#63;id=2002181.2002215</ulink>
+                </bibliomisc>
+                <abstract>
+                    <para>In recent years&#44; there has been an explosion of interest in computing using clusters of commodity&#44; shared nothing computers. In this paper&#44; we describe the design of TidyFS&#44; a simple and small distributed file system that provides the abstractions necessary for data parallel computations on clusters. Similar to other large&#45;scale distributed file systems such as the Google File System (GFS) and the Hadoop Distributed File System (HDFS)&#44; the prototypical workload for this file system is high&#45;throughput&#44; write&#45;once&#44; sequential I/O. The primary user visible unit of storage in this system is the stream&#44; which is a sequence of partitions distributed across the local storage of machines in the cluster. The mapping of streams to sequences of partitions is performed by the TidyFS metadata server&#44; which also tracks the locations of each of the partition replicas in the system&#44; the state of each storage machine in the cluster&#44; and per&#45;stream and per&#45;partition attributes. The metadata server is implemented as a state machine and replicated for scalability and fault tolerance. In addition to the metadata server&#44; the system is comprised of a graphical user interface which enables users and administrators to view the state of the system and a small service installed on each cluster machine responsible for replication&#44; validation&#44; and garbage collection. Clients read and write partitions directly to get the best possible I/O performance.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Gilbert2002">
+                <abbrev>6</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Seth</firstname>
+                        <surname>Gilbert</surname>
+                    </author>
+                    <author>
+                        <firstname>Nancy</firstname>
+                        <surname>Lynch</surname>
+                    </author> 
+
+                </authorgroup>
+                <citetitle pubwork="article">Brewer&#39;s conjecture and the feasibility of consistent&#44; available&#44; partition&#45;tolerant web services</citetitle>
+                <volumenum>33</volumenum> 
+                <artpagenums>51</artpagenums> 
+                <pubdate>2002</pubdate>  
+                <abstract>
+                    <para>When designing distributed web services&#44; there are three properties that are commonly desired: consistency&#44; availability&#44; and partition tolerance. It is impossible to achieve all three. In this note&#44; we prove this conjecture in the asynchronous network model&#44; and then discuss solutions to this dilemma in the partially synchronous model.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="Gobioff2003">
+                <abbrev>7</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Howard</firstname>
+                        <surname>Gobioff</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Ghemawat</surname>
+                    </author>
+                    <author>
+                        <firstname>Shun&#45;Tak</firstname>
+                        <surname>Leung</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The Google file system</citetitle>
+                <volumenum>37</volumenum> 
+                <artpagenums>29</artpagenums> 
+                <pubdate>2003</pubdate>  
+                <abstract>
+                    <para>We have designed and implemented the Google File System&#44; a scalable distributed file system for large distributed data&#45;intensive applications. It provides fault tolerance while running on inexpensive commodity hardware&#44; and it delivers high aggregate performance to a large number of clients. While sharing many of the same goals as previous distributed file systems&#44; our design has been driven by observations of our application workloads and technological environment&#44; both current and anticipated&#44; that reflect a marked departure from some earlier file system assumptions. This has led us to reexamine traditional choices and explore radically different design points. The file system has successfully met our storage needs. It is widely deployed within Google as the storage platform for the generation and processing of data used by our service as well as research and development efforts that require large data sets. The largest cluster to date provides hundreds of terabytes of storage across thousands of disks on over a thousand machines&#44; and it is concurrently accessed by hundreds of clients. In this paper&#44; we present file system interface extensions designed to support distributed applications&#44; discuss many aspects of our design&#44; and report measurements from both micro&#45;benchmarks and real world use.
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="gunawi2008sqck">
+                <abbrev>8</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Haryadi S</firstname>
+                        <surname>Gunawi</surname>
+                    </author>
+                    <author>
+                        <firstname>Abhishek</firstname>
+                        <surname>Rajimwale</surname>
+                    </author>
+                    <author>
+                        <firstname>Andrea C</firstname>
+                        <surname>Arpaci&#45;Dusseau</surname>
+                    </author>
+                    <author>
+                        <firstname>Remzi H</firstname>
+                        <surname>Arpaci&#45;Dusseau</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">SQCK: A Declarative File System Checker.</citetitle>
+                <artpagenums>131&#x2013;146</artpagenums> 
+                <pubdate>2008</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="J.GrayR.LorieG.Putzolu1976">
+                <abbrev>9</abbrev>
+                <authorgroup>
+                    <author>
+                        <surname>J. Gray&#44; R. Lorie&#44; G. Putzolu</surname>
+                    </author>
+                    <author>
+                        <firstname>I.</firstname>
+                        <surname>Traiger</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Granularity of Locks and Degrees of Consistency in a Shared Database. In Modeling in Data Base Management Systems</citetitle>
+                <artpagenums>365&#x2013;394</artpagenums> 
+                <pubdate>1976</pubdate>  
+            </biblioentry>
+<!--            <biblioentry xml:id="lamport1998part">
+                <abbrev>10</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Leslie</firstname>
+                        <surname>Lamport</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">The part&#45;time parliament</citetitle>
+                <citetitle pubwork="journal">ACM Transactions on Computer Systems (TOCS)</citetitle>
+                <publisher>
+                    <publishername>ACM</publishername>
+                </publisher>
+                <volumenum>16</volumenum> 
+                <artpagenums>133&#x2013;169</artpagenums> 
+                <pubdate>1998</pubdate>  
+            </biblioentry>-->
+            <biblioentry xml:id="Manual2010">
+                <abbrev>11</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Mysql Reference</firstname>
+                        <surname>Manual</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">MySQL 5.0 Reference Manual</citetitle>
+                <citetitle pubwork="journal">Syntax</citetitle>
+                <artpagenums>3079</artpagenums> 
+                <pubdate>2010</pubdate>  
+                <abstract>
+                    <para>This is the MySQL Reference Manual. It documents MySQL 5.0 through 5.0.93. This manual is for MySQL Enterprise Server&#44; our commercial offering&#44; and for MySQL Community Server. Sections that do not apply for MySQL Enterprise Server users are marked: This section does not apply to MySQL Enterprise Server users. Sections that do not apply to MySQL Community Server users are marked: This section does not apply to MySQL Community Server users. MySQL 5.0 FeaturesThis manual describes features that are not included in every edition of MySQL 5.0 and such features may not be included in the edition of MySQL 5.0 licensed to you. If you have any questions about the fea&#45; tures included in your edition of MySQL 5.0&#44; refer to your MySQL 5.0 license agreement or contact your Oracle rep&#45; resentative. Document generated on: 2011&#45;03&#45;27 (revision: 25583) End of Product Lifecycle Active development for MySQL Database S
+                    </para>
+                </abstract>
+            </biblioentry>
+            <biblioentry xml:id="novik2006peer">
+                <abbrev>12</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Lev</firstname>
+                        <surname>Novik</surname>
+                    </author>
+                    <author>
+                        <firstname>Irena</firstname>
+                        <surname>Hudis</surname>
+                    </author>
+                    <author>
+                        <firstname>Douglas B</firstname>
+                        <surname>Terry</surname>
+                    </author>
+                    <author>
+                        <firstname>Sanjay</firstname>
+                        <surname>Anand</surname>
+                    </author>
+                    <author>
+                        <firstname>Vivek</firstname>
+                        <surname>Jhaveri</surname>
+                    </author>
+                    <author>
+                        <firstname>Ashish</firstname>
+                        <surname>Shah</surname>
+                    </author>
+                    <author>
+                        <firstname>Yunxin</firstname>
+                        <surname>Wu</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Peer&#45;to&#45;peer replication in WinFS</citetitle>
+                <citetitle pubwork="journal">Technical ReportMSR&#45;TR&#45;2006&#45;78&#44; Microsoft Research</citetitle>
+                <pubdate>2006</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="shvachko2010hdfs">
+                <abbrev>13</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Konstantin V</firstname>
+                        <surname>Shvachko</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">HDFS Scalability: The limits to growth</citetitle>
+                <citetitle pubwork="journal">login</citetitle>
+                <volumenum>35</volumenum> 
+                <artpagenums>6&#x2013;16</artpagenums> 
+                <pubdate>2010</pubdate>  
+            </biblioentry>
+            <biblioentry xml:id="wang2009hadoop">
+                <abbrev>14</abbrev>
+                <authorgroup>
+                    <author>
+                        <firstname>Feng</firstname>
+                        <surname>Wang</surname>
+                    </author>
+                    <author>
+                        <firstname>Jie</firstname>
+                        <surname>Qiu</surname>
+                    </author>
+                    <author>
+                        <firstname>Jie</firstname>
+                        <surname>Yang</surname>
+                    </author>
+                    <author>
+                        <firstname>Bo</firstname>
+                        <surname>Dong</surname>
+                    </author>
+                    <author>
+                        <firstname>Xinhui</firstname>
+                        <surname>Li</surname>
+                    </author>
+                    <author>
+                        <firstname>Ying</firstname>
+                        <surname>Li</surname>
+                    </author> 
+                </authorgroup>
+                <citetitle pubwork="article">Hadoop high availability through metadata replication</citetitle>
+                <artpagenums>37&#x2013;44</artpagenums> 
+                <pubdate>2009</pubdate>  
+            </biblioentry>
+        </bibliodiv>
+    </bibliography>
+</chapter>

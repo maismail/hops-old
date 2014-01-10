@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/1999/xhtml"
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="ch02">
+    <title>Hop Web Portal</title>
+
+    <para>This section describes how to setup a Hop cluster on either a cloud provider
+        or a baremetal cluster from our website, Hop web portal. 
+        Hop web portal is a web application where users can register, enter the credentials 
+        for their cloud provider (or ssh keys for their cluster) can from there, 
+        they can launch the Hop Dashboard on their target infrastructure. 
+        The Hop Dashboard is a web application that can be used to provision and 
+        configure the rest of the cluster. Hop Dashboard provides a
+        centralized end-to-end management and monitoring application for Hop clusters. </para>
+
+
+    <figure xml:id="portal-login">
+        <title>Hop Portal Webiste</title>
+        <mediaobject>
+            <imageobject>
+                <imagedata fileref="media/portal.png" align="center" scale="50"/>
+            </imageobject>
+            <caption>
+                <para>https://snurran.sics.se:8181/hop-portal</para></caption>
+        </mediaobject>
+    </figure>   
+    <sect1>
+        <title>Prerequisites</title>
+        <para>The following platforms are currently supported: <itemizedlist>
+                <listitem>
+                    <para>
+                        <emphasis>Amazon Web Services:</emphasis> You require an EC2 account
+                        credentials. The minimum recommended instance type for our Dashboard is 
+                        m1.large type. Other nodes may have m1.medium or even m1.small type.</para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>OpenStack:</emphasis> You require credentials and 
+                        configuration parameters to connect to an OpenStack end-point. 
+                        The end-point must be reachable from the public Internet.
+                        The recommended instance to use in OpenStack infrastructure 
+                        should be the equivalent to a m1.large instance type or greater.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Baremetal Cluster:</emphasis> For deployment on
+                        physical hosts, you require openssh public and private keys
+                        for a user with sudo access to the hosts
+                        where you will deploy the cluster. The dashboard uses ssh
+                        to install chef on the hosts.</para>
+                </listitem>
+            </itemizedlist>
+        Currently, the only platform we support is Ubuntu 12.04.
+        </para>
+    </sect1>
+    <sect1>
+        <title>Installing the Hop Dashboard</title>
+        <para>Intalling Hop Dashboard through the Portal is quite simple and takes a couple of
+            minutes to deploy. Here you may find instructions on how to deploy the dashboard on AWS,
+            OpenStack and Baremetal Machine.
+        </para>
+                        <sect2>
+                        <title>Amazon EC2</title> 
+                                    <figure xml:id="portal-aws">
+                                        <title>AWS Credentials</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-AWS.png"
+                                                  align="center" scale="60"/>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure>
+                        
+                        To install the dashboard in Amazon EC2 follow these steps: 
+                        <itemizedlist>
+                            <listitem>
+                                <para> Login into the HOP Portal with your user name and password.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para> Select from the providers option in the maintoolbar, the
+                                    Amazon EC2 option. Enter the following information in the new form<itemizedlist>
+                                        <listitem>
+                                            <para>Dashboard credentials: admin's username and
+                                                password in order to access your newly created
+                                                dashboard. </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>EC2 credentials which include the Access Key id
+                                                from you AWS account with its related Secret key.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>Instance configuration parameters used to deploy a
+                                                virtual machine in AWS.<orderedlist>
+                                                  <listitem>
+                                                  <para>Security group where the machine will be
+                                                  deployed. If it does not exist, then a new
+                                                  security group will be created automatically.
+                                                  </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>The hardware ID of the instance type we want
+                                                  to use from Amazon EC2. For example, m1.small,
+                                                  t1.micro. The recommended instance type is
+                                                  m1.large. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Image ID which includes the region of that
+                                                  image and the <emphasis>ami id</emphasis> tag. We
+                                                  only support Ubuntu based images. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Location ID of the region you want to deploy
+                                                  the dashboard. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Selecting the option to authorize the public
+                                                  key will open a new option dialog box were you can
+                                                  insert your public key. By default we generate
+                                                  random key pairs for the machines through EC2 key
+                                                  pair service, and it is not possible to access the
+                                                  machines internally without this option. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Selecting the override login user, will
+                                                  override the default user for Ubuntu AMI images
+                                                  with the login user of your choice. This is
+                                                  necessary if you use custom Ubuntu images which
+                                                  are not one of the Ubuntu images that canonical
+                                                  offer in AWS by default. </para>
+                                                  </listitem>
+                                                </orderedlist>
+                                            </para>
+                                        </listitem>
+                                    </itemizedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>After filling up the form, press the Launch Instance button.
+                                    The whole process takes 10-15 minutes. After the deployment you
+                                    will receive a notification showing the URL of the newly
+                                    deployed Hop Dashboard. To login the dashboard, use the
+                                    credentials you specified previously in the web portal.</para>
+                            </listitem>
+                        </itemizedlist>
+
+                        </sect2>
+                    <sect2>
+                        <title>OpenStack</title> 
+                                    <figure xml:id="portal-openstack">
+                                        <title>OpenStack Credentials</title>
+                                        <mediaobject>
+                                            <imageobject>
+                                                <imagedata fileref="media/portal-OpenStack.png"
+                                                  align="center" scale="60"/>
+                                            </imageobject>
+                                        </mediaobject>
+                                    </figure>
+                        
+                    <note>
+                        <title>IP pools in OpenStack</title>
+                        <para>It is necessary that you have allocated at least 1 public IP to the
+                            project. During the deployment phase the portal will query the OpenStack
+                            project and link the public ip to the VM. </para>
+                    </note>
+                        For deployment in OpenStack cloud follow these steps. 
+                        <itemizedlist>
+                            <listitem>
+                                <para> Login into the Hop Portal with your user name and password.</para>
+                            </listitem>
+                            <listitem>
+                                <para> Select from the providers the OpenStack option. A new form
+                                    will be generated. <itemizedlist>
+                                        <listitem>
+                                            <para>Dashboard credentials: here you specify the admin
+                                                username and password for the new dashboad. </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para>OpenStack credentials: the user name and password
+                                                to access the OpenStack project. The username should
+                                                be a concatenation of the OpenStack project name and
+                                                the user for that project. For example
+                                                "projectName:user". Also you should indicate the url
+                                                of your OpenStack Nova end-point in order to send
+                                                the requests to your OpenStack infrastructure.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para> Configuration parameters that are used to deploy
+                                                a virtual machine in OpenStack: <orderedlist>
+                                                  <listitem>
+                                                  <para>Security group where the machine will be
+                                                  deployed. If it does not exist, we will
+                                                  automatically create a security group and open the
+                                                  ports needed for the application. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>The hardware ID of the instance type we want
+                                                  to commission in OpenStack cloud. This is a number
+                                                  which corresponds to the type of instance you want
+                                                  to deploy and is supported by your OpenStack
+                                                  infrastructure. We recommended using a
+                                                  configuration similar to a m1.large in EC2.
+                                                  </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>An Image ID image located in the openstack
+                                                  project. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Location ID identifies the dashboard in the
+                                                  OpenStack cluster.  </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Selecting this option to authorize the
+                                                  public key based access. It will open a new dialog
+                                                  box were you can insert your desired public key.
+                                                  By default we generate random key pairs for the
+                                                  machine through OpenStack key pair service, and it
+                                                  is not possible to access the machine internally
+                                                  without selecting this option. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>Selecting the override login user: This is
+                                                  necessary for OpenStack if you are using a custom
+                                                  Ubuntu image. </para>
+                                                  </listitem>
+                                                </orderedlist>
+                                            </para>
+                                        </listitem>
+                                    </itemizedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>After filling up the form, press the Launch Instance button.
+                                    The whole process takes 10-15 minutes. After the deployment you
+                                    will receive a notification showing the URL of the newly
+                                    deployed Hop Dashboard. To login the dashboard, use the
+                                    credentials you specified previously in the web portal </para>
+                            </listitem>
+                        </itemizedlist>
+                </sect2>
+                <sect2>
+                    <title>Baremetal Hosts</title>
+                        <figure xml:id="portal-baremetal">
+                            <title>Baremetal Credentials</title>
+                            <mediaobject>
+                                <imageobject>
+                                    <imagedata fileref="media/portal-Baremetal.png"
+                                      align="center" scale="60"/>
+                                </imageobject>
+                            </mediaobject>
+                        </figure>
+                        To deploy the dashboard on a BareMetal hosts cluster follow these simple steps: <itemizedlist>
+                            <listitem>
+                                <para> Login into the Hop Portal with your user name and password.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para> In the new page, select BareMetal from the providers list. A
+                                    form will be generated where you need to fill in the following: <itemizedlist>
+                                        <listitem>
+                                            <para> Dashboard credentials: here you specify the admin
+                                                username and password for the new dashboad. </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para> SSH credentials: includes the host address of the
+                                                machine we want to connect to and the private key.
+                                            </para>
+                                        </listitem>
+                                        <listitem>
+                                            <para> Additional parameters: <orderedlist>
+                                                  <listitem>
+                                                  <para> If you select the option to authorize a
+                                                  public key, it will open a new option were you can
+                                                  insert your desired public key to allow extra
+                                                  access to the machine. </para>
+                                                  </listitem>
+                                                  <listitem>
+                                                  <para>If you select the override login user, it will
+                                                  rename the sudo user to used to deploy the
+                                                  dashboard on the machine. </para>
+                                                  </listitem>
+                                                </orderedlist>
+                                            </para>
+                                        </listitem>
+                                    </itemizedlist>
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>After filling in the form, press the Launch Instance button.
+                                    The whole process takes 10-15 minutes. After the deployment you
+                                    will receive a notification showing the URL of the newly
+                                    deployed Hop Dashboard. To login the dashboard, use the
+                                    credentials you specified previously in the web portal. </para>
+                            </listitem>
+                        </itemizedlist>
+                </sect2>
+        </sect1>
+</chapter>

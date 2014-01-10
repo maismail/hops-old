@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book version="5.0" xmlns="http://docbook.org/ns/docbook"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:db="http://docbook.org/ns/docbook">
+    <!--info>
+        <contractnum>Project number: 317871</contractnum>
+        <contractsponsor>EU FP7 - BiobankCloud Project</contractsponsor>
+        <title>Hadoop Open Platform Userguide</title>-->
+        <!--        <authorgroup>
+            <author>
+                <personname>Jim Dowling</personname>
+            </author>
+            <author>
+                <personname>Salman Niazi</personname>
+            </author>
+            <author>
+                <personname>Kamal Hakimzadeh</personname>
+            </author>
+            <author>
+                <personname>Mahmoud Ismail</personname>
+            </author>
+            <author>
+                <personname>Alberto Lorente</personname>
+            </author>
+            <author>
+                <personname>Hamidzera Afzali</personname>
+            </author>
+        </authorgroup>
+        <volumenum>0.1</volumenum>
+        <orgname>Kungliga Tekniska Högskolan</orgname>
+        <edition>Hadoop Open Platform User Guide</edition>
+        <copyright>
+            <year>2013</year>
+            <holder>KTH</holder>
+        </copyright>
+        <legalnotice>
+            <para>Permission to use, copy, modify and distribute
+                this DocBook DTD and its accompanying documentation for any purpose and
+                without fee is hereby granted in perpetuity, provided that the above
+                copyright notice and this paragraph appear in all copies.
+            </para>
+        </legalnotice>>
+    
+    </info-->
+
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="architecture.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="run_vagrant.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="getting_started.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_dashboard.xml" />
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_paas_config.xml" />
+    <!--xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="launching_hop_cluster.xml" /-->
+    <xi:include xmlns:xi="http://www.w3.org/2001/XInclude" href="howto_hdfs.xml" />
+
+    <chapter>
+        <title>Conclusions</title>
+        <para>
+        In this document, we presented our highly available HDFS architecture. 
+        Our version of HDFS provides a new model for stateless NameNodes, with
+        metadata stored in highly available shared, transactional memory, implemented
+        using MySQL Cluster. We have solved problems related to leader election, 
+        maintaining consistency of the filesystem operations after migrating metadata
+        to a relational store, and snapshotting of database state to reduce the number
+        of database roundtrips, thus improving throughput.
+        We have also presented Hop (Hadoop Open Paas), our platform-as-a-service for
+        automating the deployment of clusters, as well as a language for describing
+        clusters. Finally, we included a userguide to get started using Hop.
+        </para>
+    </chapter>
+</book>

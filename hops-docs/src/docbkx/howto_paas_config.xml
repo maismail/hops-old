@@ -1,0 +1,434 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook"
+         xmlns:xlink="http://www.w3.org/1999/xlink"
+         xmlns:xi="http://www.w3.org/2001/XInclude"
+         xmlns:ns5="http://www.w3.org/2000/svg"
+         xmlns:ns4="http://www.w3.org/1998/Math/MathML"
+         xmlns:ns3="http://www.w3.org/1999/xhtml"
+         xmlns:db="http://docbook.org/ns/docbook"
+         xml:id="defining_a_cluster">
+    <title>Defining a Cluster</title>
+
+    <para>
+        Hops allows you to define a cluster in a single YAML file. A cluster
+        definition consists of a provider (cloud or bare-metal), a number of nodes and 
+        a set of services deployed on those nodes.
+        The benefit of having a cluster defined in a single file is that you can
+        now share it with others, who launch the same cluster or modify the file
+        and launch a changed version of your cluster, and you can edit it to 
+        reconfigure your cluster. 
+        </para>
+        <para>A cluster definition file consists of the following sections: 
+            <itemizedlist>
+                <listitem>[Global]</listitem>
+                <listitem>[Provider]</listitem>
+                <listitem>Nodes 
+                    <itemizedlist>
+                        <listitem>Services</listitem>
+                        <listitem>Number|Hosts</listitem>
+                    </itemizedlist>
+                </listitem>
+            </itemizedlist>
+
+         In the example cluster definition file presented in Chapter 1, we showed
+         a minimal cluster definition, that had some default values not specified
+            in the cluster definition file. There was no <emphasis>Global</emphasis>
+            section, and it wasn't stated where the implementations of the services
+            came from.
+            In <xref linkend="complete-cluster-defn"/>, we give the complete version
+            of the cluster definition file. We can see that by default, ssh, chef,
+            and collectd are installed on all nodes, and that the chef recipes for
+            installing the services are taken from https://github.com/hopstart/hop-chef.git.
+            Users can fork the chef recipes we provide,
+            customizing and storing them in their own git repository. Soon, we
+            will provide support for users specifying their own recipes as 
+       </para>                    
+       <para>                    
+            The file below also shows the full set of defaults for our AWS instances. Currently,
+            we only support compute instances. Each services section can be
+           further customized with a chefAtttributes section, containing parameters
+           for the chef recipes.
+       </para>                    
+                        <example xml:id="complete-cluster-defn">
+                            <title>Complete Example Cluster Definition in Hop</title>
+                            <programlisting>
+!!se.kth.dashboard.virtualization.clusterparser.Cluster
+name: simpleCompleteCluster                 
+
+global:
+    services: [ssh, chef, collectd]
+    authorizePorts: [22, 4343, 3321]
+    git-user: jdowling
+    git-repository: https://github.com/hopstart/hop-chef.git
+    git-key: /home/jdowling/.ssh/id_rsa
+
+provider:
+    name: aws-ec2
+    instanceType: m1.large
+    loginUser: ubuntu
+    image: eu-west-1/ami-35667941 
+    region: eu-west-1
+
+nodes:
+    - services: 
+      - ndb::dn
+      number: 2
+
+    - services: 
+      - ndb::mgm
+      number: 1
+
+    - services: 
+      - ndb::mysqld
+      - hop::namenode
+      number: 1
+
+    - services: 
+      - hop::namenode
+      - hop::resourcemanager
+      number: 1
+
+    - services: 
+      - hop::datanode
+      - hop::nodemanager
+      number: 2
+                            </programlisting>
+                        </example>
+
+
+        <para>
+       It is possible to take the above cluster definition and deploy the
+       same set of VMs and services on an OpenStack cluster. To do this,
+       we need to modify the Provider section.
+            <emphasis>Provider:</emphasis> You need to specify the infrastructure provider,
+            the image you want to use, the type of instance to request, 
+            and login credentials in case you are using custom images.
+
+       In the example below, we show how to change the provider section to 
+       prepare the cluster definition file to work for OpenStack.
+            <example>
+                <title>OpenStack provider</title>
+                <programlisting>
+provider:
+name: openstack-nova
+instanceType: 7
+loginUser: ubuntu
+image: 0190f9c4-d64e-4412-ab88-4f9fd1d7c2e3 
+region: RegionSICS
+                </programlisting>
+            </example>
+        </para>
+
+        <para>
+            We can also deploy the same cluster on bare-metal hosts in a cluster.
+            In this case, you need to provide the IP addresses of the machines 
+            where the services will be installed. Deploying on bare-metal 
+            requires specifying a new clusterparser (se.kth.dashboard.virtualization.clusterparser.Baremetal)
+            as well as removing the provider section, and 
+            specifying IP addresses in the services sections, instead of number
+            of nodes.
+        </para>
+            <example>
+                <title>Bare-metal cluster</title>
+            <programlisting>
+!!se.kth.dashboard.virtualization.clusterparser.Baremetal
+name: baremetal
+loginUser: ubuntu
+
+nodes:
+- services: 
+- ndb::dn
+hosts: 
+- 10.20.0.8 
+- 10.20.0.11
+
+- services: 
+- ndb::mgm
+hosts: 
+- 10.20.0.6
+
+- services: 
+- ndb::mysqld
+- hop::namenode
+hosts: 
+- 10.20.0.7
+
+- services: 
+- hop::namenode
+- hop::resourcemanager
+hosts: 
+- 10.20.0.12 
+- 10.20.0.14
+
+- services: 
+- hop::datanode
+- hop::nodemanager
+hosts: 
+- 10.20.0.16 
+- 10.20.0.17
+            </programlisting>
+            </example>
+
+
+    <sect1>
+        <title>Cluster Wizard</title>
+        <para>
+            In addition to being able to define a cluster in YAML, you can also 
+            generate a cluster using a wizard with the following these steps:
+            <orderedlist>
+                <listitem>
+                    <para>
+                        Press the create cluster button following the menu items:
+                        <menuchoice>
+                            <guimenu>Main Menu Bar</guimenu> 
+                            <guisubmenu>Manage Cluster</guisubmenu>
+                            <guimenuitem>Create cluster</guimenuitem>
+                        </menuchoice>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        A dialog appears allowing you to select which type of cluster you want to use:
+                        <itemizedlist>
+                            <listitem>
+                                <para>
+                                    <emphasis>Virtualized:</emphasis> Choose this option if you want to deploy
+                                    a cluster in Amazon EC2 or OpenStack.
+                                </para>
+                            </listitem>
+                            <listitem>
+                                <para>
+                                    <emphasis>Baremetal:</emphasis> Choose this option if you want to deploy
+                                    a cluster in physical machines.
+                                </para>
+                            </listitem>
+                        </itemizedlist>
+                        <para>
+                            <mediaobject>
+                                <imageobject>
+                                    <imagedata fileref="media/dash-clusterType.png"
+                                               align="center" scale="66"/>
+                                </imageobject>
+                            </mediaobject>
+                        </para>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>
+                        Selecting an option, will bring you to the cluster generator wizard. Here you can select
+                        the same options like if you where writing your own file from scratch. You will go through different
+                        phases.
+                    </para>
+                    <para>
+                        <menuchoice>
+                            <guimenu>Cluster Wizard</guimenu>
+                            <guisubmenu>Common</guisubmenu>
+                            <guisubmenu>Provider (not for Baremetal)</guisubmenu>
+                            <guisubmenu>Groups</guisubmenu>
+                            <guisubmenu>Confirmation</guisubmenu>
+                        </menuchoice>
+                    </para>
+                    <itemizedlist>
+                        <listitem>
+                            <para>
+                                <emphasis>Common Section:</emphasis>
+                                In this section, a form appears were you can select the following options:
+                                <orderedlist>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Name:</emphasis>Name of the cluster
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Provider:</emphasis>Select the type provider between Amazon EC2 or OpenStack, this option is 
+                                            available if we create a virtualized cluster.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Git parameters:</emphasis>
+                                            Git repository section where you can specify as an option your own git 
+                                            repository based on our code. This way you can customize  our recipes or even 
+                                            add your own.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Global Recipes:</emphasis>
+                                            You can specify chef recipes that you want to execute in all
+                                            the nodes
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Global Ports:</emphasis>
+                                            Additional Ports to open for your cluster, this option is only available for 
+                                            virtualized clusters.
+                                        </para>
+                                    </listitem>
+                                </orderedlist>
+                                <figure xml:id="dash-common-cluster">
+                                    <title>Common Cluster Options:</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata fileref="media/dash-cluster-common.png"
+                                                       align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>
+                                <figure xml:id="dash-bare-cluster">
+                                    <title>Bare Metal Common Cluster Options:</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata fileref="media/dash-bare-common.png"
+                                                       align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <emphasis>Provider Section:</emphasis>
+                                This form enables you to define the parameters for OpenStack or Amazon EC2.
+                                Some values appear by default in the case of Amazon EC2 of defining a cluster to be
+                                used with this cloud provider.
+                                <orderedlist>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Instance Type:</emphasis>
+                                            The type of instance you want to use in Amazon EC2 or in OpenStack. Note
+                                            that in OpenStack we use the id number of the type of instance, not the name.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Image:</emphasis>
+                                            The name of the image we want to use the in Amazon EC2 or in OpenStack
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Login user:</emphasis>
+                                            Here you include the user name with sudo access to access the instances
+                                            in Amazon EC2 or OpenStack. Note that this value is necessary if you use a 
+                                            custom AMI in Amazon EC2 or using you use OpenStack.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Region:</emphasis>
+                                            Here you include the region you want to deploy in Amazon EC2 or the project
+                                            to use in your OpenStack infrastructure.
+                                        </para>
+                                    </listitem>
+                                </orderedlist>
+                                <figure xml:id="dash-provider-cluster">
+                                    <title>Cluster Provider Options:</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata fileref="media/dash-cluster-provider.png"
+                                                       align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <emphasis>Group Section:</emphasis>
+                                In this section you can specify the group of nodes for you cluster with the
+                                their services and ip addresses (if you are deploying a baremetal cluster)
+                                <orderedlist>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Main Service:</emphasis>
+                                            The main service you want to deploy in this group of nodes
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Bittorrent Support:</emphasis>
+                                            If you want to enable bittorrent sync of binaries from the dashboard.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Number of nodes:</emphasis>
+                                            Number of nodes that will contain the same set of services.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Extra Services:</emphasis>
+                                            Other services you may want to run which can be also your own services.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Chef Attributes:</emphasis>
+                                            In this section, you would include a chef json which will contain the attributes
+                                            you may want to override from your recipes.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Ports:</emphasis>
+                                            Extra ports that you may want to enable in that group, in this case this only
+                                            affect virtualized clusters.
+                                        </para>
+                                    </listitem>
+                                    <listitem>
+                                        <para>
+                                            <emphasis>Hosts:</emphasis>
+                                            List of hosts IP addresses for the nodes that will be part of this group of nodes.
+                                            In this case this option is only available for Baremetal clusters.
+                                        </para>
+                                    </listitem>
+                                </orderedlist>
+                                <figure xml:id="dash-groups-cluster">
+                                    <title>Cluster Group:</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata fileref="media/dash-cluster-groups.png"
+                                                       align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>
+                                <figure>
+                                    <title>Bare Metal Groups:</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata fileref="media/dash-bare-groups.png"
+                                                       align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>    
+                            </para>
+                        </listitem>
+                        <listitem>
+                            <para>
+                                <emphasis>Confirmation Section:</emphasis>
+                                In this section you will see a summary of the details of you cluster file.
+                                When you press the submit button, your cluster file will be stored in the dashboard
+                                and it will proceed to the cluster launcher.
+                                <figure xml:id="dash-cluster-confirmation">
+                                    <title>Confirmation</title>
+                                    <mediaobject>
+                                        <imageobject>
+                                            <imagedata
+                                                fileref="media/dash-cluster-confirmation.png"
+                                                align="center" scale="50"/>
+                                        </imageobject>
+                                    </mediaobject>
+                                </figure>   
+                            </para>
+                        </listitem>
+                    </itemizedlist>
+                </listitem>
+
+            </orderedlist>
+        </para>
+    </sect1>
+</chapter>

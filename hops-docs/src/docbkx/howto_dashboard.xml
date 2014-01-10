@@ -1,0 +1,454 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<chapter version="5.0" xmlns="http://docbook.org/ns/docbook" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xi="http://www.w3.org/2001/XInclude" xmlns:ns5="http://www.w3.org/2000/svg" xmlns:ns4="http://www.w3.org/1998/Math/MathML" xmlns:ns3="http://www.w3.org/1999/xhtml" xmlns:db="http://docbook.org/ns/docbook" xml:id="ch03">
+    <title>Hop Dashboard</title>
+    
+    <para>The Hop Dashboard is a web application designed with Hop/Hadoop administrators in mind. The
+        Dashboard provides a centralized end-to-end management and monitoring application for Hop
+        clusters. It simplifies the Hadoop administrator's job by gathering all statistics for the 
+        Hop cluster in one place and presenting them in both chart and other formats. 
+        You are also able to restart many services on nodes from the Dashboard, as well as access
+        terminals to services such as HDFS and MySQL.</para>
+    <para>After logging in to the Dashboard, press the user icon,
+        and a menu with the following options will pop up: 
+        <itemizedlist>
+            <listitem>
+                <para> Change password </para>
+            </listitem>
+            <listitem>
+                <para> Edit Graphs </para>
+            </listitem>
+            <listitem>
+                <para> Backup/Restore </para>
+            </listitem>
+            <listitem>
+                <para> Setup Credentials </para>
+            </listitem>
+        </itemizedlist> 
+        Similar to <xref linkend="ch03"/> for the Hop Portal, in order to launch clusters 
+        from the dashboard, you must set your credentials for your provider:
+        <menuchoice>
+            <guimenu>Main Menu Bar</guimenu>
+            <guisubmenu>User Icon</guisubmenu>
+            <guimenuitem>Setup Credentials</guimenuitem>
+        </menuchoice>
+    </para>
+        
+    <sect1 xml:id="edit_graphs">
+        <title>Graphs</title>
+        <para> The Hop Dashboard displays graphs with monitoring data for both hosts
+            and services in your clusters.            
+            You can customize the monitoring data that is displayed by select 
+            which graphs to enable for the different services of Hop. 
+            You can also define new graphs and import the list of graphs from a file.  
+            <itemizedlist>
+                <listitem>
+                    <para>
+                        <emphasis>New</emphasis> Selecting this option will open a new dialog where
+                        you can define the specifications for a new graph for statistics monitored
+                        by the dashboard. </para>
+                    <figure xml:id="dash-new-graphs">
+                        <title>Graph Editor</title>
+                        <mediaobject>
+                            <imageobject>
+                                <imagedata fileref="media/dash-new-graphs.png" align="center"
+                                    scale="40"/>
+                            </imageobject>
+                        </mediaobject>
+                    </figure>
+                </listitem>
+                <listitem>
+                    <para>
+                        <emphasis>Import</emphasis> It is also possible to import a predefined set
+                        of graphs from a JSON file. This is the quickest way to load a large number
+                        of graphs. </para>
+                    <!--                    <figure xml:id="dash-import-graphs">
+                        <title>Import Graphs</title>
+                        <mediaobject>
+                            <imageobject>
+                                <imagedata fileref="media/dash-import-graphs.png" align="center"
+                                    scale="50"/>
+                            </imageobject>
+                        </mediaobject>
+                    </figure>-->
+                </listitem>
+            </itemizedlist>The graph specifications are stored in a MySQL database and loaded in the
+            dashboard. The graph table shows all the graphs for a specific type of service or a
+            component that the dashboard is monitoring. Pressing the zoom button will generate a
+            dialog box where you can see more details about the graph. </para>
+        <figure xml:id="dash-selected-graphs">
+            <title>Graph Selection Detail</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-detail-graphs.png" align="center" scale="40"/>
+                </imageobject>
+            </mediaobject>
+        </figure>
+    <sect2>
+        <title>Backup/Restore</title>
+        <para>The Dashboard's state is stored entirely in a MySQL database instance. This option
+            makes a backup of the whole dashboard state as an SQL file that can be downloaded by the
+            user for off-site backup. In the case of failure or maintenance, the dashboard can
+            restore a previous state from a backup SQL file. </para> 
+    </sect2>
+    <sect2>
+        <title>Setup Credentials</title>
+        <para>The administrator need to specify user credentials that are used when the dashboard
+            deploys a cluster on a cloud platform or cluster. They are typically AWS or OpenStack
+            credentials or a public key for cluster deployments. If user credentials have not been
+            setup, cluster deployment will fail.</para>   
+    </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Cluster Management</title>
+        <para>Cluster management is an interesting feature in the Hop Dashboard. The dashboad keeps
+            track of different cluster applications deployed in the cloud. It allows the
+            administrators to create, edit, delete, load and export clusters. </para>
+        <figure xml:id="dash-manage-cluster">
+            <title>Manage Cluster</title>
+            <mediaobject>
+                <imageobject>
+                    <imagedata fileref="media/dash-manage-cluster.png" align="center" scale="40"/>
+                </imageobject>
+            </mediaobject>
+        </figure>
+        <para>
+            <itemizedlist>
+                <listitem>
+                    <para><emphasis>Create cluster:</emphasis> Selecting this option will take you
+                        to the cluster generation wizard where a users can of generate their own
+                        clusters for Hop. In the next chapter, we will explain in detail how users
+                        can create their custom clusters using our Cluster Definition Language, see
+                        <xref linkend="defining_a_cluster">Chapter: Defining a Cluster</xref>. </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Delete clusters:</emphasis> This option will delete a selected
+                        cluster. It is possible to delete multiple clusters at once by shift
+                        clicking multiple clusters before selecting this option. </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Edit selected cluster:</emphasis> This option will allow a user
+                        to edit an existing stored cluster. Administrators can use this wizard to
+                        modify the set of hosts or services in an existing cluster. They can edit
+                        the cluster either by re-running the cluster wizard or by choosing to use
+                        the embedded YAML editor available in the dashboard.</para>
+            <para>
+                If we select the online editor option, it will open the selected cluster 
+                into a YAML editor window.
+            </para>
+            <figure>
+                <title>YAML Editor</title>
+                <mediaobject>
+                    <imageobject>
+                                <imagedata fileref="media/dash-yamleditor.png" align="center" scale="50"/>
+                            </imageobject>
+                </mediaobject>
+            </figure>
+                        
+                </listitem>
+                <listitem>
+                    <para><emphasis>Load selected cluster:</emphasis> This option allows the user to
+                        load an existing cluster definition from a YAML file. This is a useful
+                        feature for reusing cluster definitions, users can share cluster definitions
+                        and load them using this option.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Export selected cluster:</emphasis> It saves the information about the
+                        cluster in a YAML file, so that the cluster definition can be shared. </para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    <sect2>
+        <title>Cluster Deployment Progress</title>
+        <para>The Hop Dashboard monitors all the nodes deployed in its clusters. It displays the
+            history of all the nodes going through different phases of the deployment cycle. A
+            progress bar appears over each of the entries in the table showing the deployment
+            progress of the nodes. A cluster node goes through the following phases during
+            deployment: <itemizedlist>
+                <listitem>
+                    <para><emphasis>Waiting:</emphasis> A task has been generated in the node
+                        scheduler but no node creation query has been sent to the cloud
+                        provider.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Creation:</emphasis> The scheduler has submitted the query to
+                        the cloud provider and it is waiting for the cloud provider to finish
+                        deploying the virtual instance. When an instance is successfully created an
+                        initialization script is executed for preliminary configuration of the node.
+                    </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Install:</emphasis> After the node is successfully commissioned,
+                        chef installs recipes for Hop Services to fetch the necessary binaries from
+                        the different repositories. This phase is optional in case of using pre
+                        built virtual instances which contain Hop binaries. </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Configure:</emphasis> A node in this phase means, that; the node
+                        is receiving the configuration script which will execute chef with the
+                        selected recipes for the services defined for that node. </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Complete:</emphasis> The node has successfully finished
+                        executing the configuration script with chef and it is now part of the
+                        working cluster. </para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Retrying:</emphasis> The deployment system has detected a
+                        problem during a node deployment phase and it is retrying to recover from
+                        the failure. It retries the failed phase script for five times.</para>
+                </listitem>
+                <listitem>
+                    <para><emphasis>Error:</emphasis> When all the retires are exhausted the node is
+                        marked erroneous. Hadoop administrator can to take further actions to
+                        recover the node, for example, SSH into the failed node and the fix the
+                        problem manually, retry the deployment process or delete the failed
+                        nodes.</para>
+                </listitem>
+            </itemizedlist>
+        </para>
+    </sect2>
+    </sect1>
+    
+    <sect1>
+        <title>Monitoring</title>
+        <para>The Hop Dashboard monitors hosts and services and also displays alerts in real time. A brief overview
+            of the monitoring functionality is given below. </para>
+        <sect2>
+            <title>Hosts</title>
+            <para>The host monitoring tool shows the state of all the nodes in the clusters. An
+                administrator can track information of his/her interest such as the allocated IPs
+                for the nodes, host names, host IDs, health of the nodes, and when the last
+                heartbeat was received from the nodes. It also monitors available resources on the
+                nodes such as the number of cores that machine has, average load on the instance,
+                disk usage and physical memory in use. </para>
+            <figure>
+                <title>Hosts</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-hosts.png" align="center" scale="33"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>   
+            <para>Selecting a host displays a set of services installed on the host, 
+                <xref linkend="host-services"/>, and a set 
+                of graphs monitoring the host's performance, <xref linkend="host-graphs"/>.</para>
+            <figure  xml:id="host-services">
+                <title>Hosts Services</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-host-detail.png" align="center" scale="33"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <figure  xml:id="host-graphs">
+                <title>Host Graphs</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-host-detail-2.png" align="center" scale="33"
+                        />
+                    </imageobject>
+                </mediaobject>
+            </figure>     
+        </sect2>
+        <sect2>
+            <title>Alerts</title>
+            <para>You can define alerts as thresholds in collectd. Examples
+                of thresholds would be cpu at 100%, hard drives at 95% capacity, etc. 
+                From the Dashboard, you can filter alerts both by severity and within
+                a given time-window.</para>
+            <figure>
+                <title>Alerts</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-alerts.png" align="center" scale="33"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>    
+        </sect2>
+        <sect2>
+            <title>Clusters</title>
+            <para>In the Clusters tab you view and manage the set of deployed clusters, 
+                as well as create new clusters. Here, you can see information 
+                about the nodes that compose the cluster
+                and the health status of the services deployed on those nodes. 
+<!--                Also it keeps track of the resources allocated
+                to the cluster such as total number of cores which compose the overall computing
+                power of the cluster, the total disk capacity and the total physical memory
+                capacity. -->
+                You can drill down into a cluster to find out the list of services
+                in the cluster, their status and a list of nodes for each service.  
+                Many of the services can be restarted from the Dashboard in the
+                event of failure.
+            </para>
+            <figure>
+                <title>Clusters</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-clusters.png" align="center" scale="33"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>   
+            <figure>
+                <title>Detailed Cluster View</title>
+                <mediaobject>
+                    <imageobject>
+                        <imagedata fileref="media/dash-cluster-detail.png" align="center"
+                            scale="33"/>
+                    </imageobject>
+                </mediaobject>
+            </figure>
+            <sect3>
+                <title>YARN monitoring</title>
+                <para>The Hop Dashboard displays graphs on YARN performance statistics. </para>
+                    <figure>
+                <title>YARN Metrics</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-YARN-metrics.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+            <para>You can also access performance statistics for the resourcemanager
+                and nodemanagers in YARN. </para>
+            <figure>
+                <title>Resource Manager Metrics</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-YARN-resource.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+            <figure>
+                <title>Node Manager Metrics</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-YARN-manager.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+            <para>The Hop dashboard provides direct access to the resourcemanager 
+                and nodemanager web UIs provided by the Apache distribution. 
+                The resource manager web UI gives detailed information about the 
+                number of applications submitted, number of applications in progress, 
+                number of application completed, total available memory, memory consumed, 
+                dead nodes etc. 
+                The Node manager web UI displays information such as total memory allocated 
+                to the java virtual machine on the node, memory allocated to each 
+                container, node health status, Hadoop version, etc. </para>
+            
+            <figure>
+                <title>Resource Manager UI</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-YARN-resourceUI.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>  
+               <figure>
+                <title>Node Manager UI</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-YARN-managerUI.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure> 
+            </sect3>
+            <sect3>
+                <title>MySQL Cluster</title>
+                <para>You can monitor the MySQL Cluster using the Hop Dashboard. Its keeps track of data memory, index
+                    memory, number of reads and writes per second and number of scans per second. 
+                    Data nodes, management nodes, and MySQL servers can all be restarted
+                    from the Dashboard.
+                </para>
+                 <figure>
+                <title>MySQL Cluster Monitor</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-MYSQL-graphs.png" align="center"
+                                scale="33"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+                 <para>The dashboard provides a command-line terminal to directly run SQL commands
+                    on a MySQL Server connected to NDB.</para>
+                  <figure>
+                <title>MySQL Console</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-MYSQL-console.png" align="center"
+                                scale="66"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+            </sect3>
+            <sect3>
+                <title>Hop HDFS Console</title>
+                <para>The dashboard provides a command-line terminal for executing HDFS operations
+                    using the HDFS client. It perform operations such as ls, mkdir, cat, etc.
+                </para>
+                <figure>
+                <title>Hdfs Console</title>
+                <mediaobject>
+                    <imageobject>
+                            <imagedata fileref="media/dash-HOP-console.png" align="center"
+                                scale="66"/>
+                        </imageobject>
+                </mediaobject>
+            </figure>
+            </sect3>
+        </sect2>
+    </sect1>
+<!--    <sect1>
+        <title>Launching the Hop Cluster </title>
+        
+        <para>After installing the Hop Dashboard on a machine in the cloud, 
+            you can deploy and manage a new Hop Cluster using the dashboard. </para>
+        <para>Login the dashboard using the credentials provided to Hop Portal during the installation
+            of the dashboard. <orderedlist>
+                <listitem>
+                    <para> Select the manage cluster option available in the dashboard. </para>
+                    <para>
+                        <menuchoice>
+                            <guimenu>Main Menu Bar</guimenu>
+                            <guisubmenu>Manage Cluster</guisubmenu>
+                            <guimenuitem>Load File</guimenuitem>
+                        </menuchoice>
+                    </para>
+                </listitem>
+                <listitem>
+                    <para>Load a file containing the cluster definition. We refer to section
+                        <emphasis><xref linkend="defining_a_cluster">Defining a
+                            Cluster</xref></emphasis> to create custom clusters definitions.</para>
+                </listitem>
+                <listitem>
+                    <para>The file is loaded and the cluster launcher will appear showing the content of
+                        the loaded file.</para>
+                </listitem>
+                <listitem>
+                    <para>Pressing the <emphasis>Start Cluster</emphasis> button to start the deployment
+                        process. A status bar will appear showing information about the current status
+                        of the deployment process. Installation process is long and it depends on the
+                        number of nodes in the cluster. On average, for 8 nodes it takes around 35
+                        minutes. </para>
+                </listitem>
+                <listitem>
+                    <para>If a node fails then the Hop cluster launcher will automatically retry the
+                        node deployment.</para>
+                </listitem>
+                <listitem>
+                    <para>Summary of all the install nodes and their status is displayed after the
+                        Cluster Launcher finishes.</para>
+                </listitem>
+            </orderedlist></para>
+        <para> Congratulations, you have successfully deployed a Hop cluster ready! </para>
+        
+    </sect1>-->
+    
+   
+</chapter>
