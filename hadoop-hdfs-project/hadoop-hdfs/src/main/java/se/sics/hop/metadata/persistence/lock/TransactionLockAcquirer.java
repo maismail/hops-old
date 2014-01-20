@@ -42,7 +42,7 @@ import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockTyp
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.READ_COMMITTED;
 import static se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType.WRITE;
 import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopVariable;
 
 /**
  *

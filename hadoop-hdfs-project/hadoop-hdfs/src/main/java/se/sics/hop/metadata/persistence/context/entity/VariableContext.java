@@ -7,7 +7,7 @@ import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.metadata.persistence.CounterType;
 import se.sics.hop.metadata.persistence.FinderType;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopVariable;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.context.LockUpgradeException;
 import se.sics.hop.metadata.persistence.exceptions.StorageException;
@@ -20,6 +20,8 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   private EnumMap<HopVariable.Finder, HopVariable> variables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
   private EnumMap<HopVariable.Finder, HopVariable> modifiedVariables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
+  private EnumMap<HopVariable.Finder, HopVariable> newVariables = new EnumMap<HopVariable.Finder, HopVariable>(HopVariable.Finder.class);
+
   private VariableDataAccess<HopVariable, HopVariable.Finder> da;
 
   public VariableContext(VariableDataAccess<HopVariable, HopVariable.Finder>  da) {
@@ -28,7 +30,8 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   @Override
   public void add(HopVariable entity) throws PersistanceException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    newVariables.put(entity.getType(), entity);
+    variables.put(entity.getType(), entity);
   }
 
   @Override
@@ -67,7 +70,13 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
-    for (HopVariable.Finder varType : modifiedVariables.keySet()) {
+    checkLockUpgrade(lks, modifiedVariables);
+    checkLockUpgrade(lks, newVariables);
+    da.prepare(newVariables.values(), modifiedVariables.values(), null);
+  }
+
+  private void checkLockUpgrade(TransactionLocks lks, EnumMap<HopVariable.Finder, HopVariable> varmap) throws LockUpgradeException {
+    for (HopVariable.Finder varType : varmap.keySet()) {
       switch (varType) {
         case GenerationStamp:
           if (lks.getGenerationStampLock() != TransactionLockTypes.LockType.WRITE) {
@@ -82,9 +91,8 @@ public class VariableContext extends EntityContext<HopVariable> {
         default:
       }
     }
-    da.prepare(modifiedVariables.values());
   }
-
+  
   @Override
   public void remove(HopVariable var) throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");

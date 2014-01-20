@@ -61,12 +61,14 @@ import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.persistence.entity.hop.HopIntArrayVariable;
 import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
-import se.sics.hop.metadata.persistence.entity.hop.HopLongVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopLongVariable;
 import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.metadata.persistence.entity.hop.HopVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopArrayVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopByteArrayVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopStringVariable;
+import se.sics.hop.metadata.persistence.entity.hop.var.HopVariable;
 import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException;
 
 /**
@@ -160,7 +162,9 @@ public class StorageFactory {
     VariableContext variableContext = new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class));
     entityContexts.put(HopVariable.class, variableContext);
     entityContexts.put(HopLongVariable.class, variableContext);
-    entityContexts.put(HopIntArrayVariable.class, variableContext);
+    entityContexts.put(HopByteArrayVariable.class, variableContext);
+    entityContexts.put(HopStringVariable.class, variableContext);
+    entityContexts.put(HopArrayVariable.class, variableContext);
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess) getDataAccess(LeaderDataAccess.class)));
     entityContexts.put(BlockKey.class, new BlockTokenKeyContext((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
     entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
