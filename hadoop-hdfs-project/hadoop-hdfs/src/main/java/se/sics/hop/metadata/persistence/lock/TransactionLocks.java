@@ -58,7 +58,9 @@ public class TransactionLocks {
   private LockType blockIdCounterLock = null;
   // Leader
   private LockType leaderLock = null;
-
+  //storage info
+  private LockType storageInfoLock = null;
+  
   public String[] getInodeParam() {
     return inodeParam;
   }
@@ -233,6 +235,11 @@ public class TransactionLocks {
     return this;
   }
 
+  public TransactionLocks addStorageInfo(LockType lock) {
+    this.storageInfoLock = lock;
+    return this;
+  }
+  
   public INodeLockType getInodeLock() {
     return inodeLock;
   }
@@ -295,6 +302,10 @@ public class TransactionLocks {
 
   public LockType getLeaderLock() {
     return leaderLock;
+  }
+
+  public LockType getStorageInfo() {
+    return storageInfoLock;
   }
 
   public void addLockedINodes(INode inode, INodeLockType lock) {

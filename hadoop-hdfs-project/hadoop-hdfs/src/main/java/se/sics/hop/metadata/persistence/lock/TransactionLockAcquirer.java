@@ -451,6 +451,10 @@ public class TransactionLockAcquirer {
       }
       acquireLock(inodeIDLockType, HopVariable.Finder.INodeID);
     }
+    
+    if (locks.getStorageInfo() != null) {
+      acquireLock(locks.getStorageInfo(), HopVariable.Finder.StorageInfo);
+    }
   }
 
   private void acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {

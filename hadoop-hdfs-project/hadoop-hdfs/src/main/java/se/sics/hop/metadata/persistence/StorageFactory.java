@@ -48,7 +48,6 @@ import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.persistence.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.ReplicaUnderConstructionDataAccess;
-import se.sics.hop.metadata.persistence.dal.StorageInfoDataAccess;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
@@ -57,7 +56,6 @@ import se.sics.hop.metadata.persistence.dalwrapper.INodeAttributeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.INodeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.ReplicaUnderConstructionDALWrapper;
-import se.sics.hop.metadata.persistence.dalwrapper.StorageInfoDALWrapper;
 import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
@@ -132,7 +130,6 @@ public class StorageFactory {
     dataAccessWrappers.put(INodeDataAccess.class, new INodeDALWrapper((INodeDataAccess) getDataAccess(INodeDataAccess.class)));
     dataAccessWrappers.put(BlockTokenKeyDataAccess.class, new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
     dataAccessWrappers.put(INodeAttributesDataAccess.class, new INodeAttributeDALWrapper((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
-    dataAccessWrappers.put(StorageInfoDataAccess.class, new StorageInfoDALWrapper((StorageInfoDataAccess) getDataAccess(StorageInfoDataAccess.class)));
   }
 
   public static Map<Class, EntityContext> createEntityContexts() {
