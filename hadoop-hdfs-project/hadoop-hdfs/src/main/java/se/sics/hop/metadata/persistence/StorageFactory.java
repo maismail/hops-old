@@ -14,17 +14,13 @@ import se.sics.hop.metadata.persistence.context.entity.LeaseContext;
 import se.sics.hop.metadata.persistence.context.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
 import se.sics.hop.metadata.persistence.context.Variables;
 import se.sics.hop.metadata.persistence.dalwrapper.LeaseDALWrapper;
 import se.sics.hop.metadata.persistence.context.entity.BlockInfoContext;
-import se.sics.hop.metadata.persistence.context.entity.BlockTokenKeyContext;
 import se.sics.hop.metadata.persistence.context.entity.CorruptReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.INodeAttributesContext;
 import se.sics.hop.metadata.persistence.context.entity.INodeContext;
@@ -35,7 +31,6 @@ import se.sics.hop.metadata.persistence.context.entity.ReplicaContext;
 import se.sics.hop.metadata.persistence.context.entity.UnderReplicatedBlockContext;
 import se.sics.hop.metadata.persistence.context.entity.VariableContext;
 import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
 import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.persistence.dal.EntityDataAccess;
 import se.sics.hop.metadata.persistence.dal.ExcessReplicaDataAccess;
@@ -51,7 +46,6 @@ import se.sics.hop.metadata.persistence.dal.ReplicaUnderConstructionDataAccess;
 import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.persistence.dal.VariableDataAccess;
 import se.sics.hop.metadata.persistence.dalwrapper.BlockInfoDALWrapper;
-import se.sics.hop.metadata.persistence.dalwrapper.BlockTokenDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.INodeAttributeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.INodeDALWrapper;
 import se.sics.hop.metadata.persistence.dalwrapper.PendingBlockInfoDALWrapper;
@@ -128,7 +122,6 @@ public class StorageFactory {
     dataAccessWrappers.put(LeaseDataAccess.class, new LeaseDALWrapper((LeaseDataAccess) getDataAccess(LeaseDataAccess.class)));
     dataAccessWrappers.put(PendingBlockDataAccess.class, new PendingBlockInfoDALWrapper((PendingBlockDataAccess) getDataAccess(PendingBlockDataAccess.class)));
     dataAccessWrappers.put(INodeDataAccess.class, new INodeDALWrapper((INodeDataAccess) getDataAccess(INodeDataAccess.class)));
-    dataAccessWrappers.put(BlockTokenKeyDataAccess.class, new BlockTokenDALWrapper((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
     dataAccessWrappers.put(INodeAttributesDataAccess.class, new INodeAttributeDALWrapper((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
   }
 
@@ -163,7 +156,6 @@ public class StorageFactory {
     entityContexts.put(HopStringVariable.class, variableContext);
     entityContexts.put(HopArrayVariable.class, variableContext);
     entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess) getDataAccess(LeaderDataAccess.class)));
-    entityContexts.put(BlockKey.class, new BlockTokenKeyContext((BlockTokenKeyDataAccess) getDataAccess(BlockTokenKeyDataAccess.class)));
     entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
 
 

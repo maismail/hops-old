@@ -422,16 +422,7 @@ public class TransactionLockAcquirer {
 //    }
 
     if (locks.getBlockKeyLock() != null) {
-      if (locks.getBlockKeyIds() != null) {
-        for (int id : locks.getBlockKeyIds()) {
-          acquireLock(locks.getBlockKeyLock(), BlockKey.Finder.ById, id);
-        }
-      }
-      if (locks.getBlockKeyTypes() != null) {
-        for (short type : locks.getBlockKeyTypes()) {
-          acquireLock(locks.getBlockKeyLock(), BlockKey.Finder.ByType, type);
-        }
-      }
+      acquireLock(locks.getBlockKeyLock(), HopVariable.Finder.BlockTokenKeys);
     }
 
     if (locks.getGenerationStampLock() != null) {

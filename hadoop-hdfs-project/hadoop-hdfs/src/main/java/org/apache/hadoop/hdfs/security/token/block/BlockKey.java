@@ -19,7 +19,6 @@ package org.apache.hadoop.hdfs.security.token.block;
 import javax.crypto.SecretKey;
 
 import org.apache.hadoop.classification.InterfaceAudience;
-import se.sics.hop.metadata.persistence.FinderType;
 import org.apache.hadoop.security.token.delegation.DelegationKey;
 
 /**
@@ -28,19 +27,13 @@ import org.apache.hadoop.security.token.delegation.DelegationKey;
 @InterfaceAudience.Private
 public class BlockKey extends DelegationKey {
   //START_HOP_CODE
-  public static enum Finder implements FinderType<BlockKey> {
-
-    ById, ByType, All;
-
-    @Override
-    public Class getType() {
-      return BlockKey.class;
-    }
-  }
-  public static final short CURR_KEY = 0;
-  public static final short NEXT_KEY = 1;
-  public static final short SIMPLE_KEY = -1;
-  private short keyType;
+  public static enum KeyType{
+    CurrKey,
+    NextKey,
+    SimpleKey
+  };
+  
+  private KeyType keyType;
   //END_HOP_CODE
   
   public BlockKey() {
@@ -55,28 +48,28 @@ public class BlockKey extends DelegationKey {
     super(keyId, expiryDate, encodedKey);
   }
   //START_HOP_CODE
-  public void setKeyType(short keyType) {
-    if (keyType == CURR_KEY || keyType == NEXT_KEY || keyType == SIMPLE_KEY) {
+  public void setKeyType(KeyType keyType) {
+    if (keyType == KeyType.CurrKey || keyType == KeyType.NextKey || keyType == KeyType.SimpleKey) {
       this.keyType = keyType;
     } else {
       throw new IllegalArgumentException("Wrong key type " + keyType);
     }
   }
 
-  public short getKeyType() {
+  public KeyType getKeyType() {
     return keyType;
   }
 
   public boolean isCurrKey() {
-    return this.keyType == CURR_KEY;
+    return this.keyType == KeyType.CurrKey;
   }
 
   public boolean isNextKey() {
-    return this.keyType == NEXT_KEY;
+    return this.keyType == KeyType.NextKey;
   }
 
   public boolean isSimpleKey() {
-    return this.keyType == SIMPLE_KEY;
+    return this.keyType == KeyType.SimpleKey;
   }
   //END_HOP_CODE
 }

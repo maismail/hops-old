@@ -2,24 +2,23 @@ package se.sics.hop.metadata.persistence.security.token.block;
 
 import java.io.IOException;
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
 import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.persistence.lock.TransactionLocks;
 import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
 import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
 import se.sics.hop.transcation.RequestHandler;
 import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.dal.BlockTokenKeyDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
 import org.apache.hadoop.util.Time;
+import se.sics.hop.metadata.persistence.context.Variables;
 
 /**
  * Persisted version of the BlockTokenSecretManager to be used by the NameNode
@@ -74,11 +73,11 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     setSerialNo(serialNo + 1);
     currentKey = new BlockKey(serialNo, Time.now() + 2
             * keyUpdateInterval + tokenLifetime, generateSecret());
-    currentKey.setKeyType(BlockKey.CURR_KEY);
+    currentKey.setKeyType(BlockKey.KeyType.CurrKey);
     setSerialNo(serialNo + 1);
     nextKey = new BlockKey(serialNo, Time.now() + 3
             * keyUpdateInterval + tokenLifetime, generateSecret());
-    nextKey.setKeyType(BlockKey.NEXT_KEY);
+    nextKey.setKeyType(BlockKey.KeyType.NextKey);
     addBlockKeys();
   }
 
@@ -123,7 +122,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   public DataEncryptionKey generateDataEncryptionKey() throws IOException {
     byte[] nonce = new byte[8];
     nonceGenerator.nextBytes(nonce);
-    BlockKey key = getBlockKeyByType(BlockKey.CURR_KEY);
+    BlockKey key = getBlockKeyByType(BlockKey.KeyType.CurrKey);
 
     byte[] encryptionKey = createPassword(nonce, key.getKey());
     return new DataEncryptionKey(key.getKeyId(), blockPoolId, nonce,
@@ -135,7 +134,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   protected byte[] createPassword(BlockTokenIdentifier identifier) {
     BlockKey key;
     try {
-      key = getBlockKeyByType(BlockKey.CURR_KEY);
+      key = getBlockKeyByType(BlockKey.KeyType.CurrKey);
     } catch (IOException ex) {
       throw new IllegalStateException("currentKey hasn't been initialized. [" + ex.getMessage() + "]");
     }
@@ -170,64 +169,51 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     return createPassword(identifier.getBytes(), key.getKey());
   }
 
-  public void generateKeysIfNeeded(boolean isLeader) throws IOException{
+  public void generateKeysIfNeeded(boolean isLeader) throws IOException {
     this.isLeader = isLeader;
     retrieveBlockKeys();
-    if(currentKey == null && nextKey == null){
+    if (currentKey == null && nextKey == null) {
       generateKeys();
     }
   }
-  
+
   public void updateLeaderState(boolean isLeader) {
     this.isLeader = isLeader;
   }
 
   private void retrieveBlockKeys() throws IOException {
-    currentKey = getBlockKeyByType(BlockKey.CURR_KEY);
-    nextKey = getBlockKeyByType(BlockKey.NEXT_KEY);
+    currentKey = getBlockKeyByType(BlockKey.KeyType.CurrKey);
+    nextKey = getBlockKeyByType(BlockKey.KeyType.NextKey);
   }
 
   private void addBlockKeys() throws IOException {
     new TransactionalRequestHandler(RequestHandler.OperationType.ADD_BLOCK_TOKENS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlockKey(LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EntityManager.add(currentKey);
-        EntityManager.add(nextKey);
+        Variables.updateBlockTokenKeys(currentKey, nextKey);
         return null;
       }
     }.handle(null);
   }
 
   private BlockKey getBlockKeyById(int keyId) throws IOException {
-    return getBlockKey(true, keyId);
+    return Variables.getAllBlockTokenKeysByIDLW().get(keyId);
   }
 
-  private BlockKey getBlockKeyByType(short keytype) throws IOException {
-    return getBlockKey(false, keytype);
-  }
-
-  private BlockKey getBlockKey(final boolean byID, final int keyIdOrType) throws IOException {
-    return (BlockKey) new LightWeightRequestHandler(byID ? RequestHandler.OperationType.GET_KEY_BY_ID : RequestHandler.OperationType.GET_KEY_BY_TYPE) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        BlockTokenKeyDataAccess da = (BlockTokenKeyDataAccess) StorageFactory.getDataAccess(BlockTokenKeyDataAccess.class);
-        if (byID) {
-          return da.findByKeyId(keyIdOrType);
-        } else {
-          return da.findByKeyType((short) keyIdOrType);
-        }
-      }
-    }.handle(null);
+  private BlockKey getBlockKeyByType(BlockKey.KeyType keytype) throws IOException {
+    return Variables.getAllBlockTokenKeysByTypeLW().get(keytype.ordinal());
   }
 
   private BlockKey[] getAllKeysAndSync() throws IOException {
     BlockKey[] allKeysArr = null;
-    List<BlockKey> allKeys = getAllKeys();
+    Collection<BlockKey> allKeys = getAllKeys();
     if (allKeys != null) {
       for (BlockKey key : allKeys) {
         if (key.isCurrKey()) {
@@ -241,44 +227,32 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     return allKeysArr;
   }
 
-  private List<BlockKey> getAllKeys() throws IOException {
-    return (List<BlockKey>) new LightWeightRequestHandler(RequestHandler.OperationType.REMOVE_ALL_BLOCK_KEYS) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        BlockTokenKeyDataAccess da = (BlockTokenKeyDataAccess) StorageFactory.getDataAccess(BlockTokenKeyDataAccess.class);
-        return da.findAll();
-      }
-    }.handle(null);
+  private Collection<BlockKey> getAllKeys() throws IOException {
+    return Variables.getAllBlockTokenKeysByIDLW().values();
   }
 
   private void removeExpiredKeys() throws IOException {
-    TransactionalRequestHandler removeKeyHandler = new TransactionalRequestHandler(RequestHandler.OperationType.REMOVE_BLOCK_KEY) {
+    new TransactionalRequestHandler(RequestHandler.OperationType.REMOVE_BLOCK_KEY) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        int keyId = (Integer) params[0];
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
-        tla.getLocks().addBlockKeyLockById(TransactionLockTypes.LockType.WRITE, keyId);
+        tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        int keyId = (Integer) params[0];
-        BlockKey key = EntityManager.find(BlockKey.Finder.ById, keyId);
-        if (key != null) {
-          if (isExpired(key.getExpiryDate())) {
-            EntityManager.remove(key);
+        Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByID();
+        for (BlockKey key : keys.values()) {
+          if (key != null) {
+            if (isExpired(key.getExpiryDate())) {
+              EntityManager.remove(key);
+            }
           }
         }
         return null;
       }
-    };
-
-    List<BlockKey> allKeys = getAllKeys();
-    for (BlockKey key : allKeys) {
-      removeKeyHandler.setParams(key.getKeyId());
-      removeKeyHandler.handle(null);
-    }
+    }.handle(null);
   }
 
   private void updateBlockKeys() throws IOException {
@@ -286,35 +260,34 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
-        tla.getLocks().
-                addBlockKeyLockByType(LockType.WRITE, BlockKey.CURR_KEY).
-                addBlockKeyLockByType(LockType.WRITE, BlockKey.NEXT_KEY);
+        tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
+        Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByType();
         // set final expiry date of retiring currentKey
         // also modifying this key to mark it as 'simple key' instead of 'current key'
-        BlockKey currentKeyFromDB = EntityManager.find(BlockKey.Finder.ByType, BlockKey.CURR_KEY);
+        BlockKey currentKeyFromDB = keys.get(BlockKey.KeyType.CurrKey.ordinal());
         currentKeyFromDB.setExpiryDate(Time.now() + keyUpdateInterval + tokenLifetime);
-        currentKeyFromDB.setKeyType(BlockKey.SIMPLE_KEY);
-        EntityManager.update(currentKeyFromDB);
+        currentKeyFromDB.setKeyType(BlockKey.KeyType.SimpleKey);
+
         // after above update, we only have a key marked as 'next key'
         // the 'next key' becomes the 'current key'
         // update the estimated expiry date of new currentKey
-        BlockKey nextKeyFromDB = EntityManager.find(BlockKey.Finder.ByType, BlockKey.NEXT_KEY);
+        BlockKey nextKeyFromDB = keys.get(BlockKey.KeyType.NextKey.ordinal());
         currentKey = new BlockKey(nextKeyFromDB.getKeyId(), Time.now()
                 + 2 * keyUpdateInterval + tokenLifetime, nextKeyFromDB.getKey());
-        currentKey.setKeyType(BlockKey.CURR_KEY);
-        EntityManager.update(currentKey);
+        currentKey.setKeyType(BlockKey.KeyType.CurrKey);
 
         // generate a new nextKey
         setSerialNo(serialNo + 1);
         nextKey = new BlockKey(serialNo, Time.now() + 3
                 * keyUpdateInterval + tokenLifetime, generateSecret());
-        nextKey.setKeyType(BlockKey.NEXT_KEY);
-        EntityManager.add(nextKey);
+        nextKey.setKeyType(BlockKey.KeyType.NextKey);
+
+        Variables.updateBlockTokenKeys(currentKey, nextKey, currentKeyFromDB);
         return null;
       }
     }.handle(null);

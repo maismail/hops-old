@@ -102,6 +102,7 @@ public abstract class RequestHandler {
     TEST_NODE_COUNT,
     // Transaction in unit tests.
     TEST,
+    GET_VARIABLE,
   }
   protected static Log log = LogFactory.getLog(RequestHandler.class);
   protected Object[] params = null;

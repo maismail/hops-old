@@ -50,8 +50,6 @@ public class TransactionLocks {
   private LockType invLocks = null;
   // block token key
   private LockType blockKeyLock = null;
-  private List<Integer> blockKeyIds = null;
-  private List<Short> blockKeyTypes = null;
   // block generation stamp
   private LockType generationStampLock = null;
   //block id counter 
@@ -87,14 +85,6 @@ public class TransactionLocks {
 
   public LockType getBlockKeyLock() {
     return blockKeyLock;
-  }
-
-  public List<Integer> getBlockKeyIds() {
-    return blockKeyIds;
-  }
-
-  public List<Short> getBlockKeyTypes() {
-    return blockKeyTypes;
   }
 
   TransactionLocks() {
@@ -194,32 +184,12 @@ public class TransactionLocks {
     this.blockIdCounterLock = lock;
     return this;
   }
-
-  /**
-   * Lock on block token key data.
-   *
-   * @param lock
-   * @param keyId
-   * @return
-   */
-  public TransactionLocks addBlockKeyLockById(LockType lock, int keyId) {
+  
+  public TransactionLocks addBlockKey(LockType lock) {
     blockKeyLock = lock;
-    if (blockKeyIds == null) {
-      blockKeyIds = new ArrayList<Integer>();
-    }
-    blockKeyIds.add(keyId);
     return this;
   }
-
-  public TransactionLocks addBlockKeyLockByType(LockType lock, short type) {
-    blockKeyLock = lock;
-    if (blockKeyTypes == null) {
-      blockKeyTypes = new ArrayList<Short>();
-    }
-    blockKeyTypes.add(type);
-    return this;
-  }
-
+  
   public TransactionLocks addLeaderLock(LockType lock, long... ids) {
     this.leaderLock = lock;
     return this;
