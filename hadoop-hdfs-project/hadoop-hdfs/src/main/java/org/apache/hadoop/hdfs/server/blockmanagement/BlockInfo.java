@@ -16,8 +16,8 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.hop.HopReplica;
-import se.sics.hop.metadata.persistence.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.entity.hop.HopReplica;
+import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,10 +27,10 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import se.sics.hop.metadata.persistence.CounterType;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.FinderType;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.metadata.entity.CounterType;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given

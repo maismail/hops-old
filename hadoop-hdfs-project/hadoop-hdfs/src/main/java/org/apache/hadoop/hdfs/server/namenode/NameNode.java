@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.persistence.LeaderElection;
+import se.sics.hop.metadata.LeaderElection;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -78,8 +78,8 @@ import org.apache.hadoop.util.StringUtils;
 import com.google.common.base.Joiner;
 import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 

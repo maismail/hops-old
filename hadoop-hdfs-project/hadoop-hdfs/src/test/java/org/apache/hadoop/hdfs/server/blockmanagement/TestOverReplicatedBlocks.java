@@ -43,12 +43,12 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.junit.Test;
 
@@ -117,9 +117,9 @@ public class TestOverReplicatedBlocks {
           // decrease the replication factor to 1; 
           NameNodeAdapter.setReplication(namesystem, fileName.toString(), (short)1);
           
-          new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+          new TransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
               TransactionLockAcquirer tla = new TransactionLockAcquirer();
               tla.getLocks().
                       addBlock(LockType.READ, block.getBlockId()).
@@ -136,7 +136,7 @@ public class TestOverReplicatedBlocks {
               assertEquals(1, bm.countNodes(block.getLocalBlock()).liveReplicas());
               return null;
             }
-          }.handleWithWriteLock(namesystem);
+          }.handle(namesystem);
          
         }
       } finally {
@@ -239,9 +239,9 @@ public class TestOverReplicatedBlocks {
       out.close();
       final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, p);
       
-      new TransactionalRequestHandler(OperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+      new TransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
           tla.getLocks().
                   addBlock(LockType.READ, block.getBlockId()).
@@ -257,7 +257,7 @@ public class TestOverReplicatedBlocks {
                   .countNodes(block.getLocalBlock()).liveReplicas());
           return null;
         }
-      }.handleWithWriteLock(namesystem);
+      }.handle(namesystem);
        
     } finally {
       cluster.shutdown();

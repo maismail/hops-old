@@ -25,14 +25,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
-import se.sics.hop.metadata.persistence.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 
 /**
  * This class maintains the map from a block to its metadata.
@@ -133,7 +133,7 @@ class BlocksMap {
   }
 
   int size() throws IOException {
-    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
+    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS_SIZE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
@@ -144,11 +144,11 @@ class BlocksMap {
   }
 
   Iterable<BlockInfo> getBlocks() throws IOException {
-    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS) {
+    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         //FIXME. Very inefficient way of block processing
-        EntityContext.log(OperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
+        EntityContext.log(HDFSOperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.findAllBlocks();
       }

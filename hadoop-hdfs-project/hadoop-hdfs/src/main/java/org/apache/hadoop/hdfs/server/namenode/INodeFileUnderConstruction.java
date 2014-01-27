@@ -28,10 +28,10 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
-import se.sics.hop.metadata.persistence.context.entity.EntityContext;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.exception.StorageException;
 
 /**
  * I-node for file being written.

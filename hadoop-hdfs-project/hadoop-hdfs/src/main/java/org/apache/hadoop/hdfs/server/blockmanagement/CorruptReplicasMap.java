@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.entity.hop.HopCorruptReplica;
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -25,12 +25,12 @@ import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.Server;
 
 import java.util.*;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.metadata.persistence.dal.CorruptReplicaDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.metadata.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 
 /**
  * Stores information about all corrupt blocks in the File System.
@@ -162,7 +162,7 @@ public class CorruptReplicasMap{
   }
   
   public int size() throws IOException{
-    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_CORRUPT_REPLICAS) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_CORRUPT_REPLICAS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         CorruptReplicaDataAccess da = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
@@ -243,7 +243,7 @@ public class CorruptReplicasMap{
   }
 
   private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {
-    return (Collection<HopCorruptReplica>) new LightWeightRequestHandler(OperationType.GET_ALL_CORRUPT_REPLICAS) {
+    return (Collection<HopCorruptReplica>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_CORRUPT_REPLICAS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         CorruptReplicaDataAccess crDa = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);

@@ -80,14 +80,14 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 
 /**
  * A JUnit test for doing fsck
@@ -739,9 +739,9 @@ public class TestFsck {
       DFSTestUtil.waitReplication(fs, filePath, (short)1);
       
       final MiniDFSCluster clusterFinal = cluster;
-        TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+        TransactionalRequestHandler handler = new TransactionalRequestHandler(HDFSOperationType.TEST) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
               TransactionLockAcquirer tla = new TransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).

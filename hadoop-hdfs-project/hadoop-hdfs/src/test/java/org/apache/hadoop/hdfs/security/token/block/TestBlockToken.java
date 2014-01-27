@@ -18,7 +18,7 @@
 
 package org.apache.hadoop.hdfs.security.token.block;
 
-import se.sics.hop.metadata.persistence.security.token.block.NameNodeBlockTokenSecretManager;
+import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.HADOOP_SECURITY_AUTHENTICATION;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -83,9 +83,9 @@ import org.mockito.stubbing.Answer;
 import com.google.protobuf.BlockingService;
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
-import se.sics.hop.metadata.persistence.exceptions.StorageInitializtionException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.exception.StorageInitializtionException;
 
 /** Unit tests for block tokens */
 public class TestBlockToken {

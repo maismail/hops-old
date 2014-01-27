@@ -106,12 +106,12 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
-import se.sics.hop.metadata.persistence.dal.LeaderDataAccess;
-import se.sics.hop.metadata.persistence.dal.ReplicaDataAccess;
-import se.sics.hop.metadata.persistence.dal.ReplicaUnderConstructionDataAccess;
-import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.dal.LeaderDataAccess;
+import se.sics.hop.metadata.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.

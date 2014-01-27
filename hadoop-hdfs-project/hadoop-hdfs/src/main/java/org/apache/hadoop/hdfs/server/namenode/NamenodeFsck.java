@@ -58,7 +58,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * This class provides rudimentary checking of DFS volumes for errors and

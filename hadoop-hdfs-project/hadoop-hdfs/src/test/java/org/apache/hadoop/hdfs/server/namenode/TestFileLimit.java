@@ -31,7 +31,7 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.exception.PersistanceException;
 import org.junit.Test;
 
 

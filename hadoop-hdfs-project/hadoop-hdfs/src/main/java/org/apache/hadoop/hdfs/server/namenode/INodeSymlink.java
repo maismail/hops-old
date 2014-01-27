@@ -23,8 +23,8 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * An INode representing a symbolic link.

@@ -15,8 +15,8 @@
  */
 package se.sics.hop.common;
 
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.metadata.persistence.context.Variables;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.Variables;
 
 /**
  *

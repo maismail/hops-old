@@ -35,9 +35,9 @@ import com.google.common.primitives.SignedBytes;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.FinderType;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.

@@ -88,12 +88,12 @@ import org.apache.hadoop.util.VersionInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 /** Utilities for HDFS tests */
@@ -352,9 +352,9 @@ public class DFSTestUtil {
       throws IOException, TimeoutException, InterruptedException {
     int count = 0;
     final int ATTEMPTS = 50;
-    TransactionalRequestHandler corruptReplicasHandler = new TransactionalRequestHandler(OperationType.TEST) {
+    TransactionalRequestHandler corruptReplicasHandler = new TransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ, b.getBlockId()).

@@ -30,12 +30,12 @@ import org.apache.hadoop.util.Daemon;
 import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 
 public class BlockManagerTestUtil {
   public static void setNodeReplicationLimit(final BlockManager blockManager,
@@ -70,9 +70,9 @@ public class BlockManagerTestUtil {
     final BlockManager bm = namesystem.getBlockManager();
     namesystem.readLock();
     try {
-      return (int[]) new TransactionalRequestHandler(OperationType.TEST) {
+      return (int[]) new TransactionalRequestHandler(HDFSOperationType.TEST) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
           tla.getLocks().
                   addBlock(LockType.READ, b.getBlockId()).
@@ -90,7 +90,7 @@ public class BlockManagerTestUtil {
             bm.neededReplications.contains(b) ? 1 : 0};
 
         }
-      }.handleWithReadLock(namesystem);
+      }.handle(namesystem);
     } finally {
       namesystem.readUnlock();
     }

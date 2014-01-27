@@ -36,16 +36,16 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
 import org.junit.Before;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestFsLimits {
   static Configuration conf;
@@ -170,10 +170,10 @@ public class TestFsLimits {
   private static long id  = 1 ;
   private void addChildWithName(final String name, final Class<?> expected)
   throws Exception {
-  TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+  TransactionalRequestHandler handler = new TransactionalRequestHandler(HDFSOperationType.TEST) {
 
     @Override
-    public TransactionLocks acquireLock() throws PersistanceException, IOException {
+    public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
       TransactionLockAcquirer tla = new TransactionLockAcquirer();
       tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
       return tla.acquire();

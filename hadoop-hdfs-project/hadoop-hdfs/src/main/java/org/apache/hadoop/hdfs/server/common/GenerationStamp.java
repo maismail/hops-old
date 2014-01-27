@@ -20,13 +20,13 @@ package org.apache.hadoop.hdfs.server.common;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.context.Variables;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /****************************************************************
  * A GenerationStamp is a Hadoop FS primitive, identified by a long.
@@ -110,9 +110,9 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
   
   //START_HOP_CODE
   public void setStampTx(final long stamp) throws IOException {
-    new TransactionalRequestHandler(RequestHandler.OperationType.SET_GEN_STAMP) {
+    new TransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();

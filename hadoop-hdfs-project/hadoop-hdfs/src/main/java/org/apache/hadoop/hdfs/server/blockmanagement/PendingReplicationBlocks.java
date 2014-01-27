@@ -28,16 +28,16 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.dal.PendingBlockDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -115,7 +115,7 @@ class PendingReplicationBlocks {
   }
 
   public void clear() throws IOException {
-    new LightWeightRequestHandler(OperationType.DEL_ALL_PENDING_REPL_BLKS) {
+    new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_PENDING_REPL_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
@@ -129,7 +129,7 @@ class PendingReplicationBlocks {
    * The total number of blocks that are undergoing replication
    */
   int size() throws IOException {
-    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_ALL_VALID_PENDING_REPL_BLKS) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_ALL_VALID_PENDING_REPL_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
@@ -155,7 +155,7 @@ class PendingReplicationBlocks {
    * timed out.
    */
   Block[] getTimedOutBlocks() throws IOException {
-    List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(OperationType.GET_TIMED_OUT_PENDING_BLKS) {
+    List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(HDFSOperationType.GET_TIMED_OUT_PENDING_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         long timeLimit = getTimeLimit();
@@ -246,9 +246,9 @@ class PendingReplicationBlocks {
   }
   
   private Block getBlock(final PendingBlockInfo pbi) throws IOException {
-    return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
+    return (Block) new TransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException { 
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException { 
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addBlock(LockType.READ_COMMITTED, pbi.getBlockId());
         return tla.acquire();

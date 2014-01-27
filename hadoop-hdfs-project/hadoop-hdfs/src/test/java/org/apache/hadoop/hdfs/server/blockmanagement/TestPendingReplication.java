@@ -34,14 +34,14 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
 
 /**
@@ -221,9 +221,9 @@ public class TestPendingReplication {
   }
 
   private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final Block block, final boolean inc, final int numReplicas) throws IOException {
-    new TransactionalRequestHandler(OperationType.TEST_PENDING_REPLICATION) {
+    new TransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ_COMMITTED, block.getBlockId()).
@@ -244,9 +244,9 @@ public class TestPendingReplication {
   }
 
   private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
-    return (Integer) new TransactionalRequestHandler(OperationType.TEST_PENDING_REPLICATION) {
+    return (Integer) new TransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ_COMMITTED, block.getBlockId()).

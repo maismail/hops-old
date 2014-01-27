@@ -33,13 +33,13 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestProcessCorruptBlocks {
   /**
@@ -261,9 +261,9 @@ public class TestProcessCorruptBlocks {
 
   private static NumberReplicas countReplicas(final FSNamesystem namesystem,
           final ExtendedBlock block) throws IOException {
-    return (NumberReplicas) new TransactionalRequestHandler(RequestHandler.OperationType.COUNT_NODES) {
+    return (NumberReplicas) new TransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ, block.getBlockId()).
@@ -277,7 +277,7 @@ public class TestProcessCorruptBlocks {
       public Object performTask() throws PersistanceException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
-    }.handleWithReadLock(namesystem);
+    }.handle(namesystem);
   }
 
   private void corruptBlock(MiniDFSCluster cluster, FileSystem fs, final Path fileName,

@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.persistence.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.entity.hop.HopLeasePath;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.IOException;
@@ -40,21 +40,21 @@ import org.apache.hadoop.util.Daemon;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.DFSUtil;
-import se.sics.hop.metadata.persistence.lock.INodeUtil;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.dal.LeasePathDataAccess;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
-import se.sics.hop.metadata.persistence.dal.LeaseDataAccess;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.dal.LeasePathDataAccess;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.dal.LeaseDataAccess;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**
  * LeaseManager does the lease housekeeping for writing on files.   
@@ -103,9 +103,9 @@ public class LeaseManager {
   }
   
   SortedSet<Lease> getSortedLeases() throws IOException {
-    TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(OperationType.GET_SORTED_LEASES) {
+    TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -132,7 +132,7 @@ public class LeaseManager {
 
   /** @return the number of leases currently in the system */
   public int countLease() throws IOException {
-     return (Integer) new LightWeightRequestHandler(OperationType.COUNT_LEASE) {
+     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_LEASE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
@@ -197,7 +197,7 @@ public class LeaseManager {
   }
 
   void removeAllLeases() throws IOException {
-    new LightWeightRequestHandler(OperationType.REMOVE_ALL_LEASES) {
+    new LightWeightRequestHandler(HDFSOperationType.REMOVE_ALL_LEASES) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
@@ -406,7 +406,7 @@ public class LeaseManager {
           }
       }
     
-    TransactionalRequestHandler isInSafeModeHandler = new TransactionalRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
+    TransactionalRequestHandler isInSafeModeHandler = new TransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -414,13 +414,13 @@ public class LeaseManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         // TODO safemode
         return null;
       }
     };
     
-    LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(OperationType.PREPARE_LEASE_MANAGER_MONITOR) {
+    LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         long expiredTime = now() - hardLimit;
@@ -429,7 +429,7 @@ public class LeaseManager {
       }
     };
     
-    TransactionalRequestHandler expiredLeaseHandler = new TransactionalRequestHandler(OperationType.LEASE_MANAGER_MONITOR) {
+    TransactionalRequestHandler expiredLeaseHandler = new TransactionalRequestHandler(HDFSOperationType.LEASE_MANAGER_MONITOR) {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -442,7 +442,7 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         String holder = (String) getParams()[0];
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().

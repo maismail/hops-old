@@ -20,7 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.exception.PersistanceException;
 
 /** SafeMode related operations. */
 @InterfaceAudience.Private

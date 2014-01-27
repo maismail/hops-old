@@ -36,12 +36,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -50,14 +49,15 @@ import org.apache.hadoop.util.Time;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestLease {
   
     static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
-    return (Boolean) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+    return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         return tla.acquireByLeasePath(src.toString(), LockType.READ, LockType.WRITE);
       }

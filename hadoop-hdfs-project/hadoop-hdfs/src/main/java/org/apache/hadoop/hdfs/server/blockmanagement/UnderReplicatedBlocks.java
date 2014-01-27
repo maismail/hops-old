@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -31,17 +31,17 @@ import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.dal.UnderReplicatedBlockDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
-import se.sics.hop.metadata.persistence.context.Variables;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**
  * Keep prioritized queues of under replicated blocks.
@@ -109,7 +109,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * Empty the queues.
    */
   void clear() throws IOException {
-    new LightWeightRequestHandler(OperationType.DEL_ALL_UNDER_REPLICATED_BLKS) {
+    new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_UNDER_REPLICATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess)StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
@@ -121,7 +121,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 
   /** Return the total number of under replication blocks */
   int size() throws IOException {
-    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_ALL_UNDER_REPLICATED_BLKS) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_ALL_UNDER_REPLICATED_BLKS) {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -133,7 +133,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 
   /** Return the number of under replication blocks excluding corrupt blocks */
   int getUnderReplicatedBlockCount() throws IOException {
-    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_UNDER_REPLICATED_BLKS_LESS_THAN_LVL4) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_LESS_THAN_LVL4) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
@@ -144,7 +144,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 
   /** Return the number of corrupt blocks */
   int getCorruptBlockSize() throws IOException {
-    return (Integer) new LightWeightRequestHandler(OperationType.COUNT_UNDER_REPLICATED_BLKS_LVL4) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_LVL4) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
@@ -531,9 +531,9 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
     fillPriorityQueues();
-    return (List<List<Block>>) new TransactionalRequestHandler(OperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
+    return (List<List<Block>>) new TransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addUnderReplicatedBlock(LockType.WRITE);
         return tla.acquire();
@@ -590,7 +590,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
  
   private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
-    return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(OperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
+    return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
@@ -605,9 +605,9 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
   
   private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
-    return (Block) new TransactionalRequestHandler(OperationType.GET_BLOCK) {
+    return (Block) new TransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock(LockType.WRITE).

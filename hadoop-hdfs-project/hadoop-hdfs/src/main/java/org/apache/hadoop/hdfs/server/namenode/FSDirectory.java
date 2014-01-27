@@ -62,14 +62,15 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.metadata.persistence.dal.INodeAttributesDataAccess;
-import se.sics.hop.metadata.persistence.dal.INodeDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.RequestHandler;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.metadata.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.dal.INodeDataAccess;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
  * FSDirectory stores the filesystem directory state.
@@ -2013,7 +2014,7 @@ public class FSDirectory implements Closeable {
     try {
       //HOP return getRootDir().numItemsInTree();
       // TODO[Hooman]: after fixing quota, we can use root.getNscount instead of this.
-      LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
+      LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(HDFSOperationType.TOTAL_FILES) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
@@ -2246,7 +2247,7 @@ public class FSDirectory implements Closeable {
   
   //add root inode if its not there
    public static INodeDirectoryWithQuota createRootInode(final PermissionStatus ps, final boolean overwrite) throws IOException{
-     LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
+     LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(HDFSOperationType.SET_ROOT) {
        @Override
        public Object performTask() throws PersistanceException {
           INodeDirectoryWithQuota newRootINode = null;

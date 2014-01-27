@@ -75,12 +75,12 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -1205,9 +1205,9 @@ public class DatanodeManager {
   //START_HOP_CODE
   DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
     final DatanodeManager datanodeManager = this;
-    TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.HANDLE_HEARTBEAT) {
+    TransactionalRequestHandler handler = new TransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().

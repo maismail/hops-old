@@ -42,15 +42,15 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.TransactionalRequestHandler;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Time;
@@ -990,9 +990,9 @@ public class TestReplicationPolicy {
           final int curReplicas,
           final int decomissionedReplicas,
           final int expectedReplicas) throws IOException {
-    return (Boolean) new TransactionalRequestHandler(OperationType.TEST) {
+    return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.WRITE, block.getBlockId()).

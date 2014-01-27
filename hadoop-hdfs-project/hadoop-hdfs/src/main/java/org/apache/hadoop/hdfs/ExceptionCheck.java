@@ -22,9 +22,9 @@ import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.exception.PersistanceException;
 import org.apache.hadoop.ipc.RemoteException;
-import se.sics.hop.metadata.persistence.exceptions.StorageException;
+import se.sics.hop.exception.StorageException;
 
 /**
  *

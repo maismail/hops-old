@@ -33,8 +33,8 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
 
 /** I-node for closed file. */
 @InterfaceAudience.Private

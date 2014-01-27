@@ -34,12 +34,12 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
 
@@ -105,9 +105,9 @@ public class TestNodeCount {
       }
       
       // find out a non-excess node
-      TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(OperationType.TEST_NODE_COUNT) {
+      TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
           tla.getLocks().
                   addBlock(LockType.READ, block.getBlockId()).
@@ -195,9 +195,9 @@ public class TestNodeCount {
   NumberReplicas countNodes(final Block block, final FSNamesystem namesystem) throws IOException {
     namesystem.readLock();
     try {
-      return (NumberReplicas) new TransactionalRequestHandler(OperationType.COUNT_NODES) {
+      return (NumberReplicas) new TransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
          @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
            TransactionLockAcquirer tla = new TransactionLockAcquirer();
            tla.getLocks().
                    addBlock(LockType.READ, block.getBlockId()).
@@ -214,7 +214,7 @@ public class TestNodeCount {
           return lastNum;
         }
 
-      }.handleWithReadLock(namesystem);
+      }.handle(namesystem);
     } finally {
       namesystem.readUnlock();
     }

@@ -29,8 +29,8 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.common.HopINodeIdGen;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * Directory INode class.

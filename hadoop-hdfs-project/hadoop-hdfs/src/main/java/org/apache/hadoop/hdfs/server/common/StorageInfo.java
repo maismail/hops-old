@@ -31,15 +31,15 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import se.sics.hop.metadata.persistence.lock.TransactionLocks;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.transcation.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.util.Time;
-import se.sics.hop.metadata.persistence.context.Variables;
-import se.sics.hop.metadata.persistence.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.persistence.lock.TransactionLockTypes;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
 
 /**
  * Common class for storage information.
@@ -125,9 +125,9 @@ public class StorageInfo {
   
   //START_HOP_CODE
   public static StorageInfo getStorageInfoFromDB() throws IOException {
-    return (StorageInfo) new TransactionalRequestHandler(OperationType.GET_STORAGE_INFO) {
+    return (StorageInfo) new TransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
         return tla.acquire();
@@ -143,9 +143,9 @@ public class StorageInfo {
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
                                                                                        // FIXME [S] it can cause problems in the future when we try to run multiple NN
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
-    TransactionalRequestHandler formatHandler = new TransactionalRequestHandler(OperationType.ADD_STORAGE_INFO) {
+    TransactionalRequestHandler formatHandler = new TransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();

@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.persistence.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.metadata.entity.hop.HopInvalidatedBlock;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -29,12 +29,12 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.transcation.EntityManager;
-import se.sics.hop.transcation.LightWeightRequestHandler;
-import se.sics.hop.metadata.persistence.exceptions.PersistanceException;
-import se.sics.hop.transcation.RequestHandler.OperationType;
-import se.sics.hop.metadata.persistence.dal.InvalidateBlockDataAccess;
-import se.sics.hop.metadata.persistence.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.metadata.dal.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 
 /**
  * Keeps a Collection for every named machine containing blocks
@@ -52,7 +52,7 @@ class InvalidateBlocks {
 
   /** @return the number of blocks to be invalidated . */
   long numBlocks() throws IOException {
-    return (Integer) new LightWeightRequestHandler(OperationType.GET_NUM_INVALIDATED_BLKS) {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.GET_NUM_INVALIDATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
@@ -139,7 +139,7 @@ class InvalidateBlocks {
 
   /** @return a list of the storage IDs. */
   List<String> getStorageIDs() throws IOException {
-    LightWeightRequestHandler getAllInvBlocksHandler = new LightWeightRequestHandler(OperationType.GET_ALL_INV_BLKS) {
+    LightWeightRequestHandler getAllInvBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INV_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
@@ -196,7 +196,7 @@ class InvalidateBlocks {
   }
   
   void clear() throws IOException {
-    new LightWeightRequestHandler(OperationType.DEL_ALL_INV_BLKS) {
+    new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_INV_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
@@ -218,7 +218,7 @@ class InvalidateBlocks {
   }
   
   private List<HopInvalidatedBlock> findInvBlocksbyStorageId(final String sid) throws IOException {
-    return (List<HopInvalidatedBlock>) new LightWeightRequestHandler(OperationType.GET_INV_BLKS_BY_STORAGEID) {
+    return (List<HopInvalidatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_INV_BLKS_BY_STORAGEID) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
@@ -228,7 +228,7 @@ class InvalidateBlocks {
   }
 
   private void removeInvBlockTx(final HopInvalidatedBlock ib) throws IOException {    
-     new LightWeightRequestHandler(OperationType.RM_INV_BLK) {
+     new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLK) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
        InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
