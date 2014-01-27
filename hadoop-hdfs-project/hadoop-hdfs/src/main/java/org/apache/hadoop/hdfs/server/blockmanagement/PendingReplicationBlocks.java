@@ -122,7 +122,7 @@ class PendingReplicationBlocks {
         da.removeAll();
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   /**
@@ -135,7 +135,7 @@ class PendingReplicationBlocks {
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
         return da.countValidPendingBlocks(getTimeLimit());
       }
-    }.handle(null);
+    }.handle();
   } 
 
   /**
@@ -168,7 +168,7 @@ class PendingReplicationBlocks {
         da.prepare(timedoutPendings, EMPTY, EMPTY); // remove
         return timedoutPendings;
       }
-    }.handle(null);
+    }.handle();
     if (timedOutItems == null) {
       return null;
     }
@@ -269,6 +269,6 @@ class PendingReplicationBlocks {
         }
         return block;
       }
-    }.handle(null);
+    }.handle();
   }
 }

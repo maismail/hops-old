@@ -86,6 +86,6 @@ public class TestFSNamesystem {
         leaseMan.addLease(holder, src);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 }

@@ -168,7 +168,7 @@ public class CorruptReplicasMap{
         CorruptReplicaDataAccess da = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
         return da.countAllUniqueBlk();
       }
-    }.handle(null);
+    }.handle();
   }
 
   /**
@@ -249,7 +249,7 @@ public class CorruptReplicasMap{
         CorruptReplicaDataAccess crDa = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
         return crDa.findAll();
       }
-    }.handle(null);
+    }.handle();
   }
   
   

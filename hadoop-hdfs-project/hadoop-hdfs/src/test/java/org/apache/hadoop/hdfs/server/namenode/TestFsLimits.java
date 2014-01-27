@@ -200,7 +200,7 @@ public class TestFsLimits {
     }
   };
   
-  handler.handle(null);
+  handler.handle();
     
   }
 }

@@ -200,7 +200,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
         Variables.updateBlockTokenKeys(currentKey, nextKey);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private BlockKey getBlockKeyById(int keyId) throws IOException {
@@ -252,7 +252,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
         }
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private void updateBlockKeys() throws IOException {
@@ -290,6 +290,6 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
         Variables.updateBlockTokenKeys(currentKey, nextKey, currentKeyFromDB);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 }

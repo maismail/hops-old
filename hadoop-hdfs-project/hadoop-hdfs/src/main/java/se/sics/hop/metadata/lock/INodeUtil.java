@@ -178,7 +178,7 @@ public class INodeUtil {
       };
     BlockInfo bInfo;
       try {
-          bInfo = (BlockInfo)handler.handle(null);
+          bInfo = (BlockInfo)handler.handle();
       } catch (IOException ex) {
           throw new StorageException(ex.getMessage());
       }

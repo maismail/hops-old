@@ -1295,7 +1295,7 @@ public class TestFileCreation {
       };
       
       testHandler.setParams(lockType);
-      testHandler.handle(null);
+      testHandler.handle();
   }
   //END_HOP_CODE
 }

@@ -74,7 +74,7 @@ public class LeaderElection extends Thread {
           determineAndSetLeader();
           return null;
         }
-      }.handle(null);
+      }.handle();
 
       // Start leader election thread
       start();

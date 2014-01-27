@@ -84,7 +84,7 @@ public class TestUnderReplicatedBlocks {
           bm.blocksMap.removeNode(b.getLocalBlock(), dn);
           return null;
         }
-      }.handle(null);
+      }.handle();
       
       // increment this file's replication factor
       FsShell shell = new FsShell(conf);

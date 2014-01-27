@@ -1005,6 +1005,6 @@ public class TestReplicationPolicy {
         EntityManager.add(new BlockInfo(block));
         return queue.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
-    }.handle(null);
+    }.handle();
   }
 }

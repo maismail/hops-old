@@ -58,7 +58,7 @@ class InvalidateBlocks {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         return da.countAll();
       }
-    }.handle(null);
+    }.handle();
   }
 
   /**
@@ -146,7 +146,7 @@ class InvalidateBlocks {
         return da.findAllInvalidatedBlocks();
       }
     };
-    List<HopInvalidatedBlock> invBlocks = (List<HopInvalidatedBlock>) getAllInvBlocksHandler.handle(null);
+    List<HopInvalidatedBlock> invBlocks = (List<HopInvalidatedBlock>) getAllInvBlocksHandler.handle();
     HashSet<String> storageIds = new HashSet<String>();
     if (invBlocks != null) {
       for (HopInvalidatedBlock ib : invBlocks) {
@@ -203,7 +203,7 @@ class InvalidateBlocks {
         da.removeAll();
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
   
   
@@ -224,7 +224,7 @@ class InvalidateBlocks {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         return da.findInvalidatedBlockByStorageId(sid);
       }
-    }.handle(null);
+    }.handle();
   }
 
   private void removeInvBlockTx(final HopInvalidatedBlock ib) throws IOException {    
@@ -235,7 +235,7 @@ class InvalidateBlocks {
        da.remove(ib);
        return null;
       }
-    }.handle(null);
+    }.handle();
   }
   
   private HopInvalidatedBlock findBlock(long blkId, String storageID) throws PersistanceException {

@@ -394,7 +394,7 @@ public class TestBlockManager {
     };
 
     for (int i = 1; i < pipeline.length; i++) {
-      handler.setParams(pipeline[i]).handle(null);
+      handler.setParams(pipeline[i]).handle();
     }
   }
 
@@ -419,7 +419,7 @@ public class TestBlockManager {
         }
         return blockInfo;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private List<DatanodeDescriptor> getNodes(int ... indexes) {
@@ -455,7 +455,7 @@ public class TestBlockManager {
           bm.blocksMap.addBlockCollection(blockInfo, bc);
          return null;
       }
-    }.handle(null);
+    }.handle();
     
     return blockInfo;
   }

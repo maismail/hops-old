@@ -137,7 +137,7 @@ public class StorageInfo {
       public Object performTask() throws PersistanceException, IOException {
         return Variables.getStorageInfo();
       }
-    }.handle(null);
+    }.handle();
   }
 
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
@@ -162,7 +162,7 @@ public class StorageInfo {
         return null;
       }
     };
-    formatHandler.handle(null);
+    formatHandler.handle();
   }
   
   public String getBlockPoolId()

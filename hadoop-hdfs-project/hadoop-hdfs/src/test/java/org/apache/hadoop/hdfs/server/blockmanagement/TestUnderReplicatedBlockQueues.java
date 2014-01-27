@@ -127,7 +127,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
         EntityManager.add(new BlockInfo(block));
         return null;
       }
-    }.handle(null);
+    }.handle();
     return block;
   }
 
@@ -149,6 +149,6 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public Object performTask() throws PersistanceException, IOException {
         return queues.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
-    }.handle(null);
+    }.handle();
   }
 }

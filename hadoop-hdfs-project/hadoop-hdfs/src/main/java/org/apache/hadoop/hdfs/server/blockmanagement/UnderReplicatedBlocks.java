@@ -116,7 +116,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         da.removeAll();
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   /** Return the total number of under replication blocks */
@@ -128,7 +128,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countAll();
       }
-    }.handle(null);
+    }.handle();
   }
 
   /** Return the number of under replication blocks excluding corrupt blocks */
@@ -139,7 +139,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countLessThanALevel(QUEUE_WITH_CORRUPT_BLOCKS);
       }
-    }.handle(null);
+    }.handle();
   }
 
   /** Return the number of corrupt blocks */
@@ -150,7 +150,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countByLevel(QUEUE_WITH_CORRUPT_BLOCKS);
       }
-    }.handle(null);
+    }.handle();
   }
 
   /** Check if a block is in the neededReplication queue */
@@ -543,7 +543,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       public Object performTask() throws PersistanceException, IOException {
         return chooseUnderReplicatedBlocksInt(blocksToProcess);
       }
-    }.handle(null);
+    }.handle();
   }
   
   private boolean remove(HopUnderReplicatedBlock urb) throws PersistanceException {
@@ -601,7 +601,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         }
         
       }
-    }.handle(null);
+    }.handle();
   }
   
   private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
@@ -623,7 +623,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         }
         return block;
       }
-    }.handle(null);
+    }.handle();
   }
   
   private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {

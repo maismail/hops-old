@@ -366,7 +366,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
         return da.findByStorageId(getStorageID());
       }
     };
-    return (List<BlockInfo>) findBlocksHandler.handle(null);
+    return (List<BlockInfo>) findBlocksHandler.handle();
   }
   
   /**

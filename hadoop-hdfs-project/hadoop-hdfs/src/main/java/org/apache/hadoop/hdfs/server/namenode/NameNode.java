@@ -1566,13 +1566,13 @@ public class NameNode {
 //  };
 
   public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
-   // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null);
+   // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle();
     return nnList;
   }
   
   protected volatile int nnIndex = 0;
   public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
-    List<ActiveNamenode> allNodes = nnList.getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle(null)).getActiveNamenodes();
+    List<ActiveNamenode> allNodes = nnList.getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
     if(this.isLeader())
     {
       // Use the modulo to roundrobin b/w namenodes

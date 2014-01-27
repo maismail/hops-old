@@ -106,7 +106,7 @@ public class TestDatanodeDescriptor {
       public Object performTask() throws PersistanceException, IOException {
         return dn.addBlock(blk);
       }
-    }.handle(null);
+    }.handle();
   }
     
     private boolean removeBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
@@ -124,6 +124,6 @@ public class TestDatanodeDescriptor {
       public Object performTask() throws PersistanceException, IOException {
         return dn.removeBlock(blk);
       }
-    }.handle(null);
+    }.handle();
   }
 }

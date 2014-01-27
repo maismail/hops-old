@@ -123,7 +123,7 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
         setStamp(stamp);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
   //END_HOP_CODE
 }

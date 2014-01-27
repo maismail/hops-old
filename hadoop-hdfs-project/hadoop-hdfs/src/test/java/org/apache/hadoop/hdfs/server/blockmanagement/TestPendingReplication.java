@@ -240,7 +240,7 @@ public class TestPendingReplication {
         }
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
@@ -258,6 +258,6 @@ public class TestPendingReplication {
       public Object performTask() throws PersistanceException, IOException {
         return pendingReplications.getNumReplicas(block);
       }
-    }.handle(null);
+    }.handle();
   }
 }

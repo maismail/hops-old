@@ -95,7 +95,7 @@ public class ExcessReplicasMap {
         da.removeAll();
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private Collection<HopExcessReplica> getExcessReplicas(final String dn) throws IOException {
@@ -105,7 +105,7 @@ public class ExcessReplicasMap {
         ExcessReplicaDataAccess da = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
         return da.findExcessReplicaByStorageId(dn);
       }
-    }.handle(null);
+    }.handle();
   }
 
   private void addExcessReplicaToDB(HopExcessReplica er) throws PersistanceException {

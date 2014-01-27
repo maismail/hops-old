@@ -760,7 +760,7 @@ public class TestFsck {
                 return null;
             }
         };
-      handler.handle(null);
+      handler.handle();
       
       // run fsck and expect a failure with -1 as the error code
       String outStr = runFsck(conf, -1, true, fileName);

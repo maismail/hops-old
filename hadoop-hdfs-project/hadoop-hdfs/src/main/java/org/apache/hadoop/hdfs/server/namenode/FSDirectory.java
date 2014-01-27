@@ -2021,7 +2021,7 @@ public class FSDirectory implements Closeable {
           return da.countAll();
         }
       };
-      return (Integer) totalInodesHandler.handle(null);
+      return (Integer) totalInodesHandler.handle();
     } finally {
       readUnlock();
     }
@@ -2269,7 +2269,7 @@ public class FSDirectory implements Closeable {
          return (Object)newRootINode;
        }
      };
-     return (INodeDirectoryWithQuota)addRootINode.handle(null);
+     return (INodeDirectoryWithQuota)addRootINode.handle();
   }
   //END_HOP_CODE
 }

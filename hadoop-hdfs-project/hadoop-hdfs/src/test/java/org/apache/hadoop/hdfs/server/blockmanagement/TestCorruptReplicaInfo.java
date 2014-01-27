@@ -159,7 +159,7 @@ public class TestCorruptReplicaInfo {
         crm.addToCorruptReplicasMap(blk, dn, reason);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
   
   private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk) throws IOException{
@@ -177,6 +177,6 @@ public class TestCorruptReplicaInfo {
         crm.removeFromCorruptReplicasMap(blk);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 }

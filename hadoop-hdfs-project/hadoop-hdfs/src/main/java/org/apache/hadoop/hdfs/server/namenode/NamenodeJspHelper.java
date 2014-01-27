@@ -816,7 +816,7 @@ class NamenodeJspHelper {
           public void setUp() throws StorageException {
             inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
           }
-        }.handle(null);
+        }.handle();
       }
     }
 

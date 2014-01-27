@@ -155,7 +155,7 @@ public class Variables {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         return vd.getVariable(varType);
       }
-    }.handle(null);
+    }.handle();
   }
     
   private static void updateVariable(HopVariable var) throws PersistanceException {
