@@ -40,7 +40,7 @@ import se.sics.hop.metadata.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -54,7 +54,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 public class TestLease {
   
     static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
-    return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
+    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
 
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {

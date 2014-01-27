@@ -14,7 +14,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.RequestHandler;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
@@ -187,7 +187,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   private void addBlockKeys() throws IOException {
-    new TransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -232,7 +232,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   private void removeExpiredKeys() throws IOException {
-    new TransactionalRequestHandler(HDFSOperationType.REMOVE_BLOCK_KEY) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_BLOCK_KEY) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -256,7 +256,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   private void updateBlockKeys() throws IOException {
-    new TransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

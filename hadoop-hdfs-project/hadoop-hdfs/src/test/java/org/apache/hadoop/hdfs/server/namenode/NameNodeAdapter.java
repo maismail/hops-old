@@ -34,7 +34,7 @@ import se.sics.hop.metadata.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
 import org.apache.hadoop.ipc.Server;
@@ -130,7 +130,7 @@ public class NameNodeAdapter {
 
   public static String getLeaseHolderForPath(final NameNode namenode, final String path) throws IOException {
 
-    return (String) new TransactionalRequestHandler(HDFSOperationType.TEST) {
+    return (String) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -151,7 +151,7 @@ public class NameNodeAdapter {
    */
   public static long getLeaseRenewalTime(final NameNode nn, final String path) throws IOException {
 
-    TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(HDFSOperationType.TEST) {
+    HDFSTransactionalRequestHandler leaseRenewalTimeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

@@ -33,7 +33,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
 
@@ -92,7 +92,7 @@ public class TestDatanodeDescriptor {
   }
   
     private boolean addBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
-     return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
+     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -110,7 +110,7 @@ public class TestDatanodeDescriptor {
   }
     
     private boolean removeBlock(final DatanodeDescriptor dn, final BlockInfo blk) throws IOException{
-     return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
+     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

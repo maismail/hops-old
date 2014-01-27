@@ -39,7 +39,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
 
@@ -105,7 +105,7 @@ public class TestNodeCount {
       }
       
       // find out a non-excess node
-      TransactionalRequestHandler getnonExcessDN = new TransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
+      HDFSTransactionalRequestHandler getnonExcessDN = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
         @Override
         public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -195,7 +195,7 @@ public class TestNodeCount {
   NumberReplicas countNodes(final Block block, final FSNamesystem namesystem) throws IOException {
     namesystem.readLock();
     try {
-      return (NumberReplicas) new TransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
+      return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
          @Override
         public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
            TransactionLockAcquirer tla = new TransactionLockAcquirer();

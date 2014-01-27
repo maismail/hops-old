@@ -24,7 +24,7 @@ import se.sics.hop.metadata.lock.TransactionLockAcquirer;
 import se.sics.hop.metadata.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
@@ -110,7 +110,7 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
   
   //START_HOP_CODE
   public void setStampTx(final long stamp) throws IOException {
-    new TransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

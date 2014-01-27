@@ -37,7 +37,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
@@ -531,7 +531,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
     fillPriorityQueues();
-    return (List<List<Block>>) new TransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
+    return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -605,7 +605,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
   
   private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
-    return (Block) new TransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
+    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

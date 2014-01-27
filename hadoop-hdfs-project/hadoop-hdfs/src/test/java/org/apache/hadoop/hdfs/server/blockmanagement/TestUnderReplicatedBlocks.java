@@ -35,7 +35,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import org.junit.Test;
 
@@ -58,7 +58,7 @@ public class TestUnderReplicatedBlocks {
       final BlockManager bm = cluster.getNamesystem().getBlockManager();
       final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
       
-      new TransactionalRequestHandler(HDFSOperationType.SET_REPLICA_INCREAMENT) {
+      new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICA_INCREAMENT) {
         long inodeId;
 
         @Override

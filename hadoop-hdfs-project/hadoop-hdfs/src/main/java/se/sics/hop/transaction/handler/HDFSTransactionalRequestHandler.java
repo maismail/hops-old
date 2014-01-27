@@ -3,16 +3,13 @@ package se.sics.hop.transaction.handler;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.transaction.TransactionInfo;
-import se.sics.hop.transaction.handler.TransactionalRequestHandlerBase;
 
 /**
- *
- * @author kamal hakimzadeh<kamal@sics.se>
- * @author salman <salman@sics.se>
+ * @author Mahmoud Ismail <maism@sics.se>
  */
-public abstract class TransactionalRequestHandler extends TransactionalRequestHandlerBase {
+public abstract class HDFSTransactionalRequestHandler extends TransactionalRequestHandler {
 
-    public TransactionalRequestHandler(HDFSOperationType opType) {
+    public HDFSTransactionalRequestHandler(HDFSOperationType opType) {
         super(opType);
     }
 
@@ -34,7 +31,6 @@ public abstract class TransactionalRequestHandler extends TransactionalRequestHa
           if (namesystem != null && namesystem instanceof FSNamesystem) {
             ((FSNamesystem) namesystem).performPendingSafeModeOperation();
           }
-
         }
       });
     }

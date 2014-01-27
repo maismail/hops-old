@@ -80,7 +80,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -1205,7 +1205,7 @@ public class DatanodeManager {
   //START_HOP_CODE
   DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
     final DatanodeManager datanodeManager = this;
-    TransactionalRequestHandler handler = new TransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
+    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];

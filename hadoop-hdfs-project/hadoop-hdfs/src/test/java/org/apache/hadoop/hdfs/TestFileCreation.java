@@ -80,7 +80,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.io.EnumSetWritable;
@@ -1265,7 +1265,7 @@ public class TestFileCreation {
   private void acquireLock(final TransactionLockTypes.LockType lockType, final String holder) throws IOException{
       Configuration conf = new HdfsConfiguration();
       StorageFactory.setConfiguration(conf);
-      TransactionalRequestHandler testHandler = new TransactionalRequestHandler(HDFSOperationType.TEST) {
+      HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
           @Override
           public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {

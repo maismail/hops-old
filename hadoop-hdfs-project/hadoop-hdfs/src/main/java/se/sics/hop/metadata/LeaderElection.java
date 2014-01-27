@@ -21,7 +21,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.net.NetUtils;
@@ -59,7 +59,7 @@ public class LeaderElection extends Thread {
     // Determine the next leader and set it
     // if this is the leader, also remove previous leaders
     try {
-      new TransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+      new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
         @Override
         public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -110,7 +110,7 @@ public class LeaderElection extends Thread {
 //    }
     // TODO [S] do something if i am no longer the leader. 
   }
-  private TransactionalRequestHandler leaderElectionHandler = new TransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+  private HDFSTransactionalRequestHandler leaderElectionHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
     @Override
     public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {

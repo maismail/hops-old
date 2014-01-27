@@ -26,7 +26,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Assert;
@@ -116,7 +116,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   
   
   private Block add(final Block block) throws IOException {
-    new TransactionalRequestHandler(HDFSOperationType.TEST) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
@@ -135,7 +135,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
           final int curReplicas,
           final int decomissionedReplicas,
           final int expectedReplicas) throws IOException {
-    return (Boolean) new TransactionalRequestHandler(HDFSOperationType.TEST) {
+    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

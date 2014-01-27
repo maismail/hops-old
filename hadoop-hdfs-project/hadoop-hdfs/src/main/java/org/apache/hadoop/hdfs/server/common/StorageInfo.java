@@ -34,7 +34,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
@@ -125,7 +125,7 @@ public class StorageInfo {
   
   //START_HOP_CODE
   public static StorageInfo getStorageInfoFromDB() throws IOException {
-    return (StorageInfo) new TransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
+    return (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -143,7 +143,7 @@ public class StorageInfo {
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
                                                                                        // FIXME [S] it can cause problems in the future when we try to run multiple NN
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
-    TransactionalRequestHandler formatHandler = new TransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
+    HDFSTransactionalRequestHandler formatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();

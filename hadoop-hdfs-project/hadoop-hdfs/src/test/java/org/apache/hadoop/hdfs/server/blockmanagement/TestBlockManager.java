@@ -56,7 +56,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 
 public class TestBlockManager {
@@ -361,7 +361,7 @@ public class TestBlockManager {
    */
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
-    TransactionalRequestHandler handler = new TransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
+    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
       long inodeId;
       @Override
       public void setUp() throws StorageException {
@@ -399,7 +399,7 @@ public class TestBlockManager {
   }
 
   private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
-    return (BlockInfo) new TransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
+    return (BlockInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -442,7 +442,7 @@ public class TestBlockManager {
     final BlockCollection bc = Mockito.mock(BlockCollection.class);
     Mockito.doReturn((short)3).when(bc).getBlockReplication();
     final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
-    new TransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
          TransactionLockAcquirer tla = new TransactionLockAcquirer();
@@ -461,7 +461,7 @@ public class TestBlockManager {
   }
 
   private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
-    return (DatanodeDescriptor[]) new TransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
+    return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
       long inodeId;
 
       @Override

@@ -69,7 +69,7 @@ import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 
 class NamenodeJspHelper {
@@ -796,7 +796,7 @@ class NamenodeJspHelper {
         this.inode = null;
       } else {
         this.block = new Block(blockId);
-        this.inode = (INodeFile) new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+        this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
           @Override
           public Object performTask() throws PersistanceException, IOException {
             return blockManager.getBlockCollection(block);

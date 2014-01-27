@@ -49,7 +49,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.dal.LeasePathDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
@@ -103,7 +103,7 @@ public class LeaseManager {
   }
   
   SortedSet<Lease> getSortedLeases() throws IOException {
-    TransactionalRequestHandler getSortedLeasesHandler = new TransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
+    HDFSTransactionalRequestHandler getSortedLeasesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
@@ -406,7 +406,7 @@ public class LeaseManager {
           }
       }
     
-    TransactionalRequestHandler isInSafeModeHandler = new TransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
+    HDFSTransactionalRequestHandler isInSafeModeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -429,7 +429,7 @@ public class LeaseManager {
       }
     };
     
-    TransactionalRequestHandler expiredLeaseHandler = new TransactionalRequestHandler(HDFSOperationType.LEASE_MANAGER_MONITOR) {
+    HDFSTransactionalRequestHandler expiredLeaseHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LEASE_MANAGER_MONITOR) {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {

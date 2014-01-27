@@ -35,7 +35,7 @@ import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 
@@ -246,7 +246,7 @@ class PendingReplicationBlocks {
   }
   
   private Block getBlock(final PendingBlockInfo pbi) throws IOException {
-    return (Block) new TransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
+    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
       public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException { 
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
