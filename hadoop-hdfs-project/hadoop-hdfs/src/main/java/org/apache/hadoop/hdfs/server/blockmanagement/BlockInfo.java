@@ -16,6 +16,8 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.metadata.entity.hop.HopReplica;
+import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -25,10 +27,10 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import org.apache.hadoop.hdfs.server.namenode.persistance.CounterType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.entity.CounterType;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given
@@ -39,7 +41,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
 public class BlockInfo extends Block {
   
   public static final BlockInfo[] EMPTY_ARRAY = {};
-  private static final List<IndexedReplica> EMPTY_REPLICAS_ARRAY = Collections.unmodifiableList(new ArrayList<IndexedReplica>());
+  private static final List<HopIndexedReplica> EMPTY_REPLICAS_ARRAY = Collections.unmodifiableList(new ArrayList<HopIndexedReplica>());
   
   public static enum Counter implements CounterType<BlockInfo> {
     
@@ -154,6 +156,9 @@ public class BlockInfo extends Block {
 
     BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
     this.bc = bc; 
+    if(bc == null){
+      this.inodeId = INode.NON_EXISTING_ID;
+    }
     return bc;
   }
   
@@ -161,9 +166,7 @@ public class BlockInfo extends Block {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());      
-    }else{
-      this.inodeId = INode.NON_EXISTING_ID;
-    } 
+    }
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
 //      setINodeIdNoPersistance(-1);
@@ -179,26 +182,26 @@ public class BlockInfo extends Block {
   }
 
   public DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr) throws PersistanceException{
-    List<IndexedReplica> replicas = getReplicas(datanodeMgr);
+    List<HopIndexedReplica> replicas = getReplicas(datanodeMgr);
     return getDatanodes(datanodeMgr, replicas);
   }
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
-  List<IndexedReplica> getReplicasNoCheck() throws PersistanceException {
-    List<IndexedReplica> replicas = (List<IndexedReplica>) EntityManager.findList(IndexedReplica.Finder.ByBlockId, getBlockId());
+  List<HopIndexedReplica> getReplicasNoCheck() throws PersistanceException {
+    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
     } else {
-      Collections.sort(replicas, IndexedReplica.Order.ByIndex);
+      Collections.sort(replicas, HopIndexedReplica.Order.ByIndex);
     }
     return replicas;
   }
 
     //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
-  List<IndexedReplica> getReplicas(DatanodeManager datanodeMgr) throws PersistanceException {
-    List<IndexedReplica> replicas = getReplicasNoCheck();
+  List<HopIndexedReplica> getReplicas(DatanodeManager datanodeMgr) throws PersistanceException {
+    List<HopIndexedReplica> replicas = getReplicasNoCheck();
     getDatanodes(datanodeMgr, replicas);
-    Collections.sort(replicas, IndexedReplica.Order.ByIndex);
+    Collections.sort(replicas, HopIndexedReplica.Order.ByIndex);
     return replicas; 
   }
 
@@ -206,14 +209,14 @@ public class BlockInfo extends Block {
   /**
    * Adds new replica for this block.
    */
-  IndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
-    IndexedReplica replica = new IndexedReplica(getBlockId(), dn.getStorageID(),/*FIXME [M]*/ getReplicasNoCheck().size());
+  HopIndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
+    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getStorageID(),/*FIXME [M]*/ getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
 
   public void removeAllReplicas() throws PersistanceException {
-    for (IndexedReplica replica : getReplicasNoCheck()) {
+    for (HopIndexedReplica replica : getReplicasNoCheck()) {
       remove(replica);
     }
   }
@@ -223,9 +226,9 @@ public class BlockInfo extends Block {
    * @param storageId
    * @return
    */
-  IndexedReplica removeReplica(DatanodeDescriptor dn) throws PersistanceException {
-    List<IndexedReplica> replicas = getReplicasNoCheck();
-    IndexedReplica replica = null;
+  HopIndexedReplica removeReplica(DatanodeDescriptor dn) throws PersistanceException {
+    List<HopIndexedReplica> replicas = getReplicasNoCheck();
+    HopIndexedReplica replica = null;
     int index = -1;
     for (int i = 0; i < replicas.size(); i++) {
       if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
@@ -238,7 +241,7 @@ public class BlockInfo extends Block {
       remove(replica);
       
       for (int i = index; i < replicas.size(); i++) {        
-        IndexedReplica r1 = replicas.get(i);
+        HopIndexedReplica r1 = replicas.get(i);
         r1.setIndex(i);
         save(r1);
       }
@@ -248,7 +251,7 @@ public class BlockInfo extends Block {
   }
   
   int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
-    List<IndexedReplica> replicas = getReplicasNoCheck();
+    List<HopIndexedReplica> replicas = getReplicasNoCheck();
     for (int i = 0; i < replicas.size(); i++) {
       if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
         return i;
@@ -258,7 +261,7 @@ public class BlockInfo extends Block {
   }
 
   boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
-    for (IndexedReplica replica : getReplicasNoCheck()) {
+    for (HopIndexedReplica replica : getReplicasNoCheck()) {
       if (replica.getStorageId().equals(dn.getStorageID())) {
         return true;
       }
@@ -342,7 +345,7 @@ public class BlockInfo extends Block {
     save();
   }
   
-  protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends Replica> replicas) {
+  protected DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr, List<? extends HopReplica> replicas) {
     int numLocations = replicas.size();
     List<DatanodeDescriptor> list = new ArrayList<DatanodeDescriptor>();
     for (int i = numLocations-1; i >= 0 ; i--) {
@@ -357,15 +360,15 @@ public class BlockInfo extends Block {
     return list.toArray(locations);
   }
     
-  protected void add(IndexedReplica replica) throws PersistanceException {
+  protected void add(HopIndexedReplica replica) throws PersistanceException {
     EntityManager.add(replica);
   }
   
-  protected void remove(IndexedReplica replica) throws PersistanceException {
+  protected void remove(HopIndexedReplica replica) throws PersistanceException {
     EntityManager.remove(replica);
   }
   
-  protected void save(IndexedReplica replica) throws PersistanceException {
+  protected void save(HopIndexedReplica replica) throws PersistanceException {
     EntityManager.update(replica);
   }
   

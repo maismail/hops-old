@@ -80,14 +80,14 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeResolveType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 
 /**
  * A JUnit test for doing fsck
@@ -739,9 +739,9 @@ public class TestFsck {
       DFSTestUtil.waitReplication(fs, filePath, (short)1);
       
       final MiniDFSCluster clusterFinal = cluster;
-        TransactionalRequestHandler handler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+        HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
               TransactionLockAcquirer tla = new TransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).
@@ -760,7 +760,7 @@ public class TestFsck {
                 return null;
             }
         };
-      handler.handle(null);
+      handler.handle();
       
       // run fsck and expect a failure with -1 as the error code
       String outStr = runFsck(conf, -1, true, fileName);

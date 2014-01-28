@@ -15,6 +15,9 @@
  */
 package org.apache.hadoop.hdfs.server.protocol;
 
+import java.net.InetSocketAddress;
+import org.apache.hadoop.net.NetUtils;
+
 /**
  *
  * @author jdowling
@@ -25,7 +28,7 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     private final String hostname;
     private final String ipAddress;
     private final int port;
-
+    
     public ActiveNamenode(long id, String hostname, String ipAddress, int port) {
         this.id = id;
         this.hostname = hostname;
@@ -48,6 +51,27 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
     public int getPort() {
         return port;
     }
+    
+    public InetSocketAddress getInetSocketAddress(){
+//        return new InetSocketAddress(ipAddress, port);
+        return NetUtils.createSocketAddrForHost(ipAddress, port);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        // objects are equal if the belong to same NN
+        // namenode id is not taken in to account
+        // sometimes the id of the namenode may change even without 
+        //namenode restart
+        if(!(obj instanceof  ActiveNamenode))
+        { return false; }
+        ActiveNamenode that = (ActiveNamenode)obj;
+        if(this.getInetSocketAddress().equals(that.getInetSocketAddress())){
+            return true;
+        }else{
+            return false;
+        }
+    }
 
   @Override
   public int compareTo(ActiveNamenode o) {
@@ -62,8 +86,9 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
       throw new IllegalStateException("I write horrible code");
     }
   }
-   
-   
-    
-    
+
+  @Override
+  public String toString() {
+    return "Active NN ("+id+") address "+getInetSocketAddress();
+  }   
 }

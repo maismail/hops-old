@@ -36,9 +36,16 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
 import org.junit.Before;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestFsLimits {
   static Configuration conf;
@@ -50,7 +57,7 @@ public class TestFsLimits {
     = new PermissionStatus("admin", "admin", FsPermission.getDefault());
 
   static INodeDirectoryWithQuota rootInode;
-
+  
   static private FSNamesystem getMockNamesystem() {
     FSNamesystem fsn = mock(FSNamesystem.class);
     when(
@@ -61,6 +68,14 @@ public class TestFsLimits {
     return fsn;
   }
   
+  private void initFS() throws StorageException, IOException{
+        StorageFactory.setConfiguration(conf);
+    assert (StorageFactory.getConnector().formatStorage());
+    rootInode = FSDirectory.createRootInode(perms,true);
+    inodes = new INode[]{ rootInode, null };
+    fs = null;
+    fsIsReady = true;
+  }
   private static class TestFSDirectory extends FSDirectory {
     public TestFSDirectory() throws IOException {
       super(getMockNamesystem(), conf);
@@ -77,14 +92,11 @@ public class TestFsLimits {
   @Before
   public void setUp() throws IOException {
     conf = new Configuration();
+
     conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY,
              fileAsURI(new File(MiniDFSCluster.getBaseDirectory(),
                                 "namenode")).toString());
-
-    rootInode = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME, perms, 0L, 0L);
-    inodes = new INode[]{ rootInode, null };
-    fs = null;
-    fsIsReady = true;
+   initFS();
   }
 
   @Test
@@ -155,21 +167,40 @@ public class TestFsLimits {
     addChildWithName("4444", null);
   }
 
-  private void addChildWithName(String name, Class<?> expected)
+  private static long id  = 1 ;
+  private void addChildWithName(final String name, final Class<?> expected)
   throws Exception {
-    // have to create after the caller has had a chance to set conf values
+  HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+
+    @Override
+    public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+      TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
+      return tla.acquire();
+    }
+
+    @Override
+    public Object performTask() throws PersistanceException, IOException {
+      // have to create after the caller has had a chance to set conf values
     if (fs == null) fs = new TestFSDirectory();
 
     INode child = new INodeDirectory(name, perms);
+    child.setIdNoPersistance(id++);
     child.setLocalName(name);
     
     Class<?> generated = null;
     try {
       fs.verifyFsLimits(inodes, 1, child);
-      rootInode.addChild(child, false);
+      INodeDirectoryWithQuota.getRootDir().addChild(child, false);
     } catch (QuotaExceededException e) {
       generated = e.getClass();
     }
     assertEquals(expected, generated);
+    return null;
+    }
+  };
+  
+  handler.handle();
+    
   }
 }

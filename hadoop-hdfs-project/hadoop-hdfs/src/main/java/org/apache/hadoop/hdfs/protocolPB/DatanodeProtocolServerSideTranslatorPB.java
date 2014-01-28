@@ -59,9 +59,10 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
+import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 public class DatanodeProtocolServerSideTranslatorPB implements
     DatanodeProtocolPB {
@@ -258,7 +259,7 @@ public class DatanodeProtocolServerSideTranslatorPB implements
     
     try
     {
-        ActiveNamenodeList anl = impl.getActiveNamenodes();
+        SortedActiveNamenodeList anl = impl.getActiveNamenodes();
         ActiveNamenodeListResponseProto response = PBHelper.convert(anl);
         return response;  
     }catch (IOException e)
@@ -269,12 +270,12 @@ public class DatanodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
-  public NameNodeAddressResponseForBlockReportingProto getNextNamenodeToSendBlockReport(RpcController controller, NameNodeAddressRequestForBlockReportingProto request) throws ServiceException {
+  public ActiveNamenodeProto getNextNamenodeToSendBlockReport(RpcController controller, NameNodeAddressRequestForBlockReportingProto request) throws ServiceException {
     try
     {
-         String responseString = impl.getNextNamenodeToSendBlockReport();
-         NameNodeAddressResponseForBlockReportingProto response = PBHelper.convert(responseString);
-        return response;  
+         ActiveNamenode response = impl.getNextNamenodeToSendBlockReport();
+         ActiveNamenodeProto responseProto = PBHelper.convert(response);
+        return responseProto;  
     }catch (IOException e)
     {
       throw new ServiceException(e);

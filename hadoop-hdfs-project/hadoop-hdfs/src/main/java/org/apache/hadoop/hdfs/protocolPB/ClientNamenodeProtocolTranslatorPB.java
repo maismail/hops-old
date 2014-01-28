@@ -117,6 +117,12 @@ import org.apache.hadoop.security.token.Token;
 
 import com.google.protobuf.ByteString;
 import com.google.protobuf.ServiceException;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
+import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingRequestProto;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * This class forwards NN's ClientProtocol calls as RPC calls to the NN server
@@ -852,4 +858,43 @@ public class ClientNamenodeProtocolTranslatorPB implements
     return rpcProxy;
   }
   
+  //START_HOP_CODE
+  @Override
+  public void ping() throws IOException {
+    try {
+      PingRequestProto pingRequestProto = PingRequestProto.newBuilder().build();
+      rpcProxy.ping(null, pingRequestProto);
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
+  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException {
+    try {
+      ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto.Builder request = ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto.newBuilder();
+      ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodesForClient(null, request.build());
+      SortedActiveNamenodeList anl = convertProtoANListToANList(response);
+      return anl;
+    } catch (ServiceException se) {
+      throw ProtobufHelper.getRemoteException(se);
+    }
+  }
+  
+    private SortedActiveNamenodeList convertProtoANListToANList(ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto p) {
+    List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
+    List<ClientNamenodeProtocolProtos.ActiveNamenodeProto> anlp = p.getNamenodesList();
+    for (int i = 0; i < anlp.size(); i++) {
+      ActiveNamenode an = convertProtoANToAN(anlp.get(i));
+      anl.add(an);
+    }
+    return new SortedActiveNamenodeList(anl);
+  }
+  
+  private ActiveNamenode convertProtoANToAN(ClientNamenodeProtocolProtos.ActiveNamenodeProto p)
+  {
+    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
+    return an;
+  }
+  //END_HOP_CODE
 }

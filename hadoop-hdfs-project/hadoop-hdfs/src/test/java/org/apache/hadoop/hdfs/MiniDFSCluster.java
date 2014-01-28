@@ -104,19 +104,14 @@ import org.apache.hadoop.util.ToolRunner;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
-import com.mysql.clusterj.Session;
-import org.apache.hadoop.hdfs.server.blockmanagement.UnderReplicatedBlock;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockInfoClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.BlockTokenKeyClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.InodeClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeaseClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.LeasePathClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.ReplicaUnderConstructionClusterj;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.clusterj.UnderReplicatedBlockClusterj;
-
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.dal.LeaderDataAccess;
+import se.sics.hop.metadata.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.
@@ -650,7 +645,7 @@ public class MiniDFSCluster {
     }
     
     //START_HOP_CODE
-        // Setting the configuration for Storage
+    // Setting the configuration for Storage
     StorageFactory.setConfiguration(conf);
     if (format) {
       try {
@@ -997,7 +992,9 @@ public class MiniDFSCluster {
           Thread.sleep(1000);
         } catch (InterruptedException e) {
         }
-        if (++i > 10) {
+        if (++i > 15) { //HOP increase the time from 10 to 15 becase now the registration process some 
+                        //times takes longer. it is because the threads for sending HB and Block Report 
+                        //are separate and some times we take couple of second more 
           throw new IOException("Timed out waiting for Mini HDFS Cluster to start");
         }
       }
@@ -1480,7 +1477,7 @@ public class MiniDFSCluster {
       shutdownNameNode(i);
     }
   }
-  
+   
   /**
    * Shutdown the namenode at a given index.
    */
@@ -1540,7 +1537,7 @@ public class MiniDFSCluster {
     Configuration conf = nameNodes[nnIndex].conf;
     shutdownNameNode(nnIndex);
     //HOP_START_CODE
-    deleteReplicasTable();
+    deleteReplicasTable();  // it will delete the tables if there are no active nn
     //HOP_END_CODE
     NameNode nn = NameNode.createNameNode(new String[] {}, conf);
     nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
@@ -1680,6 +1677,14 @@ public class MiniDFSCluster {
         DataNode.createDataNode(args, conf, secureResources),
         newconf, args, secureResources));
     numDataNodes++;
+    try {
+      //START_HOP_CODE
+      //[S] figure out which thread has slowed down
+      Thread.sleep(1000);
+    } catch (InterruptedException ex) {
+      Logger.getLogger(MiniDFSCluster.class.getName()).log(Level.SEVERE, null, ex);
+    }
+    //END_HOP_CODE
     return true;
   }
 
@@ -1730,7 +1735,7 @@ public class MiniDFSCluster {
   public boolean isNameNodeUp(int nnIndex) throws IOException {
     NameNode nameNode = nameNodes[nnIndex].nameNode;
     if (nameNode == null) {
-      return false;
+        return true;        // this node was shut down so return true
     }
     long[] sizes;
     sizes = NameNodeAdapter.getStats(nameNode.getNamesystem());
@@ -1884,7 +1889,7 @@ public class MiniDFSCluster {
 
   /** Wait until the given namenode gets registration from all the datanodes */
   public void waitActive(int nnIndex) throws IOException {
-    if (nameNodes.length == 0 || nameNodes[nnIndex] == null) {
+    if (nameNodes.length == 0 || nameNodes[nnIndex] == null || nameNodes[nnIndex].nameNode == null) {
       return;
     }
     InetSocketAddress addr = nameNodes[nnIndex].nameNode.getServiceRpcAddress();
@@ -2365,19 +2370,40 @@ public class MiniDFSCluster {
   }
   
   //HOP_START_CODE
-  private void deleteReplicasTable(){    
-      try {
-          Session session = (Session) StorageFactory.getConnector().obtainSession();
-//          session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-//          session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-          session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-          session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-          session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
-          session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
-          session.flush();
-      } catch (StorageException e) {
-          LOG.error(e);
-      }  
-  }
+  /**
+   * deletes tables if there are no alive nn in the system
+   */
+    private void deleteReplicasTable() {
+
+        //count number of active NN
+        int activeNameNodes = 0;
+        for (int i = 0; i < nameNodes.length; i++) {
+            if (nameNodes[i] == null || nameNodes[i].nameNode == null) {
+                continue;
+            } else {
+                activeNameNodes++;
+            }
+        }
+        if (activeNameNodes == 0) {
+            try {
+              StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+                      UnderReplicatedBlockDataAccess.class, LeaderDataAccess.class);
+              
+//                Session session = (Session) StorageFactory.getConnector().obtainSession();
+//                //lease is persisted in the edit logs
+////              session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
+////              session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
+//                session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
+//                session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
+//                session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
+//                session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
+//                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
+//                session.deletePersistentAll(INodeAttributesClusterj.INodeAttributesDTO.class);
+//                session.flush();
+            } catch (StorageException e) {
+                LOG.error(e);
+            }
+        }
+    }
   //HOP_END_CODE      
 }

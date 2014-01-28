@@ -88,16 +88,17 @@ import org.apache.hadoop.util.VersionInfo;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 /** Utilities for HDFS tests */
 public class DFSTestUtil {
-  
+  static final Log LOG = LogFactory.getLog(DFSTestUtil.class);
   private static Random gen = new Random();
   private static String[] dirNames = {
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
@@ -351,9 +352,9 @@ public class DFSTestUtil {
       throws IOException, TimeoutException, InterruptedException {
     int count = 0;
     final int ATTEMPTS = 50;
-    TransactionalRequestHandler corruptReplicasHandler = new TransactionalRequestHandler(OperationType.TEST) {
+    HDFSTransactionalRequestHandler corruptReplicasHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ, b.getBlockId()).
@@ -559,6 +560,42 @@ public class DFSTestUtil {
       throw new TimeoutException("Timed out waiting for " + fileName +
           " to reach " + replFactor + " replicas");
     }
+  }
+  
+   /** wait for the file's replication to be done */
+  public static void waitReplicationWithTimeout(FileSystem fs, Path fileName, 
+      short replFactor, long timeout)  throws IOException, TimeoutException {
+    boolean good;
+    long initTime = System.currentTimeMillis();
+    do {
+      good = true;
+      BlockLocation locs[] = fs.getFileBlockLocations(
+        fs.getFileStatus(fileName), 0, Long.MAX_VALUE);
+      for (int j = 0; j < locs.length; j++) {
+        String[] hostnames = locs[j].getNames();
+        if (hostnames.length != replFactor) {
+          String hostNameList = "";
+          for (String h : hostnames) hostNameList += h + " ";
+          LOG.info("Block " + j + " of file " + fileName 
+              + " has replication factor " + hostnames.length + "; locations "
+              + hostNameList);
+          good = false;
+          try {
+            LOG.info("Waiting for replication factor to drain");
+            Thread.sleep(500);
+          } catch (InterruptedException e) {} 
+          break;
+        }
+      }
+      if (good) {
+        LOG.info("All blocks of file " + fileName
+            + " verified to have replication factor " + replFactor);
+      }
+      
+      if(System.currentTimeMillis() - initTime > timeout) {
+        throw new TimeoutException("Waiting for replication timed out.");
+      }
+    } while(!good);
   }
   
   /** delete directory and everything underneath it.*/

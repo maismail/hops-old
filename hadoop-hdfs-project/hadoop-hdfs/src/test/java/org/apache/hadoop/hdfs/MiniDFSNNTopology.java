@@ -30,7 +30,7 @@ import com.google.common.collect.Lists;
  * a MiniDFSCluster. It consists of a set of nameservices, each of which
  * may have one or more namenodes (in the case of HA)
  */
-@InterfaceAudience.LimitedPrivate({"HBase", "HDFS", "Hive", "MapReduce", "Pig"})
+@InterfaceAudience.LimitedPrivate({"HBase", "HDFS", "Hive", "MapReduce", "Pig", "HOPS"})
 @InterfaceStability.Unstable
 public class MiniDFSNNTopology {
   private final List<NSConf> nameservices = Lists.newArrayList();
@@ -223,5 +223,21 @@ public class MiniDFSNNTopology {
       return this;
     }
   }
-
+  
+  
+  //START_HOP_CODE
+  /**
+   * Set up an HOPS Topology
+   */
+  public static MiniDFSNNTopology simpleHOPSTopology(int nnCount) {
+     if(nnCount < 1) return null;
+     MiniDFSNNTopology topology = new MiniDFSNNTopology();
+     NSConf conf = new MiniDFSNNTopology.NSConf("minidfs-ns");
+     for(int i = 1; i <= nnCount; i++){
+         conf.addNN(new MiniDFSNNTopology.NNConf("nn"+i));
+     }
+     topology.addNameservice(conf);
+     return topology;
+  }
+  //END_HOP_  CODE
 }

@@ -29,11 +29,11 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.metadata.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.util.Time;
 
@@ -359,14 +359,14 @@ public class DatanodeDescriptor extends DatanodeInfo {
   }
   
   public List<BlockInfo> getAllMachineBlocks() throws IOException {
-    LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(OperationType.GET_ALL_MACHINE_BLOCKS) {
+    LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return da.findByStorageId(getStorageID());
       }
     };
-    return (List<BlockInfo>) findBlocksHandler.handle(null);
+    return (List<BlockInfo>) findBlocksHandler.handle();
   }
   
   /**

@@ -64,7 +64,7 @@ public class TestBalancerBandwidth {
 
       // Give it a few seconds to propogate new the value to the datanodes.
       try {
-        Thread.sleep(5000);
+        Thread.sleep(6000/*5000*/);
       } catch (Exception e) {}
 
       assertEquals(newBandwidth, (long) datanodes.get(0).getBalancerBandwidth());
@@ -76,7 +76,7 @@ public class TestBalancerBandwidth {
 
       // Give it a few seconds to propogate new the value to the datanodes.
       try {
-        Thread.sleep(5000);
+        Thread.sleep(6000/*5000*/);
       } catch (Exception e) {}
 
       assertEquals(newBandwidth, (long) datanodes.get(0).getBalancerBandwidth());

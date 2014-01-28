@@ -17,16 +17,14 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.File;
+import se.sics.hop.metadata.LeaderElection;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,7 +37,6 @@ import org.apache.hadoop.ha.HAServiceStatus;
 import org.apache.hadoop.ha.HealthCheckFailedException;
 import org.apache.hadoop.ha.ServiceFailedException;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Trash;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 import static org.apache.hadoop.util.ExitUtil.terminate;
@@ -64,7 +61,6 @@ import org.apache.hadoop.hdfs.server.protocol.JournalProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
-import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
@@ -79,13 +75,13 @@ import org.apache.hadoop.util.ExitUtil.ExitException;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Lists;
+import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.StorageFactory;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**********************************************************
  * NameNode serves as both directory namespace manager and
@@ -261,7 +257,8 @@ public class NameNode {
   
   //START_HOP_CODE
   private long id = LeaderElection.LEADER_INITIALIZATION_ID;
-  protected LeaderElection leaderAlgo;
+  protected LeaderElection leaderElection;
+  private SortedActiveNamenodeList nnList = null;
   //END_HOP_CODE
 
   /** Format a new filesystem.  Destroys any filesystem that may already
@@ -442,6 +439,10 @@ public class NameNode {
     UserGroupInformation.setConfiguration(conf);
     loginAsNameNodeUser(conf);
 
+    //START_HOP_CODE
+    StorageFactory.setConfiguration(conf);
+    //END_HOP_CODE
+    
     NameNode.initMetrics(conf, this.getRole());
     loadNamesystem(conf);
 
@@ -449,8 +450,7 @@ public class NameNode {
     
     //START_HOP_CODE
     // Initialize the leader election algorithm (only once rpc server is created)
-    leaderAlgo = new LeaderElection(conf, this);
-    leaderAlgo.initialize();
+    leaderElection = new LeaderElection(conf, this);
     //END_HOP_CODE
     
     try {
@@ -620,7 +620,8 @@ public class NameNode {
     this.role = role;
     String nsId = getNameServiceId(conf);
     String namenodeId = HAUtil.getNameNodeId(conf, nsId);
-    this.haEnabled = HAUtil.isHAEnabled(conf, nsId);
+//    this.haEnabled = HAUtil.isHAEnabled(conf, nsId); // HOP disable it
+    this.haEnabled = false; // HOP this will force every namenode to be active
     state = createHAState();
     this.allowStaleStandbyReads = HAUtil.shouldAllowStandbyReads(conf);
     this.haContext = createHAContext();
@@ -1291,7 +1292,7 @@ public class NameNode {
       throws HealthCheckFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      return; // no-op, if HA is not enabled
+//HOP      return; // no-op, if HA is not enabled
     }
 //HOP    getNamesystem().checkAvailableResources();
     if (!getNamesystem().nameNodeHasResourcesAvailable()) {
@@ -1304,7 +1305,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     state.setState(haContext, ACTIVE_STATE);
   }
@@ -1313,7 +1314,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     state.setState(haContext, STANDBY_STATE);
   }
@@ -1322,7 +1323,7 @@ public class NameNode {
       throws ServiceFailedException, AccessControlException, IOException {
     namesystem.checkSuperuserPrivilege();
     if (!haEnabled) {
-      throw new ServiceFailedException("HA for namenode is not enabled");
+//HOP      throw new ServiceFailedException("HA for namenode is not enabled");
     }
     if (state == null) {
       return new HAServiceStatus(HAServiceState.INITIALIZING);
@@ -1518,7 +1519,7 @@ public class NameNode {
   /**
    * Sets a new id incase of crash
    */
-  void setId(long id) {
+  public void setId(long id) {
     this.id = id;
     namesystem.setNameNodeId(id);
   }
@@ -1529,19 +1530,64 @@ public class NameNode {
    * @return {@link LeaderElection} object.
    */
   public LeaderElection getLeaderElectionInstance() {
-    return leaderAlgo;
+    return leaderElection;
   }
 
   /**
    * Set the role for Namenode
    */
-  synchronized void setRole(NamenodeRole role) {
+  public synchronized void setRole(NamenodeRole role) {
     this.role = role;
     namesystem.setNameNodeRole(role);
+  }
+  
+  public synchronized void setNameNodeList(SortedActiveNamenodeList list){
+    this.nnList = list;
   }
 
   public boolean isLeader() {
     return role.equals(NamenodeRole.LEADER);
+  }
+//HOP the code is optimized. now when ever there is request for fresh list of 
+//namenodes in the system we return nnList. nnList is periodically updated by the leader
+//election algorith 
+//    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.SELECT_ALL_NAMENODES) {
+//    @Override
+//    public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//      TransactionLockAcquirer tla = new TransactionLockAcquirer();
+//      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
+//      return tla.acquire();
+//    }
+//
+//    @Override
+//    public Object performTask() throws PersistanceException, IOException {
+//      return getLeaderElectionInstance().selectAll();
+//    }
+//  };
+
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+   // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle();
+    return nnList;
+  }
+  
+  protected volatile int nnIndex = 0;
+  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
+    List<ActiveNamenode> allNodes = nnList.getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
+    if(this.isLeader())
+    {
+      // Use the modulo to roundrobin b/w namenodes
+      nnIndex = ++nnIndex % allNodes.size();
+      ActiveNamenode ann = allNodes.get(nnIndex);
+      //LOG.debug("Returning "+ann.getIpAddress()+" for Next Block report");
+      return ann;
+    }else{
+      // random allocation of NN
+      Random rand = new Random();
+      rand.setSeed(System.currentTimeMillis());
+      ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
+      //LOG.debug("Returning "+ann.getIpAddress()+" for Next Block report");
+      return ann;
+    }
   }
   //END_HOP_CODE
 }

@@ -62,13 +62,15 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.InodeDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.RequestHandler;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.metadata.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.dal.INodeDataAccess;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
  * FSDirectory stores the filesystem directory state.
@@ -135,7 +137,7 @@ public class FSDirectory implements Closeable {
   FSDirectory(FSNamesystem ns, Configuration conf) throws IOException {
      //START_HOP_CODE
      this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_QUOTA_ENABLED_KEY,
-                DFSConfigKeys.DFS_QUOTA_ENABLED_KEY_DEFAULT);  
+                DFSConfigKeys.DFS_QUOTA_ENABLED_DEFAULT);  
      //END_HOP_CODE
       
     this.dirLock = new ReentrantReadWriteLock(true); // fair
@@ -143,7 +145,7 @@ public class FSDirectory implements Closeable {
 //HOP     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
 //        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
-    createRootInode(ns, false /*dont overwrite if root inode already existes*/);
+    createRootInode(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), false /*dont overwrite if root inode already existes*/);
 
     int configuredLimit = conf.getInt(
         DFSConfigKeys.DFS_LIST_LIMIT, DFSConfigKeys.DFS_LIST_LIMIT_DEFAULT);
@@ -572,6 +574,7 @@ public class FSDirectory implements Closeable {
     }
     
     byte[][] dstComponents = INode.getPathComponents(dst);
+    LOG.debug("destination is "+dst);
     INode[] dstInodes = new INode[dstComponents.length];
     getRootDir().getExistingPathINodes(dstComponents, dstInodes, false);
     if (dstInodes[dstInodes.length-1] != null) {
@@ -1364,7 +1367,7 @@ public class FSDirectory implements Closeable {
    */
   private void updateCount(INode[] inodes, int numOfINodes, 
                            long nsDelta, long dsDelta, boolean checkQuota)
-                           throws QuotaExceededException {
+                           throws QuotaExceededException, PersistanceException {
     if(!isQuotaEnabled()) return;   //HOP
     
     assert hasWriteLock();
@@ -1391,7 +1394,7 @@ public class FSDirectory implements Closeable {
    * See {@link #updateCount(INode[], int, long, long, boolean)}
    */ 
   private void updateCountNoQuotaCheck(INode[] inodes, int numOfINodes, 
-                           long nsDelta, long dsDelta) {
+                           long nsDelta, long dsDelta) throws PersistanceException {
     assert hasWriteLock();
     try {
       updateCount(inodes, numOfINodes, nsDelta, dsDelta, false);
@@ -1409,7 +1412,7 @@ public class FSDirectory implements Closeable {
    * @param dsDelta
    */
    void unprotectedUpdateCount(INode[] inodes, int numOfINodes, 
-                                      long nsDelta, long dsDelta) {
+                                      long nsDelta, long dsDelta) throws PersistanceException {
      if(!isQuotaEnabled()) return;    //HOP
      
      assert hasWriteLock();
@@ -1620,7 +1623,7 @@ public class FSDirectory implements Closeable {
    * @throws QuotaExceededException if quota limit is exceeded.
    */
   private void verifyQuota(INode[] inodes, int pos, long nsDelta, long dsDelta,
-      INode commonAncestor) throws QuotaExceededException {
+      INode commonAncestor) throws QuotaExceededException, PersistanceException {
     if (!ready) {
       // Do not check quota if edits log is still being processed
       return;
@@ -2011,14 +2014,14 @@ public class FSDirectory implements Closeable {
     try {
       //HOP return getRootDir().numItemsInTree();
       // TODO[Hooman]: after fixing quota, we can use root.getNscount instead of this.
-      LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(RequestHandler.OperationType.TOTAL_FILES) {
+      LightWeightRequestHandler totalInodesHandler = new LightWeightRequestHandler(HDFSOperationType.TOTAL_FILES) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
-          InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+          INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
           return da.countAll();
         }
       };
-      return (Integer) totalInodesHandler.handle(null);
+      return (Integer) totalInodesHandler.handle();
     } finally {
       readUnlock();
     }
@@ -2077,7 +2080,7 @@ public class FSDirectory implements Closeable {
     writeLock();
     try {
       setReady(false);
-      createRootInode(namesystem, true);
+      createRootInode(namesystem.createFsOwnerPermissions(new FsPermission((short) 0755)), true);
 //      rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //          getFSNamesystem().createFsOwnerPermissions(new FsPermission((short)0755)),
 //          Integer.MAX_VALUE, -1);
@@ -2243,23 +2246,30 @@ public class FSDirectory implements Closeable {
   }
   
   //add root inode if its not there
-   public void createRootInode(final FSNamesystem ns, final boolean overwrite) throws IOException{
-     LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(RequestHandler.OperationType.SET_ROOT) {
+   public static INodeDirectoryWithQuota createRootInode(final PermissionStatus ps, final boolean overwrite) throws IOException{
+     LightWeightRequestHandler addRootINode = new LightWeightRequestHandler(HDFSOperationType.SET_ROOT) {
        @Override
        public Object performTask() throws PersistanceException {
-         InodeDataAccess da = (InodeDataAccess) StorageFactory.getDataAccess(InodeDataAccess.class);
+          INodeDirectoryWithQuota newRootINode = null;
+         INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
          INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
          if (rootInode == null || overwrite == true) {
-           INodeDirectoryWithQuota newRootINode = INodeDirectoryWithQuota.createRootDir(ns.createFsOwnerPermissions(new FsPermission((short) 0755)), Integer.MAX_VALUE, FSDirectory.UNKNOWN_DISK_SPACE);
+           newRootINode = INodeDirectoryWithQuota.createRootDir(ps);
            List<INode> newINodes = new ArrayList();
            newINodes.add(newRootINode);
            da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
+           
+           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
+           INodeAttributesDataAccess ida = (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
+           List<INodeAttributes> attrList = new ArrayList();
+           attrList.add(inodeAttributes);
+           ida.prepare(attrList, null);
            LOG.info("Added new root inode");
          }
-         return null;
+         return (Object)newRootINode;
        }
      };
-     addRootINode.handle(null);
+     return (INodeDirectoryWithQuota)addRootINode.handle();
   }
   //END_HOP_CODE
 }

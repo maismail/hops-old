@@ -36,12 +36,11 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -50,14 +49,15 @@ import org.apache.hadoop.util.Time;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestLease {
   
     static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
-    return (Boolean) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         return tla.acquireByLeasePath(src.toString(), LockType.READ, LockType.WRITE);
       }
@@ -67,7 +67,7 @@ public class TestLease {
         return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()
         ).getLeaseByPath(src.toString()) != null;
       }
-    }.handle(null);
+    }.handle();
   }
 
 

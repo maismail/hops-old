@@ -25,14 +25,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.LightWeightRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.context.entity.EntityContext;
-import org.apache.hadoop.hdfs.server.namenode.persistance.data_access.entity.BlockInfoDataAccess;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.StorageFactory;
 
 /**
  * This class maintains the map from a block to its metadata.
@@ -133,33 +133,34 @@ class BlocksMap {
   }
 
   int size() throws IOException {
-    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS_SIZE) {
+    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS_SIZE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.countAll();
       }
     };
-    return (Integer) getAllBlocksSizeHander.handle(null);
+    return (Integer) getAllBlocksSizeHander.handle();
   }
 
   Iterable<BlockInfo> getBlocks() throws IOException {
-    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(OperationType.GET_ALL_BLOCKS) {
+    LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         //FIXME. Very inefficient way of block processing
-        EntityContext.log(OperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
+        EntityContext.log(HDFSOperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.findAllBlocks();
       }
     };
-    return (List<BlockInfo>) getAllBlocksHander.handle(null);
+    return (List<BlockInfo>) getAllBlocksHander.handle();
   }
   
   /** Get the capacity of the HashMap that stores blocks */
   int getCapacity(){
+    //FIXME XXX fix the capacity thing. not really applicable in our case
     EntityContext.log("GET_CAPACITY", EntityContext.CacheHitState.LOSS, "FIXME. CAPACITY OF MEMORY IS 1");
-    return 1;
+    return Integer.MAX_VALUE;
   }
 
   /**

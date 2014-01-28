@@ -62,15 +62,15 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
-import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
 
 class NamenodeJspHelper {
   static String fraction2String(double value) {
@@ -796,7 +796,7 @@ class NamenodeJspHelper {
         this.inode = null;
       } else {
         this.block = new Block(blockId);
-        this.inode = (INodeFile) new TransactionalRequestHandler(OperationType.GET_INODE) {
+        this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
           @Override
           public Object performTask() throws PersistanceException, IOException {
             return blockManager.getBlockCollection(block);
@@ -804,7 +804,7 @@ class NamenodeJspHelper {
           long inodeId;
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
             TransactionLockAcquirer tla = new TransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.READ).
@@ -816,7 +816,7 @@ class NamenodeJspHelper {
           public void setUp() throws StorageException {
             inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
           }
-        }.handle(null);
+        }.handle();
       }
     }
 

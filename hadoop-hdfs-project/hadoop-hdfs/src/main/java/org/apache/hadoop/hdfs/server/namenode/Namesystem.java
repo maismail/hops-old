@@ -19,7 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.exception.PersistanceException;
 import org.apache.hadoop.hdfs.util.RwLock;
 import org.apache.hadoop.security.AccessControlException;
 

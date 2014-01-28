@@ -28,15 +28,15 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
-import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
 import org.junit.Test;
 
 public class TestUnderReplicatedBlocks {
@@ -58,7 +58,7 @@ public class TestUnderReplicatedBlocks {
       final BlockManager bm = cluster.getNamesystem().getBlockManager();
       final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
       
-      new TransactionalRequestHandler(OperationType.SET_REPLICA_INCREAMENT) {
+      new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICA_INCREAMENT) {
         long inodeId;
 
         @Override
@@ -67,7 +67,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
@@ -84,7 +84,7 @@ public class TestUnderReplicatedBlocks {
           bm.blocksMap.removeNode(b.getLocalBlock(), dn);
           return null;
         }
-      }.handle(null);
+      }.handle();
       
       // increment this file's replication factor
       FsShell shell = new FsShell(conf);

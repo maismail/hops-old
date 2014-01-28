@@ -30,18 +30,18 @@ import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretMan
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.security.AccessControlException;
 import org.mockito.Mockito;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**
  * This is a utility class to expose NameNode functionality for unit tests.
@@ -130,9 +130,9 @@ public class NameNodeAdapter {
 
   public static String getLeaseHolderForPath(final NameNode namenode, final String path) throws IOException {
 
-    return (String) new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+    return (String) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
       }
@@ -142,7 +142,7 @@ public class NameNodeAdapter {
         Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
         return l == null ? null : l.getHolder();
       }
-    }.handle(null);
+    }.handle();
   }
 
   /**
@@ -151,9 +151,9 @@ public class NameNodeAdapter {
    */
   public static long getLeaseRenewalTime(final NameNode nn, final String path) throws IOException {
 
-    TransactionalRequestHandler leaseRenewalTimeHandler = new TransactionalRequestHandler(RequestHandler.OperationType.TEST) {
+    HDFSTransactionalRequestHandler leaseRenewalTimeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
       }
@@ -168,7 +168,7 @@ public class NameNodeAdapter {
         return (Object)l.getLastUpdate();
       }
     };
-         return (Long)leaseRenewalTimeHandler.handle(null);
+         return (Long)leaseRenewalTimeHandler.handle();
   }
 
   /**

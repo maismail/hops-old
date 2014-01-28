@@ -142,9 +142,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressResponseForBlockReportingProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * Utilities for converting protobuf classes to and from implementation classes
@@ -1359,14 +1358,14 @@ public class PBHelper {
   }
   
 //HOP_CODE_START
-  public static ActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
+  public static SortedActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
     List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
     List<ActiveNamenodeProto> anlp = p.getNamenodesList();
     for (int i = 0; i < anlp.size(); i++) {
       ActiveNamenode an = PBHelper.convert(anlp.get(i));
       anl.add(an);
     }
-    return new ActiveNamenodeList(anl);
+    return new SortedActiveNamenodeList(anl);
   }
   
   public static ActiveNamenode convert(ActiveNamenodeProto p)
@@ -1382,13 +1381,12 @@ public class PBHelper {
     anp.setHostname(p.getHostname());
     anp.setIpAddress(p.getIpAddress());
     anp.setPort(p.getPort());
-    
     return anp.build();
   }
   
-  public static ActiveNamenodeListResponseProto convert(ActiveNamenodeList anlWrapper)
+  public static ActiveNamenodeListResponseProto convert(SortedActiveNamenodeList anlWrapper)
   {
-    List<ActiveNamenode> anl = anlWrapper.getListActiveNamenodes();
+    List<ActiveNamenode> anl = anlWrapper.getActiveNamenodes();
     ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();
     for(int i = 0; i < anl.size(); i++)
     {
@@ -1397,12 +1395,6 @@ public class PBHelper {
     }
     return anlrpb.build();
   }
-  
-  public static NameNodeAddressResponseForBlockReportingProto convert(String host)
-  {
-    NameNodeAddressResponseForBlockReportingProto.Builder response = NameNodeAddressResponseForBlockReportingProto.newBuilder();
-    response.setHostname(host);
-    return response.build();
-  }
+
 //HOP_CODE_END
 }

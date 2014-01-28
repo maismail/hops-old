@@ -55,7 +55,7 @@ public class TestLocalDFS {
     assertTrue(!fileSys.exists(name));
   }
 
-  static String getUserName(FileSystem fs) {
+  static String getUserName(FileSystem fs) throws IOException {
     if (fs instanceof DistributedFileSystem) {
       return ((DistributedFileSystem)fs).dfs.ugi.getShortUserName();
     }

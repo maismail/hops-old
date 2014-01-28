@@ -20,13 +20,13 @@ package org.apache.hadoop.hdfs.server.common;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.Variables;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /****************************************************************
  * A GenerationStamp is a Hadoop FS primitive, identified by a long.
@@ -110,9 +110,9 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
   
   //START_HOP_CODE
   public void setStampTx(final long stamp) throws IOException {
-    new TransactionalRequestHandler(RequestHandler.OperationType.SET_GEN_STAMP) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();
@@ -123,7 +123,7 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
         setStamp(stamp);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
   //END_HOP_CODE
 }

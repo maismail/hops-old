@@ -28,9 +28,9 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
-import static org.apache.hadoop.hdfs.server.namenode.INode.NON_EXISTING_ID;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.common.HopINodeIdGen;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * Directory INode class.
@@ -293,9 +293,13 @@ public class INodeDirectory extends INode {
     }
 
     if (!node.exists()) {
-      node.setIdNoPersistance(Math.abs(DFSUtil.getRandom().nextLong()));
+      node.setIdNoPersistance(HopINodeIdGen.getUniqueINodeID());
       node.setParentNoPersistance(this);
       EntityManager.add(node);
+      //add the INodeAttributes if it is Directory with Quota
+      if( this instanceof INodeDirectoryWithQuota){
+        ((INodeDirectoryWithQuota)this).persistAttributes();
+      }
     } else {
       node.setParent(this);
     }
@@ -386,18 +390,20 @@ public class INodeDirectory extends INode {
     INodeDirectory parent = getParent(pathComponents);
     return parent.addChild(newNode, propagateModTime) == null? null: parent;
   }
-  //HOP: TODO: Mahmoud: need to revist this code for quota support
+
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
-    /*counts.nsCount += 1;
-     List<INode> children = getChildren();  
-    if (children != null) {
-      for (INode child : children) {
-        child.spaceConsumedInTree(counts);
+    counts.nsCount += 1;
+      if (getId() != INode.NON_EXISTING_ID) {
+          List<INode> children = getChildren();
+          if (children != null) {
+              for (INode child : children) {
+                  child.spaceConsumedInTree(counts);
+              }
+          }
       }
-    }
-    return counts;*/
-    throw new UnsupportedOperationException("Quota not supported yet");
+    return counts;
+    //throw new UnsupportedOperationException("Quota not supported yet");
   }
 
   @Override
@@ -443,6 +449,7 @@ public class INodeDirectory extends INode {
   }
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
+    if(getId() == INode.NON_EXISTING_ID) return null;
     return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
   }
 

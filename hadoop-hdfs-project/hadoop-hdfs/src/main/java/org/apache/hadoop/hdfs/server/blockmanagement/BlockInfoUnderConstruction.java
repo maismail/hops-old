@@ -25,8 +25,8 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * Represents a block that is currently being constructed.<br>
@@ -167,7 +167,6 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   public void initializeBlockRecovery(long recoveryId, DatanodeManager datanodeMgr) throws PersistanceException {
     setBlockUCState(BlockUCState.UNDER_RECOVERY);
     List<ReplicaUnderConstruction> replicas = getExpectedReplicas();
-    //FIXME: this should be either persisted to database / or stored globally
     blockRecoveryId = recoveryId;
     if (replicas.isEmpty()) {
       NameNode.blockStateChangeLog.warn("BLOCK*"
@@ -175,13 +174,11 @@ public class BlockInfoUnderConstruction extends BlockInfo {
               + " No blocks found, lease removed.");
     }
 
-    //FIXME: this should be either persisted to database / or stored globally
     int previous = primaryNodeIndex;
     for (int i = 1; i <= replicas.size(); i++) {
       int j = (previous + i) % replicas.size();
       ReplicaUnderConstruction replica = replicas.get(j);
       DatanodeDescriptor primary = datanodeMgr.getDatanode(replica.getStorageId());
-      //FIXME: 
       if (primary.isAlive) {
         primaryNodeIndex = j;
         //DatanodeDescriptor primary = replicas.get(j).getExpectedLocation(); 

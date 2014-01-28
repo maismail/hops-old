@@ -53,3 +53,4 @@ FSEditLog.java
 FSEditLogOpCodes.java
 FSEditLogLoader.java
 FSEditLogOp.java
+TestDeleteBlockPool.java

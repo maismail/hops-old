@@ -33,13 +33,13 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestProcessCorruptBlocks {
   /**
@@ -261,9 +261,9 @@ public class TestProcessCorruptBlocks {
 
   private static NumberReplicas countReplicas(final FSNamesystem namesystem,
           final ExtendedBlock block) throws IOException {
-    return (NumberReplicas) new TransactionalRequestHandler(RequestHandler.OperationType.COUNT_NODES) {
+    return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ, block.getBlockId()).
@@ -277,7 +277,7 @@ public class TestProcessCorruptBlocks {
       public Object performTask() throws PersistanceException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
-    }.handleWithReadLock(namesystem);
+    }.handle(namesystem);
   }
 
   private void corruptBlock(MiniDFSCluster cluster, FileSystem fs, final Path fileName,

@@ -35,9 +35,9 @@ import com.google.common.primitives.SignedBytes;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.apache.hadoop.hdfs.server.namenode.persistance.EntityManager;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.exception.PersistanceException;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.
@@ -262,15 +262,15 @@ public abstract class INode implements Comparable<byte[]> {
    * Get the quota set for this inode
    * @return the quota if it is set; -1 otherwise
    */
-  public long getNsQuota() {
+  public long getNsQuota() throws PersistanceException{
     return -1;
   }
 
-  public long getDsQuota() {
+  public long getDsQuota() throws PersistanceException{
     return -1;
   }
   
-  boolean isQuotaSet() {
+  boolean isQuotaSet() throws PersistanceException{
     return getNsQuota() >= 0 || getDsQuota() >= 0;
   }
   
@@ -542,7 +542,7 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  public final void setIdNoPersistance(long id) {
+  public final void setIdNoPersistance(long id) throws PersistanceException {
     this.id = id;
   }
   public long getId() {
@@ -639,6 +639,10 @@ public abstract class INode implements Comparable<byte[]> {
 
   protected void remove(INode node) throws PersistanceException {
     EntityManager.remove(node);
+    //if This inode is of type INodeDirectoryWithQuota then also delete the INode Attribute table
+    if(node instanceof INodeDirectoryWithQuota){
+      ((INodeDirectoryWithQuota)node).removeAttributes();
+    }
   }
   //END_HOP_CODE:
 }

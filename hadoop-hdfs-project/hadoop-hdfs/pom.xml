@@ -176,35 +176,12 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <artifactId>xmlenc</artifactId>
       <scope>compile</scope>
     </dependency>
-    <!--START_HOP_CODE --> 
-    <dependency>  
-      <groupId>se.sics.ndb</groupId>
-      <artifactId>clusterj</artifactId>
-      <version>7.3.3</version>
+    <dependency>
+      <groupId>se.sics.hop.metadata.persistence</groupId>
+      <artifactId>hop-metadata-dal</artifactId>
+      <version>1.0-SNAPSHOT</version>
     </dependency>
-     <dependency>
-       <groupId>mysql</groupId>
-       <artifactId>mysql-connector-java</artifactId>
-       <version>5.1.18</version>
-     </dependency> 
-    <!--END_HOP_CODE -->     
   </dependencies>
-  <!--
-  //START_HOP_CODE
-  --> 
-  <repositories>
-    <repository>
-      <id>sics-release</id>
-      <name>SICS Release Repository</name>
-      <url>http://kompics.sics.se/maven/repository</url>
-      <snapshots>
-        <updatePolicy>never</updatePolicy>
-      </snapshots>
-    </repository>
-  </repositories>
-  <!--
-  //END_HOP_CODE
-  --> 
   <build>
     <plugins>
       <plugin>

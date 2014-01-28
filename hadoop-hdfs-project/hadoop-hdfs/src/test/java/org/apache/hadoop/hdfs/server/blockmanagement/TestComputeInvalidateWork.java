@@ -26,13 +26,13 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**
  * Test if FSNamesystem handles heartbeat right
@@ -88,9 +88,9 @@ public class TestComputeInvalidateWork {
   }
   
   private void addToInvalidates(final BlockManager bm,final Block block,final DatanodeDescriptor node, final FSNamesystem namesystem) throws IOException{
-    new TransactionalRequestHandler(RequestHandler.OperationType.COMP_INVALIDATE) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.COMP_INVALIDATE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.WRITE, block.getBlockId()).
@@ -103,6 +103,6 @@ public class TestComputeInvalidateWork {
         bm.addToInvalidates(block, node);
         return null;
       }
-    }.handleWithWriteLock(namesystem);
+    }.handle(namesystem);
   }
 }

@@ -49,15 +49,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
-import org.apache.hadoop.hdfs.server.namenode.lock.INodeUtil;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockAcquirer;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.INodeLockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLockTypes.LockType;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
 
 public class TestBlockManager {
   private List<DatanodeDescriptor> nodes;
@@ -361,7 +361,7 @@ public class TestBlockManager {
    */
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
-    TransactionalRequestHandler handler = new TransactionalRequestHandler(OperationType.FULFILL_PIPELINE) {
+    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
       long inodeId;
       @Override
       public void setUp() throws StorageException {
@@ -369,7 +369,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
@@ -394,14 +394,14 @@ public class TestBlockManager {
     };
 
     for (int i = 1; i < pipeline.length; i++) {
-      handler.setParams(pipeline[i]).handle(null);
+      handler.setParams(pipeline[i]).handle();
     }
   }
 
   private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
-    return (BlockInfo) new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
+    return (BlockInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
           TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
         addBlock(LockType.READ, blkId).
@@ -419,7 +419,7 @@ public class TestBlockManager {
         }
         return blockInfo;
       }
-    }.handle(null);
+    }.handle();
   }
 
   private List<DatanodeDescriptor> getNodes(int ... indexes) {
@@ -442,9 +442,9 @@ public class TestBlockManager {
     final BlockCollection bc = Mockito.mock(BlockCollection.class);
     Mockito.doReturn((short)3).when(bc).getBlockReplication();
     final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
-    new TransactionalRequestHandler(OperationType.BLOCK_ON_NODES) {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
          TransactionLockAcquirer tla = new TransactionLockAcquirer();
          tla.getLocks().
                  addBlock(LockType.WRITE, blockId);
@@ -455,13 +455,13 @@ public class TestBlockManager {
           bm.blocksMap.addBlockCollection(blockInfo, bc);
          return null;
       }
-    }.handle(null);
+    }.handle();
     
     return blockInfo;
   }
 
   private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
-    return (DatanodeDescriptor[]) new TransactionalRequestHandler(OperationType.SCHEDULE_SINGLE_REPLICATION) {
+    return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
       long inodeId;
 
       @Override
@@ -470,7 +470,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
         TransactionLockAcquirer tla = new TransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).

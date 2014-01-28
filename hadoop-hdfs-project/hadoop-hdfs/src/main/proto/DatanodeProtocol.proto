@@ -356,9 +356,6 @@ message ActiveNamenodeListResponseProto {
 message NameNodeAddressRequestForBlockReportingProto {
 }
 
-message NameNodeAddressResponseForBlockReportingProto {
-  required string hostname = 1;    
-}
 //HOP_CODE_END
 
 /**
@@ -422,6 +419,6 @@ service DatanodeProtocolService {
 /**
  * Ask the leader which namenode the datanode should report to.
  */ 
-  rpc getNextNamenodeToSendBlockReport(NameNodeAddressRequestForBlockReportingProto) returns(NameNodeAddressResponseForBlockReportingProto);
+  rpc getNextNamenodeToSendBlockReport(NameNodeAddressRequestForBlockReportingProto) returns(ActiveNamenodeProto);
 //HOP_CODE_END
 }

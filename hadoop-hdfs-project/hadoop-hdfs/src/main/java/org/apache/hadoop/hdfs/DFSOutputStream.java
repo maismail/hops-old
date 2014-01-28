@@ -849,7 +849,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
 
       //get a new datanode
       final DatanodeInfo[] original = nodes;
-      final LocatedBlock lb = dfsClient.namenode.getAdditionalDatanode(
+      final LocatedBlock lb = dfsClient.getAdditionalDatanode(
           src, block, nodes, failed.toArray(new DatanodeInfo[failed.size()]),
           1, dfsClient.clientName);
       nodes = lb.getLocations();
@@ -965,7 +965,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         }
 
         // get a new generation stamp and an access token
-        LocatedBlock lb = dfsClient.namenode.updateBlockForPipeline(block, dfsClient.clientName);
+        LocatedBlock lb = dfsClient.updateBlockForPipeline(block, dfsClient.clientName);
         newGS = lb.getBlock().getGenerationStamp();
         accessToken = lb.getBlockToken();
         
@@ -977,7 +977,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         // update pipeline at the namenode
         ExtendedBlock newBlock = new ExtendedBlock(
             block.getBlockPoolId(), block.getBlockId(), block.getNumBytes(), newGS);
-        dfsClient.namenode.updatePipeline(dfsClient.clientName, block, newBlock, nodes);
+        dfsClient.updatePipeline(dfsClient.clientName, block, newBlock, nodes);
         // update client side generation stamp
         block = newBlock;
       }
@@ -1020,7 +1020,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
 
         if (!success) {
           DFSClient.LOG.info("Abandoning " + block);
-          dfsClient.namenode.abandonBlock(block, src, dfsClient.clientName);
+          dfsClient.abandonBlock(block, src, dfsClient.clientName);
           block = null;
           DFSClient.LOG.info("Excluding datanode " + nodes[errorIndex]);
           excludedNodes.add(nodes[errorIndex]);
@@ -1148,12 +1148,14 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         DatanodeInfo[] excludedNodes) 
         throws IOException, UnresolvedLinkException {
       int retries = dfsClient.getConf().nBlockWriteLocateFollowingRetry;
-      long sleeptime = 400;
+      //START_HOP_CODE
+      long sleeptime = 1000;  //HOP default value was 400
+      //END_HOP_CODE
       while (true) {
         long localstart = Time.now();
         while (true) {
           try {
-            return dfsClient.namenode.addBlock(src, dfsClient.clientName, block, excludedNodes);
+            return dfsClient.addBlock(src, dfsClient.clientName, block, excludedNodes);
           } catch (RemoteException e) {
             IOException ue = 
               e.unwrapRemoteException(FileNotFoundException.class,
@@ -1301,7 +1303,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         checksum.getBytesPerChecksum());
 
     try {
-      dfsClient.namenode.create(
+      dfsClient.create(
           src, masked, dfsClient.clientName, new EnumSetWritable<CreateFlag>(flag), createParent, replication, blockSize);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
@@ -1623,7 +1625,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       // namenode.
       if (persistBlocks.getAndSet(false) || updateLength) {
         try {
-          dfsClient.namenode.fsync(src, dfsClient.clientName, lastBlockLength);
+          dfsClient.fsync(src, dfsClient.clientName, lastBlockLength);
         } catch (IOException ioe) {
           DFSClient.LOG.warn("Unable to persist blocks in hflush for " + src, ioe);
           // If we got an error here, it might be because some other thread called
@@ -1802,7 +1804,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     long localstart = Time.now();
     boolean fileComplete = false;
     while (!fileComplete) {
-      fileComplete = dfsClient.namenode.complete(src, dfsClient.clientName, last);
+      fileComplete = dfsClient.complete(src, dfsClient.clientName, last);
       if (!fileComplete) {
         if (!dfsClient.clientRunning ||
               (dfsClient.hdfsTimeout > 0 &&

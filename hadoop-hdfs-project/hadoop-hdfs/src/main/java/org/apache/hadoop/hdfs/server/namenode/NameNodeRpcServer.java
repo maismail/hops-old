@@ -85,7 +85,6 @@ import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolServerSideTr
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.IncorrectVersionException;
 import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
@@ -123,12 +122,9 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenodeList;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -1110,22 +1106,23 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   
   // HOP_CODE_START
-    @Override
-    public ActiveNamenodeList getActiveNamenodes() throws IOException {
-       //FIXME. This is dummy code;
-      List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
-      for(int i = 0; i < 5; i++)
-      {
-        ActiveNamenode an = new ActiveNamenode(i,"Host"+i, "192.168.1."+i, (new Random()).nextInt());
-        anl.add(an);
-      }
-      return new ActiveNamenodeList(anl);
-    }
+  @Override
+  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+    return nn.getActiveNamenodes();
+  }
 
-    @Override
-    public String getNextNamenodeToSendBlockReport() throws IOException {
-      //FIXME. This is dummy response. 
-      return "Namenode1:192.168.1.1:8080";
-    }
+  @Override
+  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
+    return nn.getNextNamenodeToSendBlockReport();
+  }
+  
+  @Override
+  public void ping() throws IOException {
+  }
+  
+  @Override
+  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
+    return nn.getActiveNamenodes();
+  }
     //HOP_CODE_END
 }

@@ -34,12 +34,14 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.lock.TransactionLocks;
-import org.apache.hadoop.hdfs.server.namenode.persistance.PersistanceException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.RequestHandler.OperationType;
-import org.apache.hadoop.hdfs.server.namenode.persistance.TransactionalRequestHandler;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageException;
-import org.apache.hadoop.hdfs.server.namenode.persistance.storage.StorageFactory;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
 
 
@@ -142,10 +144,14 @@ public class TestCorruptReplicaInfo {
   }
   
   private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk, final DatanodeDescriptor dn, final String reason) throws IOException{
-     new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
+     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
+                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        return tla.acquire();
+                
       }
 
       @Override
@@ -153,14 +159,17 @@ public class TestCorruptReplicaInfo {
         crm.addToCorruptReplicasMap(blk, dn, reason);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
   
   private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk) throws IOException{
-     new TransactionalRequestHandler(OperationType.TEST_CORRUPT_REPLICA_INFO) {
+     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
+                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        return tla.acquire();
       }
 
       @Override
@@ -168,6 +177,6 @@ public class TestCorruptReplicaInfo {
         crm.removeFromCorruptReplicasMap(blk);
         return null;
       }
-    }.handle(null);
+    }.handle();
   }
 }

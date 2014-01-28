@@ -57,6 +57,10 @@ import org.apache.hadoop.util.VersionUtil;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**
  * A thread per active or standby namenode to perform:
@@ -72,39 +76,19 @@ class BPServiceActor implements Runnable {
   
   static final Log LOG = DataNode.LOG;
   final InetSocketAddress nnAddr;
-
   BPOfferService bpos;
-  
-  // lastBlockReport, lastDeletedReport and lastHeartbeat may be assigned/read
-  // by testing threads (through BPServiceActor#triggerXXX), while also 
-  // assigned/read by the actor thread. Thus they should be declared as volatile
-  // to make sure the "happens-before" consistency.
-  volatile long lastBlockReport = 0;
-  volatile long lastDeletedReport = 0;
-
-  boolean resetBlockReportTime = true;
-
   Thread bpThread;
   DatanodeProtocolClientSideTranslatorPB bpNamenode;
   private volatile long lastHeartbeat = 0;
   private volatile boolean initialized = false;
-  
-  /**
-   * Between block reports (which happen on the order of once an hour) the
-   * DN reports smaller incremental changes to its block list. This map,
-   * keyed by block ID, contains the pending changes which have yet to be
-   * reported to the NN. Access should be synchronized on this object.
-   */
-  private final Map<Long, ReceivedDeletedBlockInfo> pendingIncrementalBR 
-    = Maps.newHashMap();
-  
-  private volatile int pendingReceivedRequests = 0;
   private volatile boolean shouldServiceRun = true;
   private final DataNode dn;
   private final DNConf dnConf;
 
   private DatanodeRegistration bpRegistration;
-
+  
+  private final Object waitForHeartBeats = new Object();
+  
   BPServiceActor(InetSocketAddress nnAddr, BPOfferService bpos) {
     this.bpos = bpos;
     this.dn = bpos.getDataNode();
@@ -210,8 +194,8 @@ class BPServiceActor implements Runnable {
 
   private void connectToNNAndHandshake() throws IOException {
     // get NN proxy
+    
     bpNamenode = dn.connectToNN(nnAddr);
-
     // First phase of the handshake with NN - get the namespace
     // info.
     NamespaceInfo nsInfo = retrieveNamespaceInfo();
@@ -225,21 +209,7 @@ class BPServiceActor implements Runnable {
     register();
   }
   
-  /**
-   * This methods  arranges for the data node to send the block report at 
-   * the next heartbeat.
-   */
-  void scheduleBlockReport(long delay) {
-    if (delay > 0) { // send BR after random delay
-      lastBlockReport = Time.now()
-      - ( dnConf.blockReportInterval - DFSUtil.getRandom().nextInt((int)(delay)));
-    } else { // send at next heartbeat
-      lastBlockReport = lastHeartbeat - dnConf.blockReportInterval;
-    }
-    resetBlockReportTime = true; // reset future BRs for randomness
-  }
-
-  void reportBadBlocks(ExtendedBlock block) {
+  void reportBadBlocks(ExtendedBlock block) throws IOException  {
     if (bpRegistration == null) {
       return;
     }
@@ -254,182 +224,29 @@ class BPServiceActor implements Runnable {
        */
       LOG.warn("Failed to report bad block " + block + " to namenode : "
           + " Exception", e);
-    }
-  }
-  
-  /**
-   * Report received blocks and delete hints to the Namenode
-   * 
-   * @throws IOException
-   */
-  private void reportReceivedDeletedBlocks() throws IOException {
-
-    // check if there are newly received blocks
-    ReceivedDeletedBlockInfo[] receivedAndDeletedBlockArray = null;
-    synchronized (pendingIncrementalBR) {
-      int numBlocks = pendingIncrementalBR.size();
-      if (numBlocks > 0) {
-        //
-        // Send newly-received and deleted blockids to namenode
-        //
-        receivedAndDeletedBlockArray = pendingIncrementalBR
-            .values().toArray(new ReceivedDeletedBlockInfo[numBlocks]);
-      }
-      pendingIncrementalBR.clear();
-    }
-    if (receivedAndDeletedBlockArray != null) {
-      StorageReceivedDeletedBlocks[] report = { new StorageReceivedDeletedBlocks(
-          bpRegistration.getStorageID(), receivedAndDeletedBlockArray) };
-      boolean success = false;
-      try {
-        bpNamenode.blockReceivedAndDeleted(bpRegistration, bpos.getBlockPoolId(),
-            report);
-        success = true;
-      } finally {
-        synchronized (pendingIncrementalBR) {
-          if (!success) {
-            // If we didn't succeed in sending the report, put all of the
-            // blocks back onto our queue, but only in the case where we didn't
-            // put something newer in the meantime.
-            for (ReceivedDeletedBlockInfo rdbi : receivedAndDeletedBlockArray) {
-              if (!pendingIncrementalBR.containsKey(rdbi.getBlock().getBlockId())) {
-                pendingIncrementalBR.put(rdbi.getBlock().getBlockId(), rdbi);
-              }
-            }
-          }
-          pendingReceivedRequests = pendingIncrementalBR.size();
-        }
-      }
-    }
-  }
-
-  /*
-   * Informing the name node could take a long long time! Should we wait
-   * till namenode is informed before responding with success to the
-   * client? For now we don't.
-   */
-  void notifyNamenodeBlockImmediately(ReceivedDeletedBlockInfo bInfo) {
-    synchronized (pendingIncrementalBR) {
-      pendingIncrementalBR.put(
-          bInfo.getBlock().getBlockId(), bInfo);
-      pendingReceivedRequests++;
-      pendingIncrementalBR.notifyAll();
-    }
-  }
-
-  void notifyNamenodeDeletedBlock(ReceivedDeletedBlockInfo bInfo) {
-    synchronized (pendingIncrementalBR) {
-      pendingIncrementalBR.put(
-          bInfo.getBlock().getBlockId(), bInfo);
-    }
-  }
-
-  /**
-   * Run an immediate block report on this thread. Used by tests.
-   */
-  @VisibleForTesting
-  void triggerBlockReportForTests() {
-    synchronized (pendingIncrementalBR) {
-      lastBlockReport = 0;
-      lastHeartbeat = 0;
-      pendingIncrementalBR.notifyAll();
-      while (lastBlockReport == 0) {
-        try {
-          pendingIncrementalBR.wait(100);
-        } catch (InterruptedException e) {
-          return;
-        }
-      }
+      //HOP we will retry by sending it to another nn. it could be because of NN failue
+      throw e;
     }
   }
   
   @VisibleForTesting
   void triggerHeartbeatForTests() {
-    synchronized (pendingIncrementalBR) {
+//    synchronized (pendingIncrementalBR) {
       lastHeartbeat = 0;
-      pendingIncrementalBR.notifyAll();
-      while (lastHeartbeat == 0) {
-        try {
-          pendingIncrementalBR.wait(100);
-        } catch (InterruptedException e) {
-          return;
-        }
+      synchronized(waitForHeartBeats){
+       waitForHeartBeats.notifyAll();
       }
-    }
+      //Thread.currentThread().interrupt();
+//      pendingIncrementalBR.notifyAll();
+//      while (lastHeartbeat == 0) {
+//        try {
+//          pendingIncrementalBR.wait(100);
+//        } catch (InterruptedException e) {
+//          return;
+//        }
+//      }
+//    }
   }
-
-  @VisibleForTesting
-  void triggerDeletionReportForTests() {
-    synchronized (pendingIncrementalBR) {
-      lastDeletedReport = 0;
-      pendingIncrementalBR.notifyAll();
-
-      while (lastDeletedReport == 0) {
-        try {
-          pendingIncrementalBR.wait(100);
-        } catch (InterruptedException e) {
-          return;
-        }
-      }
-    }
-  }
-
-  /**
-   * Report the list blocks to the Namenode
-   * @throws IOException
-   */
-  DatanodeCommand blockReport() throws IOException {
-    // send block report if timer has expired.
-    DatanodeCommand cmd = null;
-    long startTime = now();
-    if (startTime - lastBlockReport > dnConf.blockReportInterval) {
-
-      // Flush any block information that precedes the block report. Otherwise
-      // we have a chance that we will miss the delHint information
-      // or we will report an RBW replica after the BlockReport already reports
-      // a FINALIZED one.
-      reportReceivedDeletedBlocks();
-
-      // Create block report
-      long brCreateStartTime = now();
-      BlockListAsLongs bReport = dn.getFSDataset().getBlockReport(
-          bpos.getBlockPoolId());
-
-      // Send block report
-      long brSendStartTime = now();
-      StorageBlockReport[] report = { new StorageBlockReport(
-          new DatanodeStorage(bpRegistration.getStorageID()),
-          bReport.getBlockListAsLongs()) };
-      cmd = bpNamenode.blockReport(bpRegistration, bpos.getBlockPoolId(), report);
-
-      // Log the block report processing stats from Datanode perspective
-      long brSendCost = now() - brSendStartTime;
-      long brCreateCost = brSendStartTime - brCreateStartTime;
-      dn.getMetrics().addBlockReport(brSendCost);
-      LOG.info("BlockReport of " + bReport.getNumberOfBlocks()
-          + " blocks took " + brCreateCost + " msec to generate and "
-          + brSendCost + " msecs for RPC and NN processing");
-
-      // If we have sent the first block report, then wait a random
-      // time before we start the periodic block reports.
-      if (resetBlockReportTime) {
-        lastBlockReport = startTime - DFSUtil.getRandom().nextInt((int)(dnConf.blockReportInterval));
-        resetBlockReportTime = false;
-      } else {
-        /* say the last block report was at 8:20:14. The current report
-         * should have started around 9:20:14 (default 1 hour interval).
-         * If current time is :
-         *   1) normal like 9:20:18, next report should be at 10:20:14
-         *   2) unexpected like 11:35:43, next report should be at 12:20:14
-         */
-        lastBlockReport += (now() - lastBlockReport) /
-        dnConf.blockReportInterval * dnConf.blockReportInterval;
-      }
-      LOG.info("sent block report, processed command:" + cmd);
-    }
-    return cmd;
-  }
-  
   
   HeartbeatResponse sendHeartBeat() throws IOException {
     if (LOG.isDebugEnabled()) {
@@ -488,7 +305,10 @@ class BPServiceActor implements Runnable {
     
     shouldServiceRun = false;
     IOUtils.cleanup(LOG, bpNamenode);
+
     bpos.shutdownActor(this);
+    
+    
   }
 
   /**
@@ -502,6 +322,10 @@ class BPServiceActor implements Runnable {
         + dnConf.initialBlockReportDelay + "msec" + "; heartBeatInterval="
         + dnConf.heartBeatInterval);
 
+    //START_HOP_CODE
+    bpos.startWhirlingSufiThread();
+    //END_HOP_CODE
+    
     //
     // Now loop for a long time....
     //
@@ -513,6 +337,11 @@ class BPServiceActor implements Runnable {
         // Every so often, send heartbeat or block-report
         //
         if (startTime - lastHeartbeat > dnConf.heartBeatInterval) {
+            
+          //HOP_START_CODE
+          refreshNNConnection(); //[S] is the frequency of this operation high? only one actor s  
+          //HOP_END_CODE
+          
           //
           // All heartbeat messages include following info:
           // -- Datanode name
@@ -522,7 +351,7 @@ class BPServiceActor implements Runnable {
           //
           lastHeartbeat = startTime;
           if (!dn.areHeartbeatsDisabledForTests()) {
-            HeartbeatResponse resp = sendHeartBeat();
+            HeartbeatResponse resp = sendHeartBeat();       
             assert resp != null;
             dn.getMetrics().addHeartbeat(now() - startTime);
 
@@ -532,8 +361,8 @@ class BPServiceActor implements Runnable {
             // Important that this happens before processCommand below,
             // since the first heartbeat to a new active might have commands
             // that we should actually process.
-            bpos.updateActorStatesFromHeartbeat(
-                this, resp.getNameNodeHaState());
+//HOP            bpos.updateActorStatesFromHeartbeat(       //NO Need to do that as we dont have 'active namenode' active namenode is set to leader in the fn refreshNNConnection()
+//                this, resp.getNameNodeHaState());
 
             long startProcessCommands = now();
             if (!processCommand(resp.getCommands()))
@@ -546,36 +375,49 @@ class BPServiceActor implements Runnable {
             }
           }
         }
-        if (pendingReceivedRequests > 0
-            || (startTime - lastDeletedReport > dnConf.deleteReportInterval)) {
-          reportReceivedDeletedBlocks();
-          lastDeletedReport = startTime;
+//HOP incremental and non incremental block report is not handled by the BPOfferserivce.java
+//this loop is only responsible for sending HBs
+//HOP        if (pendingReceivedRequests > 0
+//            || (startTime - lastDeletedReport > dnConf.deleteReportInterval)) {
+//          reportReceivedDeletedBlocks();
+//          lastDeletedReport = startTime;
+//        }
+//
+//        DatanodeCommand cmd = blockReport();
+//        processCommand(new DatanodeCommand[]{ cmd });
+//
+//        // Now safe to start scanning the block pool.
+//        // If it has already been started, this is a no-op.
+//        if (dn.blockScanner != null) {
+//          dn.blockScanner.addBlockPool(bpos.getBlockPoolId());
+//        }
+//
+//        //
+//        // There is no work to do;  sleep until hearbeat timer elapses, 
+//        // or work arrives, and then iterate again.
+//        //
+//        long waitTime = dnConf.heartBeatInterval - 
+//        (Time.now() - lastHeartbeat);
+//        synchronized(pendingIncrementalBR) {
+//          if (waitTime > 0 && pendingReceivedRequests == 0) {
+//            try {
+//              pendingIncrementalBR.wait(waitTime);
+//            } catch (InterruptedException ie) {
+//              LOG.warn("BPOfferService for " + this + " interrupted");
+//            }
+//          }
+//        } // synchronized
+        
+        long waitTime = Math.abs(dnConf.heartBeatInterval - (Time.now() - startTime));
+        if(waitTime > dnConf.heartBeatInterval){
+          // above code took longer than dnConf.heartBeatInterval to execute 
+          // set wait time to 1 ms to send a new HB immediately
+          waitTime = 1;
         }
-
-        DatanodeCommand cmd = blockReport();
-        processCommand(new DatanodeCommand[]{ cmd });
-
-        // Now safe to start scanning the block pool.
-        // If it has already been started, this is a no-op.
-        if (dn.blockScanner != null) {
-          dn.blockScanner.addBlockPool(bpos.getBlockPoolId());
+        synchronized (waitForHeartBeats) {
+          waitForHeartBeats.wait(waitTime);
         }
-
-        //
-        // There is no work to do;  sleep until hearbeat timer elapses, 
-        // or work arrives, and then iterate again.
-        //
-        long waitTime = dnConf.heartBeatInterval - 
-        (Time.now() - lastHeartbeat);
-        synchronized(pendingIncrementalBR) {
-          if (waitTime > 0 && pendingReceivedRequests == 0) {
-            try {
-              pendingIncrementalBR.wait(waitTime);
-            } catch (InterruptedException ie) {
-              LOG.warn("BPOfferService for " + this + " interrupted");
-            }
-          }
-        } // synchronized
+        
       } catch(RemoteException re) {
         String reClass = re.getClassName();
         if (UnregisteredNodeException.class.getName().equals(reClass) ||
@@ -592,7 +434,10 @@ class BPServiceActor implements Runnable {
         } catch (InterruptedException ie) {
           Thread.currentThread().interrupt();
         }
-      } catch (IOException e) {
+      } catch(InterruptedException e){
+          LOG.warn("OfferService interrupted", e);
+      }
+      catch (IOException e) {
         LOG.warn("IOException in offerService", e);
       }
     } // while (shouldRun())
@@ -615,8 +460,6 @@ class BPServiceActor implements Runnable {
     // off disk - so update the bpRegistration object from that info
     bpRegistration = bpos.createRegistration();
 
-    LOG.info(this + " beginning handshake with NN");
-
     while (shouldRun()) {
       try {
         // Use returned registration from namenode with updated fields
@@ -632,7 +475,7 @@ class BPServiceActor implements Runnable {
     bpos.registrationSucceeded(this, bpRegistration);
 
     // random short delay - helps scatter the BR from all DNs
-    scheduleBlockReport(dnConf.initialBlockReportDelay);
+    bpos.scheduleBlockReport(dnConf.initialBlockReportDelay);
   }
 
 
@@ -666,6 +509,7 @@ class BPServiceActor implements Runnable {
         // Initial handshake, storage recovery or registration failed
         // End BPOfferService thread
         LOG.fatal("Initialization failed for block pool " + this, ioe);
+        cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
         return;
       }
 
@@ -676,14 +520,15 @@ class BPServiceActor implements Runnable {
           offerService();
         } catch (Exception ex) {
           LOG.error("Exception in BPOfferService for " + this, ex);
-          sleepAndLogInterrupts(5000, "offering service");
+//HOP          sleepAndLogInterrupts(5000, "offering service");
+          cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
         }
       }
     } catch (Throwable ex) {
       LOG.warn("Unexpected exception in block pool " + this, ex);
     } finally {
       LOG.warn("Ending block pool service for: " + this);
-      cleanUp();
+      cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
     }
   }
 
@@ -741,4 +586,42 @@ class BPServiceActor implements Runnable {
     }
   }
 
+  //START_HOP_CODE
+    @Override
+    public boolean equals(Object obj) {
+        //Two actors are same if they are connected to save NN
+        BPServiceActor that = (BPServiceActor)obj;
+        if(this.getNNSocketAddress().equals(that.getNNSocketAddress())){
+            return true;
+        }
+        return false;          
+    }
+    
+    /**
+     * get the list of active namenodes in the system. It connects to new
+     * namenodes and stops the threads connected to dead namenodes
+     */
+    private void refreshNNConnection() throws IOException {
+        if(!bpos.canUpdateNNList(nnAddr))
+            return;
+        
+        SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
+        bpos.updateNNList(list);
+        
+    }
+    
+    public void blockReceivedAndDeleted(DatanodeRegistration registration,
+            String poolId, StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks) throws IOException{
+        bpNamenode.blockReceivedAndDeleted(registration, poolId, receivedAndDeletedBlocks);
+    }
+    
+    public DatanodeCommand blockReport(DatanodeRegistration registration,
+            String poolId, StorageBlockReport[] reports) throws IOException {
+        return bpNamenode.blockReport(registration, poolId, reports);
+    }
+    
+    public ActiveNamenode nextNNForBlkReport() throws IOException{
+        return bpNamenode.getNextNamenodeToSendBlockReport();
+    }
+  //END_HOP_CODE
 }

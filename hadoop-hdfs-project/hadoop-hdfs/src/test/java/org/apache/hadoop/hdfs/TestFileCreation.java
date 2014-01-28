@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.logging.Logger;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
@@ -71,7 +72,16 @@ import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
+import se.sics.hop.metadata.lock.TransactionLockAcquirer;
+import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.io.EnumSetWritable;
 import org.apache.hadoop.io.IOUtils;
@@ -1163,12 +1173,12 @@ public class TestFileCreation {
   }
 
   
-  //START_HOP_CODE
-   @Test
+//  //START_HOP_CODE
+  @Test
   public void testFileCreationSimple() throws IOException {
     String netIf = null;
-    boolean useDnHostname= false;
-      
+    boolean useDnHostname = false;
+
     Configuration conf = new HdfsConfiguration();
     if (netIf != null) {
       conf.set(DFSConfigKeys.DFS_CLIENT_LOCAL_INTERFACES, netIf);
@@ -1184,80 +1194,108 @@ public class TestFileCreation {
     if (simulatedStorage) {
       SimulatedFSDataset.setFactory(conf);
     }
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf)
-      .checkDataNodeHostConfig(true)
-      .build();
+//    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(2))
+//            .checkDataNodeHostConfig(true)
+//            .build();
+    
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).build();
     FileSystem fs = cluster.getFileSystem();
+    try{
+        
     try {
-
-      //
-      // check that / exists
-      //
-      Path path = new Path("/");
-      System.out.println("Path : \"" + path.toString() + "\"");
-      System.out.println(fs.getFileStatus(path).isDirectory()); 
-      assertTrue("/ should be a directory", 
-                 fs.getFileStatus(path).isDirectory());
-
-      //
-      // Create a directory inside /, then try to overwrite it
-      //
-      Path dir1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5");
-      fs.mkdirs(dir1);
-      System.out.println("createFile: Creating " + dir1.getName() + 
-        " for overwrite of existing directory.");
-      try {
-        fs.create(dir1, true); // Create path, overwrite=true
-        fs.close();
-        assertTrue("Did not prevent directory from being overwritten.", false);
-      } catch (IOException ie) {
-        if (!ie.getMessage().contains("already exists as a directory."))
-          throw ie;
+      
+      
+      Path p = new Path("/foo");
+      
+      //write 2 files at the same time
+      FSDataOutputStream out = fs.create(p);
+      int i = 0;
+      for(; i < 100; i++) {
+        out.write(i);
       }
+      out.close();
+
+      cluster.restartNameNode();
       
-      
-      // create a new file in home directory. Do not close it.
-      //
-      Path file1 = new Path("/test_dir1/test_dir2/test_dir3/test_dir4/test_dir5/filestatus.dat");
-      Path parent = file1.getParent();
-      fs.mkdirs(parent);
-      DistributedFileSystem dfs = (DistributedFileSystem)fs;
-//      dfs.setQuota(file1.getParent(), 100L, blockSize*5);
-      FSDataOutputStream stm = createFile(fs, file1, 1);
-
-      // verify that file exists in FS namespace
-      assertTrue(file1 + " should be a file", 
-                 fs.getFileStatus(file1).isFile());
-      System.out.println("Path : \"" + file1 + "\"");
-
-      // write to file
-      writeFile(stm);
-
-      stm.close();
-
-      // verify that file size has changed to the full size
-      long len = fs.getFileStatus(file1).getLen();
-      assertTrue(file1 + " should be of size " + fileSize +
-                 " but found to be of size " + len, 
-                  len == fileSize);
-//      
-//      // verify the disk space the file occupied
-//      long diskSpace = dfs.getContentSummary(file1.getParent()).getLength();
-//      assertEquals(file1 + " should take " + fileSize + " bytes disk space " +
-//          "but found to take " + diskSpace + " bytes", fileSize, diskSpace);
-//      
-//      // Check storage usage 
-//      // can't check capacities for real storage since the OS file system may be changing under us.
-//      if (simulatedStorage) {
-//        DataNode dn = cluster.getDataNodes().get(0);
-//        FsDatasetSpi<?> dataset = DataNodeTestUtils.getFSDataset(dn);
-//        assertEquals(fileSize, dataset.getDfsUsed());
-//        assertEquals(SimulatedFSDataset.DEFAULT_CAPACITY-fileSize,
-//            dataset.getRemaining());
-//      }
+      //verify
+      FSDataInputStream in = fs.open(p);  
+      for(i = 0; i < 100; i++) {assertEquals(i, in.read());}
+    } finally {
+      if (cluster != null) {cluster.shutdown();}
+    }
     } finally {
       cluster.shutdown();
     }
+  }
+
+       
+
+  @Test
+  public void testTx() throws IOException, InterruptedException{
+      class thread extends Thread{
+
+          thread(TransactionLockTypes.LockType lockType){
+              this.lockType = lockType;
+          }
+          TransactionLockTypes.LockType lockType;
+          String holder = "DFSClient_NONMAPREDUCE_-1273425403_1";
+          @Override
+          public void run() {
+              try {
+                  acquireLock(lockType, holder);
+              } catch (IOException ex) {
+                  Logger.getLogger(TestFileCreation.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+              }
+          }
+      
+      }
+      
+      Thread t1 =new thread(TransactionLockTypes.LockType.READ);
+      t1.start();
+      
+      Thread t2 =new thread(TransactionLockTypes.LockType.READ);
+      t2.start();
+      
+      t1.join();
+      t2.join();
+      
+      
+      
+  }
+  private void acquireLock(final TransactionLockTypes.LockType lockType, final String holder) throws IOException{
+      Configuration conf = new HdfsConfiguration();
+      StorageFactory.setConfiguration(conf);
+      HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+          TransactionLockTypes.LockType lockType = null;
+          @Override
+          public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+              TransactionLockAcquirer tla = new TransactionLockAcquirer();
+              lockType = (TransactionLockTypes.LockType)getParams()[0];
+              tla.getLocks().addLease(lockType, holder);
+              return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              
+              Lease lease = (Lease)EntityManager.find(Lease.Finder.ByPKey, holder);
+              if(lease != null)
+              FSNamesystem.LOG.debug("XXXXXXXXXXX Got the lock "+lockType+"Lease. Holder is: "+lease.getHolder()+" ID: "+lease.getHolderID());
+              else
+                  FSNamesystem.LOG.debug("XXXXXXXXX LEASE is NULL");
+              try {
+                  Thread.sleep(5000);
+              } catch (InterruptedException ex) {
+                  Logger.getLogger(TestFileCreation.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+              }
+              
+              return null;
+          }
+          
+      };
+      
+      testHandler.setParams(lockType);
+      testHandler.handle();
   }
   //END_HOP_CODE
 }

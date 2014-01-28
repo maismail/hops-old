@@ -69,7 +69,7 @@ public class AppendTestUtil {
   static long seed = -1;
 
   static int nextInt() {return RANDOM.get().nextInt();}
-  static int nextInt(int n) {return RANDOM.get().nextInt(n);}
+  public static int nextInt(int n) {return RANDOM.get().nextInt(n);}
   static int nextLong() {return RANDOM.get().nextInt();}
 
   static byte[] randomBytes(long seed, int size) {

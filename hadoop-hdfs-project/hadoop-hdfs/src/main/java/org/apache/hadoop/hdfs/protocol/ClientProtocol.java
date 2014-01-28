@@ -45,6 +45,7 @@ import org.apache.hadoop.security.token.TokenInfo;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 
 /**********************************************************************
  * ClientProtocol is used by user code via 
@@ -953,4 +954,9 @@ public interface ClientProtocol {
    * @throws IOException
    */
   public DataEncryptionKey getDataEncryptionKey() throws IOException;
+  
+  //START_HOP_CODE
+  public void ping() throws IOException ;   // client checks if the NN is alive
+  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
+  //END_HOP_CODE
 }

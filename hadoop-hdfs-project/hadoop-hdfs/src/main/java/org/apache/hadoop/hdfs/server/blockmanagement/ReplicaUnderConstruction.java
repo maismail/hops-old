@@ -3,7 +3,8 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 import java.util.Comparator;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
-import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
+import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
 
 /**
  * ReplicaUnderConstruction contains information about replicas while they are
@@ -13,7 +14,7 @@ import org.apache.hadoop.hdfs.server.namenode.persistance.FinderType;
  *
  * @author Kamal Hakimzadeh <kamal@sics.se>
  */
-public class ReplicaUnderConstruction extends IndexedReplica {
+public class ReplicaUnderConstruction extends HopIndexedReplica {
 
   public static enum Finder implements FinderType<ReplicaUnderConstruction> {
 
