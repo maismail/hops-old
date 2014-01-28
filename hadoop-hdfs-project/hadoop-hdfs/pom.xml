@@ -176,11 +176,13 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
       <artifactId>xmlenc</artifactId>
       <scope>compile</scope>
     </dependency>
+    <!-- START_HOP_CODE !-->
     <dependency>
-      <groupId>se.sics.hop.metadata.persistence</groupId>
+      <groupId>se.sics.hop.metadata</groupId>
       <artifactId>hop-metadata-dal</artifactId>
       <version>1.0-SNAPSHOT</version>
     </dependency>
+    <!-- END_HOP_CODE !-->
   </dependencies>
   <build>
     <plugins>
