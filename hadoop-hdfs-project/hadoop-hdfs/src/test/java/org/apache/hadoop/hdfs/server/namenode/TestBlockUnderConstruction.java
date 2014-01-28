@@ -38,11 +38,11 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -92,8 +92,8 @@ public class TestBlockUnderConstruction {
                                 final boolean isFileOpen) throws IOException{
     HDFSTransactionalRequestHandler verifyFileBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.VERIFY_FILE_BLOCKS) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{file}).
                 addBlock(LockType.READ);

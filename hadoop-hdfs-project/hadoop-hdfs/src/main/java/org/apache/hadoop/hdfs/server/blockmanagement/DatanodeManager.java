@@ -75,10 +75,11 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 
@@ -1207,9 +1208,9 @@ public class DatanodeManager {
     final DatanodeManager datanodeManager = this;
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ_COMMITTED, b.getBlockId()).
                 addReplica(LockType.READ_COMMITTED).

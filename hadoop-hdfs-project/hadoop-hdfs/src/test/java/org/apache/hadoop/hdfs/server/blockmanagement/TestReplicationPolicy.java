@@ -42,15 +42,13 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Time;
@@ -58,7 +56,6 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
-import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -992,8 +989,8 @@ public class TestReplicationPolicy {
           final int expectedReplicas) throws IOException {
     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.WRITE, block.getBlockId()).
                 addUnderReplicatedBlock(LockType.WRITE);

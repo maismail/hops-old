@@ -34,9 +34,9 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -223,8 +223,8 @@ public class TestPendingReplication {
   private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final Block block, final boolean inc, final int numReplicas) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ_COMMITTED, block.getBlockId()).
                 addPendingBlock(LockType.WRITE);
@@ -246,8 +246,8 @@ public class TestPendingReplication {
   private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
     return (Integer) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(LockType.READ_COMMITTED, block.getBlockId()).
                 addPendingBlock(LockType.WRITE);

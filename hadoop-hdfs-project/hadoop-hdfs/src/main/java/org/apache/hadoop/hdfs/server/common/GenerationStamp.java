@@ -20,12 +20,12 @@ package org.apache.hadoop.hdfs.server.common;
 
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /****************************************************************
@@ -112,8 +112,8 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
   public void setStampTx(final long stamp) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();
       }

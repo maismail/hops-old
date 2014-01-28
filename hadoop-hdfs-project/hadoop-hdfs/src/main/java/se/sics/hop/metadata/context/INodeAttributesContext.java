@@ -16,7 +16,7 @@ import static se.sics.hop.metadata.entity.EntityContext.log;
 import se.sics.hop.metadata.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.adaptor.INodeAttributeDALAdaptor;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *

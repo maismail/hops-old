@@ -31,8 +31,8 @@ import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
@@ -41,6 +41,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**
@@ -533,8 +534,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     fillPriorityQueues();
     return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addUnderReplicatedBlock(LockType.WRITE);
         return tla.acquire();
       }
@@ -607,8 +608,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
     return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock(LockType.WRITE).
                 addBlock(LockType.READ_COMMITTED, urb.getBlockId());

@@ -9,15 +9,14 @@ import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.RequestHandler;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**
@@ -189,8 +188,8 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void addBlockKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
       }
@@ -234,8 +233,8 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void removeExpiredKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_BLOCK_KEY) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
       }
@@ -258,8 +257,8 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void updateBlockKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
       }

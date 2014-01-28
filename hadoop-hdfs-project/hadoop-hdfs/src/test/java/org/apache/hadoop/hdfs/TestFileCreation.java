@@ -74,8 +74,8 @@ import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
@@ -90,6 +90,7 @@ import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
 import org.junit.Test;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * This class tests various cases during file creation.
@@ -1268,8 +1269,8 @@ public class TestFileCreation {
       HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
           @Override
-          public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-              TransactionLockAcquirer tla = new TransactionLockAcquirer();
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               lockType = (TransactionLockTypes.LockType)getParams()[0];
               tla.getLocks().addLease(lockType, holder);
               return tla.acquire();

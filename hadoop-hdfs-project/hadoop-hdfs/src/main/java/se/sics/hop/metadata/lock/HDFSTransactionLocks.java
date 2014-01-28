@@ -1,11 +1,12 @@
 package se.sics.hop.metadata.lock;
 
+import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 
 /**
  *

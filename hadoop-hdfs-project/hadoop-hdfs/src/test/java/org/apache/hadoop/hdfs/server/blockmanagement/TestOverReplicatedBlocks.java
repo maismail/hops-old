@@ -43,9 +43,9 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -119,8 +119,8 @@ public class TestOverReplicatedBlocks {
           
           new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
             @Override
-            public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-              TransactionLockAcquirer tla = new TransactionLockAcquirer();
+            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addBlock(LockType.READ, block.getBlockId()).
                       addReplica(LockType.READ).
@@ -241,8 +241,8 @@ public class TestOverReplicatedBlocks {
       
       new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
         @Override
-        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(LockType.READ, block.getBlockId()).
                   addReplica(LockType.READ).

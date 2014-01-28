@@ -28,8 +28,8 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
@@ -38,6 +38,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -248,8 +249,8 @@ class PendingReplicationBlocks {
   private Block getBlock(final PendingBlockInfo pbi) throws IOException {
     return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException { 
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+      public TransactionLocks acquireLock() throws PersistanceException, IOException { 
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(LockType.READ_COMMITTED, pbi.getBlockId());
         return tla.acquire();
       }

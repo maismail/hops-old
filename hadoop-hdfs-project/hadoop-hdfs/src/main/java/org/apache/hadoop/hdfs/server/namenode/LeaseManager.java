@@ -41,11 +41,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.DFSUtil;
 import se.sics.hop.metadata.lock.INodeUtil;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -105,7 +105,7 @@ public class LeaseManager {
   SortedSet<Lease> getSortedLeases() throws IOException {
     HDFSTransactionalRequestHandler getSortedLeasesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -414,7 +414,7 @@ public class LeaseManager {
       }
 
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         // TODO safemode
         return null;
       }
@@ -442,9 +442,9 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
         String holder = (String) getParams()[0];
-        TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE).
                 addBlock(LockType.WRITE).

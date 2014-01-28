@@ -14,9 +14,9 @@ import se.sics.hop.metadata.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.metadata.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *

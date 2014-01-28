@@ -1,5 +1,8 @@
 package se.sics.hop.metadata.lock;
 
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.INodeResolveException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -34,14 +37,14 @@ import se.sics.hop.metadata.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
-import static se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
-import static se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType.WRITE_ON_PARENT;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeResolveType;
-import static se.sics.hop.metadata.lock.TransactionLockTypes.LockType.READ;
-import static se.sics.hop.metadata.lock.TransactionLockTypes.LockType.READ_COMMITTED;
-import static se.sics.hop.metadata.lock.TransactionLockTypes.LockType.WRITE;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
+import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.WRITE_ON_PARENT;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.READ;
+import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.READ_COMMITTED;
+import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.WRITE;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.entity.hop.var.HopVariable;
 
@@ -50,19 +53,19 @@ import se.sics.hop.metadata.entity.hop.var.HopVariable;
  * @author Hooman <hooman@sics.se>
  * @author Salman <salman@sics.se>
  */
-public class TransactionLockAcquirer {
+public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
-  private final static Log LOG = LogFactory.getLog(TransactionLockAcquirer.class);
+  private final static Log LOG = LogFactory.getLog(HDFSTransactionLockAcquirer.class);
   private final HDFSTransactionLocks locks;
   private LinkedList<LinkedList<INode>> allResolvedINodes = new LinkedList<LinkedList<INode>>(); //linked lists are important. we need to perserv insertion order
   private LinkedList<Lease> leaseResults = new LinkedList<Lease>();
   private LinkedList<BlockInfo> blockResults = new LinkedList<BlockInfo>();
 
-  public TransactionLockAcquirer() {
+  public HDFSTransactionLockAcquirer() {
     this.locks = new HDFSTransactionLocks();
   }
 
-  public TransactionLockAcquirer(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
+  public HDFSTransactionLockAcquirer(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
     this.locks = new HDFSTransactionLocks(resolvedInodes, preTxPathFullyResolved);
   }
 
@@ -70,7 +73,8 @@ public class TransactionLockAcquirer {
     return this.locks;
   }
 
-  public HDFSTransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
+  @Override
+  public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
       acquireInodeLocks(locks.getInodeParam());
@@ -695,21 +699,7 @@ public class TransactionLockAcquirer {
     locks.addLockedINodes(inode, lock);
     return inode;
   }
-
-  private static void setLockMode(LockType mode) {
-    switch (mode) {
-      case WRITE:
-        EntityManager.writeLock();
-        break;
-      case READ:
-        EntityManager.readLock();
-        break;
-      case READ_COMMITTED:
-        EntityManager.readCommited();
-        break;
-    }
-  }
-
+  
   //if path is already resolved then take locks based on primarny keys
   private static void acquireInodeLocksByPreTxResolvedIDs(HDFSTransactionLocks locks) throws PersistanceException {
     LinkedList<INode> resolvedInodes = locks.getPreTxResolvedInodes();

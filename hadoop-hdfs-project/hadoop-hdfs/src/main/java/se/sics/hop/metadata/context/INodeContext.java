@@ -5,7 +5,7 @@ import java.util.*;
 import se.sics.hop.metadata.entity.CounterType;
 import se.sics.hop.metadata.entity.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
@@ -13,7 +13,7 @@ import se.sics.hop.metadata.dal.INodeDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
-import se.sics.hop.metadata.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *

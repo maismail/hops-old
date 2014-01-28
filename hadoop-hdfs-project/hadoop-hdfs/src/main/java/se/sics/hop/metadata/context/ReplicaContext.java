@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.entity.CounterType;
 import se.sics.hop.metadata.entity.FinderType;
@@ -15,7 +15,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.dal.ReplicaDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *

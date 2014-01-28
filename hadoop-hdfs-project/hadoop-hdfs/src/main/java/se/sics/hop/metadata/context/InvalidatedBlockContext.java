@@ -3,7 +3,7 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.entity.EntityContext;
 import java.util.*;
 import se.sics.hop.metadata.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.entity.CounterType;
 import se.sics.hop.metadata.entity.FinderType;
@@ -12,7 +12,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.dal.InvalidateBlockDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *

@@ -30,9 +30,9 @@ import org.apache.hadoop.util.Daemon;
 import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
-import se.sics.hop.metadata.lock.TransactionLockAcquirer;
-import se.sics.hop.metadata.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -72,8 +72,8 @@ public class BlockManagerTestUtil {
     try {
       return (int[]) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
         @Override
-        public HDFSTransactionLocks acquireLock() throws PersistanceException, IOException {
-          TransactionLockAcquirer tla = new TransactionLockAcquirer();
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(LockType.READ, b.getBlockId()).
                   addReplica(LockType.READ).
