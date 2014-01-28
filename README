@@ -1,7 +1,9 @@
 How to build
 ===
 
-sudo aptitude install libprotocolbuf-java libprotobuf-java cmake
+sudo  aptitude install cmake libprotobuf-dev libprotobuf-c0-dev
+
+mvn clean generate-sources
 
 cd hadoop-maven-plugins
 mvn install
@@ -9,6 +11,12 @@ mvn install
 cd ..
 mvn package -Pdist -DskipTests -Dtar
 
+- for native deployment, you need to install these libraries first
+
+sudo aptitude install zlib1g-dev libssl-dev
+
+cd ..
+mvn package -Pdist,native -DskipTests -Dtar
 
 How to add RPC messages
 ===

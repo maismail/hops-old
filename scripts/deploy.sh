@@ -1,23 +1,28 @@
 #!/bin/bash
-HOPS=/tmp/hops/hadoop
-DEPLOY_FILE=hops.tgz
+
+VERSION=2.0.4-alpha
+
+HOP=/tmp/hop/hadoop
+DEPLOY_FILE=hop-$VERSION.tgz
 DEPLOY=/var/www/hops/$DEPLOY_FILE
 
 rm $DEPLOY
-rm -rf $HOPS
-mkdir -p $HOPS
+rm -rf $HOP
+mkdir -p $HOP
 
-mvn -f ./../pom.xml  package -Pdist -Dtar -DskipTests
+mvn -f ./../pom.xml clean generate-sources
+mvn -f ./../pom.xml  package -Pdist,native -Dtar -DskipTests
 
-HADOOP=hadoop-2.0.4-alpha
+HADOOP=hadoop-$VERSION
 
-tar xf ../hadoop-dist/target/$HADOOP.tar.gz -C $HOPS
-cp -rf $HOPS/$HADOOP/* $HOPS/
+tar xf ../hadoop-dist/target/$HADOOP.tar.gz -C $HOP
+cp -rf $HOP/$HADOOP/* $HOP/
 
-rm -rf $HOPS/$HADOOP
+rm -rf $HOP/$HADOOP
 
-cd $HOPS
+cd $HOP
 cd ..
 
 tar zcf $DEPLOY_FILE .
-mv $DEPLOY_FILE $DEPLOY
+#mv $DEPLOY_FILE $DEPLOY
+scp  $DEPLOY_FILE glassfish@snurran.sics.se/$DEPLOY
