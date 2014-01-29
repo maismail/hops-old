@@ -102,25 +102,4 @@ public class RemoteException extends IOException {
   public String toString() {
     return getClass().getName() + "(" + className + "): " + getMessage();
   }
-  
-  //START_HOP_CODE
-  public RuntimeException unwrapRemoteRuntimeException() {
-    try {
-      Class<?> realClass = Class.forName(getClassName());
-      return instantiateRuntimeExceptionException(realClass.asSubclass(RuntimeException.class));
-    } catch(Exception e) {
-      // cannot instantiate the original exception, just return this
-    }
-    return null;
-  }
-  
-  private RuntimeException instantiateRuntimeExceptionException(Class<? extends RuntimeException> cls)
-      throws Exception {
-    Constructor<? extends RuntimeException> cn = cls.getConstructor(String.class);
-    cn.setAccessible(true);
-    RuntimeException ex = cn.newInstance(this.getMessage());
-    ex.initCause(this);
-    return ex;
-  }
-  //END_HOP_CODE
 }
