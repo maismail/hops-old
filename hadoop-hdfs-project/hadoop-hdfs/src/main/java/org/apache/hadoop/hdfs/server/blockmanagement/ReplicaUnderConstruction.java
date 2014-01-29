@@ -3,8 +3,8 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 import java.util.Comparator;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
-import se.sics.hop.metadata.entity.FinderType;
-import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 
 /**
  * ReplicaUnderConstruction contains information about replicas while they are

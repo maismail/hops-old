@@ -108,10 +108,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.dal.LeaderDataAccess;
-import se.sics.hop.metadata.dal.ReplicaDataAccess;
-import se.sics.hop.metadata.dal.ReplicaUnderConstructionDataAccess;
-import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.

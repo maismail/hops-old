@@ -67,8 +67,8 @@ import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.RequestHandler;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.dal.INodeAttributesDataAccess;
-import se.sics.hop.metadata.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 

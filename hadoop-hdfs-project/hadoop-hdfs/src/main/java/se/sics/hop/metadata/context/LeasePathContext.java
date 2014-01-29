@@ -1,17 +1,17 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
-import se.sics.hop.metadata.entity.CounterType;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.metadata.dal.LeasePathDataAccess;
-import se.sics.hop.metadata.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.lock.TransactionLockTypes;

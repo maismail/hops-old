@@ -30,8 +30,8 @@ import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.entity.EntityContext;
-import se.sics.hop.metadata.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 
 /**

@@ -1,13 +1,13 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.entity.EntityContext;
-import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import java.util.*;
-import se.sics.hop.metadata.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.metadata.entity.CounterType;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.exception.LockUpgradeException;

@@ -22,8 +22,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import se.sics.hop.metadata.DALAdaptor;
-import se.sics.hop.metadata.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.entity.hdfs.HopBlockInfo;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopBlockInfo;
 import se.sics.hop.exception.StorageException;
 
 /**

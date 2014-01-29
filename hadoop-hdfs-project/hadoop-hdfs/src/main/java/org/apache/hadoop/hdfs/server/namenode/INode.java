@@ -36,7 +36,7 @@ import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 
 /**

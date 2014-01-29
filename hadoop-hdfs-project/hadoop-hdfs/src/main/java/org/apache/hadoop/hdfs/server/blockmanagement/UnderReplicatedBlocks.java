@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,7 +38,7 @@ import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.transaction.lock.TransactionLocks;

@@ -29,8 +29,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.entity.EntityContext;
-import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 
 /**

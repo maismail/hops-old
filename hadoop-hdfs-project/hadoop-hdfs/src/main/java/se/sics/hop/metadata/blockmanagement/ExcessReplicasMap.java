@@ -19,12 +19,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 

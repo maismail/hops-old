@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIDGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
@@ -220,7 +220,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 

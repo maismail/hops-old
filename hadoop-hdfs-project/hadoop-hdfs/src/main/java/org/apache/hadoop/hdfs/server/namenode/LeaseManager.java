@@ -17,7 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.IOException;
@@ -50,10 +50,10 @@ import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**

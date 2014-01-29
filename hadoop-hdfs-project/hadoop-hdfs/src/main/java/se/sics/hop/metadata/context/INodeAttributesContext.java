@@ -1,6 +1,6 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -9,11 +9,11 @@ import java.util.Map;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.metadata.entity.CounterType;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
-import static se.sics.hop.metadata.entity.EntityContext.log;
-import se.sics.hop.metadata.dal.INodeAttributesDataAccess;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
+import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.adaptor.INodeAttributeDALAdaptor;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.lock.TransactionLocks;

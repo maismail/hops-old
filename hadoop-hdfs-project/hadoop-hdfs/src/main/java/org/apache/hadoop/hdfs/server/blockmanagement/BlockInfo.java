@@ -16,8 +16,8 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.entity.hop.HopReplica;
-import se.sics.hop.metadata.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -27,9 +27,9 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import se.sics.hop.metadata.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 
 /**

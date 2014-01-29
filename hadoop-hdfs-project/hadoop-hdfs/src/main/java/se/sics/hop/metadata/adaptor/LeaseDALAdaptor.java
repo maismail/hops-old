@@ -18,8 +18,8 @@ package se.sics.hop.metadata.adaptor;
 import java.util.Collection;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.DALAdaptor;
-import se.sics.hop.metadata.dal.LeaseDataAccess;
-import se.sics.hop.metadata.entity.hdfs.HopLease;
+import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopLease;
 import se.sics.hop.exception.StorageException;
 
 /**

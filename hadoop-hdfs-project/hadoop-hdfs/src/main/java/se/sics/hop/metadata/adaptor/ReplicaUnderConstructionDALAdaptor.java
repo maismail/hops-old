@@ -20,8 +20,8 @@ import java.util.List;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import se.sics.hop.metadata.DALAdaptor;
-import se.sics.hop.metadata.dal.ReplicaUnderConstructionDataAccess;
-import se.sics.hop.metadata.entity.hdfs.HopReplicaUnderConstruction;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopReplicaUnderConstruction;
 import se.sics.hop.exception.StorageException;
 
 /**

@@ -31,8 +31,8 @@ import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.io.DataInputBuffer;
 import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.hop.metadata.DALAdaptor;
-import se.sics.hop.metadata.dal.INodeDataAccess;
-import se.sics.hop.metadata.entity.hdfs.HopINode;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINode;
 import se.sics.hop.exception.HopEnitityInitializationError;
 import se.sics.hop.exception.StorageException;
 

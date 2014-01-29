@@ -1,6 +1,6 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 
 /**
  *

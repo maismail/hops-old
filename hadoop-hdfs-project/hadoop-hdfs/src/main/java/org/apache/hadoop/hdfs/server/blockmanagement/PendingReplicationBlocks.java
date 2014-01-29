@@ -36,7 +36,7 @@ import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.transaction.lock.TransactionLocks;
 

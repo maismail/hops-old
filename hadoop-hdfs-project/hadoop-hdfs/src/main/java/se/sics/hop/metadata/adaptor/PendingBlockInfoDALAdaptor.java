@@ -19,8 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import se.sics.hop.metadata.DALAdaptor;
-import se.sics.hop.metadata.dal.PendingBlockDataAccess;
-import se.sics.hop.metadata.entity.hdfs.HopPendingBlockInfo;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopPendingBlockInfo;
 import se.sics.hop.exception.StorageException;
 
 /**

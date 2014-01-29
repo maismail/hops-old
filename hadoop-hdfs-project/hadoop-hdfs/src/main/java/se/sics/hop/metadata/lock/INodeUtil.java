@@ -15,18 +15,18 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.metadata.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.RequestHandler;
-import se.sics.hop.metadata.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.dal.INodeDataAccess;
-import se.sics.hop.metadata.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**

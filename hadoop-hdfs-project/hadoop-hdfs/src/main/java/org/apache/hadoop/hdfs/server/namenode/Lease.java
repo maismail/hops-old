@@ -1,12 +1,12 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.metadata.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import com.google.common.annotations.VisibleForTesting;
 import java.util.Collection;
 import java.util.TreeSet;
-import se.sics.hop.metadata.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.metadata.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 
 /**
