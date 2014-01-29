@@ -1,6 +1,6 @@
 package se.sics.hop.metadata;
 
-import se.sics.hop.metadata.entity.hop.HopLeader;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
