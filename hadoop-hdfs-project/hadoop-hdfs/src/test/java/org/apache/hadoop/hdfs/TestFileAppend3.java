@@ -95,7 +95,7 @@ public class TestFileAppend3  {
 
     //a. Create file and write one block of data. Close file.
     final int len1 = (int)BLOCK_SIZE; 
-    {
+    { 
       FSDataOutputStream out = fs.create(p, false, buffersize, REPLICATION, BLOCK_SIZE);
       AppendTestUtil.write(out, 0, len1);
       out.close();
