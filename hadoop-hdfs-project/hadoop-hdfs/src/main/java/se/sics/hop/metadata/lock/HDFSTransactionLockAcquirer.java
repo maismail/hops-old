@@ -109,6 +109,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       checkPathIsResolved();
       if (!locks.getPreTxResolvedInodes().isEmpty()) {
         inode = takeLocksFromRootToLeaf(locks.getPreTxResolvedInodes(), locks.getInodeLock());
+        allResolvedINodes.add(locks.getPreTxResolvedInodes());
       }
     } else {
       inode = acquireINodeLockById(locks.getInodeLock(), inodeId, locks);
