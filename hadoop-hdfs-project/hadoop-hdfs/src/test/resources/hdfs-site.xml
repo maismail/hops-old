@@ -26,4 +26,9 @@
     <value>simple</value>
   </property>
 
+ <!-- for testing only set the hop-metadata-dal-impl-ndb jarfile !-->
+  <property> 
+    <name>dfs.storage.driver.jarFile</name>
+    <value><!-- Path to the jarfile !--></value>
+  </property>
 </configuration>
