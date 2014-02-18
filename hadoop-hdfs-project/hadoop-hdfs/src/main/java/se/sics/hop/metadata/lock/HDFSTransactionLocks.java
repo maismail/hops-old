@@ -110,14 +110,14 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return addINode(resolveType, lock, true, null);
   }
 
-  public HDFSTransactionLocks addBlock(LockType lock, Long param) {
-    this.blockLock = lock;
+  public HDFSTransactionLocks addBlock(Long param) {
+    this.blockLock = LockType.READ_COMMITTED;
     this.blockParam = param;
     return this;
   }
 
-  public HDFSTransactionLocks addBlock(LockType lock) {
-    addBlock(lock, null);
+  public HDFSTransactionLocks addBlock() {
+    addBlock(null);
     return this;
   }
 
@@ -132,23 +132,23 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-  public HDFSTransactionLocks addCorrupt(LockType lock) {
-    this.crLock = lock;
+  public HDFSTransactionLocks addCorrupt() {
+    this.crLock = LockType.READ_COMMITTED;
     return this;
   }
 
-  public HDFSTransactionLocks addExcess(LockType lock) {
-    this.erLock = lock;
+  public HDFSTransactionLocks addExcess() {
+    this.erLock = LockType.READ_COMMITTED;
     return this;
   }
 
-  public HDFSTransactionLocks addReplicaUc(LockType lock) {
-    this.rucLock = lock;
+  public HDFSTransactionLocks addReplicaUc() {
+    this.rucLock = LockType.READ_COMMITTED;
     return this;
   }
 
-  public HDFSTransactionLocks addReplica(LockType lock) {
-    this.replicaLock = lock;
+  public HDFSTransactionLocks addReplica() {
+    this.replicaLock = LockType.READ_COMMITTED;
     return this;
   }
 
@@ -162,8 +162,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-  public HDFSTransactionLocks addUnderReplicatedBlock(LockType lock) {
-    this.urbLock = lock;
+  public HDFSTransactionLocks addUnderReplicatedBlock() {
+    this.urbLock = LockType.READ_COMMITTED;
     return this;
   }
 
@@ -192,13 +192,13 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-  public HDFSTransactionLocks addInvalidatedBlock(LockType lock) {
-    this.invLocks = lock;
+  public HDFSTransactionLocks addInvalidatedBlock() {
+    this.invLocks = LockType.READ_COMMITTED;
     return this;
   }
 
-  public HDFSTransactionLocks addPendingBlock(LockType lock) {
-    this.pbLock = lock;
+  public HDFSTransactionLocks addPendingBlock() {
+    this.pbLock = LockType.READ_COMMITTED;
     return this;
   }
 

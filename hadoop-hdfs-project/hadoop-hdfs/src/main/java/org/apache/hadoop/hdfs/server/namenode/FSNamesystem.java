@@ -1214,7 +1214,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
 
@@ -1267,7 +1267,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
 
@@ -1328,11 +1328,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock(LockType.READ).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addReplicaUc(LockType.READ);
+                addBlock().
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addReplicaUc();
         return tla.acquire();
       }
 
@@ -1372,11 +1372,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
-                addBlock(LockType.READ).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addReplicaUc(LockType.READ);
+                addBlock().
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addReplicaUc();
         return tla.acquire();
       }
 
@@ -1507,7 +1507,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, paths).
-                addBlock(LockType.WRITE);
+                addBlock();
         return tla.acquire();
       }
 
@@ -1685,7 +1685,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
 
@@ -1842,12 +1842,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
-                addBlock(LockType.WRITE).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addInvalidatedBlock(LockType.WRITE);
+                addBlock().
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addInvalidatedBlock();
         return tla.acquire();
       }
 
@@ -1964,17 +1964,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             tla.getLocks().
                     addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
                     addInodeIDCounterLock(LockType.WRITE).
-                    addBlock(LockType.WRITE).
+                    addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
-                    addReplica(LockType.WRITE).
-                    addCorrupt(LockType.WRITE).
-                    addExcess(LockType.READ).
-                    addReplicaUc(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
                     addGenerationStamp(LockType.WRITE).
-                    addUnderReplicatedBlock(LockType.WRITE).
-                    addPendingBlock(LockType.WRITE).
-                    addInvalidatedBlock(LockType.WRITE);
+                    addUnderReplicatedBlock().
+                    addPendingBlock().
+                    addInvalidatedBlock();
             return tla.acquire();
           }
 
@@ -2199,14 +2199,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                    addBlock(LockType.WRITE).
+                    addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
-                    addReplica(LockType.READ).
-                    addCorrupt(LockType.READ).
-                    addExcess(LockType.READ).
-                    addReplicaUc(LockType.READ).
-                    addUnderReplicatedBlock(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
                     addGenerationStamp(LockType.WRITE);
             return tla.acquire();
           }
@@ -2342,16 +2342,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
-                    addBlock(LockType.WRITE).
+                    addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
-                    addReplica(LockType.READ).
-                    addCorrupt(LockType.READ).
-                    addExcess(LockType.READ).
-                    addReplicaUc(LockType.READ).
-                    addUnderReplicatedBlock(LockType.WRITE).
-                    addInvalidatedBlock(LockType.WRITE).
-                    addPendingBlock(LockType.READ).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addInvalidatedBlock().
+                    addPendingBlock().
                     addGenerationStamp(LockType.WRITE);
             return tla.acquire();
           }
@@ -2445,12 +2445,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
-                      addBlock(LockType.WRITE).
-                      addReplica(LockType.READ).
+                      addBlock().
+                      addReplica().
                       addLease(LockType.READ).
-                      addCorrupt(LockType.WRITE).
-                      addExcess(LockType.WRITE).
-                      addReplicaUc(LockType.WRITE).
+                      addCorrupt().
+                      addExcess().
+                      addReplicaUc().
                       addGenerationStamp(LockType.WRITE).
                       addBlockIdCounter(LockType.WRITE);
               return tla.acquire();
@@ -2714,12 +2714,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
-                    addReplica(LockType.WRITE).
-                    addBlock(LockType.WRITE).
+                    addReplica().
+                    addBlock().
                     addLease(LockType.READ).
-                    addCorrupt(LockType.WRITE).
-                    addReplicaUc(LockType.WRITE).
-                    addUnderReplicatedBlock(LockType.WRITE);
+                    addCorrupt().
+                    addReplicaUc().
+                    addUnderReplicatedBlock();
             return tla.acquire();
           }
 
@@ -2806,15 +2806,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                    addBlock(LockType.WRITE).
+                    addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
-                    addReplica(LockType.READ).
-                    addCorrupt(LockType.READ).
-                    addExcess(LockType.READ).
-                    addReplicaUc(LockType.WRITE).
-                    addUnderReplicatedBlock(LockType.WRITE).
-                    addInvalidatedBlock(LockType.WRITE);
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addInvalidatedBlock();
             return tla.acquire();
           }
 
@@ -2995,10 +2995,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
                     addLease(LockType.WRITE).
                     addLeasePath(LockType.WRITE).
-                    addBlock(LockType.WRITE).
-                    addReplica(LockType.WRITE).
-                    addReplicaUc(LockType.WRITE).
-                    addInvalidatedBlock(LockType.WRITE);
+                    addBlock().
+                    addReplica().
+                    addReplicaUc().
+                    addInvalidatedBlock();
             return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
 
@@ -3083,13 +3083,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
                       addLease(LockType.WRITE).
                       addLeasePath(LockType.WRITE).
-                      addBlock(LockType.WRITE).
-                      addReplica(LockType.WRITE).
-                      addCorrupt(LockType.WRITE).
-                      addReplicaUc(LockType.WRITE).
-                      addUnderReplicatedBlock(LockType.WRITE).
-                      addInvalidatedBlock(LockType.WRITE).
-                      addPendingBlock(LockType.WRITE);
+                      addBlock().
+                      addReplica().
+                      addCorrupt().
+                      addReplicaUc().
+                      addUnderReplicatedBlock().
+                      addInvalidatedBlock().
+                      addPendingBlock();
               return tla.acquireForRename();
             }
 
@@ -3165,13 +3165,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
                       addLease(LockType.WRITE).
                       addLeasePath(LockType.WRITE).
-                      addBlock(LockType.WRITE).
-                      addReplica(LockType.WRITE).
-                      addCorrupt(LockType.WRITE).
-                      addReplicaUc(LockType.WRITE).
-                      addUnderReplicatedBlock(LockType.WRITE).
-                      addPendingBlock(LockType.WRITE).
-                      addInvalidatedBlock(LockType.WRITE);
+                      addBlock().
+                      addReplica().
+                      addCorrupt().
+                      addReplicaUc().
+                      addUnderReplicatedBlock().
+                      addPendingBlock().
+                      addInvalidatedBlock();
               return tla.acquire();
             }
         };
@@ -3345,7 +3345,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, resolveLink, new String[]{src}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
 
@@ -3485,7 +3485,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
                 INodeLockType.READ, new String[]{src}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
 
@@ -3521,7 +3521,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, INodeLockType.WRITE, new String[]{path})
-                .addBlock(LockType.READ_COMMITTED);
+                .addBlock();
                 
         return tla.acquire();
       }
@@ -3561,7 +3561,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
-                    addBlock(LockType.WRITE).
+                    addBlock().
                     addLease(LockType.READ);
             return tla.acquire();
           }
@@ -3792,14 +3792,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                    addBlock(LockType.WRITE, lastblock.getBlockId()).
+                    addBlock(lastblock.getBlockId()).
                     addLease(LockType.WRITE).
                     addLeasePath(LockType.WRITE).
-                    addReplica(LockType.WRITE).
-                    addCorrupt(LockType.WRITE).
-                    addExcess(LockType.READ).
-                    addReplicaUc(LockType.WRITE).
-                    addUnderReplicatedBlock(LockType.WRITE);
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock();
             return tla.acquireByBlock(inodeId);
           }
 
@@ -3966,11 +3966,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN, INodeLockType.READ, new String[]{src}).
-                addBlock(LockType.READ).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addReplicaUc(LockType.READ);
+                addBlock().
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addReplicaUc();
         return tla.acquire();
       }
 
@@ -5044,7 +5044,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                addBlock(LockType.WRITE).
+                addBlock().
                 addLease(LockType.WRITE, holder).
                 addNameNodeLease(LockType.WRITE).
                 addLeasePath(LockType.WRITE);
@@ -5536,7 +5536,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.READ).
-                addBlock(LockType.WRITE, block.getBlockId()).
+                addBlock(block.getBlockId()).
                 addGenerationStamp(LockType.WRITE);
         return tla.acquireByBlock(inodeId);
       }
@@ -5596,8 +5596,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.WRITE).
-                    addBlock(LockType.WRITE, oldBlock.getBlockId()).
-                    addReplicaUc(LockType.READ).
+                    addBlock(oldBlock.getBlockId()).
+                    addReplicaUc().
                     addLease(LockType.READ).
                     addLeasePath(LockType.READ);
             return tla.acquireByBlock(inodeId);
@@ -5821,10 +5821,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
                   addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
-                  addBlock(LockType.READ_COMMITTED, blk.getBlockId()).
-                  addReplica(LockType.READ_COMMITTED).
-                  addCorrupt(LockType.READ_COMMITTED).
-                  addExcess(LockType.READ_COMMITTED);
+                  addBlock(blk.getBlockId()).
+                  addReplica().
+                  addCorrupt().
+                  addExcess();
           return tla.acquireByBlock(inodeId);
         }
 

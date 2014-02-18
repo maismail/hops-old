@@ -140,8 +140,8 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addUnderReplicatedBlock();
         return tla.acquire();
       }
 

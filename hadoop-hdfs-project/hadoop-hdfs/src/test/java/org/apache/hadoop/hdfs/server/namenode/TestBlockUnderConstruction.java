@@ -96,7 +96,7 @@ public class TestBlockUnderConstruction {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{file}).
-                addBlock(LockType.READ);
+                addBlock();
         return tla.acquire();
       }
       

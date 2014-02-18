@@ -373,14 +373,14 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(LockType.WRITE, blockInfo.getBlockId()).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addPendingBlock(LockType.WRITE).
-                addReplicaUc(LockType.WRITE).
-                addInvalidatedBlock(LockType.READ).
+                addBlock(blockInfo.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addPendingBlock().
+                addReplicaUc().
+                addInvalidatedBlock().
                 addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeId);
       }
@@ -404,8 +404,8 @@ public class TestBlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-        addBlock(LockType.READ, blkId).
-           addReplica(LockType.READ);
+        addBlock(blkId).
+           addReplica();
         return tla.acquire();
       }
       @Override
@@ -447,7 +447,7 @@ public class TestBlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
          tla.getLocks().
-                 addBlock(LockType.WRITE, blockId);
+                 addBlock(blockId);
          return tla.acquire();
       }
       @Override
@@ -474,12 +474,12 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(LockType.WRITE, block.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addPendingBlock(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addPendingBlock().
+                addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeId);
       }
 

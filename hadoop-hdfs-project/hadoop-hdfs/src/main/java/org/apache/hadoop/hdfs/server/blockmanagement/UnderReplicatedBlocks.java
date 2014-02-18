@@ -536,7 +536,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addUnderReplicatedBlock(LockType.WRITE);
+        tla.getLocks().addUnderReplicatedBlock();
         return tla.acquire();
       }
 
@@ -611,8 +611,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addUnderReplicatedBlock(LockType.WRITE).
-                addBlock(LockType.READ_COMMITTED, urb.getBlockId());
+                addUnderReplicatedBlock().
+                addBlock(urb.getBlockId());
         return tla.acquire();
       }
       

@@ -992,8 +992,8 @@ public class TestReplicationPolicy {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.WRITE, block.getBlockId()).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addUnderReplicatedBlock();
         return tla.acquire();
       }
 

@@ -745,7 +745,7 @@ public class TestFsck {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).
-                      addBlock(LockType.WRITE);
+                      addBlock();
               return tla.acquire();
             }
 

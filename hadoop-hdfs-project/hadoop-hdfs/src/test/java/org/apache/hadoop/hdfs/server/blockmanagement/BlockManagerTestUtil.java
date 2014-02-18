@@ -75,11 +75,11 @@ public class BlockManagerTestUtil {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(LockType.READ, b.getBlockId()).
-                  addReplica(LockType.READ).
-                  addCorrupt(LockType.READ).
-                  addExcess(LockType.READ).
-                  addUnderReplicatedBlock(LockType.READ);
+                  addBlock(b.getBlockId()).
+                  addReplica().
+                  addCorrupt().
+                  addExcess().
+                  addUnderReplicatedBlock();
           return tla.acquire();
         }
 

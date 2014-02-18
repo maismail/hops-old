@@ -1030,12 +1030,12 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, blk.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addReplicaUc(LockType.READ);
+                addBlock(blk.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addReplicaUc();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -1669,10 +1669,10 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addInvalidatedBlock(LockType.WRITE).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE);
+                addBlock(b.getBlockId()).
+                addInvalidatedBlock().
+                addReplica().
+                addExcess();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -1737,11 +1737,11 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addBlock(b.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -1790,14 +1790,14 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addReplica(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addReplicaUc(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addInvalidatedBlock(LockType.READ).
-                addPendingBlock(LockType.READ).
+                addBlock(b.getBlockId()).
+                addReplica().
+                addCorrupt().
+                addExcess().
+                addReplicaUc().
+                addUnderReplicatedBlock().
+                addInvalidatedBlock().
+                addPendingBlock().
                 addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeId);
       }
@@ -1887,14 +1887,14 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, iblk.getBlockId()).
-                addReplica(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addReplicaUc(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addInvalidatedBlock(LockType.READ).
-                addPendingBlock(LockType.READ).
+                addBlock(iblk.getBlockId()).
+                addReplica().
+                addCorrupt().
+                addExcess().
+                addReplicaUc().
+                addUnderReplicatedBlock().
+                addInvalidatedBlock().
+                addPendingBlock().
                 addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeId);
       }
@@ -2075,10 +2075,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, rbi.getBlock().getBlockId()).
-                addInvalidatedBlock(LockType.WRITE).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE).
+                addBlock(rbi.getBlock().getBlockId()).
+                addInvalidatedBlock().
+                addReplica().
+                addExcess().
                 addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeId);
       }
@@ -2441,12 +2441,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addInvalidatedBlock(LockType.WRITE).
-                addReplica(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addExcess(LockType.WRITE);
+                addBlock(b.getBlockId()).
+                addInvalidatedBlock().
+                addReplica().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addExcess();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -2787,9 +2787,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
-                addBlock(LockType.READ, block.getBlockId()).
-                addReplica(LockType.READ).
-                addInvalidatedBlock(LockType.READ);
+                addBlock(block.getBlockId()).
+                addReplica().
+                addInvalidatedBlock();
         return tla.acquireByBlock(inodeId);
       }
       @Override
@@ -2885,17 +2885,17 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, rdbi.getBlock().getBlockId()).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
+                addBlock(rdbi.getBlock().getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
                 addGenerationStamp(LockType.READ);
         if (!rdbi.isDeletedBlock()) {
           tla.getLocks().
-                  addPendingBlock(LockType.WRITE).
-                  addReplicaUc(LockType.WRITE).
-                  addInvalidatedBlock(LockType.READ);
+                  addPendingBlock().
+                  addReplicaUc().
+                  addInvalidatedBlock();
         }
         return tla.acquireByBlock(inodeId);
       }
@@ -3068,13 +3068,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, block.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addPendingBlock(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addInvalidatedBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addPendingBlock().
+                addUnderReplicatedBlock().
+                addInvalidatedBlock();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -3129,12 +3129,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, block.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addPendingBlock(LockType.READ);
+                addBlock(block.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addPendingBlock();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -3555,12 +3555,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addReplica(LockType.WRITE).
-                addExcess(LockType.WRITE).
-                addCorrupt(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addReplicaUc(LockType.WRITE);
+                addBlock(b.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addReplicaUc();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -3593,13 +3593,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, b.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addPendingBlock(LockType.WRITE).
-                addUnderReplicatedBlock(LockType.WRITE).
-                addReplicaUc(LockType.READ);
+                addBlock(b.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addPendingBlock().
+                addUnderReplicatedBlock().
+                addReplicaUc();
         return tla.acquireByBlock(inodeId);
       }
 
@@ -3669,12 +3669,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, timedOutItem.getBlockId()).
-                addReplica(LockType.READ).
-                addExcess(LockType.READ).
-                addCorrupt(LockType.READ).
-                addPendingBlock(LockType.READ).
-                addUnderReplicatedBlock(LockType.WRITE);
+                addBlock(timedOutItem.getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addPendingBlock().
+                addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeId);
       }
 

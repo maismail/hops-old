@@ -1212,9 +1212,9 @@ public class DatanodeManager {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.READ_COMMITTED, b.getBlockId()).
-                addReplica(LockType.READ_COMMITTED).
-                addReplicaUc(LockType.READ_COMMITTED);
+                addBlock(b.getBlockId()).
+                addReplica().
+                addReplicaUc();
         return tla.acquire();
       }
 

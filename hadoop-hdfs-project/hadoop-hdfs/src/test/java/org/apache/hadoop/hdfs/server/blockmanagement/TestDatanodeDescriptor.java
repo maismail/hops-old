@@ -97,8 +97,8 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.WRITE, blk.getBlockId()).
-                addReplica(LockType.WRITE);
+                addBlock(blk.getBlockId()).
+                addReplica();
         return tla.acquire();
       }
 
@@ -115,8 +115,8 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.WRITE, blk.getBlockId()).
-                addReplica(LockType.WRITE);
+                addBlock(blk.getBlockId()).
+                addReplica();
         return tla.acquire();
       }
 

@@ -148,8 +148,8 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
-                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        tla.getLocks().addBlock(blk.getBlockId())
+                .addCorrupt();
         return tla.acquire();
                 
       }
@@ -167,8 +167,8 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(TransactionLockTypes.LockType.WRITE, blk.getBlockId())
-                .addCorrupt(TransactionLockTypes.LockType.WRITE);
+        tla.getLocks().addBlock(blk.getBlockId())
+                .addCorrupt();
         return tla.acquire();
       }
 

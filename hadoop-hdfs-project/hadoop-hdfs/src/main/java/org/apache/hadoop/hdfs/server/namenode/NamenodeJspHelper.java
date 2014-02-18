@@ -808,7 +808,7 @@ class NamenodeJspHelper {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.READ).
-                    addBlock(LockType.READ, block.getBlockId());
+                    addBlock(block.getBlockId());
             return tla.acquireByBlock(inodeId);
           }
 

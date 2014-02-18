@@ -71,9 +71,9 @@ public class TestUnderReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
-                  addBlock(LockType.WRITE, b.getBlockId()).
-                  addReplica(LockType.WRITE).
-                  addInvalidatedBlock(LockType.WRITE);
+                  addBlock(b.getBlockId()).
+                  addReplica().
+                  addInvalidatedBlock();
           return tla.acquireByBlock(inodeId);
         }
 

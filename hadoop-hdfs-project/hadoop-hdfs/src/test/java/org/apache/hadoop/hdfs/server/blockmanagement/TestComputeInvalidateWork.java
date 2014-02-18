@@ -93,8 +93,8 @@ public class TestComputeInvalidateWork {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.WRITE, block.getBlockId()).
-                addInvalidatedBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addInvalidatedBlock();
         return tla.acquire();
       }
       

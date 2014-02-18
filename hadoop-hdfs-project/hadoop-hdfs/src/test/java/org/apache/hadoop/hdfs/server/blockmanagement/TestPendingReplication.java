@@ -226,8 +226,8 @@ public class TestPendingReplication {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
-                addPendingBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addPendingBlock();
         return tla.acquire();
       }
 
@@ -249,8 +249,8 @@ public class TestPendingReplication {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(LockType.READ_COMMITTED, block.getBlockId()).
-                addPendingBlock(LockType.WRITE);
+                addBlock(block.getBlockId()).
+                addPendingBlock();
         return tla.acquire();
       }
 

@@ -447,15 +447,15 @@ public class LeaseManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                addBlock(LockType.WRITE).
+                addBlock().
                 addLease(LockType.WRITE, holder).
                 addNameNodeLease(LockType.WRITE).
                 addLeasePath(LockType.WRITE).
-                addReplica(LockType.READ).
-                addCorrupt(LockType.READ).
-                addExcess(LockType.READ).
-                addReplicaUc(LockType.READ).
-                addUnderReplicatedBlock(LockType.READ).
+                addReplica().
+                addCorrupt().
+                addExcess().
+                addReplicaUc().
+                addUnderReplicatedBlock().
                 addGenerationStamp(LockType.WRITE);
         return tla.acquireByLease(leasePaths);
         }

@@ -110,9 +110,9 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(LockType.READ, block.getBlockId()).
-                  addReplica(LockType.READ).
-                  addExcess(LockType.READ);
+                  addBlock(block.getBlockId()).
+                  addReplica().
+                  addExcess();
           return tla.acquire();
         }
 
@@ -200,10 +200,10 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
            tla.getLocks().
-                   addBlock(LockType.READ, block.getBlockId()).
-                   addReplica(LockType.READ).
-                   addExcess(LockType.READ).
-                   addCorrupt(LockType.READ);
+                   addBlock(block.getBlockId()).
+                   addReplica().
+                   addExcess().
+                   addCorrupt();
            return tla.acquire();
         }
          

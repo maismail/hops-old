@@ -92,18 +92,18 @@ public class TestLock {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(LockType.WRITE, rdbi.getBlock().getBlockId());
-//                addReplica(LockType.WRITE).
-//                addExcess(LockType.WRITE).
-//                addCorrupt(LockType.WRITE).
-//                addUnderReplicatedBlock(LockType.WRITE).
-//                addGenerationStamp(LockType.READ);
-//        if (!rdbi.isDeletedBlock()) {
-//          tla.getLocks().
-//                  addPendingBlock(LockType.WRITE).
-//                  addReplicaUc(LockType.WRITE).
-//                  addInvalidatedBlock(LockType.READ);
-//        }
+                addBlock(rdbi.getBlock().getBlockId()).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addGenerationStamp(LockType.READ);
+        if (!rdbi.isDeletedBlock()) {
+          tla.getLocks().
+                  addPendingBlock().
+                  addReplicaUc().
+                  addInvalidatedBlock();
+        }
         return tla.acquireByBlock(inodeId);
       }
 
