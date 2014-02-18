@@ -134,7 +134,7 @@ public class TestLock {
     };
     ReceivedDeletedBlockInfo test = new ReceivedDeletedBlockInfo(new Block(1,1,1), BlockStatus.DELETED_BLOCK, "");
     handler.setParams(test);
-    for(int i = 0; i < 10000; i++){
+    for(int i = 0; i < 3; i++){
       handler.handle();
     }
     

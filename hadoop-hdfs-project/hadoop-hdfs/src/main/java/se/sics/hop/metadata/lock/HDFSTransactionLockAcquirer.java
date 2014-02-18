@@ -37,6 +37,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
+import org.apache.log4j.NDC;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -292,11 +293,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private ParallelReadThread acquireReplicasLockASync(final FinderType finder) throws PersistanceException {
+    final String threadName = getTransactionName();
     ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId()) {
       @Override
       public void run() {
         super.run(); //To change body of generated methods, choose Tools | Templates.
         try {
+          NDC.push(threadName);
           EntityManager.begin();
           EntityManager.readCommited();
           if (blockResults != null && !blockResults.isEmpty()) {
@@ -321,11 +324,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
    List<Exception> exceptionList = new ArrayList<Exception>();
    private ParallelReadThread acquireBlockRelatedLockASync(final FinderType finder) throws PersistanceException {
+     final String threadName = getTransactionName(); 
      ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId()) {
       @Override
       public void run() {
         super.run(); //To change body of generated methods, choose Tools | Templates.
         try {
+          NDC.push(threadName);
           EntityManager.begin();
           EntityManager.readCommited();
           if (blockResults != null && !blockResults.isEmpty()) {
@@ -796,5 +801,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }
       }
     }   
+  }
+  
+  private String getTransactionName(){
+    return NDC.peek()+" Async";
   }
 }
