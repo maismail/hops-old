@@ -49,6 +49,7 @@ import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.READ_CO
 import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.WRITE;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.lock.ParallelReadThread;
 
 /**
  *
@@ -290,8 +291,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return lPaths;
   }
 
-  private Thread acquireReplicasLockASync(final FinderType finder) throws PersistanceException {
-    Thread thread = new Thread() {
+  private ParallelReadThread acquireReplicasLockASync(final FinderType finder) throws PersistanceException {
+    ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId()) {
       @Override
       public void run() {
         super.run(); //To change body of generated methods, choose Tools | Templates.
@@ -310,21 +311,17 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           }
           EntityManager.commit(locks);
         } catch (PersistanceException ex) {
-          //System.out.println("***** "+finder+", "+ex);
           exceptionList.add(ex); //after join all exceptions will be thrown
         } 
       }
     };
-    //System.out.println("***** "+finder.getClass().getCanonicalName());
-    thread.setName("ParallelRead:" + Thread.currentThread().getId());
-    thread.start();
-    return thread;
+    pThread.start();
+    return pThread;
   }
 
    List<Exception> exceptionList = new ArrayList<Exception>();
-   private Thread acquireBlockRelatedLockASync(final FinderType finder) throws PersistanceException {
-     
-     Thread thread = new Thread() {
+   private ParallelReadThread acquireBlockRelatedLockASync(final FinderType finder) throws PersistanceException {
+     ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId()) {
       @Override
       public void run() {
         super.run(); //To change body of generated methods, choose Tools | Templates.
@@ -347,9 +344,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }
       }
     };
-    thread.setName("ParallelRead:" + Thread.currentThread().getId());
-    thread.start();
-    return thread;
+    pThread.start();
+    return pThread;
   }
   
 
