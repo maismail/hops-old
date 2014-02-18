@@ -11,6 +11,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
@@ -88,8 +90,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     acquireLeaseAndLpathLockNormal();
-    acquireBlockRelatedLocksNormal();
+    acquireLocksOnVariablesTable();
     readINodeAttributes();
+    acquireBlockRelatedInfoASync();
     return locks;
   }
 
@@ -138,8 +141,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
     acquireLeaseAndLpathLockNormal();
-    acquireBlockRelatedLocksNormal();
+    acquireLocksOnVariablesTable();
     readINodeAttributes();
+    acquireBlockRelatedInfoASync();
     return locks;
   }
 
@@ -166,9 +170,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     if (lpResults.size() > sortedPaths.size()) {
       return locks; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
-
-    acquireBlockRelatedLocksNormal();
+    acquireLocksOnVariablesTable();
     readINodeAttributes();
+    acquireBlockRelatedInfoASync();
     return locks;
   }
 
@@ -233,8 +237,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     acquireLeaseAndLpathLockNormal();
-    acquireBlockRelatedLocksNormal();
+    acquireLocksOnVariablesTable();
     readINodeAttributes();
+    acquireBlockRelatedInfoASync();
     return locks;
   }
 
@@ -285,31 +290,68 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return lPaths;
   }
 
-  private void acquireReplicasLock(LockType lock, FinderType finder) throws PersistanceException {
-    if (blockResults != null && !blockResults.isEmpty()) {
-      for (Block b : blockResults) {
-        acquireLockList(lock, finder, b.getBlockId());
+  private Thread acquireReplicasLockASync(final FinderType finder) throws PersistanceException {
+    Thread thread = new Thread() {
+      @Override
+      public void run() {
+        super.run(); //To change body of generated methods, choose Tools | Templates.
+        try {
+          EntityManager.begin();
+          EntityManager.readCommited();
+          if (blockResults != null && !blockResults.isEmpty()) {
+            for (Block b : blockResults) {
+              acquireLockList(LockType.READ_COMMITTED, finder, b.getBlockId());
+            }
+          } else // if blockResults is null then we can safely bring null in to cache
+          {
+            if (locks.getBlockParam() != null) {
+              acquireLockList(LockType.READ_COMMITTED, finder, locks.getBlockParam()/*id*/);
+            }
+          }
+          EntityManager.commit(locks);
+        } catch (PersistanceException ex) {
+          //System.out.println("***** "+finder+", "+ex);
+          exceptionList.add(ex); //after join all exceptions will be thrown
+        } 
       }
-    } else // if blockResults is null then we can safely bring null in to cache
-    {
-      if (locks.getBlockParam() != null) {
-        acquireLockList(lock, finder, locks.getBlockParam()/*id*/);
-      }
-    }
+    };
+    //System.out.println("***** "+finder.getClass().getCanonicalName());
+    thread.setName("ParallelRead:" + Thread.currentThread().getId());
+    thread.start();
+    return thread;
   }
 
-  private void acquireBlockRelatedLock(LockType lock, FinderType finder) throws PersistanceException {
-    if (blockResults != null && !blockResults.isEmpty()) {
-      for (Block b : blockResults) {
-        acquireLock(lock, finder, b.getBlockId());
+   List<Exception> exceptionList = new ArrayList<Exception>();
+   private Thread acquireBlockRelatedLockASync(final FinderType finder) throws PersistanceException {
+     
+     Thread thread = new Thread() {
+      @Override
+      public void run() {
+        super.run(); //To change body of generated methods, choose Tools | Templates.
+        try {
+          EntityManager.begin();
+          EntityManager.readCommited();
+          if (blockResults != null && !blockResults.isEmpty()) {
+            for (Block b : blockResults) {
+              acquireLock(LockType.READ_COMMITTED, finder, b.getBlockId());
+            }
+          } else // if blockResults is null then we can safely bring null in to cache
+          {
+            if (locks.getBlockParam() != null) {
+              acquireLock(LockType.READ_COMMITTED, finder, locks.getBlockParam()/*id*/);
+            }
+          }
+          EntityManager.commit(locks);
+        } catch (PersistanceException ex) {
+          exceptionList.add(ex); //after join all exceptions will be thrown
+        }
       }
-    } else // if blockResults is null then we can safely bring null in to cache
-    {
-      if (locks.getBlockParam() != null) {
-        acquireLock(lock, finder, locks.getBlockParam()/*id*/);
-      }
-    }
+    };
+    thread.setName("ParallelRead:" + Thread.currentThread().getId());
+    thread.start();
+    return thread;
   }
+  
 
   private LinkedList<INode> findImmediateChildren(INode lastINode) throws PersistanceException {
     LinkedList<INode> children = new LinkedList<INode>();
@@ -387,46 +429,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
   }
 
-  /**
-   * Acquires lock on the lease, lease-path, replicas, excess, corrupt,
-   * invalidated, under-replicated and pending blocks.
-   *
-   * @throws PersistanceException
-   */
-  private void acquireBlockRelatedLocksNormal() throws PersistanceException {
-
-//HOP if (blockResults != null && !blockResults.isEmpty()) //[S] commented this to bring null in to the cache for invalid/deleted blocks
-//    {
-    if (locks.getReplicaLock() != null) {
-      acquireReplicasLock(locks.getReplicaLock(), HopIndexedReplica.Finder.ByBlockId);
-    }
-
-    if (locks.getCrLock() != null) {
-      acquireReplicasLock(locks.getCrLock(), HopCorruptReplica.Finder.ByBlockId);
-    }
-
-    if (locks.getErLock() != null) {
-      acquireReplicasLock(locks.getErLock(), HopExcessReplica.Finder.ByBlockId);
-    }
-
-    if (locks.getRucLock() != null) {
-      acquireReplicasLock(locks.getRucLock(), ReplicaUnderConstruction.Finder.ByBlockId);
-    }
-
-    if (locks.getInvLocks() != null) {
-      acquireReplicasLock(locks.getInvLocks(), HopInvalidatedBlock.Finder.ByBlockId);
-    }
-
-    if (locks.getUrbLock() != null) {
-      acquireBlockRelatedLock(locks.getUrbLock(), HopUnderReplicatedBlock.Finder.ByBlockId);
-      acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
-    }
-
-    if (locks.getPbLock() != null) {
-      acquireBlockRelatedLock(locks.getPbLock(), PendingBlockInfo.Finder.ByPKey);
-    }
-//    }
-
+  private void acquireLocksOnVariablesTable()throws PersistanceException {
+    //variables table
     if (locks.getBlockKeyLock() != null) {
       acquireLock(locks.getBlockKeyLock(), HopVariable.Finder.BlockTokenKeys);
     }
@@ -439,18 +443,73 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
     }
     
-    if (locks.getInodeLock() != null) {
-      LockType inodeIDLockType = LockType.WRITE;
-      if (locks.getInodeLock() == INodeLockType.READ) {
-        inodeIDLockType = LockType.READ;
-      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        inodeIDLockType = LockType.READ_COMMITTED;
-      }
-      acquireLock(inodeIDLockType, HopVariable.Finder.INodeID);
+    if(locks.getInodeIDCounterLock() != null){
+      acquireLock(locks.getInodeIDCounterLock(), HopVariable.Finder.INodeID);
     }
     
     if (locks.getStorageInfo() != null) {
       acquireLock(locks.getStorageInfo(), HopVariable.Finder.StorageInfo);
+    }
+    
+    if (locks.getUrbLock() != null) {
+      acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
+    }
+  }
+  /**
+   * Acquires lock on the lease, lease-path, replicas, excess, corrupt,
+   * invalidated, under-replicated and pending blocks.
+   *
+   * @throws PersistanceException
+   */
+  private void acquireBlockRelatedInfoASync() throws PersistanceException {
+    // blocks related tables
+    List<Thread> threads = new ArrayList<Thread>();
+    if (locks.getReplicaLock() != null) {
+      threads.add(acquireReplicasLockASync(HopIndexedReplica.Finder.ByBlockId));
+    }
+
+    if (locks.getCrLock() != null) {
+      threads.add(acquireReplicasLockASync( HopCorruptReplica.Finder.ByBlockId));
+    }
+
+    if (locks.getErLock() != null) {
+      threads.add(acquireReplicasLockASync(HopExcessReplica.Finder.ByBlockId));
+    }
+
+    if (locks.getRucLock() != null) {
+      threads.add(acquireReplicasLockASync(ReplicaUnderConstruction.Finder.ByBlockId));
+    }
+
+    if (locks.getInvLocks() != null) {
+      threads.add(acquireReplicasLockASync(HopInvalidatedBlock.Finder.ByBlockId));
+    }
+
+    if (locks.getUrbLock() != null) {
+      threads.add(acquireBlockRelatedLockASync(HopUnderReplicatedBlock.Finder.ByBlockId));
+    }
+
+    if (locks.getPbLock() != null) {
+      threads.add(acquireBlockRelatedLockASync(PendingBlockInfo.Finder.ByPKey));
+    }
+    
+    try {
+      for (int i = 0; i < threads.size(); i++) {
+        Thread t = threads.get(i);
+        t.join();
+      }
+    } catch (InterruptedException e) {
+      LOG.debug(e);
+      e.printStackTrace();
+    }
+    
+    if(exceptionList.size() > 0){
+      for(int i = 0; i < exceptionList.size(); i++){
+        Exception e = exceptionList.get(i);
+        e.printStackTrace();
+      }
+      // throw first exception. Its better to throw the hardest of all exceptions
+      // problem is which exception is the hardest. 
+      throw (PersistanceException)exceptionList.get(0);
     }
   }
 

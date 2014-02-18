@@ -146,12 +146,12 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((removedurBlocks.values().size() != 0
-                || modifiedurBlocks.values().size() != 0)
-                && hlks.getUrbLock()!= TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade under replicated locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((removedurBlocks.values().size() != 0
+//                || modifiedurBlocks.values().size() != 0)
+//                && hlks.getUrbLock()!= TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade under replicated locks");
+//        }
     dataAccess.prepare(removedurBlocks.values(), newurBlocks.values(), modifiedurBlocks.values());
   }
 

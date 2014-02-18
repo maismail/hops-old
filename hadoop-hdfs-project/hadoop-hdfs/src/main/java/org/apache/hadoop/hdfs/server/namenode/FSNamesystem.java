@@ -1963,6 +1963,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
             tla.getLocks().
                     addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
+                    addInodeIDCounterLock(LockType.WRITE).
                     addBlock(LockType.WRITE).
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
@@ -3386,10 +3387,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedINodes, preTxPathFullyResolved[0]);
-        tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD,
-                INodeLockType.WRITE_ON_PARENT, resolvedLink,
-                new String[]{src});
+        tla.getLocks(). addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src})
+                .addInodeIDCounterLock(LockType.WRITE);
         return tla.acquire();
       }
 

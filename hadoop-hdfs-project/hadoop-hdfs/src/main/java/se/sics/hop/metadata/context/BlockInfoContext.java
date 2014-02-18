@@ -164,12 +164,12 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedBlocks.values().isEmpty()
-                || !modifiedBlocks.values().isEmpty())
-                && hlks.getBlockLock() != LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade block locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedBlocks.values().isEmpty()
+//                || !modifiedBlocks.values().isEmpty())
+//                && hlks.getBlockLock() != LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade block locks");
+//        }
         dataAccess.prepare(removedBlocks.values(), newBlocks.values(), modifiedBlocks.values());
     }
 

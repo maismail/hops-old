@@ -163,11 +163,11 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedCorruptReplicas.values().isEmpty())
-                && hlks.getCrLock() != TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade corrupt replica locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedCorruptReplicas.values().isEmpty())
+//                && hlks.getCrLock() != TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade corrupt replica locks");
+//        }
         dataAccess.prepare(removedCorruptReplicas.values(), newCorruptReplicas.values(), null);
     }
 

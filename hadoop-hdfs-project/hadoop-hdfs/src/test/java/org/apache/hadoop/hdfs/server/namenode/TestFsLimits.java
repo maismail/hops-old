@@ -175,7 +175,8 @@ public class TestFsLimits {
     @Override
     public TransactionLocks acquireLock() throws PersistanceException, IOException {
       HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
+      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name})
+             .addInodeIDCounterLock(TransactionLockTypes.LockType.WRITE);
       return tla.acquire();
     }
 

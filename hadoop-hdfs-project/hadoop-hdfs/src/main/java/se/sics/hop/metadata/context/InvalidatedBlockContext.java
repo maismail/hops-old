@@ -178,11 +178,11 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedInvBlocks.values().isEmpty())
-                && hlks.getInvLocks()!= TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade invalidated blocks locks");
-        }  
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedInvBlocks.values().isEmpty())
+//                && hlks.getInvLocks()!= TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade invalidated blocks locks");
+//        }  
     dataAccess.prepare(removedInvBlocks.values(), newInvBlocks.values(), new ArrayList<HopInvalidatedBlock>());
   }
 

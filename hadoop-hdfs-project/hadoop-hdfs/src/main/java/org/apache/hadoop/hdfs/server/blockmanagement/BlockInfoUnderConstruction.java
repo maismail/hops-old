@@ -167,7 +167,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   public void initializeBlockRecovery(long recoveryId, DatanodeManager datanodeMgr) throws PersistanceException {
     setBlockUCState(BlockUCState.UNDER_RECOVERY);
     List<ReplicaUnderConstruction> replicas = getExpectedReplicas();
-    blockRecoveryId = recoveryId;
+    //blockRecoveryId = recoveryId;
+    setBlockRecoveryId(recoveryId);
     if (replicas.isEmpty()) {
       NameNode.blockStateChangeLog.warn("BLOCK*"
               + " BlockInfoUnderConstruction.initLeaseRecovery:"

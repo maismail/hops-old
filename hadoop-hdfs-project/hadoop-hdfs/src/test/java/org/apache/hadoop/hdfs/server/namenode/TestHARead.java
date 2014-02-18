@@ -52,7 +52,7 @@ public class TestHARead extends junit.framework.TestCase {
     Configuration conf = new HdfsConfiguration();
 
     // Create cluster with 3 readers and 1 writer
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(4)).numDataNodes(2).build();
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(4)).numDataNodes(2).format(true).build();
     cluster.waitActive();
 
     try {

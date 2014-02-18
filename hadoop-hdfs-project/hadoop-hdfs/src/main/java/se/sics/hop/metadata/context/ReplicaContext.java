@@ -70,12 +70,12 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedReplicas.values().isEmpty()
-                || !modifiedReplicas.values().isEmpty())
-                && hlks.getReplicaLock() != TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade replica locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedReplicas.values().isEmpty()
+//                || !modifiedReplicas.values().isEmpty())
+//                && hlks.getReplicaLock() != TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade replica locks");
+//        }
         dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
     }
 

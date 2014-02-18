@@ -173,12 +173,12 @@ public class LeaseContext extends EntityContext<Lease> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedLeases.values().isEmpty()
-                || !modifiedLeases.values().isEmpty())
-                && hlks.getLeaseLock() != TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade lease locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedLeases.values().isEmpty()
+//                || !modifiedLeases.values().isEmpty())
+//                && hlks.getLeaseLock() != TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade lease locks");
+//        }
         dataAccess.prepare(removedLeases.values(), newLeases.values(), modifiedLeases.values());
     }
 

@@ -122,12 +122,12 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedPendings.values().isEmpty()
-                || !modifiedPendings.values().isEmpty())
-                && hlks.getPbLock()!= TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade pending block locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedPendings.values().isEmpty()
+//                || !modifiedPendings.values().isEmpty())
+//                && hlks.getPbLock()!= TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade pending block locks");
+//        }
         dataAccess.prepare(removedPendings.values(), newPendings.values(), modifiedPendings.values());
     }
 

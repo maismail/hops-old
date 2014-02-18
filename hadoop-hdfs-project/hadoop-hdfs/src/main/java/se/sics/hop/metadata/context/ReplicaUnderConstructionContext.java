@@ -107,11 +107,11 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     // because some times in the tx handler the acquire lock 
     // function is empty and in that case tlm will throw 
     // null pointer exceptions
-    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-    if ((!removedReplicasUc.values().isEmpty())
-            && hlks.getRucLock() != TransactionLockTypes.LockType.WRITE) {
-      throw new LockUpgradeException("Trying to upgrade replica under construction locks");
-    }
+//    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//    if ((!removedReplicasUc.values().isEmpty())
+//            && hlks.getRucLock() != TransactionLockTypes.LockType.WRITE) {
+//      throw new LockUpgradeException("Trying to upgrade replica under construction locks");
+//    }
     dataAccess.prepare(removedReplicasUc.values(), newReplicasUc.values(), null);
   }
 

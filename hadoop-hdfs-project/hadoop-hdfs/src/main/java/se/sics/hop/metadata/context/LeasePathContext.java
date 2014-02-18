@@ -161,12 +161,12 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-        if ((!removedLPaths.values().isEmpty()
-                || !modifiedLPaths.values().isEmpty())
-                && hlks.getLpLock()!= TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade lease path locks");
-        }
+//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        if ((!removedLPaths.values().isEmpty()
+//                || !modifiedLPaths.values().isEmpty())
+//                && hlks.getLpLock()!= TransactionLockTypes.LockType.WRITE) {
+//            throw new LockUpgradeException("Trying to upgrade lease path locks");
+//        }
         dataAccess.prepare(removedLPaths.values(), newLPaths.values(), modifiedLPaths.values());
     }
 

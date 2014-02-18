@@ -46,17 +46,19 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType pbLock = null;
   // invalidated blocks
   private LockType invLocks = null;
+  // Leader
+  private LockType leaderLock = null;
   // block token key
   private LockType blockKeyLock = null;
   // block generation stamp
   private LockType generationStampLock = null;
   //block id counter 
   private LockType blockIdCounterLock = null;
-  // Leader
-  private LockType leaderLock = null;
   //storage info
   private LockType storageInfoLock = null;
-
+  //indode id counter
+  private LockType inodeIDCounterLock = null;
+  
   HDFSTransactionLocks() {
   }
 
@@ -175,6 +177,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
+  public HDFSTransactionLocks addInodeIDCounterLock(LockType inodeIDCounterLock) {
+    this.inodeIDCounterLock = inodeIDCounterLock;
+    return this;
+  }
+
   public HDFSTransactionLocks addBlockKey(LockType lock) {
     blockKeyLock = lock;
     return this;
@@ -209,7 +216,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
   }
 
   public LockType getBlockLock() {
-    return blockLock;
+    return LockType.READ_COMMITTED;
   }
 
   public Long getBlockParam() {
@@ -225,31 +232,31 @@ public class HDFSTransactionLocks implements TransactionLocks{
   }
 
   public LockType getReplicaLock() {
-    return replicaLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getCrLock() {
-    return crLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getErLock() {
-    return erLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getRucLock() {
-    return rucLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getUrbLock() {
-    return urbLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getPbLock() {
-    return pbLock;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getInvLocks() {
-    return invLocks;
+    return LockType.READ_COMMITTED;
   }
 
   public LockType getGenerationStampLock() {
@@ -257,7 +264,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
   }
 
   public LockType getBlockIdCounterLock() {
-    return blockIdCounterLock;
+     return blockIdCounterLock;
+  }
+
+  public LockType getInodeIDCounterLock() {
+    return inodeIDCounterLock;
   }
 
   public LockType getLeaderLock() {
