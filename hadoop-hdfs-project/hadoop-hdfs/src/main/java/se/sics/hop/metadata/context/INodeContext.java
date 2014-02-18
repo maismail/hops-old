@@ -148,7 +148,7 @@ public class INodeContext extends EntityContext<INode> {
           inodesParentIndex.put(parentId, result);
         }
         break;
-      case ByIds:
+      case ByIds: // used for batch reading 
         List<Long> ids = (List<Long>) params[0];
         log("find-inodes-by-ids", CacheHitState.NA, new String[]{"ids", ids.toString()});
         aboutToAccessStorage();

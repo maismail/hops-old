@@ -794,13 +794,17 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private void readINodeAttributes() throws PersistanceException {
+    List<Long> ids = new ArrayList<Long>();
     for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
       for (INode inode : resolvedINodes) {
         if (inode instanceof INodeDirectoryWithQuota) {
-          acquireLock(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKey, inode.getId());
+          ids.add(inode.getId());
         }
       }
-    }   
+    }
+    if(!ids.isEmpty()){
+      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, ids);
+    }
   }
   
   private String getTransactionName(){

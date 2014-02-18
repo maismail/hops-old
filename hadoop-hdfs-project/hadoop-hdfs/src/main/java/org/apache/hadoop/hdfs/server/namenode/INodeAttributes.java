@@ -29,7 +29,7 @@ public class INodeAttributes {
 
   public static enum Finder implements FinderType<INodeAttributes> {
 
-    ByPKey;
+    ByPKey, ByPKList/*batch read*/;
 
     @Override
     public Class getType() {
