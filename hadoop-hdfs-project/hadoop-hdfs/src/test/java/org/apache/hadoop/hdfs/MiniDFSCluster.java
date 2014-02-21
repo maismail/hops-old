@@ -1441,16 +1441,15 @@ public class MiniDFSCluster {
       }
     }
     shutdownDataNodes();
-    for (NameNodeInfo nnInfo : nameNodes) {
+    for(int i = 0 ; i < nameNodes.length; i++){
+      NameNodeInfo nnInfo = nameNodes[i];
       if (nnInfo == null) continue;
       NameNode nameNode = nnInfo.nameNode;
       if (nameNode != null) {
-        nameNode.stop();
-        nameNode.join();
-        nameNode = null;
+        shutdownNameNode(i);
       }
     }
-    
+   
       //HOP_START_CODE
       deleteReplicasTable();
       //HOP_END_CODE
