@@ -12,6 +12,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -238,5 +239,11 @@ public class LeaseContext extends EntityContext<Lease> {
     }
 
     return finalSet;
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Lease",newLeases.size(),modifiedLeases.size(),removedLeases.size());
+    return stat;
   }
 }

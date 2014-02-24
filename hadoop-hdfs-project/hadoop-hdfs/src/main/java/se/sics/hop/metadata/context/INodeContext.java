@@ -13,6 +13,7 @@ import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -265,5 +266,11 @@ public class INodeContext extends EntityContext<INode> {
     }
 
     return false;
+  }
+
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("INode Context",newInodes.size(),modifiedInodes.size(),removedInodes.size());
+    return stat;
   }
 }

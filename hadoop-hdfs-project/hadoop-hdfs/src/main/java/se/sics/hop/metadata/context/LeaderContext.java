@@ -30,6 +30,7 @@ import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -300,5 +301,11 @@ public class LeaderContext extends EntityContext<HopLeader> {
       "id", Long.toString(leader.getId()), "hostName", leader.getHostName(), "counter", Long.toString(leader.getCounter()),
       "timeStamp", Long.toString(leader.getTimeStamp())
     });
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Leader",newLeaders.size(),modifiedLeaders.size(),removedLeaders.size());
+    return stat;
   }
 }

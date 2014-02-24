@@ -15,6 +15,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -139,5 +140,11 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
       "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Replicas",newReplicas.size(),modifiedReplicas.size(),removedReplicas.size());
+    return stat;
   }
 }

@@ -17,6 +17,7 @@ import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.adaptor.INodeAttributeDALAdaptor;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -193,5 +194,25 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
       cachedRows.put(var.getInodeId(), attrWrapper);
       log("updated-attributes", CacheHitState.NA, new String[]{"id", Long.toString(var.getInodeId())});
     }
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+        //there will be no checking for locks
+    List<INodeAttributes> modified = new ArrayList<INodeAttributes>();
+    List<INodeAttributes> deleted = new ArrayList<INodeAttributes>();
+    for (AttributeWrapper wrapper : cachedRows.values()) {
+      if (wrapper.getStatus() == CacheRowStatus.DELETED) {
+        if (wrapper.getAttributes() != null) {
+          deleted.add(wrapper.getAttributes());
+        }
+      } else if (wrapper.getStatus() == CacheRowStatus.MODIFIED) {
+        if (wrapper.getAttributes() != null) {
+          modified.add(wrapper.getAttributes());
+        }
+      }
+    }
+    EntityContextStat stat = new EntityContextStat("INode Attributes",0,modified.size(),deleted.size());
+    return stat;
   }
 }

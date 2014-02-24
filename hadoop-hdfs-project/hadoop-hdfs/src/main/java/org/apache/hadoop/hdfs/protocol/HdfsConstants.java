@@ -57,7 +57,10 @@ public class HdfsConstants {
   // HADOOP-438
   // Currently we set the maximum length to 8k characters and the maximum depth
   // to 1k.
-  public static int MAX_PATH_LENGTH = 8000;
+  public static int MAX_PATH_LENGTH = 3000; // HOP: it also mean that a there could be a file name 7999 char long e.g. /very_long_file........name.txt
+                                             // The column that holds the file name and symlink name are varchar(128). 
+                                             // It is not possible to set it to 8000 as the NDB engine only supports max varchar width of 3072. 
+                                             // For now I am setting it to 3000. In NDB 7.X varchar behaves just like varchar in MyISAM
   public static int MAX_PATH_DEPTH = 1000;
 
   // TODO should be conf injected?

@@ -12,6 +12,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -283,5 +284,11 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
     blockIdToInvBlocks.put(bid, ibs);
 
     return new ArrayList<HopInvalidatedBlock>(ibs);
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Invalidated Blocks",newInvBlocks.size(),0,removedInvBlocks.size());
+    return stat;
   }
 }

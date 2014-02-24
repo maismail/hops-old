@@ -12,6 +12,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -114,5 +115,19 @@ public class VariableContext extends EntityContext<HopVariable> {
             "updated-" + var.getType().toString(),
             CacheHitState.NA,
             new String[]{"value", var.toString()});
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Variables",newVariables.size(),modifiedVariables.size(),0);
+    StringBuilder additionalInfo  = new StringBuilder();
+    for(HopVariable variable : newVariables.values()){
+      additionalInfo.append("[New: "+variable.getType()+"] ");
+    }
+    for(HopVariable variable : modifiedVariables.values()){
+      additionalInfo.append("[Mod: "+variable.getType()+"] ");
+    }
+    stat.setAdditionalInfo(additionalInfo.toString());
+    return stat;
   }
 }

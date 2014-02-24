@@ -13,6 +13,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -221,4 +222,10 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
 //
 //    return finalList;
 //  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Corrupt Replicas",newCorruptReplicas.size(),0,removedCorruptReplicas.size());
+    return stat;
+  }
 }

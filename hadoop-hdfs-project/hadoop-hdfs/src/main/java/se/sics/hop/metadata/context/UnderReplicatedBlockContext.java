@@ -12,6 +12,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -221,5 +222,11 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
       levelToReplicas.put(block.getLevel(), new HashSet<HopUnderReplicatedBlock>());
     }
     levelToReplicas.get(block.getLevel()).add(block);
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Under Replicated Blocks",newurBlocks.size(),modifiedurBlocks.size(),removedurBlocks.size());
+    return stat;
   }
 }

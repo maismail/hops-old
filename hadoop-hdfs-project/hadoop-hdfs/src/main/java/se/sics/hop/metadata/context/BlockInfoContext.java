@@ -14,6 +14,7 @@ import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.Logger;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -282,5 +283,11 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
 
 
     return maxBlk;
+  }
+  
+  @Override
+  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+    EntityContextStat stat = new EntityContextStat("Blocks", newBlocks.size(),modifiedBlocks.size(),removedBlocks.size());
+    return stat;
   }
 }
