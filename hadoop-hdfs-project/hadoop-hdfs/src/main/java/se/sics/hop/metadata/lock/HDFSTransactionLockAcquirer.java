@@ -455,6 +455,10 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     if (locks.getUrbLock() != null) {
       acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
     }
+    
+    if (locks.getSIdCounter() != null) {
+      acquireLock(locks.getSIdCounter(), HopVariable.Finder.SIdCounter);
+    }
   }
   /**
    * Acquires lock on the lease, lease-path, replicas, excess, corrupt,

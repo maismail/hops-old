@@ -170,4 +170,11 @@ CREATE TABLE `variables` (
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
+delimiter $$
+
+CREATE TABLE `storage_id_map` (
+  `storage_id` varchar(128) NOT NULL,
+  `sid` int(11) NOT NULL,
+  PRIMARY KEY (`storage_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 

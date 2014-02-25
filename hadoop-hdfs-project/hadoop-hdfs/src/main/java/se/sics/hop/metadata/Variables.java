@@ -15,15 +15,14 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.EntityManager;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopLongVariable;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.handler.RequestHandler;
 
 /**
  *
@@ -110,6 +109,14 @@ public class Variables {
     return getAllBlockTokenKeys(false, true);
   }
 
+  public static int getSIdCounter() throws PersistanceException {
+    return (Integer) getVariable(HopVariable.Finder.SIdCounter).getValue();
+  }
+
+  public static void setSIdCounter(int sid) throws PersistanceException {
+    updateVariable(new HopIntVariable(HopVariable.Finder.SIdCounter, sid));
+  }
+    
   private static Map<Integer, BlockKey> getAllBlockTokenKeys(boolean useKeyId, boolean leightWeight) throws IOException {
     List<HopVariable> vars = (List<HopVariable>) (leightWeight ? getVariableLightWeight(HopVariable.Finder.BlockTokenKeys).getValue() 
             : getVariable(HopVariable.Finder.BlockTokenKeys).getValue());
@@ -171,5 +178,6 @@ public class Variables {
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.BlockID, new HopLongVariable(0).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.INodeID, new HopLongVariable(1).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.SIdCounter, new HopIntVariable(0).getBytes());
   }
 }

@@ -102,6 +102,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
 
   //HOP: 
   //private volatile BlockInfo blockList = null;
+  private int sid = -1;
+  
   private int numBlocks = 0;
   // isAlive == heartbeats.contains(this)
   // This is an optimization, because contains takes O(n) time on Arraylist
@@ -252,6 +254,14 @@ public class DatanodeDescriptor extends DatanodeInfo {
     }
   }
 
+  public void setSId(int sid){
+    this.sid = sid;
+  }
+  
+  public int getSId(){
+    return this.sid;
+  }
+  
 //HOP: 
 //  /**
 //   * Move block to the head of the list of blocks belonging to the data-node.

@@ -79,6 +79,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.StorageIdMap;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -161,6 +162,9 @@ public class DatanodeManager {
    */
   private boolean hasClusterEverBeenMultiRack = false;
   
+  //Hop
+  private StorageIdMap storageIdMap;
+  
   DatanodeManager(final BlockManager blockManager, final Namesystem namesystem,
       final Configuration conf) throws IOException {
     this.namesystem = namesystem;
@@ -214,6 +218,8 @@ public class DatanodeManager {
         DFSConfigKeys.DFS_NAMENODE_USE_STALE_DATANODE_FOR_WRITE_RATIO_KEY +
         " = '" + ratioUseStaleDataNodesForWrite + "' is invalid. " +
         "It should be a positive non-zero float value, not greater than 1.0f.");
+    
+    this.storageIdMap = new StorageIdMap();
   }
   
   private static long getStaleIntervalFromConf(Configuration conf,
@@ -719,6 +725,9 @@ public class DatanodeManager {
     // register new datanode
     DatanodeDescriptor nodeDescr 
       = new DatanodeDescriptor(nodeReg, NetworkTopology.DEFAULT_RACK);
+    
+    storageIdMap.update(nodeDescr);
+    
     resolveNetworkLocation(nodeDescr);
     addDatanode(nodeDescr);
     checkDecommissioning(nodeDescr);

@@ -64,6 +64,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopStringVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
 import se.sics.hop.transaction.ContextInitializer;
 import se.sics.hop.transaction.EntityManager;
 
@@ -159,6 +160,7 @@ public class StorageFactory {
         entityContexts.put(HopUnderReplicatedBlock.class, new UnderReplicatedBlockContext((UnderReplicatedBlockDataAccess) getDataAccess(UnderReplicatedBlockDataAccess.class)));
         VariableContext variableContext = new VariableContext((VariableDataAccess) getDataAccess(VariableDataAccess.class));
         entityContexts.put(HopVariable.class, variableContext);
+        entityContexts.put(HopIntVariable.class, variableContext);
         entityContexts.put(HopLongVariable.class, variableContext);
         entityContexts.put(HopByteArrayVariable.class, variableContext);
         entityContexts.put(HopStringVariable.class, variableContext);

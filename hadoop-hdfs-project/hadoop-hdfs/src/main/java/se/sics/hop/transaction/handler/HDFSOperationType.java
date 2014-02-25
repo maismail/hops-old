@@ -94,4 +94,6 @@ public enum HDFSOperationType implements OperationType {
   // Transaction in unit tests.
   TEST,
   GET_VARIABLE,
+  INITIALIZE_SID_MAP,
+  GET_SET_SID,
 }

@@ -58,6 +58,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType storageInfoLock = null;
   //indode id counter
   private LockType inodeIDCounterLock = null;
+  //sidcounter
+  private LockType sidCounterLock = null;
   
   HDFSTransactionLocks() {
   }
@@ -206,6 +208,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
     this.storageInfoLock = lock;
     return this;
   }
+  
+  public HDFSTransactionLocks addSIdCounter(LockType lock) {
+    this.sidCounterLock = lock;
+    return this;
+  }
 
   public INodeLockType getInodeLock() {
     return inodeLock;
@@ -279,6 +286,10 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return storageInfoLock;
   }
 
+  public LockType getSIdCounter(){
+    return sidCounterLock;
+  }
+  
   public INode[] getInodeResult() {
     return inodeResult;
   }
