@@ -210,7 +210,7 @@ public class BlockInfo extends Block {
    * Adds new replica for this block.
    */
   HopIndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
-    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getStorageID(),/*FIXME [M]*/ getReplicasNoCheck().size());
+    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(),/*FIXME [M]*/ getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
@@ -231,7 +231,7 @@ public class BlockInfo extends Block {
     HopIndexedReplica replica = null;
     int index = -1;
     for (int i = 0; i < replicas.size(); i++) {
-      if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
+      if (replicas.get(i).getStorageId() == dn.getSId()) {
         index = i;
         break;
       }
@@ -253,7 +253,7 @@ public class BlockInfo extends Block {
   int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
     List<HopIndexedReplica> replicas = getReplicasNoCheck();
     for (int i = 0; i < replicas.size(); i++) {
-      if (replicas.get(i).getStorageId().equals(dn.getStorageID())) {
+      if (replicas.get(i).getStorageId() == dn.getSId()) {
         return i;
       }
     }
@@ -262,7 +262,7 @@ public class BlockInfo extends Block {
 
   boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
     for (HopIndexedReplica replica : getReplicasNoCheck()) {
-      if (replica.getStorageId().equals(dn.getStorageID())) {
+      if (replica.getStorageId() == dn.getSId()) {
         return true;
       }
     }

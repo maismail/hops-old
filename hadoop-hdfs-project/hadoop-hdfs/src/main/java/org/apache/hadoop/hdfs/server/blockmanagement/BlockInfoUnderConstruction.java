@@ -99,7 +99,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    */
   public void setExpectedLocations(DatanodeDescriptor[] targets) throws PersistanceException {
     for (DatanodeDescriptor dn : targets) {
-      addExpectedReplica(dn.getStorageID(), ReplicaState.RBW);
+      addExpectedReplica(dn.getSId(), ReplicaState.RBW);
     }
   }
 
@@ -196,11 +196,11 @@ public class BlockInfoUnderConstruction extends BlockInfo {
           Block block,
           ReplicaState rState) throws PersistanceException {
     for (ReplicaUnderConstruction r : getExpectedReplicas()) {
-      if (r.getStorageId().equals(dn.getStorageID())) {
+      if (r.getStorageId() == dn.getSId()) {
         return;
       }
     }
-    addExpectedReplica(dn.getStorageID(), rState);
+    addExpectedReplica(dn.getSId(), rState);
   }
 
   @Override // BlockInfo
@@ -253,7 +253,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return replicas;
   }
 
-  private ReplicaUnderConstruction addExpectedReplica(String storageId, ReplicaState rState) throws PersistanceException {
+  private ReplicaUnderConstruction addExpectedReplica(int storageId, ReplicaState rState) throws PersistanceException {
     if (hasExpectedReplicaIn(storageId)) {
       NameNode.blockStateChangeLog.warn("BLOCK* Trying to store multiple blocks of the file on one DataNode. Returning null");
       return null;
@@ -263,9 +263,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return replica;
   }
 
-  private boolean hasExpectedReplicaIn(String storageId) throws PersistanceException {
+  private boolean hasExpectedReplicaIn(int storageId) throws PersistanceException {
     for (ReplicaUnderConstruction replica : getExpectedReplicas()) {
-      if (replica.getStorageId().equals(storageId)) {
+      if (replica.getStorageId() == storageId) {
         return true;
       }
     }

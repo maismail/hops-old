@@ -3,14 +3,11 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -22,7 +19,7 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> {
 
   private Map<HopInvalidatedBlock, HopInvalidatedBlock> invBlocks = new HashMap<HopInvalidatedBlock, HopInvalidatedBlock>();
-  private Map<String, HashSet<HopInvalidatedBlock>> storageIdToInvBlocks = new HashMap<String, HashSet<HopInvalidatedBlock>>();
+  private Map<Integer, HashSet<HopInvalidatedBlock>> storageIdToInvBlocks = new HashMap<Integer, HashSet<HopInvalidatedBlock>>();
   private Map<Long, HashSet<HopInvalidatedBlock>> blockIdToInvBlocks = new HashMap<Long, HashSet<HopInvalidatedBlock>>();
   private Map<HopInvalidatedBlock, HopInvalidatedBlock> newInvBlocks = new HashMap<HopInvalidatedBlock, HopInvalidatedBlock>();
   private Map<HopInvalidatedBlock, HopInvalidatedBlock> removedInvBlocks = new HashMap<HopInvalidatedBlock, HopInvalidatedBlock>();
@@ -56,7 +53,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
     }
 
     log("added-invblock", CacheHitState.NA,
-            new String[]{"bid", Long.toString(invBlock.getBlockId()), "sid", invBlock.getStorageId()});
+            new String[]{"bid", Long.toString(invBlock.getBlockId()), "sid", Integer.toString(invBlock.getStorageId())});
   }
 
   @Override
@@ -96,23 +93,23 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
     switch (iFinder) {
       case ByPrimaryKey:
         long blockId = (Long) params[0];
-        String storageId = (String) params[1];
+        int storageId = (Integer) params[1];
         HopInvalidatedBlock searchInstance = new HopInvalidatedBlock(storageId, blockId);
         if (blockIdToInvBlocks.containsKey(blockId)) { // if inv-blocks are queried by bid but the search-key deos not exist
           if (!blockIdToInvBlocks.get(blockId).contains(searchInstance)) {
-            log("find-invblock-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", storageId});
+            log("find-invblock-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
             return null;
           }
         }
         // otherwise search-key should be the new query or it must be a hit
         if (invBlocks.containsKey(searchInstance)) {
-          log("find-invblock-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", storageId});
+          log("find-invblock-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           return invBlocks.get(searchInstance);
         } else if (removedInvBlocks.containsKey(searchInstance)) {
-          log("find-invblock-by-pk-removed", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", storageId});
+          log("find-invblock-by-pk-removed", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           return null;
         } else {
-          log("find-invblock-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", storageId});
+          log("find-invblock-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           aboutToAccessStorage();
           HopInvalidatedBlock result = dataAccess.findInvBlockByPkey(params);
           if (result == null) {
@@ -142,12 +139,12 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
           return syncInstancesForBlockId(dataAccess.findInvalidatedBlocksByBlockId(bid), bid);
         }
       case ByStorageId:
-        String storageId = (String) params[0];
+        int storageId = (Integer) params[0];
         if (storageIdToInvBlocks.containsKey(storageId)) {
-          log("find-invblocks-by-storageid", CacheHitState.HIT, new String[]{"sid", storageId});
+          log("find-invblocks-by-storageid", CacheHitState.HIT, new String[]{"sid", Integer.toString(storageId)});
           return new ArrayList<HopInvalidatedBlock>(this.storageIdToInvBlocks.get(storageId)); //clone the list reference
         } else {
-          log("find-invblocks-by-storageid", CacheHitState.LOSS, new String[]{"sid", storageId});
+          log("find-invblocks-by-storageid", CacheHitState.LOSS, new String[]{"sid", Integer.toString(storageId)});
           aboutToAccessStorage();
           return syncInstancesForStorageId(dataAccess.findInvalidatedBlockByStorageId(storageId), storageId);
         }
@@ -206,7 +203,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
       ibs.remove(invBlock);
     }
     log("removed-invblock", CacheHitState.NA,
-            new String[]{"bid", Long.toString(invBlock.getBlockId()), "sid", invBlock.getStorageId()});
+            new String[]{"bid", Long.toString(invBlock.getBlockId()), "sid", Integer.toString(invBlock.getStorageId())});
   }
 
   @Override
@@ -245,10 +242,10 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
     return finalList;
   }
 
-  private List<HopInvalidatedBlock> syncInstancesForStorageId(Collection<HopInvalidatedBlock> list, String sid) {
+  private List<HopInvalidatedBlock> syncInstancesForStorageId(Collection<HopInvalidatedBlock> list, int sid) {
     HashSet<HopInvalidatedBlock> ibs = new HashSet<HopInvalidatedBlock>();
     for (HopInvalidatedBlock newBlock : newInvBlocks.values()) {
-      if (newBlock.getStorageId().equals(sid)) {
+      if (newBlock.getStorageId() == sid) {
         ibs.add(newBlock);
       }
     }

@@ -19,7 +19,7 @@ delimiter $$
 
 CREATE TABLE `corrupt_replicas` (
   `block_id` bigint(20) NOT NULL,
-  `storage_id` varchar(128) NOT NULL,
+  `storage_id` int NOT NULL,
   PRIMARY KEY (`block_id`,`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
@@ -28,7 +28,7 @@ delimiter $$
 
 CREATE TABLE `excess_replicas` (
   `block_id` bigint(20) NOT NULL,
-  `storage_id` varchar(128) NOT NULL,
+  `storage_id` int NOT NULL,
   PRIMARY KEY (`block_id`,`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
@@ -74,7 +74,7 @@ delimiter $$
 
 CREATE TABLE `invalidated_blocks` (
   `block_id` bigint(20) NOT NULL,
-  `storage_id` varchar(128) NOT NULL,
+  `storage_id` int NOT NULL,
   `generation_stamp` bigint(20) DEFAULT NULL,
   `num_bytes` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`block_id`,`storage_id`),
@@ -133,7 +133,7 @@ delimiter $$
 
 CREATE TABLE `replica_under_constructions` (
   `block_id` bigint(20) NOT NULL,
-  `storage_id` varchar(128) NOT NULL,
+  `storage_id` int NOT NULL,
   `state` int(11) DEFAULT NULL,
   `replica_index` int(11) NOT NULL,
   PRIMARY KEY (`block_id`,`storage_id`)
@@ -144,12 +144,21 @@ delimiter $$
 
 CREATE TABLE `replicas` (
   `block_id` bigint(20) NOT NULL,
-  `storage_id` varchar(128) NOT NULL,
+  `storage_id` int NOT NULL,
   `replica_index` int(11) NOT NULL,
   PRIMARY KEY (`block_id`,`storage_id`),
   KEY `storage_idx` (`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (storage_id) */$$
+
+
+delimiter $$
+
+CREATE TABLE `storage_id_map` (
+  `storage_id` varchar(128) NOT NULL,
+  `sid` int(11) NOT NULL,
+  PRIMARY KEY (`storage_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
 delimiter $$
@@ -170,11 +179,4 @@ CREATE TABLE `variables` (
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
-delimiter $$
-
-CREATE TABLE `storage_id_map` (
-  `storage_id` varchar(128) NOT NULL,
-  `sid` int(11) NOT NULL,
-  PRIMARY KEY (`storage_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 

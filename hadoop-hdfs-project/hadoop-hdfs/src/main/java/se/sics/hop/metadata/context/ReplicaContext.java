@@ -6,14 +6,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -47,7 +44,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     blockReplicas.get(replica.getBlockId()).add(replica);
     log("added-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
-      "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
+      "sid", Integer.toString(replica.getStorageId()), "index", Integer.toString(replica.getIndex())});
   }
 
   @Override
@@ -91,7 +88,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
     log("removed-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
-      "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
+      "sid", Integer.toString(replica.getStorageId()), "index", Integer.toString(replica.getIndex())});
   }
 
   @Override
@@ -139,7 +136,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     list.add(replica);
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
-      "sid", replica.getStorageId(), "index", Integer.toString(replica.getIndex())});
+      "sid", Integer.toString(replica.getStorageId()), "index", Integer.toString(replica.getIndex())});
   }
   
   @Override

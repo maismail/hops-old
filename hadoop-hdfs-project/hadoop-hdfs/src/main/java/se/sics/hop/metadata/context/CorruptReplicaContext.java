@@ -53,7 +53,7 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
     list.add(entity);
     
     log("added-corrupt", CacheHitState.NA,
-            new String[]{"bid", Long.toString(entity.getBlockId()), "sid", entity.getStorageId()});
+            new String[]{"bid", Long.toString(entity.getBlockId()), "sid", Integer.toString(entity.getStorageId())});
   }
 
   @Override
@@ -181,7 +181,7 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
       blockCorruptReplicas.get(entity.getBlockId()).remove(entity);
     }
     log("removed-corrupt", CacheHitState.NA,
-            new String[]{"bid", Long.toString(entity.getBlockId()), "sid", entity.getStorageId()});
+            new String[]{"bid", Long.toString(entity.getBlockId()), "sid", Integer.toString(entity.getStorageId())});
   }
 
   @Override

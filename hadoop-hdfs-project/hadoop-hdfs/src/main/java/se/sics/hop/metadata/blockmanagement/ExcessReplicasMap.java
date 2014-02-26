@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
@@ -34,9 +35,15 @@ import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
  */
 public class ExcessReplicasMap {
 
+  private final DatanodeManager datanodeManager;
+  
+  public ExcessReplicasMap(DatanodeManager datanodeManager){
+    this.datanodeManager = datanodeManager;
+  }
+  
   //[M] only needed in TestOverReplicatedBlocks
   public LightWeightLinkedSet<Block> get(String dn) throws IOException {
-    Collection<HopExcessReplica> excessReplicas = getExcessReplicas(dn);
+    Collection<HopExcessReplica> excessReplicas = getExcessReplicas(datanodeManager.getDatanode(dn).getSId());
     if (excessReplicas == null) {
       return null;
     }
@@ -51,7 +58,7 @@ public class ExcessReplicasMap {
   public boolean put(String dn, Block excessBlk) throws PersistanceException {
     HopExcessReplica er = getExcessReplica(dn, excessBlk);
     if (er == null) {
-      addExcessReplicaToDB(new HopExcessReplica(dn, excessBlk.getBlockId()));
+      addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId()));
       return true;
     }
     return false;
@@ -74,7 +81,7 @@ public class ExcessReplicasMap {
     }
     TreeSet<String> stIds = new TreeSet<String>();
     for (HopExcessReplica er : excessReplicas) {
-      stIds.add(er.getStorageId());
+      stIds.add(datanodeManager.getDatanode(er.getStorageId()).getStorageID());
     }
     return stIds;
   }
@@ -84,7 +91,7 @@ public class ExcessReplicasMap {
     if (ers == null) {
       return false;
     }
-    return ers.contains(new HopExcessReplica(dn, blk.getBlockId()));
+    return ers.contains(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), blk.getBlockId()));
   }
 
   public void clear() throws IOException {
@@ -98,7 +105,7 @@ public class ExcessReplicasMap {
     }.handle();
   }
 
-  private Collection<HopExcessReplica> getExcessReplicas(final String dn) throws IOException {
+  private Collection<HopExcessReplica> getExcessReplicas(final int dn) throws IOException {
     return (Collection<HopExcessReplica>) new LightWeightRequestHandler(HDFSOperationType.GET_EXCESS_RELPLICAS_BY_STORAGEID) {
       @Override
       public Object performTask() throws PersistanceException, IOException {

@@ -42,7 +42,7 @@ public class ReplicaUnderConstruction extends HopIndexedReplica {
   }
   HdfsServerConstants.ReplicaState state;
 
-  public ReplicaUnderConstruction(ReplicaState state, String storageId, long blockId, int index) {
+  public ReplicaUnderConstruction(ReplicaState state, int storageId, long blockId, int index) {
     super(blockId, storageId, index);
     this.state = state;
   }

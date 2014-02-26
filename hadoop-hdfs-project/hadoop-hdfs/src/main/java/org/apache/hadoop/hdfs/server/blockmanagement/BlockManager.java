@@ -198,7 +198,7 @@ public class BlockManager {
    * Maps a StorageID to the set of blocks that are "extra" for this
    * DataNode. We'll eventually remove these extras.
    */
-  public final ExcessReplicasMap excessReplicateMap = new ExcessReplicasMap();
+  public final ExcessReplicasMap excessReplicateMap;
 
   /**
    * Store set of Blocks that need to be replicated 1 or more times.
@@ -255,7 +255,8 @@ public class BlockManager {
     corruptReplicas = new CorruptReplicasMap(datanodeManager);
     heartbeatManager = datanodeManager.getHeartbeatManager();
     invalidateBlocks = new InvalidateBlocks(datanodeManager);
-
+    excessReplicateMap = new ExcessReplicasMap(datanodeManager);
+    
     blocksMap = new BlocksMap(datanodeManager);
     blockplacement = BlockPlacementPolicy.getInstance(
         conf, stats, datanodeManager.getNetworkTopology());

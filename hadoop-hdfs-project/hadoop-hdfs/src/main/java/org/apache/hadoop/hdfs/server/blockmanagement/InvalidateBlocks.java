@@ -71,7 +71,7 @@ class InvalidateBlocks {
    * 
    */
   boolean contains(final String storageID, final Block block) throws PersistanceException {
-    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), storageID);
+    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId());
     if (blkFound == null) {
       return false;
     }
@@ -84,7 +84,7 @@ class InvalidateBlocks {
    */
   void add(final Block block, final DatanodeInfo datanode,
       final boolean log) throws PersistanceException {
-    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanode.getStorageID(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes());
+    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes());
     if (add(invBlk)) {
       if (log) {
         NameNode.blockStateChangeLog.info("BLOCK* " + getClass().getSimpleName()
@@ -95,7 +95,7 @@ class InvalidateBlocks {
 
   /** Remove a storage from the invalidatesSet */
   void remove(final String storageID) throws IOException {
-    List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageID);
+    List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(datanodeManager.getDatanode(storageID).getSId());
     if(invBlocks != null){
       for(HopInvalidatedBlock invBlk : invBlocks){
         if(invBlk != null){
@@ -107,13 +107,13 @@ class InvalidateBlocks {
 
   /** Remove the block from the specified storage. */
   void remove(final String storageID, final Block block) throws PersistanceException {
-    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(storageID, block.getBlockId(), block.getGenerationStamp(), block.getNumBytes()));
+    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes()));
   }
 
   /** Print the contents to out. */
   void dump(final PrintWriter out) throws PersistanceException {
     List<HopInvalidatedBlock> invBlocks = findAllInvalidatedBlocks();
-    HashSet<String> storageIds = new HashSet<String>();
+    HashSet<Integer> storageIds = new HashSet<Integer>();
     for (HopInvalidatedBlock ib : invBlocks) {
       storageIds.add(ib.getStorageId());
     }
@@ -124,10 +124,10 @@ class InvalidateBlocks {
       return;
     }
 
-    for (String sId : storageIds) {
+    for (Integer sId : storageIds) {
       HashSet<HopInvalidatedBlock> invSet = new HashSet<HopInvalidatedBlock>();
       for (HopInvalidatedBlock ib : invBlocks) {
-        if (ib.getStorageId().equals(sId)) {
+        if (ib.getStorageId() == sId) {
           invSet.add(ib);
         }
       }
@@ -150,7 +150,7 @@ class InvalidateBlocks {
     HashSet<String> storageIds = new HashSet<String>();
     if (invBlocks != null) {
       for (HopInvalidatedBlock ib : invBlocks) {
-        storageIds.add(ib.getStorageId());
+        storageIds.add(datanodeManager.getDatanode(ib.getStorageId()).getStorageID());
       }
     }
     return new ArrayList<String>(storageIds);
@@ -163,7 +163,7 @@ class InvalidateBlocks {
       remove(storageId);
       return 0;
     }
-    final List<Block> toInvalidate = invalidateWork(storageId, dn);
+    final List<Block> toInvalidate = invalidateWork(dn.getSId(), dn);
     if (toInvalidate == null) {
       return 0;
     }
@@ -176,7 +176,7 @@ class InvalidateBlocks {
   }
 
   private List<Block> invalidateWork(
-      final String storageId, final DatanodeDescriptor dn) throws IOException {
+      final int storageId, final DatanodeDescriptor dn) throws IOException {
     final List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(storageId);
     if (invBlocks == null || invBlocks.isEmpty()) {
       return null;
@@ -217,7 +217,7 @@ class InvalidateBlocks {
     return false;
   }
   
-  private List<HopInvalidatedBlock> findInvBlocksbyStorageId(final String sid) throws IOException {
+  private List<HopInvalidatedBlock> findInvBlocksbyStorageId(final int sid) throws IOException {
     return (List<HopInvalidatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_INV_BLKS_BY_STORAGEID) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -238,7 +238,7 @@ class InvalidateBlocks {
     }.handle();
   }
   
-  private HopInvalidatedBlock findBlock(long blkId, String storageID) throws PersistanceException {
+  private HopInvalidatedBlock findBlock(long blkId, int storageID) throws PersistanceException {
     return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPrimaryKey, blkId, storageID);
   }
   

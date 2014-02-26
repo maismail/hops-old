@@ -68,7 +68,7 @@ public class CorruptReplicasMap{
     }
     
     if (!nodes.contains(dn)) {
-      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getStorageID()));
+      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getSId()));
       NameNode.blockStateChangeLog.info("BLOCK NameSystem.addToCorruptReplicasMap: "+
                                    blk.getBlockName() +
                                    " added as corrupt on " + dn +
@@ -112,7 +112,7 @@ public class CorruptReplicasMap{
     }
 
     if (datanodes.contains(datanode)) {
-      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getStorageID()));
+      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getSId()));
       return true;
     } else {
       return false;

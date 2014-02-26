@@ -326,7 +326,7 @@ public class DatanodeManager {
   }
 
   /** Get a datanode descriptor given corresponding storageID */
-  DatanodeDescriptor getDatanode(final String storageID) {
+  public DatanodeDescriptor getDatanode(final String storageID) {
     return datanodeMap.get(storageID);
   }
 
@@ -1213,6 +1213,12 @@ public class DatanodeManager {
   }
   
   //START_HOP_CODE
+  
+  public DatanodeDescriptor getDatanode(final int sId) {
+    String storageId = storageIdMap.getStorageId(sId);
+    return datanodeMap.get(storageId);
+  }
+  
   DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
     final DatanodeManager datanodeManager = this;
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {

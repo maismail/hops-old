@@ -182,9 +182,9 @@ public class TestLock {
 
     //............... Replicas ...............................................
     List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
-    replicas.add(new HopIndexedReplica(1, "DN1", 1));
-    replicas.add(new HopIndexedReplica(1, "DN1", 2));
-    replicas.add(new HopIndexedReplica(1, "DN1", 3));
+    replicas.add(new HopIndexedReplica(1, 1, 1));
+    replicas.add(new HopIndexedReplica(1, 2, 2));
+    replicas.add(new HopIndexedReplica(1, 3, 3));
     StorageFactory.getConnector().beginTransaction();
     ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
     rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
@@ -220,7 +220,7 @@ public class TestLock {
 
     //............... Replica Under Construction ...............................................
     List<ReplicaUnderConstruction> replicasUC = new LinkedList<ReplicaUnderConstruction>();
-    replicasUC.add(new ReplicaUnderConstruction(ReplicaState.FINALIZED, "DN1", 1, 1));
+    replicasUC.add(new ReplicaUnderConstruction(ReplicaState.FINALIZED, 1, 1, 1));
     StorageFactory.getConnector().beginTransaction();
     ReplicaUnderConstructionDataAccess rucda = (ReplicaUnderConstructionDataAccess) StorageFactory.getDataAccess(ReplicaUnderConstructionDataAccess.class);
     rucda.prepare(new LinkedList<ReplicaUnderConstruction>(), replicasUC, new LinkedList<ReplicaUnderConstruction>());
@@ -230,7 +230,7 @@ public class TestLock {
 
     //............... Excess Replica ...............................................
     List<HopExcessReplica> erlist = new LinkedList<HopExcessReplica>();
-    erlist.add(new HopExcessReplica("DN1", 1));
+    erlist.add(new HopExcessReplica(1, 1));
     StorageFactory.getConnector().beginTransaction();
     ExcessReplicaDataAccess erda = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
     erda.prepare(new LinkedList<HopExcessReplica>(), erlist, new LinkedList<HopExcessReplica>());
@@ -240,7 +240,7 @@ public class TestLock {
 
     //............... Corrupted Replica ...............................................
     List<HopCorruptReplica> crlist = new LinkedList<HopCorruptReplica>();
-    crlist.add(new HopCorruptReplica(1, "DN1"));
+    crlist.add(new HopCorruptReplica(1, 1));
     StorageFactory.getConnector().beginTransaction();
     CorruptReplicaDataAccess crda = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
     crda.prepare(new LinkedList<HopCorruptReplica>(), crlist, new LinkedList<HopCorruptReplica>());
@@ -250,7 +250,7 @@ public class TestLock {
     
      //............... Invalidated Blocks ...............................................
     List<HopInvalidatedBlock> iblist = new LinkedList<HopInvalidatedBlock>();
-    iblist.add(new HopInvalidatedBlock("DN1",1,1,1));
+    iblist.add(new HopInvalidatedBlock(1,1,1,1));
     StorageFactory.getConnector().beginTransaction();
     InvalidateBlockDataAccess ibda = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
     ibda.prepare(new LinkedList<HopInvalidatedBlock>(), iblist, new LinkedList<HopInvalidatedBlock>());
