@@ -3,15 +3,12 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.TransactionContext;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.Logger;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
@@ -131,8 +128,8 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           return result;
         }
       case ByStorageId:
-        String storageId = (String) params[0];
-        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", storageId});
+        int storageId = (Integer) params[0];
+        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", Integer.toString(storageId)});
         aboutToAccessStorage();
         result = dataAccess.findByStorageId(storageId);
         return syncBlockInfoInstances(result);

@@ -373,7 +373,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        return da.findByStorageId(getStorageID());
+        return da.findByStorageId(getSId());
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();
