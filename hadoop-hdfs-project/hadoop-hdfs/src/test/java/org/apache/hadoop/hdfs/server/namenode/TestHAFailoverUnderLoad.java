@@ -460,27 +460,27 @@ public class TestHAFailoverUnderLoad extends junit.framework.TestCase {
   }
 
   // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  private static void waitTillFilesClose(FileSystem fs, Path rootDir, long timeout) throws IOException, TimeoutException, PersistanceException {
-    long initTime = System.currentTimeMillis();
-
-    //getting parent directory
-    INode parent = EntityManager.find(INode.Finder.ByNameAndParentId, rootDir.getName(), 0);
-//      INode parent = INodeHelper.getINode(rootDir.getName(), 0);
-//      List<INode> files = INodeHelper.getChildren(parent.id);
-    List<INode> files = (List<INode>) EntityManager.findList(INode.Finder.ByParentId, parent.getId());
-
-    // loop through all files and check if they are closed. Expected to be closed by now
-    for (int i = 0; i < files.size();) {
-
-      if (!files.get(i).isUnderConstruction()) {
-        i++;
-      }
-
-      if (System.currentTimeMillis() - initTime > timeout) {
-        throw new TimeoutException("File [" + files.get(i).getFullPathName() + "] has not been closed. Still under construction");
-      }
-    }
-  }
+//  private static void waitTillFilesClose(FileSystem fs, Path rootDir, long timeout) throws IOException, TimeoutException, PersistanceException {
+//    long initTime = System.currentTimeMillis();
+//
+//    //getting parent directory
+//    INode parent = EntityManager.find(INode.Finder.ByNameAndParentId, rootDir.getName(), 0);
+////      INode parent = INodeHelper.getINode(rootDir.getName(), 0);
+////      List<INode> files = INodeHelper.getChildren(parent.id);
+//    List<INode> files = (List<INode>) EntityManager.findList(INode.Finder.ByParentId, parent.getId());
+//
+//    // loop through all files and check if they are closed. Expected to be closed by now
+//    for (int i = 0; i < files.size();) {
+//
+//      if (!files.get(i).isUnderConstruction()) {
+//        i++;
+//      }
+//
+//      if (System.currentTimeMillis() - initTime > timeout) {
+//        throw new TimeoutException("File [" + files.get(i).getFullPathName() + "] has not been closed. Still under construction");
+//      }
+//    }
+//  }
 
   // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   static class Writer extends Thread {
