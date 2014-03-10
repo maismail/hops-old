@@ -611,17 +611,24 @@ class BPServiceActor implements Runnable {
     }
     
     public void blockReceivedAndDeleted(DatanodeRegistration registration,
-            String poolId, StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks) throws IOException{
-        bpNamenode.blockReceivedAndDeleted(registration, poolId, receivedAndDeletedBlocks);
+          String poolId, StorageReceivedDeletedBlocks[] receivedAndDeletedBlocks) throws IOException {
+    if (bpNamenode != null) {
+      bpNamenode.blockReceivedAndDeleted(registration, poolId, receivedAndDeletedBlocks);
     }
-    
-    public DatanodeCommand blockReport(DatanodeRegistration registration,
-            String poolId, StorageBlockReport[] reports) throws IOException {
-        return bpNamenode.blockReport(registration, poolId, reports);
+  }
+
+  public DatanodeCommand blockReport(DatanodeRegistration registration,
+          String poolId, StorageBlockReport[] reports) throws IOException {
+    return bpNamenode.blockReport(registration, poolId, reports);
+  }
+
+  public ActiveNamenode nextNNForBlkReport() throws IOException {
+    if (bpNamenode != null) {
+      ActiveNamenode an = bpNamenode.getNextNamenodeToSendBlockReport();
+      return an;
+    } else {
+      return null;
     }
-    
-    public ActiveNamenode nextNNForBlkReport() throws IOException{
-        return bpNamenode.getNextNamenodeToSendBlockReport();
-    }
+  }
   //END_HOP_CODE
 }

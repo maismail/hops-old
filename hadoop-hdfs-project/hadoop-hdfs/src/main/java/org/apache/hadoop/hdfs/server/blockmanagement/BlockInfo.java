@@ -27,6 +27,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import se.sics.hop.Common;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
@@ -154,7 +155,7 @@ public class BlockInfo extends Block {
     //of the block is lying around is some secondary data structure ( not block_info )
     //if we call get block collection op of that copy then it should return null
 
-    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByPKey, inodeId);
+    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId);
     this.bc = bc; 
     if(bc == null){
       this.inodeId = INode.NON_EXISTING_ID;

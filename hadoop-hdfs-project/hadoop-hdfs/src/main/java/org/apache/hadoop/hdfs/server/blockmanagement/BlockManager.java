@@ -1018,11 +1018,11 @@ public class BlockManager {
   public void findAndMarkBlockAsCorrupt(final ExtendedBlock blk,
           final DatanodeInfo dn, final String reason) throws IOException {
     HDFSTransactionalRequestHandler findAndMarkBlockAsCorruptHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.FIND_AND_MARK_BLOCKS_AS_CORRUPT) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(blk.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(blk.getBlockId());
       }
 
       @Override
@@ -1036,7 +1036,7 @@ public class BlockManager {
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -1655,12 +1655,12 @@ public class BlockManager {
 
 
     HDFSTransactionalRequestHandler rescanPostponedMisreplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RESCAN_MISREPLICATED_BLOCKS) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block b = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(b.getBlockId());
       }
 
       @Override
@@ -1673,7 +1673,7 @@ public class BlockManager {
                 addInvalidatedBlock().
                 addReplica().
                 addExcess();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -1723,12 +1723,12 @@ public class BlockManager {
     reportDiff(node, report, allMachineBlocks);
 
     HDFSTransactionalRequestHandler afterReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block b = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(b.getBlockId());
       }
 
       @Override
@@ -1742,7 +1742,7 @@ public class BlockManager {
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -1776,12 +1776,12 @@ public class BlockManager {
           final BlockListAsLongs report) throws IOException {
 
     HDFSTransactionalRequestHandler processFirstBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_FIRST_BLOCK_REPORT) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block b = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(b.getBlockId());
       }
 
       @Override
@@ -1799,7 +1799,7 @@ public class BlockManager {
                 addInvalidatedBlock().
                 addPendingBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -1873,12 +1873,12 @@ public class BlockManager {
       final List<BlockInfo> allMachineBlocks) throws IOException  {
     
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block iblk = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(iblk.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(iblk.getBlockId());
       }
 
       @Override
@@ -1896,7 +1896,7 @@ public class BlockManager {
                 addInvalidatedBlock().
                 addPendingBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -2061,12 +2061,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
       throws IOException {
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_QUEUED_REPORT) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(rbi.getBlock().getBlockId());
+        inode = INodeUtil.findINodeByBlockId(rbi.getBlock().getBlockId());
       }
 
       @Override
@@ -2080,7 +2080,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica().
                 addExcess().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -2427,12 +2427,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
 
     HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block b = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(b.getBlockId());
       }
 
       @Override
@@ -2447,7 +2447,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addExcess();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -2776,10 +2776,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final List<String> machineSet = new ArrayList<String>();
     
     new HDFSTransactionalRequestHandler(HDFSOperationType.GET_VALID_BLK_LOCS) {
-      long inodeId;
+      INode inode;
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
       }
 
       @Override
@@ -2790,7 +2790,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addBlock(block.getBlockId()).
                 addReplica().
                 addInvalidatedBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -2858,18 +2858,18 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     
     HDFSTransactionalRequestHandler processIncrementalBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT) {
 
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
         if (rdbi.getBlock() instanceof BlockInfo) {
-          inodeId = ((BlockInfo) rdbi.getBlock()).getInodeId();
-        } else {
-          inodeId = INodeUtil.findINodeIdByBlock(rdbi.getBlock().getBlockId());
+          inode = INodeUtil.indexINodeScanById(((BlockInfo) rdbi.getBlock()).getInodeId());
+        }else{
+          inode = INodeUtil.findINodeByBlockId(rdbi.getBlock().getBlockId());
         }
-        if (inodeId == INodeFile.NON_EXISTING_ID) {
+        if (inode == null) {
           LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
           //throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
           // dont throw the exception. the cached is changed in a way that
@@ -2897,7 +2897,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                   addReplicaUc().
                   addInvalidatedBlock();
         }
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -3054,12 +3054,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final int[] numOverReplicated = {0};
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
     HDFSTransactionalRequestHandler processBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_OVER_REPLICATED_BLOCKS_ON_RECOMMISSION) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block block = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
       }
 
       @Override
@@ -3075,7 +3075,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addPendingBlock().
                 addUnderReplicatedBlock().
                 addInvalidatedBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -3115,12 +3115,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
 
     HDFSTransactionalRequestHandler checkReplicationHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CHECK_REPLICATION_IN_PROGRESS) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
         Block block = (Block) getParams()[0];
-        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
       }
 
       @Override
@@ -3135,7 +3135,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addPendingBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -3543,11 +3543,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   //START_HOP_CODE
   private void removeStoredBlockTx(final Block b, final DatanodeDescriptor node) throws IOException {
     HDFSTransactionalRequestHandler removeBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_STORED_BLOCK) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(b.getBlockId());
       }
 
       @Override
@@ -3561,7 +3561,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -3576,15 +3576,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   @VisibleForTesting
   int computeReplicationWorkForBlock(final Block b, final int priority) throws IOException {
     HDFSTransactionalRequestHandler computeReplicationWorkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPUTE_REPLICATION_WORK_FOR_BLOCK) {
-      private long inodeId;
+      private INode inode;
 
       @Override
       public void setUp() throws StorageException {
 
         if (b instanceof BlockInfo) {
-          inodeId = ((BlockInfo) b).getInodeId();
+          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
         } else {
-          inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
         }
       }
 
@@ -3600,7 +3600,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addPendingBlock().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -3657,11 +3657,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    
   private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(timedOutItem.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(timedOutItem.getBlockId());
       }
 
       @Override
@@ -3675,7 +3675,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override

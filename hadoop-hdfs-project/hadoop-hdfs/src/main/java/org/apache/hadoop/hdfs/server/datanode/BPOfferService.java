@@ -876,7 +876,7 @@ class BPOfferService implements Runnable {
       ActiveNamenode an = nextNNForBlkReport();
       if (an != null) {
         blkReportHander = getAnActor(an.getInetSocketAddress());
-        if (blkReportHander == null) {
+        if (blkReportHander == null || !blkReportHander.isInitialized()) {
           return null; //no one is ready to handle the request, return now without changing the values of lastBlockReport. it will be retried in next cycle
         }
       } else {
@@ -1132,6 +1132,7 @@ class BPOfferService implements Runnable {
     for (ActiveNamenode leader : nnList) {  // first element is the leader. if it does not work then ask non leader nodes
       try {
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
+        LOG.debug("XXX nextNNForBlkReport called 5");
         if (leaderActor != null) {
           ann = leaderActor.nextNNForBlkReport();
           //no exception

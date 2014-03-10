@@ -17,6 +17,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -68,7 +69,7 @@ public class INodeUtil {
       return true;
     }
 
-    curInode[0] = getChildINode(
+    curInode[0] = getNode(
             components[count[0] + 1],
             curInode[0].getId(),
             transactional);
@@ -91,7 +92,7 @@ public class INodeUtil {
     return buf.toString();
   }
 
-  private static INode getChildINode(
+  private static INode getNode(
           byte[] name,
           long parentId,
           boolean transactional)
@@ -100,7 +101,7 @@ public class INodeUtil {
     if (transactional) {
       // TODO - Memcache success check - do primary key instead.
       LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
-      return EntityManager.find(INode.Finder.ByNameAndParentId, nameString, parentId);
+      return EntityManager.find(INode.Finder.ByPK_NameAndParentId, nameString, parentId);
     } else {
       return findINodeWithNoTransaction(nameString, parentId);
     }
@@ -115,7 +116,7 @@ public class INodeUtil {
             parentId,
             name));
     INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-    return da.findInodeByNameAndParentId(name, parentId);
+    return da.pkLookUpFindInodeByNameAndParentId(name, parentId);
   }
 
   public static void resolvePathWithNoTransaction(
@@ -164,7 +165,31 @@ public class INodeUtil {
       }
   }
 
-  public static long findINodeIdByBlock(final long blockId) throws StorageException {
+  public static INode findINodeByBlockId(final long blockId) throws StorageException {
+    LOG.debug(String.format(
+            "About to read block with no transaction by bid=%d",
+            blockId));
+      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+              BlockInfo bInfo = bda.findById(blockId);
+              
+              if(bInfo == null) return null;
+              
+              INodeDataAccess<INode> ida = (INodeDataAccess)StorageFactory.getDataAccess(INodeDataAccess.class);
+              return ida.indexScanfindInodeById(bInfo.getInodeId());
+          }
+      };
+    INode inode;
+      try {
+          inode = (INode)handler.handle();
+      } catch (IOException ex) {
+          throw new StorageException(ex.getMessage());
+      }
+    return inode;
+  }
+  public static long findINodeIdByBlockId(final long blockId) throws StorageException {
     LOG.debug(String.format(
             "About to read block with no transaction by bid=%d",
             blockId));
@@ -189,15 +214,31 @@ public class INodeUtil {
   }
 
   public static void findPathINodesById(long inodeId,LinkedList<INode> preTxResolvedINodes,boolean[] isPreTxPathFullyResolved) throws PersistanceException {
-        
     if (inodeId != INode.NON_EXISTING_ID) {
-      INode inode = readById(inodeId);
+      INode inode = indexINodeScanById(inodeId);
       if (inode == null) {
         isPreTxPathFullyResolved[0] = false;
+        return;
       }
+      preTxResolvedINodes.add(inode);
       readFromLeafToRoot(inode, preTxResolvedINodes);
     }
     isPreTxPathFullyResolved[0] = true;
+    //reverse the list
+    int firstCounter = 0;
+    int lastCounter = preTxResolvedINodes.size()-1-firstCounter;
+    INode firstNode = null;
+    INode lastNode = null;
+    while(firstCounter < (preTxResolvedINodes.size()/2)){
+      firstNode = preTxResolvedINodes.get(firstCounter);
+      lastNode = preTxResolvedINodes.get(lastCounter);
+      preTxResolvedINodes.remove(firstCounter);
+      preTxResolvedINodes.add(firstCounter, lastNode);
+      preTxResolvedINodes.remove(lastCounter);
+      preTxResolvedINodes.add(lastCounter, firstNode);
+      firstCounter++;
+      lastCounter = preTxResolvedINodes.size()-1-firstCounter;
+    }
   }
 
   public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
@@ -215,26 +256,26 @@ public class INodeUtil {
     return sortedPaths;
   }
 
-  private static INode getRoot() throws StorageException {
-    return readById(INodeDirectory.ROOT_ID);
+  private static INode getRoot() throws StorageException, PersistanceException {
+    return  getNode(INodeDirectory.ROOT_NAME.getBytes(),INodeDirectory.ROOT_PARENT_ID, false);
   }
 
-  private static INode readById(long id) throws StorageException {
+  public static INode indexINodeScanById(long id) throws StorageException {
     LOG.info(String.format(
             "Read inode with no transaction by id=%d",
             id));
     INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-    return da.findInodeById(id);
+    return da.indexScanfindInodeById(id);
   }
-
+ 
+  //puts the indoes in the list in reverse order
   private static void readFromLeafToRoot(INode inode, LinkedList<INode> list) throws PersistanceException {
-    if (inode.getParentId() == -1) {
-      list.add(inode);
-      return;
+    INode temp = inode;
+    while (temp != null && temp.getParentId() != INodeDirectory.ROOT_PARENT_ID) {
+      temp = indexINodeScanById(temp.getParentId()); // all upper components are dirs
+      if(temp != null){
+        list.add(temp);
+      }
     }
-
-    readFromLeafToRoot(readById(inode.getParentId()), list);
-    INode i = readById(inode.getId());
-    list.add(i);
   }
 }

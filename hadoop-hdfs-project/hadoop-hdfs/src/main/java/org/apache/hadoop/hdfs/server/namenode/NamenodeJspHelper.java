@@ -801,7 +801,7 @@ class NamenodeJspHelper {
           public Object performTask() throws PersistanceException, IOException {
             return blockManager.getBlockCollection(block);
           }
-          long inodeId;
+          INode inode;
 
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -809,12 +809,12 @@ class NamenodeJspHelper {
             tla.getLocks().
                     addINode(INodeLockType.READ).
                     addBlock(block.getBlockId());
-            return tla.acquireByBlock(inodeId);
+            return tla.acquireByBlock(inode);
           }
 
           @Override
           public void setUp() throws StorageException {
-            inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+            inode = INodeUtil.findINodeByBlockId(block.getBlockId());
           }
         }.handle();
       }

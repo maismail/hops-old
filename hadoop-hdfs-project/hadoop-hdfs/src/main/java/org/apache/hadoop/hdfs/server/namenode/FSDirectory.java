@@ -62,6 +62,7 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -70,6 +71,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
@@ -605,6 +607,15 @@ public class FSDirectory implements Closeable {
             + " because the source can not be removed");
         return false;
       }
+      
+      //HOP_START_CODE
+      INode srcClone = null;
+      if(srcChild.isDirectory()){
+        srcClone = new INodeDirectory((INodeDirectory)srcChild);
+      }else{
+        srcClone = new INodeFile((INodeFile)srcChild);
+      }
+      //HOP_END_CODE
       srcChildName = srcChild.getLocalName();
       srcChild.setLocalNameNoPersistance(dstComponents[dstInodes.length-1]);
       
@@ -622,6 +633,9 @@ public class FSDirectory implements Closeable {
         dstInodes[dstInodes.length-2].setModificationTime(timestamp);
         // update moved leases with new filename
         getFSNamesystem().unprotectedChangeLease(src, dst);        
+        //HOP_START_CODE
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        //HOP_END_CODE
         return true;
       }
     } finally {
@@ -2252,7 +2266,7 @@ public class FSDirectory implements Closeable {
        public Object performTask() throws PersistanceException {
           INodeDirectoryWithQuota newRootINode = null;
          INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
+         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.pkLookUpFindInodeByNameAndParentId(INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID);
          if (rootInode == null || overwrite == true) {
            newRootINode = INodeDirectoryWithQuota.createRootDir(ps);
            List<INode> newINodes = new ArrayList();

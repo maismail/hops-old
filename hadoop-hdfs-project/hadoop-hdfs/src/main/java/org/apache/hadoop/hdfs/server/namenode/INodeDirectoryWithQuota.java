@@ -21,6 +21,8 @@ import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import static org.apache.hadoop.hdfs.server.namenode.INodeDirectory.ROOT_NAME;
+import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 
@@ -158,7 +160,7 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   }
 
   public static INodeDirectoryWithQuota getRootDir() throws PersistanceException {
-    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByPKey, ROOT_ID);
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByINodeID, ROOT_ID);
   }
   
   public INodeAttributes getINodeAttributes() throws PersistanceException{

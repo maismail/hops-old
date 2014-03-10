@@ -49,25 +49,20 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     }
 
     @Override
-    public INode findInodeById(long inodeId) throws StorageException {
-        return convertDALtoHDFS(dataAccess.findInodeById(inodeId));
+    public INode indexScanfindInodeById(long inodeId) throws StorageException {
+        return convertDALtoHDFS(dataAccess.indexScanfindInodeById(inodeId));
     }
 
     @Override
-    public List<INode> findInodesByParentIdSortedByName(long parentId) throws StorageException {
-        List<INode> list = (List) convertDALtoHDFS(dataAccess.findInodesByParentIdSortedByName(parentId));
+    public List<INode> indexScanFindInodesByParentId(long parentId) throws StorageException {
+        List<INode> list = (List) convertDALtoHDFS(dataAccess.indexScanFindInodesByParentId(parentId));
         Collections.sort(list, INode.Order.ByName);
         return list;
     }
 
     @Override
-    public INode findInodeByNameAndParentId(String name, long parentId) throws StorageException {
-        return convertDALtoHDFS(dataAccess.findInodeByNameAndParentId(name, parentId));
-    }
-
-    @Override
-    public List<INode> findInodesByIds(List<Long> ids) throws StorageException {
-        return (List) convertDALtoHDFS(dataAccess.findInodesByIds(ids));
+    public INode pkLookUpFindInodeByNameAndParentId(String name, long parentId) throws StorageException {
+        return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId));
     }
 
     @Override

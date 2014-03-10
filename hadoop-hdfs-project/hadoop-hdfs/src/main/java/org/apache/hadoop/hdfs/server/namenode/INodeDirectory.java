@@ -51,8 +51,8 @@ public class INodeDirectory extends INode {
   protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
   public final static String ROOT_NAME = "";
   //START_HOP_CODE
-  public final static long ROOT_ID = 0L;
-  public final static long ROOT_PARENT_ID = -1L;
+  public final static long ROOT_ID =  1L;
+  public final static long ROOT_PARENT_ID = NON_EXISTING_ID;
   //END_HOP_CODE
   
   //private List<INode> children;       // no need for a list here. get it from the DB
@@ -122,7 +122,7 @@ public class INodeDirectory extends INode {
   }
 
   private INode getChildINode(byte[] name) throws PersistanceException {
-     INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
+     INode existingInode = EntityManager.find(INode.Finder.ByPK_NameAndParentId,
               DFSUtil.bytes2String(name), getId());
     if (existingInode != null && existingInode.exists()) {
       return existingInode;
@@ -293,7 +293,8 @@ public class INodeDirectory extends INode {
     }
 
     if (!node.exists()) {
-      node.setIdNoPersistance(HopINodeIdGen.getUniqueINodeID());
+      long inodeID = HopINodeIdGen.getUniqueINodeID();
+      node.setIdNoPersistance(inodeID);
       node.setParentNoPersistance(this);
       EntityManager.add(node);
       //add the INodeAttributes if it is Directory with Quota
@@ -450,7 +451,7 @@ public class INodeDirectory extends INode {
   /** @return the children list which is possibly null. */
   public List<INode> getChildren() throws PersistanceException {
     if(getId() == INode.NON_EXISTING_ID) return null;
-    return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
+    return (List<INode>) EntityManager.findList(INode.Finder.ParentId, getId());
   }
 
   @Override
