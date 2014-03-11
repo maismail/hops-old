@@ -57,6 +57,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
+import org.apache.hadoop.fs.Options;
+import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -1180,21 +1182,24 @@ public class TestFileCreation {
     Configuration conf = new HdfsConfiguration();
     MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
     FileSystem fs = cluster.getFileSystem();
+    DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p = new Path("/foo");
+      Path p = new Path("/f1");
+      Path p1 = new Path("/f2"); 
       
-      
-
-      FSDataOutputStream out = fs.create(p);
+      FSDataOutputStream out = dfs.create(p);
       int i = 0;
       for (; i < 100; i++) {
         out.write(i);
       }
-      out.close();
+      out.close();  
 
+      out = fs.create(p1);
+      out.close();
       
-      fs.mkdirs(p);
+      dfs.rename(p1, p, Rename.OVERWRITE);
+      
       //cluster.restartNameNode();
 
       //verify

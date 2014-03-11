@@ -278,6 +278,7 @@ public class INodeContext extends EntityContext<INode> {
         //delete the previous row from db
         INode inode = (INode) params[0];
         removedInodes.put(inode.getId(),inode);
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName(), "pid", Long.toString(inode.getParentId()) });
         break;
     }
   }

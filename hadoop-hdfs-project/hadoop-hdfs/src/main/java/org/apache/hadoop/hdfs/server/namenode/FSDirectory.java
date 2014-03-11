@@ -768,6 +768,14 @@ public class FSDirectory implements Closeable {
           + error);
       throw new IOException(error);
     }
+    //HOP_START_CODE
+    INode srcClone = null;
+    if (removedSrc.isDirectory()) {
+      srcClone = new INodeDirectory((INodeDirectory) removedSrc);
+    } else {
+      srcClone = new INodeFile((INodeFile) removedSrc);
+    }
+    //HOP_END_CODE
     final String srcChildName = removedSrc.getLocalName();
     String dstChildName = null;
     INode removedDst = null;
@@ -804,6 +812,9 @@ public class FSDirectory implements Closeable {
           filesDeleted = rmdst.collectSubtreeBlocksAndClear(collectedBlocks);
           getFSNamesystem().removePathAndBlocks(src, collectedBlocks);
         }
+        //HOP_START_CODE
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        //HOP_END_CODE
         return filesDeleted >0;
       }
     } finally {
