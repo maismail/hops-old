@@ -108,7 +108,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
@@ -2386,7 +2390,8 @@ public class MiniDFSCluster {
         if (activeNameNodes == 0) {
             try {
               StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
-                      UnderReplicatedBlockDataAccess.class, LeaderDataAccess.class);
+                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
+                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);   
               
 //                Session session = (Session) StorageFactory.getConnector().obtainSession();
 //                //lease is persisted in the edit logs
