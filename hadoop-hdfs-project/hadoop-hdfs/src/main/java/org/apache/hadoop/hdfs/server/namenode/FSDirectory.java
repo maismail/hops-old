@@ -609,12 +609,7 @@ public class FSDirectory implements Closeable {
       }
       
       //HOP_START_CODE
-      INode srcClone = null;
-      if(srcChild.isDirectory()){
-        srcClone = new INodeDirectory((INodeDirectory)srcChild);
-      }else{
-        srcClone = new INodeFile((INodeFile)srcChild);
-      }
+      INode srcClone = cloneINode(srcChild);
       //HOP_END_CODE
       srcChildName = srcChild.getLocalName();
       srcChild.setLocalNameNoPersistance(dstComponents[dstInodes.length-1]);
@@ -769,12 +764,7 @@ public class FSDirectory implements Closeable {
       throw new IOException(error);
     }
     //HOP_START_CODE
-    INode srcClone = null;
-    if (removedSrc.isDirectory()) {
-      srcClone = new INodeDirectory((INodeDirectory) removedSrc);
-    } else {
-      srcClone = new INodeFile((INodeFile) removedSrc);
-    }
+      INode srcClone = cloneINode(removedSrc);
     //HOP_END_CODE
     final String srcChildName = removedSrc.getLocalName();
     String dstChildName = null;
@@ -2295,6 +2285,34 @@ public class FSDirectory implements Closeable {
        }
      };
      return (INodeDirectoryWithQuota)addRootINode.handle();
+  }
+   
+  private INode cloneINode(INode inode) throws PersistanceException{
+          INode clone = null;
+      if(inode instanceof  INodeDirectory){
+        clone = new INodeDirectory((INodeDirectory) inode);
+      }else if(inode instanceof INodeDirectoryWithQuota){
+        clone = new INodeDirectoryWithQuota(((INodeDirectoryWithQuota)inode).getNsQuota(), ((INodeDirectoryWithQuota) inode).getDsQuota(),(INodeDirectory)inode);
+      }else if(inode instanceof INodeSymlink){
+        clone = new INodeSymlink(((INodeSymlink)inode).getLinkValue(), ((INodeSymlink)inode).getModificationTime(), ((INodeSymlink)inode).getAccessTime(), ((INodeSymlink)inode).getPermissionStatus());
+        clone.setLocalNameNoPersistance(inode.getLocalName());
+        clone.setIdNoPersistance(inode.getId());
+        clone.setParentIdNoPersistance(inode.getParentId());
+        clone.setUser(inode.getUserName());
+      }else if(inode instanceof INodeFileUnderConstruction){
+        clone = new INodeFileUnderConstruction(((INodeFileUnderConstruction)inode).getLocalNameBytes(), 
+                ((INodeFileUnderConstruction)inode).getBlockReplication(),
+                             ((INodeFileUnderConstruction)inode).getModificationTime(),
+                             ((INodeFileUnderConstruction)inode).getPreferredBlockSize(),
+                             null,/*BlockInfo[] blocks,*/
+                             ((INodeFileUnderConstruction)inode).getPermissionStatus(),
+                             ((INodeFileUnderConstruction)inode).getClientName(),
+                             ((INodeFileUnderConstruction)inode).getClientMachine(),
+                             ((INodeFileUnderConstruction)inode).getClientNode());
+      }else if(inode instanceof INodeFile){
+        clone = new INodeFile((INodeFile) inode);
+      }
+      return clone;
   }
   //END_HOP_CODE
 }
