@@ -61,6 +61,7 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
 import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
@@ -2287,7 +2288,7 @@ public class FSDirectory implements Closeable {
      return (INodeDirectoryWithQuota)addRootINode.handle();
   }
    
-  private INode cloneINode(INode inode) throws PersistanceException{
+  private INode cloneINode(final INode inode) throws PersistanceException{
           INode clone = null;
       if(inode instanceof  INodeDirectory){
         clone = new INodeDirectory((INodeDirectory) inode);
@@ -2300,15 +2301,19 @@ public class FSDirectory implements Closeable {
         clone.setParentIdNoPersistance(inode.getParentId());
         clone.setUser(inode.getUserName());
       }else if(inode instanceof INodeFileUnderConstruction){
-        clone = new INodeFileUnderConstruction(((INodeFileUnderConstruction)inode).getLocalNameBytes(), 
-                ((INodeFileUnderConstruction)inode).getBlockReplication(),
-                             ((INodeFileUnderConstruction)inode).getModificationTime(),
-                             ((INodeFileUnderConstruction)inode).getPreferredBlockSize(),
-                             null,/*BlockInfo[] blocks,*/
-                             ((INodeFileUnderConstruction)inode).getPermissionStatus(),
-                             ((INodeFileUnderConstruction)inode).getClientName(),
-                             ((INodeFileUnderConstruction)inode).getClientMachine(),
-                             ((INodeFileUnderConstruction)inode).getClientNode());
+        long id = ((INodeFileUnderConstruction)inode).getId();
+        long pid = ((INodeFileUnderConstruction)inode).getParentId();
+        byte[] name = ((INodeFileUnderConstruction)inode).getLocalNameBytes();
+        short replication = ((INodeFileUnderConstruction)inode).getBlockReplication();
+        long modificationTime = ((INodeFileUnderConstruction)inode).getModificationTime();
+        long preferredBlockSize = ((INodeFileUnderConstruction)inode).getPreferredBlockSize();
+        BlockInfo[] blocks = null/*BlockInfo[] blocks,*/;
+        PermissionStatus permissionStatus = ((INodeFileUnderConstruction)inode).getPermissionStatus();
+        String clientName = ((INodeFileUnderConstruction)inode).getClientName();
+        String clientMachineName = ((INodeFileUnderConstruction)inode).getClientMachine();
+        DatanodeID datanodeID = ((INodeFileUnderConstruction)inode).getClientNode();
+        clone = new INodeFileUnderConstruction(name, replication, modificationTime, preferredBlockSize, blocks, permissionStatus, clientName, clientMachineName, datanodeID, id, pid);
+                
       }else if(inode instanceof INodeFile){
         clone = new INodeFile((INodeFile) inode);
       }

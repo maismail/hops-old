@@ -1180,6 +1180,13 @@ public class TestFileCreation {
   @Test
   public void testFileCreationSimple() throws IOException {
     Configuration conf = new HdfsConfiguration();
+   final int BYTES_PER_CHECKSUM = 1;
+   final int PACKET_SIZE = BYTES_PER_CHECKSUM;
+   final int BLOCK_SIZE = 2*PACKET_SIZE;
+    conf.setInt(DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_KEY, BYTES_PER_CHECKSUM);
+    conf.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, BLOCK_SIZE);
+    conf.setInt(DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_KEY, PACKET_SIZE);
+    
     MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
     FileSystem fs = cluster.getFileSystem();
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
@@ -1190,15 +1197,16 @@ public class TestFileCreation {
       
       FSDataOutputStream out = dfs.create(p);
       int i = 0;
-      for (; i < 100; i++) {
+      for (; i < 200; i++) {
         out.write(i);
       }
-      out.close();  
+        
 
-      out = fs.create(p1);
-      out.close();
+      //out = fs.create(p1);
+      //out.close();
       
-      dfs.rename(p1, p, Rename.OVERWRITE);
+     // dfs.rename(p, p1);
+      out.close();
       
       //cluster.restartNameNode();
 
