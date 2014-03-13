@@ -210,6 +210,7 @@ import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import se.sics.hop.Common;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -3787,7 +3788,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       HDFSTransactionalRequestHandler commitBlockSyncHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.COMMIT_BLOCK_SYNCHRONIZATION) {
           private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
           private boolean[] isPreTxPathFullyResolved = new boolean[1];
-          private long inodeId;
+          private INode inode;
           @Override        
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
@@ -3801,7 +3802,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addExcess().
                     addReplicaUc().
                     addUnderReplicatedBlock();
-            return tla.acquireByBlock(inodeId);
+            return tla.acquireByBlock(null/*resolved path is set*/);
           }
 
           @Override
@@ -3906,8 +3907,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
           @Override
           public void setUp() throws PersistanceException {
-              inodeId = INodeUtil.findINodeIdByBlock(lastblock.getBlockId());
-              INodeUtil.findPathINodesById(inodeId, preTxResolvedInodes, isPreTxPathFullyResolved);
+              INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(lastblock.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       commitBlockSyncHanlder.handle(this);   
@@ -5539,7 +5539,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addINode(INodeLockType.READ).
                 addBlock(block.getBlockId()).
                 addGenerationStamp(LockType.WRITE);
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -5563,11 +5563,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //HOP    getEditLog().logSync();
         return locatedBlock;
       }
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
       }
     };
     return (LocatedBlock) updateBlockForPipelineHandler.handle(this);
@@ -5586,10 +5586,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      final  ExtendedBlock newBlock, final DatanodeID[] newNodes)
       throws IOException {
       HDFSTransactionalRequestHandler updatePipelineHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_PIPELINE) {
-          long inodeId;
+          INode inode;
           @Override
           public void setUp() throws StorageException {
-              inodeId = INodeUtil.findINodeIdByBlock(oldBlock.getBlockId());
+              inode = INodeUtil.findINodeByBlockId(oldBlock.getBlockId());
           }
 
           @Override
@@ -5601,7 +5601,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addReplicaUc().
                     addLease(LockType.READ).
                     addLeasePath(LockType.READ);
-            return tla.acquireByBlock(inodeId);
+            return tla.acquireByBlock(inode);
           }
 
           @Override
@@ -5807,13 +5807,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       HDFSTransactionalRequestHandler listCorruptFileBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LIST_CORRUPT_FILE_BLOCKS) {
         private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
         private boolean[] isPreTxPathFullyResolved = new boolean[1];
-        private long inodeId;
 
         @Override
         public void setUp() throws PersistanceException {
           Block blk = (Block) getParams()[0];
-          inodeId = INodeUtil.findINodeIdByBlock(blk.getBlockId());
-          INodeUtil.findPathINodesById(inodeId, preTxResolvedInodes, isPreTxPathFullyResolved);
+          INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(blk.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
         }
 
         @Override
@@ -5826,7 +5824,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                   addReplica().
                   addCorrupt().
                   addExcess();
-          return tla.acquireByBlock(inodeId);
+          return tla.acquireByBlock(null/*resolved path is set*/);
         }
 
         @Override

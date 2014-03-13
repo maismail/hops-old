@@ -50,8 +50,8 @@ delimiter $$
 
 CREATE TABLE `inodes` (
   `id` bigint(20) NOT NULL,
-  `name` varchar(3000) DEFAULT NULL,
-  `parent_id` bigint(20) DEFAULT NULL,
+  `parent_id` bigint(20) NOT NULL DEFAULT '0',
+  `name` varchar(3000) NOT NULL DEFAULT '',
   `is_dir` int(11) NOT NULL,
   `modification_time` bigint(20) DEFAULT NULL,
   `access_time` bigint(20) DEFAULT NULL,
@@ -64,9 +64,9 @@ CREATE TABLE `inodes` (
   `header` bigint(20) DEFAULT NULL,
   `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `path_lookup_idx` (`name`,`parent_id`),
-  KEY `parent_idx` (`parent_id`)
+  PRIMARY KEY (`parent_id`,`name`),
+  KEY `parent_idx` (`parent_id`),
+  KEY `inode_idx` (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 

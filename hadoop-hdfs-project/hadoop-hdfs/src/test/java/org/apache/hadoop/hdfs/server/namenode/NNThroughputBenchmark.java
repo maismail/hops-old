@@ -131,6 +131,7 @@ public class NNThroughputBenchmark {
     new FileOutputStream(includeFile).close();
     // Start the NameNode
     String[] argv = new String[] {};
+    config.set(DFSConfigKeys.FS_DEFAULT_NAME_KEY, "localhost");
     nameNode = NameNode.createNameNode(argv, config);
     nameNodeProto = nameNode.getRpcServer();
   }
@@ -1366,6 +1367,7 @@ public class NNThroughputBenchmark {
   }
 
   public static void main(String[] args) throws Exception {
+    args = new String[]{"-op", "all", "namenode", "format"};
     runBenchmark(new HdfsConfiguration(), 
                   new ArrayList<String>(Arrays.asList(args)));
   }

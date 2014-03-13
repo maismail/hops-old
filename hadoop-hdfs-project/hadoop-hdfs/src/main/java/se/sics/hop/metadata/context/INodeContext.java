@@ -13,7 +13,9 @@ import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
+import se.sics.hop.Common;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -77,7 +79,7 @@ public class INodeContext extends EntityContext<INode> {
     INode.Finder iFinder = (INode.Finder) finder;
     INode result = null;
     switch (iFinder) {
-      case ByPKey:
+      case ByINodeID:
         long inodeId = (Long) params[0];
         if (removedInodes.containsKey(inodeId)) {
           log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Long.toString(inodeId)});
@@ -90,16 +92,16 @@ public class INodeContext extends EntityContext<INode> {
         } else {
           log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Long.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findInodeById(inodeId);
+          result = dataAccess.indexScanfindInodeById(inodeId);
           inodesIdIndex.put(inodeId, result);
           if (result != null) {
             inodesNameParentIndex.put(result.nameParentKey(), result);
           }
         }
         break;
-      case ByNameAndParentId:
-        String name = (String) params[0];
-        long parentId = (Long) params[1];
+      case ByPK_NameAndParentId:
+        String name   = (String)  params[0];
+        long parentId = (Long)    params[1];
         String key = parentId + name;
         if (inodesNameParentIndex.containsKey(key)) {
           log("find-inode-by-name-parentid", CacheHitState.HIT,
@@ -113,7 +115,7 @@ public class INodeContext extends EntityContext<INode> {
           return result; // return null; the node was remove. 
         } else {
           aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId);
-          result = dataAccess.findInodeByNameAndParentId(name, parentId);
+          result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
           if (result != null) {
             if (removedInodes.containsKey(result.getId())) {
               log("find-inode-by-name-parentid-removed", CacheHitState.LOSS,
@@ -136,7 +138,7 @@ public class INodeContext extends EntityContext<INode> {
     INode.Finder iFinder = (INode.Finder) finder;
     List<INode> result = null;
     switch (iFinder) {
-      case ByParentId:
+      case ParentId:
         long parentId = (Long) params[0];
         if (inodesParentIndex.containsKey(parentId)) {
           log("find-inodes-by-parentid", CacheHitState.HIT, new String[]{"pid", Long.toString(parentId)});
@@ -144,16 +146,10 @@ public class INodeContext extends EntityContext<INode> {
         } else {
           log("find-inodes-by-parentid", CacheHitState.LOSS, new String[]{"pid", Long.toString(parentId)});
           aboutToAccessStorage();
-          result = syncInodeInstances(dataAccess.findInodesByParentIdSortedByName(parentId));
+          result = syncInodeInstances(dataAccess.indexScanFindInodesByParentId(parentId));
           Collections.sort(result, INode.Order.ByName);
           inodesParentIndex.put(parentId, result);
         }
-        break;
-      case ByIds: // used for batch reading 
-        List<Long> ids = (List<Long>) params[0];
-        log("find-inodes-by-ids", CacheHitState.NA, new String[]{"ids", ids.toString()});
-        aboutToAccessStorage();
-        result = syncInodeInstances(dataAccess.findInodesByIds(ids));
         break;
     }
 
@@ -273,4 +269,19 @@ public class INodeContext extends EntityContext<INode> {
     EntityContextStat stat = new EntityContextStat("INode Context",newInodes.size(),modifiedInodes.size(),removedInodes.size());
     return stat;
   }
+
+  @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds){
+      case INodePKChanged:
+        //delete the previous row from db
+        INode inode = (INode) params[0];
+        removedInodes.put(inode.getId(),inode);
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName(), "pid", Long.toString(inode.getParentId()) });
+        break;
+    }
+  }
+
+  
 }

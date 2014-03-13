@@ -35,6 +35,7 @@ import com.google.common.primitives.SignedBytes;
 import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -53,7 +54,7 @@ public abstract class INode implements Comparable<byte[]> {
   //START_HOP_CODE
   public static enum Finder implements FinderType<INode> {
 
-    ByPKey, ByParentId, ByNameAndParentId, ByIds, All/*only for debuggin*/;
+    ByINodeID, ParentId, ByPK_NameAndParentId;
 
     @Override
     public Class getType() {
@@ -97,10 +98,9 @@ public abstract class INode implements Comparable<byte[]> {
   protected long accessTime;
   
     //START_HOP_CODE
+  public static final long NON_EXISTING_ID = 0L;
   protected long id = NON_EXISTING_ID;
   protected long parentId = NON_EXISTING_ID;
-  // FIXME [H]: min value can be chosen as the inode id. Change this.
-  public static final long NON_EXISTING_ID = Long.MIN_VALUE;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -322,7 +322,7 @@ public abstract class INode implements Comparable<byte[]> {
   public void setLocalNameNoPersistance(byte[] name) {
     this.name = name;
   }
-
+  
   public String getFullPathName() throws PersistanceException{
     // Get the full path name of this inode.
     return FSDirectory.getFullPathName(this);
@@ -350,7 +350,7 @@ public abstract class INode implements Comparable<byte[]> {
       return null;
     }
     if(parent == null){
-        parent = (INodeDirectory) EntityManager.find(INode.Finder.ByPKey, getParentId());
+        parent = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeID, getParentId());
     }
     //END_HOP_CODE
     return this.parent;
@@ -542,7 +542,7 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  public final void setIdNoPersistance(long id) throws PersistanceException {
+  public final void setIdNoPersistance(long id){
     this.id = id;
   }
   public long getId() {
@@ -620,8 +620,10 @@ public abstract class INode implements Comparable<byte[]> {
   
   public boolean exists(){
     if(id == NON_EXISTING_ID)
+    {
       return false;
-    //FIXME:
+    }
+    
     return true;
   }
 

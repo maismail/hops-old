@@ -15,6 +15,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -270,5 +271,10 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   public EntityContextStat collectSnapshotStat() throws PersistanceException {
     EntityContextStat stat = new EntityContextStat("Lease Path",newLPaths.size(),modifiedLPaths.size(),removedLPaths.size());
     return stat;
+  }
+
+  @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    
   }
 }

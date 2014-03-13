@@ -49,6 +49,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -362,10 +363,10 @@ public class TestBlockManager {
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
-      long inodeId;
+      INode inode;
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(blockInfo.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(blockInfo.getBlockId());
       }
 
       @Override
@@ -382,7 +383,7 @@ public class TestBlockManager {
                 addReplicaUc().
                 addInvalidatedBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override
@@ -462,11 +463,11 @@ public class TestBlockManager {
 
   private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
     return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
-      long inodeId;
+      INode inode;
 
       @Override
       public void setUp() throws StorageException {
-        inodeId = INodeUtil.findINodeIdByBlock(block.getBlockId());
+        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
       }
 
       @Override
@@ -480,7 +481,7 @@ public class TestBlockManager {
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeId);
+        return tla.acquireByBlock(inode);
       }
 
       @Override

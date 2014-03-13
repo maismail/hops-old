@@ -13,6 +13,7 @@ import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -129,5 +130,10 @@ public class VariableContext extends EntityContext<HopVariable> {
     }
     stat.setAdditionalInfo(additionalInfo.toString());
     return stat;
+  }
+
+  @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    
   }
 }

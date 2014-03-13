@@ -28,6 +28,7 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -59,11 +60,11 @@ public class TestUnderReplicatedBlocks {
       final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
       
       new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICA_INCREAMENT) {
-        long inodeId;
+        INode inode;
 
         @Override
         public void setUp() throws StorageException {
-          inodeId = INodeUtil.findINodeIdByBlock(b.getBlockId());
+          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
         }
 
         @Override
@@ -74,7 +75,7 @@ public class TestUnderReplicatedBlocks {
                   addBlock(b.getBlockId()).
                   addReplica().
                   addInvalidatedBlock();
-          return tla.acquireByBlock(inodeId);
+          return tla.acquireByBlock(inode);
         }
 
         @Override

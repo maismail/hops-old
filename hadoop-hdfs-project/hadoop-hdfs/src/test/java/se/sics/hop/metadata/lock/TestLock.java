@@ -15,6 +15,7 @@
  */
 package se.sics.hop.metadata.lock;
 
+
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
@@ -22,24 +23,22 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
-import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus;
 import org.junit.Before;
 import org.junit.Test;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.context.PendingBlockContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
@@ -58,7 +57,6 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -70,6 +68,8 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 public class TestLock {
 
   HdfsConfiguration conf = null;
+  INodeDirectory root, dir1, dir2, dir3, dir4, dir5, dir6;
+  INodeFile file1, file2, file3;
 
   @Before
   public void init() throws StorageException, PersistanceException, StorageInitializtionException {
@@ -81,30 +81,54 @@ public class TestLock {
   }
 
   @Test
+  public void testPartitionKey() throws UnresolvedPathException, PersistanceException {
+   
+  }
+  
+  @Test
+  public void testPartKeys() throws UnresolvedPathException, PersistanceException {
+    LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
+    boolean[] isPreTxPathFullyResolved = new boolean[1];
+    INodeUtil.resolvePathWithNoTransaction("/dir1/dir2/dir3/dir4/dir5/file1", true, preTxResolvedInodes, isPreTxPathFullyResolved);
+    System.out.println("___resolved components are " + preTxResolvedInodes.size() + " isfullyResolved " + isPreTxPathFullyResolved[0]);
+    for (INode inode : preTxResolvedInodes) {
+      System.out.println(inode.getId());
+    }
+
+
+    System.out.println("____________________________________________________________");
+
+    preTxResolvedInodes = new LinkedList<INode>();
+    isPreTxPathFullyResolved = new boolean[1];
+    INodeUtil.findPathINodesById(dir3.getId(), preTxResolvedInodes, isPreTxPathFullyResolved);
+    for (INode inode : preTxResolvedInodes) {
+      System.out.println(inode.getId());
+    }
+    System.out.println("___resolved components are " + preTxResolvedInodes.size() + " isfullyResolved " + isPreTxPathFullyResolved[0]);
+  }
+
+  @Test
   public void testLock() throws Exception {
+    final String src = "/dir1/dir2/d3/d4/d5";
     final boolean resolveLink = false;
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
       protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
       protected boolean[] isPreTxPathFullyResolved = new boolean[1];
 
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, resolveLink);
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rdbi.getBlock().getBlockId()).
+                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
+                addBlock().
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
-                addGenerationStamp(LockType.READ);
-        if (!rdbi.isDeletedBlock()) {
-          tla.getLocks().
-                  addPendingBlock().
-                  addReplicaUc().
-                  addInvalidatedBlock();
-        }
-        return tla.acquireByBlock(inodeId);
+                addGenerationStamp(LockType.READ).
+                addPendingBlock().
+                addReplicaUc().
+                addInvalidatedBlock();
+        return tla.acquire();
       }
 
       @Override
@@ -114,146 +138,160 @@ public class TestLock {
       long inodeId;
 
       @Override
-      public void setUp() throws StorageException {
-        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        FSNamesystem.LOG.debug("reported block id=" + rdbi.getBlock().getBlockId());
-        if (rdbi.getBlock() instanceof BlockInfo) {
-          inodeId = ((BlockInfo) rdbi.getBlock()).getInodeId();
-        } else {
-          inodeId = INodeUtil.findINodeIdByBlock(rdbi.getBlock().getBlockId());
-        }
-        if (inodeId == INodeFile.NON_EXISTING_ID) {
-          FSNamesystem.LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
-          //throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
-          // dont throw the exception. the cached is changed in a way that
-          // it will bring in null values a the block will not be processed by the 
-          // process perfom task because of the null values
-          // if we throw the exception then the tx fails and rollback.
-        }
+      public void setUp() throws StorageException, UnresolvedPathException, PersistanceException {
+INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
       }
     };
-    ReceivedDeletedBlockInfo test = new ReceivedDeletedBlockInfo(new Block(1,1,1), BlockStatus.DELETED_BLOCK, "");
-    handler.setParams(test);
-    for(int i = 0; i < 3; i++){
+
+    for (int i = 0; i < 1; i++) {
       handler.handle();
     }
-    
+
 
   }
 
   private void insertData() throws StorageException, PersistanceException {
     System.out.println("Building the data...");
+    int id = 100;
     List<INode> newFiles = new LinkedList<INode>();
-    INodeFile root;
-    root = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
-    root.setIdNoPersistance(0);
-    root.setLocalNameNoPersistance("/");
+    root = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    root.setIdNoPersistance(INodeDirectory.ROOT_ID);
+    root.setLocalNameNoPersistance(INodeDirectory.ROOT_NAME);
     root.setParentIdNoPersistance(-1);
 
-    INodeFile dir;
-    dir = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
-    dir.setIdNoPersistance(1);
-    dir.setLocalNameNoPersistance("test_dir");
-    dir.setParentIdNoPersistance(0);
+    dir1 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir1.setIdNoPersistance(id++);
+    dir1.setLocalNameNoPersistance("dir1");
+    dir1.setParentIdNoPersistance(root.getId());
 
-    INodeFile file;
-    file = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
-    file.setIdNoPersistance(2);
-    file.setLocalNameNoPersistance("file1");
-    file.setParentIdNoPersistance(1);
+    dir2 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir2.setIdNoPersistance(id++);
+    dir2.setLocalNameNoPersistance("dir2");
+    dir2.setParentIdNoPersistance(dir1.getId());
+
+    dir3 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir3.setIdNoPersistance(id++);
+    dir3.setLocalNameNoPersistance("dir3");
+    dir3.setParentIdNoPersistance(dir2.getId());
+
+    dir4 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir4.setIdNoPersistance(id++);
+    dir4.setLocalNameNoPersistance("dir4");
+    dir4.setParentIdNoPersistance(dir3.getId());
+
+    dir5 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir5.setIdNoPersistance(id++);
+    dir5.setLocalNameNoPersistance("dir5");
+    dir5.setParentIdNoPersistance(dir4.getId());
+    
+    dir6 = new INodeDirectory(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), 0l);
+    dir6.setIdNoPersistance(id++);
+    dir6.setLocalNameNoPersistance("dir6");
+    dir6.setParentIdNoPersistance(dir5.getId());
+    
+    file1 = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
+    file1.setIdNoPersistance(id++);
+    file1.setLocalNameNoPersistance("file1");
+    file1.setParentIdNoPersistance(dir5.getId());
+    
+    file2 = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
+    file2.setIdNoPersistance(id++);
+    file2.setLocalNameNoPersistance("file2");
+    file2.setParentIdNoPersistance(dir6.getId());
+    
+    file3 = new INodeFile(new PermissionStatus("salman", "usr", new FsPermission((short) 0777)), null, (short) 3, 0l, 0l, 0l);
+    file3.setIdNoPersistance(id++);
+    file3.setLocalNameNoPersistance("file3");
+    file3.setParentIdNoPersistance(dir4.getId());
 
     newFiles.add(root);
-    newFiles.add(dir);
-    newFiles.add(file);
-    StorageFactory.getConnector().beginTransaction();
-    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-    da.prepare(new LinkedList<INode>(), newFiles, new LinkedList<INode>());
-    StorageFactory.getConnector().commit();
+    newFiles.add(dir1);
+    newFiles.add(dir2);
+    newFiles.add(dir3);
+    newFiles.add(dir4);
+    newFiles.add(dir5);
+    newFiles.add(dir6);
+    newFiles.add(file1);
+    newFiles.add(file2);
+    newFiles.add(file3);
 
-    //............... Blocks ...............................................
+    
+     //............... Blocks ...............................................
     BlockInfo block = new BlockInfo(new BlockInfoUnderConstruction(new Block(1, 1, 1)));
+    block.setINodeIdNoPersistance(file1.getId());
     List<BlockInfo> newBlocks = new LinkedList<BlockInfo>();
     newBlocks.add(block);
-    StorageFactory.getConnector().beginTransaction();
-    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-    bda.prepare(new LinkedList<BlockInfo>(), newBlocks, new LinkedList<BlockInfo>());
-    StorageFactory.getConnector().commit();
-
 
     //............... Replicas ...............................................
     List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
     replicas.add(new HopIndexedReplica(1, 1, 1));
     replicas.add(new HopIndexedReplica(1, 2, 2));
     replicas.add(new HopIndexedReplica(1, 3, 3));
-    StorageFactory.getConnector().beginTransaction();
-    ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
-    rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
-    StorageFactory.getConnector().commit();
-
-
+    
     //............... Pending Replicas ...............................................
     List<PendingBlockInfo> pendingList = new LinkedList<PendingBlockInfo>();
     pendingList.add(new PendingBlockInfo(1, 1, 1));
-    StorageFactory.getConnector().beginTransaction();
-    PendingBlockDataAccess pda = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
-    pda.prepare(new LinkedList<PendingBlockInfo>(), pendingList, new LinkedList<PendingBlockInfo>());
-    StorageFactory.getConnector().commit();
 
-
-    //............... lease ...............................................
+     //............... lease ...............................................
     List<Lease> leases = new LinkedList<Lease>();
     leases.add(new Lease("client1", 1, 1));
-    StorageFactory.getConnector().beginTransaction();
-    LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
-    lda.prepare(new LinkedList<Lease>(), leases, new LinkedList<Lease>());
-    StorageFactory.getConnector().commit();
-
-
+    
     //............... lease Paths...............................................
     List<HopLeasePath> lpaths = new LinkedList<HopLeasePath>();
-    lpaths.add(new HopLeasePath("/test_dir/file1", 1));
-    StorageFactory.getConnector().beginTransaction();
-    LeasePathDataAccess lpda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
-    lpda.prepare(new LinkedList<HopLeasePath>(), lpaths, new LinkedList<HopLeasePath>());
-    StorageFactory.getConnector().commit();
-
-
+    lpaths.add(new HopLeasePath("/dir/file1", 1));
+    
     //............... Replica Under Construction ...............................................
     List<ReplicaUnderConstruction> replicasUC = new LinkedList<ReplicaUnderConstruction>();
+    
     replicasUC.add(new ReplicaUnderConstruction(ReplicaState.FINALIZED, 1, 1, 1));
-    StorageFactory.getConnector().beginTransaction();
-    ReplicaUnderConstructionDataAccess rucda = (ReplicaUnderConstructionDataAccess) StorageFactory.getDataAccess(ReplicaUnderConstructionDataAccess.class);
-    rucda.prepare(new LinkedList<ReplicaUnderConstruction>(), replicasUC, new LinkedList<ReplicaUnderConstruction>());
-    StorageFactory.getConnector().commit();
-
-
-
+    
+    
     //............... Excess Replica ...............................................
     List<HopExcessReplica> erlist = new LinkedList<HopExcessReplica>();
     erlist.add(new HopExcessReplica(1, 1));
-    StorageFactory.getConnector().beginTransaction();
-    ExcessReplicaDataAccess erda = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
-    erda.prepare(new LinkedList<HopExcessReplica>(), erlist, new LinkedList<HopExcessReplica>());
-    StorageFactory.getConnector().commit();
-
-
 
     //............... Corrupted Replica ...............................................
     List<HopCorruptReplica> crlist = new LinkedList<HopCorruptReplica>();
     crlist.add(new HopCorruptReplica(1, 1));
-    StorageFactory.getConnector().beginTransaction();
+  
+    //............... Invalidated Blocks ...............................................
+    List<HopInvalidatedBlock> iblist = new LinkedList<HopInvalidatedBlock>();
+    iblist.add(new HopInvalidatedBlock(1, 1, 1, 1));
+    
+    
+    StorageFactory.getConnector().beginTransaction();    
+ 
+    INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+    da.prepare(new LinkedList<INode>(), newFiles, new LinkedList<INode>());
+    
+    BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+    bda.prepare(new LinkedList<BlockInfo>(), newBlocks, new LinkedList<BlockInfo>());
+    
+    ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
+    rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
+    
+    PendingBlockDataAccess pda = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
+    pda.prepare(new LinkedList<PendingBlockInfo>(), pendingList, new LinkedList<PendingBlockInfo>());
+    
+    LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
+    lda.prepare(new LinkedList<Lease>(), leases, new LinkedList<Lease>());
+    
+     LeasePathDataAccess lpda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
+    lpda.prepare(new LinkedList<HopLeasePath>(), lpaths, new LinkedList<HopLeasePath>());
+    
+    ReplicaUnderConstructionDataAccess rucda = (ReplicaUnderConstructionDataAccess) StorageFactory.getDataAccess(ReplicaUnderConstructionDataAccess.class);
+    rucda.prepare(new LinkedList<ReplicaUnderConstruction>(), replicasUC, new LinkedList<ReplicaUnderConstruction>());
+    
+    ExcessReplicaDataAccess erda = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
+    erda.prepare(new LinkedList<HopExcessReplica>(), erlist, new LinkedList<HopExcessReplica>());
+    
     CorruptReplicaDataAccess crda = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
     crda.prepare(new LinkedList<HopCorruptReplica>(), crlist, new LinkedList<HopCorruptReplica>());
-    StorageFactory.getConnector().commit();
-    
-    
-    
-     //............... Invalidated Blocks ...............................................
-    List<HopInvalidatedBlock> iblist = new LinkedList<HopInvalidatedBlock>();
-    iblist.add(new HopInvalidatedBlock(1,1,1,1));
-    StorageFactory.getConnector().beginTransaction();
+
     InvalidateBlockDataAccess ibda = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
     ibda.prepare(new LinkedList<HopInvalidatedBlock>(), iblist, new LinkedList<HopInvalidatedBlock>());
+    
     StorageFactory.getConnector().commit();
+
   }
 }

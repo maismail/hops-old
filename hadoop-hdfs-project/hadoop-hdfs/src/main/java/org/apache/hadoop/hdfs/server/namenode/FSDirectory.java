@@ -61,7 +61,9 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -70,6 +72,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
@@ -605,6 +608,10 @@ public class FSDirectory implements Closeable {
             + " because the source can not be removed");
         return false;
       }
+      
+      //HOP_START_CODE
+      INode srcClone = cloneINode(srcChild);
+      //HOP_END_CODE
       srcChildName = srcChild.getLocalName();
       srcChild.setLocalNameNoPersistance(dstComponents[dstInodes.length-1]);
       
@@ -622,6 +629,9 @@ public class FSDirectory implements Closeable {
         dstInodes[dstInodes.length-2].setModificationTime(timestamp);
         // update moved leases with new filename
         getFSNamesystem().unprotectedChangeLease(src, dst);        
+        //HOP_START_CODE
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        //HOP_END_CODE
         return true;
       }
     } finally {
@@ -754,6 +764,9 @@ public class FSDirectory implements Closeable {
           + error);
       throw new IOException(error);
     }
+    //HOP_START_CODE
+      INode srcClone = cloneINode(removedSrc);
+    //HOP_END_CODE
     final String srcChildName = removedSrc.getLocalName();
     String dstChildName = null;
     INode removedDst = null;
@@ -790,6 +803,9 @@ public class FSDirectory implements Closeable {
           filesDeleted = rmdst.collectSubtreeBlocksAndClear(collectedBlocks);
           getFSNamesystem().removePathAndBlocks(src, collectedBlocks);
         }
+        //HOP_START_CODE
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        //HOP_END_CODE
         return filesDeleted >0;
       }
     } finally {
@@ -2252,7 +2268,7 @@ public class FSDirectory implements Closeable {
        public Object performTask() throws PersistanceException {
           INodeDirectoryWithQuota newRootINode = null;
          INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.findInodeById(INodeDirectory.ROOT_ID);
+         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.pkLookUpFindInodeByNameAndParentId(INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID);
          if (rootInode == null || overwrite == true) {
            newRootINode = INodeDirectoryWithQuota.createRootDir(ps);
            List<INode> newINodes = new ArrayList();
@@ -2270,6 +2286,38 @@ public class FSDirectory implements Closeable {
        }
      };
      return (INodeDirectoryWithQuota)addRootINode.handle();
+  }
+   
+  private INode cloneINode(final INode inode) throws PersistanceException{
+          INode clone = null;
+      if(inode instanceof  INodeDirectory){
+        clone = new INodeDirectory((INodeDirectory) inode);
+      }else if(inode instanceof INodeDirectoryWithQuota){
+        clone = new INodeDirectoryWithQuota(((INodeDirectoryWithQuota)inode).getNsQuota(), ((INodeDirectoryWithQuota) inode).getDsQuota(),(INodeDirectory)inode);
+      }else if(inode instanceof INodeSymlink){
+        clone = new INodeSymlink(((INodeSymlink)inode).getLinkValue(), ((INodeSymlink)inode).getModificationTime(), ((INodeSymlink)inode).getAccessTime(), ((INodeSymlink)inode).getPermissionStatus());
+        clone.setLocalNameNoPersistance(inode.getLocalName());
+        clone.setIdNoPersistance(inode.getId());
+        clone.setParentIdNoPersistance(inode.getParentId());
+        clone.setUser(inode.getUserName());
+      }else if(inode instanceof INodeFileUnderConstruction){
+        long id = ((INodeFileUnderConstruction)inode).getId();
+        long pid = ((INodeFileUnderConstruction)inode).getParentId();
+        byte[] name = ((INodeFileUnderConstruction)inode).getLocalNameBytes();
+        short replication = ((INodeFileUnderConstruction)inode).getBlockReplication();
+        long modificationTime = ((INodeFileUnderConstruction)inode).getModificationTime();
+        long preferredBlockSize = ((INodeFileUnderConstruction)inode).getPreferredBlockSize();
+        BlockInfo[] blocks = null/*BlockInfo[] blocks,*/;
+        PermissionStatus permissionStatus = ((INodeFileUnderConstruction)inode).getPermissionStatus();
+        String clientName = ((INodeFileUnderConstruction)inode).getClientName();
+        String clientMachineName = ((INodeFileUnderConstruction)inode).getClientMachine();
+        DatanodeID datanodeID = ((INodeFileUnderConstruction)inode).getClientNode();
+        clone = new INodeFileUnderConstruction(name, replication, modificationTime, preferredBlockSize, blocks, permissionStatus, clientName, clientMachineName, datanodeID, id, pid);
+                
+      }else if(inode instanceof INodeFile){
+        clone = new INodeFile((INodeFile) inode);
+      }
+      return clone;
   }
   //END_HOP_CODE
 }

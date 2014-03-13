@@ -74,14 +74,18 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
                              PermissionStatus perm,
                              String clientName,
                              String clientMachine,
-                             DatanodeID clientNode) {
+                             DatanodeID clientNode,
+                             long inodeId,
+                             long pid) {
     super(perm, blocks, blockReplication, modificationTime, modificationTime,
           preferredBlockSize);
     setLocalNameNoPersistance(name);
     this.clientName = clientName;
     this.clientMachine = clientMachine;
     this.clientNode = clientNode;
-    throw new UnsupportedOperationException("HOP: This constructor should not be used"); // The only reason it is here that it is called in some FSImage Classes that are not deleted. 
+    this.id = inodeId;
+    this.parentId = pid;
+    //throw new UnsupportedOperationException("HOP: This constructor should not be used"); // The only reason it is here that it is called in some FSImage Classes that are not deleted. 
   }
 
    //HOP: used instead of INodeFile.convertToUnderConstruction

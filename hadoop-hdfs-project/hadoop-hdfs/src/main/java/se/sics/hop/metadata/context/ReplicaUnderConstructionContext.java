@@ -13,6 +13,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -152,5 +153,10 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   public EntityContextStat collectSnapshotStat() throws PersistanceException {
     EntityContextStat stat = new EntityContextStat("Replicas Under Construction",newReplicasUc.size(),0,removedReplicasUc.size());
     return stat;
+  }
+
+  @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    
   }
 }

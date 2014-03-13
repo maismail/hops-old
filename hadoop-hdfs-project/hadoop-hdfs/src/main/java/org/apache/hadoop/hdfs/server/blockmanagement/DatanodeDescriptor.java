@@ -372,8 +372,12 @@ public class DatanodeDescriptor extends DatanodeInfo {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
+        long startTime = System.currentTimeMillis();
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        return da.findByStorageId(getSId());
+        List<BlockInfo>  list  = da.findByStorageId(getSId());
+        long endTime = System.currentTimeMillis();
+        log.debug("GET_ALL_MACHINE_BLOCKS took "+(endTime - startTime) +" ms" );
+        return list;
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();

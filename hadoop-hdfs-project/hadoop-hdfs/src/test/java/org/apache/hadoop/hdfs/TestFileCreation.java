@@ -57,6 +57,8 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
+import org.apache.hadoop.fs.Options;
+import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -1174,56 +1176,47 @@ public class TestFileCreation {
   }
 
   
-//  //START_HOP_CODE
+  //START_HOP_CODE
   @Test
   public void testFileCreationSimple() throws IOException {
-    String netIf = null;
-    boolean useDnHostname = false;
-
     Configuration conf = new HdfsConfiguration();
-    if (netIf != null) {
-      conf.set(DFSConfigKeys.DFS_CLIENT_LOCAL_INTERFACES, netIf);
-    }
-    conf.setBoolean(DFSConfigKeys.DFS_CLIENT_USE_DN_HOSTNAME, useDnHostname);
-    if (useDnHostname) {
-      // Since the mini cluster only listens on the loopback we have to
-      // ensure the hostname used to access DNs maps to the loopback. We
-      // do this by telling the DN to advertise localhost as its hostname
-      // instead of the default hostname.
-      conf.set(DFSConfigKeys.DFS_DATANODE_HOST_NAME_KEY, "localhost");
-    }
-    if (simulatedStorage) {
-      SimulatedFSDataset.setFactory(conf);
-    }
-//    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(2))
-//            .checkDataNodeHostConfig(true)
-//            .build();
+   final int BYTES_PER_CHECKSUM = 1;
+   final int PACKET_SIZE = BYTES_PER_CHECKSUM;
+   final int BLOCK_SIZE = 2*PACKET_SIZE;
+    conf.setInt(DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_KEY, BYTES_PER_CHECKSUM);
+    conf.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, BLOCK_SIZE);
+    conf.setInt(DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_KEY, PACKET_SIZE);
     
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).build();
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
     FileSystem fs = cluster.getFileSystem();
-    try{
-        
+    DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
+
+      Path p = new Path("/f1");
+      Path p1 = new Path("/f2"); 
       
-      
-      Path p = new Path("/foo");
-      
-      //write 2 files at the same time
-      FSDataOutputStream out = fs.create(p);
+      FSDataOutputStream out = dfs.create(p);
       int i = 0;
-      for(; i < 100; i++) {
+      for (; i < 200; i++) {
         out.write(i);
       }
-      out.close();
+        
 
-      cluster.restartNameNode();
+      //out = fs.create(p1);
+      //out.close();
       
+     // dfs.rename(p, p1);
+      out.close();
+      
+      //cluster.restartNameNode();
+
       //verify
-      FSDataInputStream in = fs.open(p);  
-      for(i = 0; i < 100; i++) {assertEquals(i, in.read());}
-    } finally {
-      if (cluster != null) {cluster.shutdown();}
-    }
+//      FSDataInputStream in = fs.open(np);
+//      for (i = 0; i < 100; i++) {
+//        assertEquals(i, in.read());
+//      }
+    } catch (Exception e) {
+      e.printStackTrace();
     } finally {
       cluster.shutdown();
     }
