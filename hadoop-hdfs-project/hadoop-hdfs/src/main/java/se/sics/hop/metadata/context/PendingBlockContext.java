@@ -97,7 +97,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     PendingBlockInfo.Finder pFinder = (PendingBlockInfo.Finder) finder;
     PendingBlockInfo result = null;
     switch (pFinder) {
-      case ByPKey:
+      case ByBlockId:
         long blockId = (Long) params[0];
         if (this.pendings.containsKey(blockId)) {
           log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});

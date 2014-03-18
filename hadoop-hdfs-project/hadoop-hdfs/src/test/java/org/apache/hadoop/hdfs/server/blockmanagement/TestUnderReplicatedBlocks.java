@@ -27,7 +27,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
+import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
@@ -47,7 +49,7 @@ public class TestUnderReplicatedBlocks {
     final short REPLICATION_FACTOR = 2;
     final String FILE_NAME = "/testFile";
     final Path FILE_PATH = new Path(FILE_NAME);
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(REPLICATION_FACTOR + 1).build();
+    final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(REPLICATION_FACTOR + 1).build();
     try {
       // create a file with one block with a replication factor of 2
       final FileSystem fs = cluster.getFileSystem();
@@ -58,13 +60,28 @@ public class TestUnderReplicatedBlocks {
       // but the block does not get put into the under-replicated blocks queue
       final BlockManager bm = cluster.getNamesystem().getBlockManager();
       final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
-      
-      new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICA_INCREAMENT) {
-        INode inode;
+
+      HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+        Long inodeID = null, pID = null;
+        String name = null;
 
         @Override
         public void setUp() throws StorageException {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
+          Block blk = b.getLocalBlock();
+          INode inode;
+          if (blk instanceof BlockInfo) {
+            inodeID = ((BlockInfo) blk).getInodeId();
+            inode = INodeUtil.indexINodeScanById(((BlockInfo) blk).getInodeId());
+
+          } else {
+            inode = INodeUtil.findINodeByBlockId(blk.getBlockId());
+          }
+
+          if (inode != null) {
+            name = inode.getLocalName();
+            pID = inode.getParentId();
+            inodeID = inode.getId();
+          }
         }
 
         @Override
@@ -75,17 +92,72 @@ public class TestUnderReplicatedBlocks {
                   addBlock(b.getBlockId()).
                   addReplica().
                   addInvalidatedBlock();
-          return tla.acquireByBlock(inode);
+          return tla.acquireByBlock(inodeID, pID, name);
         }
 
         @Override
         public Object performTask() throws PersistanceException, IOException {
           DatanodeDescriptor dn = bm.blocksMap.nodeIterator(b.getLocalBlock()).next();
           bm.addToInvalidates(b.getLocalBlock(), dn);
+          
+          bm.blocksMap.removeNode(b.getLocalBlock(), dn);
+          return dn;
+        }
+      };
+      DatanodeDescriptor dn = (DatanodeDescriptor)handler.handle();
+      
+      //PATCH https://issues.apache.org/jira/browse/HDFS-4067
+      // Compute the invalidate work in NN, and trigger the heartbeat from DN
+      BlockManagerTestUtil.computeAllPendingWork(bm);
+      DataNodeTestUtils.triggerHeartbeat(cluster.getDataNode(dn.getIpcPort()));
+      // Wait to make sure the DataNode receives the deletion request 
+      Thread.sleep(1000);
+      
+          
+      HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+        Long inodeID = null, pID = null;
+        String name = null;
+
+        @Override
+        public void setUp() throws StorageException {
+          Block blk = b.getLocalBlock();
+          INode inode;
+          if (blk instanceof BlockInfo) {
+            inodeID = ((BlockInfo) blk).getInodeId();
+            inode = INodeUtil.indexINodeScanById(((BlockInfo) blk).getInodeId());
+
+          } else {
+            inode = INodeUtil.findINodeByBlockId(blk.getBlockId());
+          }
+
+          if (inode != null) {
+            name = inode.getLocalName();
+            pID = inode.getParentId();
+            inodeID = inode.getId();
+          }
+        }
+
+        @Override
+        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+          tla.getLocks().
+                  addINode(INodeLockType.WRITE).
+                  addBlock(b.getBlockId()).
+                  addReplica().
+                  addInvalidatedBlock();
+          return tla.acquireByBlock(inodeID, pID, name);
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          DatanodeDescriptor dn = (DatanodeDescriptor)getParams()[0];
+          // Remove the record from blocksMap
           bm.blocksMap.removeNode(b.getLocalBlock(), dn);
           return null;
         }
-      }.handle();
+      };
+      handler2.setParams(dn);
+      handler2.handle();
       
       // increment this file's replication factor
       FsShell shell = new FsShell(conf);

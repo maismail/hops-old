@@ -17,6 +17,7 @@ package se.sics.hop.metadata.lock;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -44,6 +45,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.context.PendingBlockContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
@@ -300,5 +302,47 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
     
     StorageFactory.getConnector().commit();
 
+  }
+  
+  @Test
+  public void testReplicationIndex() throws IOException{
+//    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+//        tla.getLocks().addUnderReplicatedBlockFindAll();
+//        return tla.acquire();
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        List<Integer> ints = new ArrayList<Integer>();
+//        for(int i = 0; i < 5; i++){
+//          ints.add(i*2);
+//        }
+//        Variables.setReplicationIndex(ints);
+//        return null;
+//      }
+//    };
+//   handler.handle();
+   
+   HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addUnderReplicatedBlockFindAll();
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+
+        List<Integer> ints = Variables.getReplicationIndex();
+        
+        for(int i = 0; i < 5; i++){
+          System.out.println("index "+i+" value "+ints.get(i));
+        }
+        return null;
+      }
+    };
+   handler2.handle();
   }
 }

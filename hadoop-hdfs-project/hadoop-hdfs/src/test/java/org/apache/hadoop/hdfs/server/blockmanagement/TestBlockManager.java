@@ -363,10 +363,21 @@ public class TestBlockManager {
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
-      INode inode;
+      Long inodeID = null, pID = null;
+      String name = null;
       @Override
       public void setUp() throws StorageException {
-        inode = INodeUtil.findINodeByBlockId(blockInfo.getBlockId());
+        INode inode;
+        
+          inodeID = blockInfo.getInodeId();
+          inode = INodeUtil.indexINodeScanById(inodeID);
+         
+        
+        if(inode != null ){
+          name = inode.getLocalName();
+          pID = inode.getParentId();
+          inodeID = inode.getId();
+        }
       }
 
       @Override
@@ -383,7 +394,7 @@ public class TestBlockManager {
                 addReplicaUc().
                 addInvalidatedBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inode);
+        return tla.acquireByBlock(inodeID, pID,name);
       }
 
       @Override
@@ -463,11 +474,24 @@ public class TestBlockManager {
 
   private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
     return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
-      INode inode;
-
+      Long inodeID = null, pID = null;
+      String name = null;
       @Override
       public void setUp() throws StorageException {
-        inode = INodeUtil.findINodeByBlockId(block.getBlockId());
+        INode inode;
+        if (block instanceof BlockInfo) {
+          inodeID = ((BlockInfo) block).getInodeId();
+          inode = INodeUtil.indexINodeScanById(((BlockInfo) block).getInodeId());
+          
+        } else {
+          inode = INodeUtil.findINodeByBlockId(block.getBlockId());
+        }
+        
+        if(inode != null ){
+          name = inode.getLocalName();
+          pID = inode.getParentId();
+          inodeID = inode.getId();
+        }
       }
 
       @Override
@@ -481,7 +505,7 @@ public class TestBlockManager {
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inode);
+        return tla.acquireByBlock(inodeID, pID, name);
       }
 
       @Override

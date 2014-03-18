@@ -223,7 +223,7 @@ class PendingReplicationBlocks {
   }
 
   private PendingBlockInfo getPendingBlock(Block block) throws PersistanceException {
-    return EntityManager.find(PendingBlockInfo.Finder.ByPKey, block.getBlockId());
+    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId());
   }
 
   private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {

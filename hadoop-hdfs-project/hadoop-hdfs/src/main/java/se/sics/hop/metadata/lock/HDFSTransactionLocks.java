@@ -42,6 +42,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType rucLock = null;
   // under replicated blocks
   private LockType urbLock = null;
+  private boolean  urbLockFindAll = false;
   // pending blocks
   private LockType pbLock = null;
   // invalidated blocks
@@ -166,6 +167,12 @@ public class HDFSTransactionLocks implements TransactionLocks{
     this.urbLock = LockType.READ_COMMITTED;
     return this;
   }
+  
+  public HDFSTransactionLocks addUnderReplicatedBlockFindAll() {
+    this.urbLock = LockType.READ_COMMITTED;
+    this.urbLockFindAll = true;
+    return this;
+  }
 
   public HDFSTransactionLocks addGenerationStamp(LockType lock) {
     this.generationStampLock = lock;
@@ -216,7 +223,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
   }
 
   public LockType getBlockLock() {
-    return LockType.READ_COMMITTED;
+    return blockLock;
   }
 
   public Long getBlockParam() {
@@ -232,31 +239,35 @@ public class HDFSTransactionLocks implements TransactionLocks{
   }
 
   public LockType getReplicaLock() {
-    return LockType.READ_COMMITTED;
+    return replicaLock;
   }
 
   public LockType getCrLock() {
-    return LockType.READ_COMMITTED;
+    return crLock;
   }
 
   public LockType getErLock() {
-    return LockType.READ_COMMITTED;
+    return erLock;
   }
 
   public LockType getRucLock() {
-    return LockType.READ_COMMITTED;
+    return rucLock;
   }
 
   public LockType getUrbLock() {
-    return LockType.READ_COMMITTED;
+    return urbLock;
   }
 
+  public boolean isUrbLockFindAll() {
+    return urbLockFindAll;
+  }
+  
   public LockType getPbLock() {
-    return LockType.READ_COMMITTED;
+    return pbLock;
   }
 
   public LockType getInvLocks() {
-    return LockType.READ_COMMITTED;
+    return invLocks;
   }
 
   public LockType getGenerationStampLock() {
