@@ -44,6 +44,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.context.PendingBlockContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
@@ -232,9 +233,9 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 
     //............... Replicas ...............................................
     List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
-    replicas.add(new HopIndexedReplica(1, "DN1", 1));
-    replicas.add(new HopIndexedReplica(1, "DN1", 2));
-    replicas.add(new HopIndexedReplica(1, "DN1", 3));
+    replicas.add(new HopIndexedReplica(1, 1, 1));
+    replicas.add(new HopIndexedReplica(1, 1, 2));
+    replicas.add(new HopIndexedReplica(1, 1, 3));
     
     //............... Pending Replicas ...............................................
     List<PendingBlockInfo> pendingList = new LinkedList<PendingBlockInfo>();
