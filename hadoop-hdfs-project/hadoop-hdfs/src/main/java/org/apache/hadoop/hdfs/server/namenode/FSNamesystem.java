@@ -3907,6 +3907,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
           @Override
           public void setUp() throws PersistanceException {
+              preTxResolvedInodes.clear();
+              isPreTxPathFullyResolved[0] = false;
               INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(lastblock.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
@@ -5567,6 +5569,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = block.getLocalBlock();
         INode inode;
         if (b instanceof BlockInfo) {
@@ -5604,6 +5607,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           String name = null;
           @Override
           public void setUp() throws StorageException {
+          name = null; pID = null; inodeID = null;
           Block b = oldBlock.getLocalBlock();
           INode inode;
           if (b instanceof BlockInfo) {
@@ -5840,6 +5844,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         @Override
         public void setUp() throws PersistanceException {
           Block blk = (Block) getParams()[0];
+          preTxResolvedInodes.clear();
+          isPreTxPathFullyResolved[0] = false;
           INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(blk.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
         }
 

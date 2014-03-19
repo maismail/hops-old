@@ -367,6 +367,7 @@ public class TestBlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         INode inode;
         
           inodeID = blockInfo.getInodeId();
@@ -478,6 +479,7 @@ public class TestBlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         INode inode;
         if (block instanceof BlockInfo) {
           inodeID = ((BlockInfo) block).getInodeId();

@@ -67,6 +67,7 @@ public class TestUnderReplicatedBlocks {
 
         @Override
         public void setUp() throws StorageException {
+          name = null; pID = null; inodeID = null;
           Block blk = b.getLocalBlock();
           INode inode;
           if (blk instanceof BlockInfo) {
@@ -120,6 +121,7 @@ public class TestUnderReplicatedBlocks {
 
         @Override
         public void setUp() throws StorageException {
+          name = null; pID = null; inodeID = null;
           Block blk = b.getLocalBlock();
           INode inode;
           if (blk instanceof BlockInfo) {

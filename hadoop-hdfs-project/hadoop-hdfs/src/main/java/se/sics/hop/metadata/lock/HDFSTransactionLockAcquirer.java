@@ -138,8 +138,34 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       resolvedINodeForBlk.add(inode);
       allResolvedINodes.add(resolvedINodeForBlk);
 
+      List<BlockInfo> allBlks =  (List<BlockInfo>)acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId());
+      blockResults.addAll(allBlks);
+      
+      // if the allBlks does not contain the locks.blocksParam block then
+      // re-read it to bring null in the cache. the block was there in the pre-tx phase
+      // but was deleted before the locks were acquired
+      boolean found = false;
+      if (locks.getBlockParam() != null) {
+        for (BlockInfo blk : allBlks) {
+          if (blk.getBlockId() == locks.getBlockParam()) {
+            found = true;
+            break;
+          }
+        }
 
-      blockResults.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId()));
+        if (!found) {
+          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockParam());
+          // we need to bring null for the other tables too. so put a dummy obj in the blocksResults list
+          BlockInfo blk = new BlockInfo();
+          if (inode != null) {
+            blk.setINodeIdNoPersistance(inode.getId());
+          }
+          blk.setBlockIdNoPersistance(locks.getBlockParam());
+          
+          blockResults.add(blk);
+        }
+      }
+      
       // sort the blocks. it is important as the ndb returns the blocks in random order and two
       // txs trying to take locks on the blocks of a file will end up in dead lock 
       Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
@@ -638,7 +664,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private INode takeLocksFromRootToLeaf(LinkedList<INode> inodes, INodeLockType inodeLock) throws PersistanceException {
-
+    LOG.debug("Taking lock on preresolved path. Path Components are "+inodes.size());
     StringBuilder msg = new StringBuilder();
     msg.append("Took Lock on the entire path ");
     INode lockedLeafINode = null;

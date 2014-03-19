@@ -205,7 +205,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     blocks.put(block.getBlockId(), block);
     modifiedBlocks.put(block.getBlockId(), block);
     updateInodeBlocks(block);
-    log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId())});
+    log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId()), "inodeId", Long.toString(block.getInodeId()), "blk index", Integer.toString(block.getBlockIndex())});
   }
 
   private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks) {

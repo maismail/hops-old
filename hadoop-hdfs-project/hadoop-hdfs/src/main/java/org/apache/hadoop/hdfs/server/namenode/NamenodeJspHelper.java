@@ -817,6 +817,7 @@ class NamenodeJspHelper {
 
           @Override
           public void setUp() throws StorageException {
+            name = null; pID = null; inodeID = null;
             INode inode;
             if (block instanceof BlockInfo) {
               inodeID = ((BlockInfo) block).getInodeId();

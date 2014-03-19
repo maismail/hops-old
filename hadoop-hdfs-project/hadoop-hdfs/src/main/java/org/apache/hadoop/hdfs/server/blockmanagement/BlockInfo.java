@@ -121,7 +121,7 @@ public class BlockInfo extends Block {
   private BlockCollection bc;
   private int blockIndex = -1;  
   private long timestamp = 1;
-  protected long inodeId = -1;
+  protected long inodeId = INode.NON_EXISTING_ID;
   
   public BlockInfo(Block blk) {
     super(blk);

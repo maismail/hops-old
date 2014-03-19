@@ -1022,6 +1022,7 @@ public class BlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = blk.getLocalBlock();
         INode inode;
         if (b instanceof BlockInfo) {
@@ -1049,7 +1050,8 @@ public class BlockManager {
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
-                addReplicaUc();
+                addReplicaUc().
+                addInvalidatedBlock();
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1673,6 +1675,7 @@ public class BlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -1754,6 +1757,7 @@ public class BlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -1820,6 +1824,7 @@ public class BlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -1930,6 +1935,7 @@ public class BlockManager {
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -2131,6 +2137,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
         Block b = rbi.getBlock();
         INode inode;
@@ -2510,6 +2517,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -2872,6 +2880,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         INode inode;
         if (block instanceof BlockInfo) {
           inodeID = ((BlockInfo) block).getInodeId();
@@ -2967,6 +2976,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
         INode inode;
@@ -3172,6 +3182,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -3246,6 +3257,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
         INode inode;
         if (b instanceof BlockInfo) {
@@ -3571,7 +3583,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         } catch (InterruptedException ie) {
           LOG.warn("ReplicationMonitor thread received InterruptedException.", ie);
           break;
-        } 
+        } catch (StorageException e){
+          LOG.warn("ReplicationMonitor thread received StorageException.", e);
+          break;
+        }
         catch (Throwable t) {
           LOG.fatal("ReplicationMonitor thread received Runtime exception. ", t);
           terminate(1, t);
@@ -3688,6 +3703,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         INode inode;
         if (b instanceof BlockInfo) {
           inodeID = ((BlockInfo) b).getInodeId();
@@ -3824,6 +3840,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       String name = null;
       @Override
       public void setUp() throws StorageException {
+        name = null; pID = null; inodeID = null;
         INode inode;
         if (timedOutItem instanceof BlockInfo) {
           inodeID = ((BlockInfo) timedOutItem).getInodeId();
