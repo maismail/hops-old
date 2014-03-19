@@ -60,6 +60,7 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import se.sics.hop.metadata.StorageFactory;
 
 public class TestReplicationPolicy {
   private Random random = DFSUtil.getRandom();
@@ -100,6 +101,8 @@ public class TestReplicationPolicy {
         DFSConfigKeys.DFS_NAMENODE_AVOID_STALE_DATANODE_FOR_READ_KEY, true);
     conf.setBoolean(
         DFSConfigKeys.DFS_NAMENODE_AVOID_STALE_DATANODE_FOR_WRITE_KEY, true);
+    
+    conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 10);
     DFSTestUtil.formatNameNode(conf);
     namenode = new NameNode(conf);
 
@@ -819,24 +822,26 @@ public class TestReplicationPolicy {
    * Test for the ChooseUnderReplicatedBlocks are processed based on priority
    */
   @Test
-  public void testChooseUnderReplicatedBlocks() throws Exception {    
+  public void testChooseUnderReplicatedBlocks() throws Exception { 
+    StorageFactory.getConnector().formatStorage();
+    long blockID = 0;
     UnderReplicatedBlocks underReplicatedBlocks = new UnderReplicatedBlocks();
 
     for (int i = 0; i < 5; i++) {
       // Adding QUEUE_HIGHEST_PRIORITY block
-      add(underReplicatedBlocks, new Block(random.nextLong()), 1, 0, 3);
+      add(underReplicatedBlocks, new Block(blockID++), 1, 0, 3);
 
       // Adding QUEUE_VERY_UNDER_REPLICATED block
-      add(underReplicatedBlocks, new Block(random.nextLong()), 2, 0, 7);
+      add(underReplicatedBlocks, new Block(blockID++), 2, 0, 7);
 
       // Adding QUEUE_REPLICAS_BADLY_DISTRIBUTED block
-      add(underReplicatedBlocks, new Block(random.nextLong()), 6, 0, 6);
+      add(underReplicatedBlocks, new Block(blockID++), 6, 0, 6);
 
       // Adding QUEUE_UNDER_REPLICATED block
-      add(underReplicatedBlocks, new Block(random.nextLong()), 5, 0, 6);
+      add(underReplicatedBlocks, new Block(blockID++), 5, 0, 6);
 
       // Adding QUEUE_WITH_CORRUPT_BLOCKS block
-      add(underReplicatedBlocks, new Block(random.nextLong()), 0, 0, 3);
+      add(underReplicatedBlocks, new Block(blockID++), 0, 0, 3);
     }
 
     // Choose 6 blocks from UnderReplicatedBlocks. Then it should pick 5 blocks
@@ -852,7 +857,7 @@ public class TestReplicationPolicy {
     assertTheChosenBlocks(chosenBlocks, 0, 4, 5, 1, 0);
 
     // Adding QUEUE_HIGHEST_PRIORITY
-    add(underReplicatedBlocks, new Block(random.nextLong()), 1, 0, 3);
+    add(underReplicatedBlocks, new Block(blockID++), 1, 0, 3);
 
     // Choose 10 blocks from UnderReplicatedBlocks. Then it should pick 1 block from
     // QUEUE_HIGHEST_PRIORITY, 4 blocks from QUEUE_REPLICAS_BADLY_DISTRIBUTED

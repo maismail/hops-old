@@ -112,7 +112,7 @@ public class TestMissingBlocksAlert {
       while (dfs.getMissingBlocksCount() > 0) {
         Thread.sleep(100);
       }
-
+      Thread.sleep(2000);
       assertEquals(2, dfs.getUnderReplicatedBlocksCount());
       assertEquals(2, bm.getUnderReplicatedNotMissingBlocks());
 
@@ -121,6 +121,7 @@ public class TestMissingBlocksAlert {
       dfsFrontPage = DFSTestUtil.urlGet(url);
       assertFalse("HDFS Front page contains unexpected warning", 
                   dfsFrontPage.contains(warnStr));
+      LOG.debug("TestX test passed");
     } finally {
       if (cluster != null) {
         cluster.shutdown();

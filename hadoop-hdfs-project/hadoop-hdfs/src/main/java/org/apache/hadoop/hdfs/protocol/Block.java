@@ -81,12 +81,12 @@ public class Block implements Writable, Comparable<Block> {
     Matcher m = metaFilePattern.matcher(metaFile);
     return m.matches() ? Long.parseLong(m.group(1)) : 0;
   }
-
+  private static long NON_EXISTING_BLK_ID = Long.MIN_VALUE;
   private long blockId;
   private long numBytes;
   private long generationStamp;
 
-  public Block() {this(0, 0, 0);}
+  public Block() {this(NON_EXISTING_BLK_ID, 0, 0);}
 
   public Block(final long blkid, final long len, final long generationStamp) {
     setNoPersistance(blkid, len, generationStamp);
@@ -103,9 +103,9 @@ public class Block implements Writable, Comparable<Block> {
   /**
    * Find the blockid from the given filename
    */
-  public Block(File f, long len, long genstamp) {
-    this(filename2id(f.getName()), len, genstamp);
-  }
+//  public Block(File f, long len, long genstamp) {
+//    this(filename2id(f.getName()), len, genstamp);
+//  }
 
   public void setNoPersistance(long blkid, long len, long genStamp) {
     this.blockId = blkid;

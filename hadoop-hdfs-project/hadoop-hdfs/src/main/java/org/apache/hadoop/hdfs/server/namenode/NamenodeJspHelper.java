@@ -45,6 +45,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
@@ -787,7 +788,7 @@ class NamenodeJspHelper {
     final Block block;
     final INodeFile inode;
     final BlockManager blockManager;
-    
+
     XMLBlockInfo(FSNamesystem fsn, Long blockId) throws IOException {
       this.blockManager = fsn.getBlockManager();
 
@@ -797,11 +798,13 @@ class NamenodeJspHelper {
       } else {
         this.block = new Block(blockId);
         this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+          Long inodeID = null, pID = null;
+          String name = null;
+
           @Override
           public Object performTask() throws PersistanceException, IOException {
             return blockManager.getBlockCollection(block);
           }
-          INode inode;
 
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -809,12 +812,26 @@ class NamenodeJspHelper {
             tla.getLocks().
                     addINode(INodeLockType.READ).
                     addBlock(block.getBlockId());
-            return tla.acquireByBlock(inode);
+            return tla.acquireByBlock(inodeID,pID,name);
           }
 
           @Override
           public void setUp() throws StorageException {
-            inode = INodeUtil.findINodeByBlockId(block.getBlockId());
+            name = null; pID = null; inodeID = null;
+            INode inode;
+            if (block instanceof BlockInfo) {
+              inodeID = ((BlockInfo) block).getInodeId();
+              inode = INodeUtil.indexINodeScanById(((BlockInfo) block).getInodeId());
+
+            } else {
+              inode = INodeUtil.findINodeByBlockId(block.getBlockId());
+            }
+
+            if (inode != null) {
+              name = inode.getLocalName();
+              pID = inode.getParentId();
+              inodeID = inode.getId();
+            }
           }
         }.handle();
       }

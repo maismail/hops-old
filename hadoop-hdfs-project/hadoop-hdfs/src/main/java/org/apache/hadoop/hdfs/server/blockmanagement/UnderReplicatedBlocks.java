@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -349,12 +350,12 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     for (int i = 0; i < LEVEL; i++) {
       blocksToReplicate.add(new ArrayList<Block>());
     }
-
     if (size() == 0) { // There are no blocks to collect.
       return blocksToReplicate;
     }
     
     List<Integer> priorityToReplIdx = getReplicationIndex();
+    
     
     int blockCount = 0;
     for (int priority = 0; priority < LEVEL; priority++) { 
@@ -389,9 +390,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         for (int i = 0; i < LEVEL; i++) {
           priorityToReplIdx.set(i, 0);
         }
+        setReplicationIndex(priorityToReplIdx);
         break;
       }
       priorityToReplIdx.set(priority, replIndex); 
+      setReplicationIndex(priorityToReplIdx);
     }
     return blocksToReplicate;
   }
@@ -536,8 +539,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addUnderReplicatedBlock();
-        return tla.acquire();
+        tla.getLocks().addUnderReplicatedBlockFindAll();
+        return tla.acquire();  
       }
 
       @Override

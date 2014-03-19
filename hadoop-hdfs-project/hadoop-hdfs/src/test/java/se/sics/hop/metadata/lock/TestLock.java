@@ -17,6 +17,7 @@ package se.sics.hop.metadata.lock;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -29,16 +30,21 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
+import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
+import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus;
 import org.junit.Before;
 import org.junit.Test;
+import se.sics.hop.Common;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.context.PendingBlockContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
@@ -54,9 +60,11 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.tabledef.INodeTableDef;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -224,9 +232,9 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 
     //............... Replicas ...............................................
     List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
-    replicas.add(new HopIndexedReplica(1, 1, 1));
-    replicas.add(new HopIndexedReplica(1, 2, 2));
-    replicas.add(new HopIndexedReplica(1, 3, 3));
+    replicas.add(new HopIndexedReplica(1, "DN1", 1));
+    replicas.add(new HopIndexedReplica(1, "DN1", 2));
+    replicas.add(new HopIndexedReplica(1, "DN1", 3));
     
     //............... Pending Replicas ...............................................
     List<PendingBlockInfo> pendingList = new LinkedList<PendingBlockInfo>();
@@ -287,11 +295,53 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
     
     CorruptReplicaDataAccess crda = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
     crda.prepare(new LinkedList<HopCorruptReplica>(), crlist, new LinkedList<HopCorruptReplica>());
-
+    
     InvalidateBlockDataAccess ibda = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
     ibda.prepare(new LinkedList<HopInvalidatedBlock>(), iblist, new LinkedList<HopInvalidatedBlock>());
     
     StorageFactory.getConnector().commit();
 
+  }
+  
+  @Test
+  public void testReplicationIndex() throws IOException{
+//    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+//        tla.getLocks().addUnderReplicatedBlockFindAll();
+//        return tla.acquire();
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        List<Integer> ints = new ArrayList<Integer>();
+//        for(int i = 0; i < 5; i++){
+//          ints.add(i*2);
+//        }
+//        Variables.setReplicationIndex(ints);
+//        return null;
+//      }
+//    };
+//   handler.handle();
+   
+   HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addUnderReplicatedBlockFindAll();
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+
+        List<Integer> ints = Variables.getReplicationIndex();
+        
+        for(int i = 0; i < 5; i++){
+          System.out.println("index "+i+" value "+ints.get(i));
+        }
+        return null;
+      }
+    };
+   handler2.handle();
   }
 }
