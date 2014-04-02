@@ -1164,29 +1164,29 @@ class ErasureCodingService implements EncodingStatusCallback {
   /**
    * Create an instance of the appropriate subclass of ErasureCodingService
    */
-  public static ErasureCodingService createRaidNode(Configuration conf)
-      throws ClassNotFoundException {
-    try {
-      // default to distributed raid node
-      // TODO Check if returning null as default value was a smart idea
-      Class<?> raidNodeClass =
-          conf.getClass(RAIDNODE_CLASSNAME_KEY, null);
-      if (!ErasureCodingService.class.isAssignableFrom(raidNodeClass)) {
-        throw new ClassNotFoundException("not an implementation of ErasureCodingService");
-      }
-      Constructor<?> constructor =
-          raidNodeClass.getConstructor(new Class[] {Configuration.class} );
-      return (ErasureCodingService) constructor.newInstance(conf);
-    } catch (NoSuchMethodException e) {
-      throw new ClassNotFoundException("cannot construct raidnode", e);
-    } catch (InstantiationException e) {
-      throw new ClassNotFoundException("cannot construct raidnode", e);
-    } catch (IllegalAccessException e) {
-      throw new ClassNotFoundException("cannot construct raidnode", e);
-    } catch (InvocationTargetException e) {
-      throw new ClassNotFoundException("cannot construct raidnode", e);
-    }
-  }
+//  public static ErasureCodingService createRaidNode(Configuration conf)
+//      throws ClassNotFoundException {
+//    try {
+//      // default to distributed raid node
+//      // TODO Check if returning null as default value was a smart idea
+//      Class<?> raidNodeClass =
+//          conf.getClass(RAIDNODE_CLASSNAME_KEY, null);
+//      if (!ErasureCodingService.class.isAssignableFrom(raidNodeClass)) {
+//        throw new ClassNotFoundException("not an implementation of ErasureCodingService");
+//      }
+//      Constructor<?> constructor =
+//          raidNodeClass.getConstructor(new Class[] {Configuration.class} );
+//      return (ErasureCodingService) constructor.newInstance(conf);
+//    } catch (NoSuchMethodException e) {
+//      throw new ClassNotFoundException("cannot construct raidnode", e);
+//    } catch (InstantiationException e) {
+//      throw new ClassNotFoundException("cannot construct raidnode", e);
+//    } catch (IllegalAccessException e) {
+//      throw new ClassNotFoundException("cannot construct raidnode", e);
+//    } catch (InvocationTargetException e) {
+//      throw new ClassNotFoundException("cannot construct raidnode", e);
+//    }
+//  }
 
   /**
    * Create an instance of the ErasureCodingService
