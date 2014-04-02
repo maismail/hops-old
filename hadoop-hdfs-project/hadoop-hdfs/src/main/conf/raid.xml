@@ -1,0 +1,22 @@
+<configuration>
+   <policy name="raid">
+       <srcPath prefix="hdfs://cloud5:54310/user/hadoop/rs/" />
+       <codecId>rs</codecId>
+       <property>
+           <name>targetReplication</name>
+           <value>1</value>
+           <description> after RAIDing, decrease the replication factor of a file to this value.</description>
+       </property>
+       <property>
+           <name>metaReplication</name>
+           <value>1</value>
+           <description> the replication factor of the parity files</description>
+       </property>
+       <property>
+           <name>modTimePeriod</name>
+           <value>300000</value>
+           <description> time (milliseconds) after a file is modified to make it a candidate for RAIDing</description>
+       </property>
+   </policy>
+</configuration>
+
