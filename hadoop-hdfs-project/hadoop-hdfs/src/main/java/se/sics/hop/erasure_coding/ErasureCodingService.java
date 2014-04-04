@@ -30,22 +30,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
 
+import javax.swing.*;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
 //import org.apache.hadoop.tools.HadoopArchives;
 //import se.sics.hop.erasure_coding.protocol.RaidProtocol;
 //import se.sics.hop.erasure_coding.DistBlockIntegrityMonitor.CorruptFileCounter;
 //import se.sics.hop.erasure_coding.DistBlockIntegrityMonitor.Worker;
 
-class ErasureCodingService implements EncodingStatusCallback {
+class ErasureCodingService {
 
   static{
     Configuration.addDefaultResource("hdfs-default.xml");
@@ -61,6 +58,23 @@ class ErasureCodingService implements EncodingStatusCallback {
     OFFLINE_RECONSTRUCTION,
     ENCODING
   };
+
+  private class EncodingManagerCallback implements ExecutionResultCallback<FileStatus, EncodingManager.Result> {
+
+    @Override
+    public void reportExecutionResult(FileStatus fileStatus, EncodingManager.Result result) {
+      LOG.info(fileStatus.toString() + " encoding result is " + result.toString());
+    }
+  }
+
+  private class BlockRepairManagerCallback implements ExecutionResultCallback<FileStatus, BlockRepairManager.Result> {
+
+    @Override
+    public void reportExecutionResult(FileStatus fileStatus, BlockRepairManager.Result result) {
+      LOG.info(fileStatus.toString() + " repair result is " + result.toString());
+    }
+  }
+
   public static final Log LOG = LogFactory.getLog(ErasureCodingService.class);
   public static final Log ENCODER_METRICS_LOG = LogFactory.getLog("RaidMetrics");
 //  public static final long SLEEP_TIME = 10000L; // 10 seconds
@@ -220,12 +234,6 @@ class ErasureCodingService implements EncodingStatusCallback {
       this.stop();
       throw new IOException(e);
     }
-  }
-
-  @Override
-  public void reportEncodingStatus(FileStatus file, Status status) {
-    LOG.info("Encoding of " + file.toString() + " terminated with status " +
-        status.toString());
   }
 
 //  public long getProtocolVersion(String protocol,

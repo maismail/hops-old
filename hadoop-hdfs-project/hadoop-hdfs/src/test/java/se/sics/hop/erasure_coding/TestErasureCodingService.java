@@ -25,6 +25,6 @@ public class TestErasureCodingService extends TestCase {
     }
     Constructor<?> constructor =
         raidNodeClass.getConstructor(new Class[] {Configuration.class,
-            EncodingStatusCallback.class} );
+            ExecutionResultCallback.class} );
   }
 }

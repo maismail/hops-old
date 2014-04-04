@@ -4,24 +4,17 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 
-import java.io.IOException;
-import java.util.List;
+public abstract class EncodingManager extends ConfiguredExecutionResultCallbackCaller implements Stoppable {
 
-public abstract class EncodingManager extends Configured {
-
-  private final EncodingStatusCallback callback;
-
-  public EncodingManager(Configuration conf, EncodingStatusCallback callback) {
-    super(conf);
-    this.callback = callback;
+  public static enum Result{
+    SUCCESS,
+    FAILED,
+    ABORTED
   }
 
-  protected EncodingStatusCallback getCallback() {
-    return callback;
+  public EncodingManager(Configuration conf, ExecutionResultCallback<FileStatus, Result> callback) {
+    super(conf, callback);
   }
 
-  public abstract void raidFiles(PolicyInfo info, List<FileStatus> paths)
-      throws IOException;
-  public abstract int getRunningJobsForPolicy(String policyName);
-  public abstract void stop();
+  public abstract void encodeFile(Codec codec, FileStatus sourceFile, FileStatus parityFile);
 }

@@ -24,6 +24,7 @@ import java.io.IOException;
  * Thrown when there are too many missing blocks.
  */
 public class TooManyErasedLocations extends IOException {
+
   public TooManyErasedLocations(String msg) {
     super(msg);
   }

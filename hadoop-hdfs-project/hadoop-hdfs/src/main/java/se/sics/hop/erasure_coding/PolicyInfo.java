@@ -38,7 +38,7 @@ import java.util.*;
 /**
  * Maintains information about one policy
  */
-public class PolicyInfo implements Writable {
+class PolicyInfo implements Writable {
   public static final Log LOG = LogFactory.getLog(
     "org.apache.hadoop.raid.protocol.PolicyInfo");
   protected static final SimpleDateFormat dateFormat =
