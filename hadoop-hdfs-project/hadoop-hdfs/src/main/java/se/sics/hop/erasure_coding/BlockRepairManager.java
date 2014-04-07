@@ -16,6 +16,6 @@ public abstract class BlockRepairManager extends ConfiguredExecutionResultCallba
     super(conf, callback);
   }
 
-  public abstract void repairSourceBlocks(FileStatus sourceFile, FileStatus parityFile, BlockLocation[] brokenBlocks);
-  public abstract void repairParityBlocks(FileStatus sourceFile, FileStatus parityFile, BlockLocation[] brokenBlocks);
+  public abstract void repairSourceBlocks(Codec codec, FileStatus sourceFile, FileStatus parityFile, BlockLocation[] brokenBlocks);
+  public abstract void repairParityBlocks(Codec codec, FileStatus sourceFile, FileStatus parityFile, BlockLocation[] brokenBlocks);
 }
