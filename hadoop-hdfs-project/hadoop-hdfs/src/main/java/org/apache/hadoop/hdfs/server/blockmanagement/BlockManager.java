@@ -1019,7 +1019,7 @@ public class BlockManager {
   public void findAndMarkBlockAsCorrupt(final ExtendedBlock blk,
           final DatanodeInfo dn, final String reason) throws IOException {
     HDFSTransactionalRequestHandler findAndMarkBlockAsCorruptHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.FIND_AND_MARK_BLOCKS_AS_CORRUPT) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -1672,7 +1672,7 @@ public class BlockManager {
 
 
     HDFSTransactionalRequestHandler rescanPostponedMisreplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RESCAN_MISREPLICATED_BLOCKS) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -1754,7 +1754,7 @@ public class BlockManager {
     reportDiff(node, report, allMachineBlocks);
 
     HDFSTransactionalRequestHandler afterReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -1821,7 +1821,7 @@ public class BlockManager {
           final BlockListAsLongs report) throws IOException {
 
     HDFSTransactionalRequestHandler processFirstBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_FIRST_BLOCK_REPORT) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -1932,7 +1932,7 @@ public class BlockManager {
       final List<BlockInfo> allMachineBlocks) throws IOException  {
     
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -2134,7 +2134,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
       throws IOException {
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_QUEUED_REPORT) {
-     Long inodeID = null, pID = null;
+     Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -2514,7 +2514,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
 
     HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -2877,7 +2877,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final List<String> machineSet = new ArrayList<String>();
     
     new HDFSTransactionalRequestHandler(HDFSOperationType.GET_VALID_BLK_LOCS) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -2973,7 +2973,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final DatanodeDescriptor node = datanodeManager.getDatanode(nodeID);
     
     HDFSTransactionalRequestHandler processIncrementalBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -3179,7 +3179,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final int[] numOverReplicated = {0};
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
     HDFSTransactionalRequestHandler processBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_OVER_REPLICATED_BLOCKS_ON_RECOMMISSION) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -3254,7 +3254,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
 
     HDFSTransactionalRequestHandler checkReplicationHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CHECK_REPLICATION_IN_PROGRESS) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -3700,7 +3700,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   //START_HOP_CODE
   private void removeStoredBlockTx(final Block b, final DatanodeDescriptor node) throws IOException {
     HDFSTransactionalRequestHandler removeBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_STORED_BLOCK) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -3747,7 +3747,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   @VisibleForTesting
   int computeReplicationWorkForBlock(final Block b, final int priority) throws IOException {
     HDFSTransactionalRequestHandler computeReplicationWorkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPUTE_REPLICATION_WORK_FOR_BLOCK) {      
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -3837,7 +3837,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    
   private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {

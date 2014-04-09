@@ -109,7 +109,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    *
    * @throws PersistanceException
    */
-  public HDFSTransactionLocks acquireByBlock(Long id, Long pid, String name) throws PersistanceException, UnresolvedPathException {
+  public HDFSTransactionLocks acquireByBlock(Integer id, Integer pid, String name) throws PersistanceException, UnresolvedPathException {
 //    if(id == null && pid == null && name == null && locks.getInodeResolveType() == null){
 //       throw new StorageException("Unable to take locks on inode");
 //    }
@@ -803,7 +803,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private static INode pkINodeLookUpByNameAndPid(
           INodeLockType lock,
           String name,
-          long parentId,
+          int parentId,
           HDFSTransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
@@ -877,7 +877,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private void readINodeAttributes() throws PersistanceException {
-    List<Long> ids = new ArrayList<Long>();
+    List<Integer> ids = new ArrayList<Integer>();
     for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
       for (INode inode : resolvedINodes) {
         if (inode instanceof INodeDirectoryWithQuota) {

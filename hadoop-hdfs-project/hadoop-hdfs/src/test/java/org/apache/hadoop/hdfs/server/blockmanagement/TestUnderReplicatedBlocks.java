@@ -62,7 +62,7 @@ public class TestUnderReplicatedBlocks {
       final ExtendedBlock b = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
 
       HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
-        Long inodeID = null, pID = null;
+        Integer inodeID = null, pID = null;
         String name = null;
 
         @Override
@@ -116,7 +116,7 @@ public class TestUnderReplicatedBlocks {
       
           
       HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
-        Long inodeID = null, pID = null;
+        Integer inodeID = null, pID = null;
         String name = null;
 
         @Override

@@ -64,7 +64,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
       throw new UnsupportedOperationException("Implement it if you want this functionality");
     }
   }
-  private Map<Long, AttributeWrapper> cachedRows = new HashMap<Long, AttributeWrapper>();
+  private Map<Integer, AttributeWrapper> cachedRows = new HashMap<Integer, AttributeWrapper>();
   private INodeAttributesDataAccess<INodeAttributes> da;
 
   public INodeAttributesContext(INodeAttributesDataAccess<INodeAttributes> da) {
@@ -93,15 +93,15 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   @Override
   public INodeAttributes find(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
-    long inodeId = (Long) params[0];
+    Integer inodeId = (Integer) params[0];
 
     switch (qfinder) {
       case ByPKey:
         if (cachedRows.containsKey(inodeId)) {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Long.toString(inodeId)});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           return cachedRows.get(inodeId).getAttributes();
         } else {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Long.toString(inodeId)});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
           aboutToAccessStorage(" id = " + inodeId);
           INodeAttributes quota = da.findAttributesByPk(inodeId);
           //dont worry if it is null. 
@@ -117,7 +117,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   @Override
   public Collection<INodeAttributes> findList(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
-    List<Long> inodeIds = (List<Long>) params[0];
+    List<Integer> inodeIds = (List<Integer>) params[0];
     switch (qfinder) {
       case ByPKList: //only used for batch reading
         boolean allDataRead = true;
@@ -172,7 +172,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   public void remove(INodeAttributes var) throws PersistanceException {
     if (cachedRows.containsKey(var.getInodeId())) {
       cachedRows.get(var.getInodeId()).setStatus(CacheRowStatus.DELETED);
-      log("removed-attributes", CacheHitState.NA, new String[]{"id", Long.toString(var.getInodeId())});
+      log("removed-attributes", CacheHitState.NA, new String[]{"id", Integer.toString(var.getInodeId())});
     } else {
       throw new UnsupportedOperationException("Removing a row that is not in the cache");
     }
@@ -191,7 +191,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
     } else {
       AttributeWrapper attrWrapper = new AttributeWrapper(var, CacheRowStatus.MODIFIED);
       cachedRows.put(var.getInodeId(), attrWrapper);
-      log("updated-attributes", CacheHitState.NA, new String[]{"id", Long.toString(var.getInodeId())});
+      log("updated-attributes", CacheHitState.NA, new String[]{"id", Integer.toString(var.getInodeId())});
     }
   }
   

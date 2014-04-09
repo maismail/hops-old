@@ -35,7 +35,7 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public INodeAttributes findAttributesByPk(long inodeId) throws StorageException {
+  public INodeAttributes findAttributesByPk(Integer inodeId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId));
   }
 
@@ -76,7 +76,7 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public Collection<INodeAttributes> findAttributesByPkList(Collection<Long> inodeIds) throws StorageException {
+  public Collection<INodeAttributes> findAttributesByPkList(Collection<Integer> inodeIds) throws StorageException {
     return convertDALtoHDFS(dataAccess.findAttributesByPkList(inodeIds));
   }
 }

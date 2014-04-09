@@ -798,7 +798,7 @@ class NamenodeJspHelper {
       } else {
         this.block = new Block(blockId);
         this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-          Long inodeID = null, pID = null;
+          Integer inodeID = null, pID = null;
           String name = null;
 
           @Override

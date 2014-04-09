@@ -49,7 +49,7 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public List<BlockInfo> findByInodeId(long id) throws StorageException {
+  public List<BlockInfo> findByInodeId(int id) throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
   }
 

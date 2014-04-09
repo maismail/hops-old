@@ -94,7 +94,7 @@ public class INodeUtil {
 
   private static INode getNode(
           byte[] name,
-          long parentId,
+          int parentId,
           boolean transactional)
           throws PersistanceException {
     String nameString = DFSUtil.bytes2String(name);
@@ -109,7 +109,7 @@ public class INodeUtil {
 
   private static INode findINodeWithNoTransaction(
           String name,
-          long parentId)
+          int parentId)
           throws StorageException {
     LOG.info(String.format(
             "Read inode with no transaction by parent-id=%d, name=%s",
@@ -189,7 +189,7 @@ public class INodeUtil {
       }
     return inode;
   }
-  public static long findINodeIdByBlockId(final long blockId) throws StorageException {
+  public static int findINodeIdByBlockId(final long blockId) throws StorageException {
     LOG.debug(String.format(
             "About to read block with no transaction by bid=%d",
             blockId));
@@ -213,7 +213,7 @@ public class INodeUtil {
     return bInfo.getInodeId();
   }
 
-  public static void findPathINodesById(long inodeId,LinkedList<INode> preTxResolvedINodes,boolean[] isPreTxPathFullyResolved) throws PersistanceException {
+  public static void findPathINodesById(int inodeId,LinkedList<INode> preTxResolvedINodes,boolean[] isPreTxPathFullyResolved) throws PersistanceException {
     if (inodeId != INode.NON_EXISTING_ID) {
       INode inode = indexINodeScanById(inodeId);
       if (inode == null) {
@@ -260,7 +260,7 @@ public class INodeUtil {
     return  getNode(INodeDirectory.ROOT_NAME.getBytes(),INodeDirectory.ROOT_PARENT_ID, false);
   }
 
-  public static INode indexINodeScanById(long id) throws StorageException {
+  public static INode indexINodeScanById(int id) throws StorageException {
     LOG.info(String.format(
             "Read inode with no transaction by id=%d",
             id));

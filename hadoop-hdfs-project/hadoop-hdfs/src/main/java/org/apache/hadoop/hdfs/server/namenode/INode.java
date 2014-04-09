@@ -98,9 +98,9 @@ public abstract class INode implements Comparable<byte[]> {
   protected long accessTime;
   
     //START_HOP_CODE
-  public static final long NON_EXISTING_ID = 0L;
-  protected long id = NON_EXISTING_ID;
-  protected long parentId = NON_EXISTING_ID;
+  public static final int NON_EXISTING_ID = 0;
+  protected int id = NON_EXISTING_ID;
+  protected int parentId = NON_EXISTING_ID;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -542,10 +542,10 @@ public abstract class INode implements Comparable<byte[]> {
   }*/
   
   //START_HOP_CODE
-  public final void setIdNoPersistance(long id){
+  public final void setIdNoPersistance(int id){
     this.id = id;
   }
-  public long getId() {
+  public int getId() {
     return this.id;
   }
   
@@ -559,11 +559,11 @@ public abstract class INode implements Comparable<byte[]> {
     this.parentId = p.getId();
   }
   
-  public void setParentIdNoPersistance(long pid) {
+  public void setParentIdNoPersistance(int pid) {
     this.parentId = pid;
   }
 
-  public long getParentId() {
+  public int getParentId() {
     return this.parentId;
   }
 

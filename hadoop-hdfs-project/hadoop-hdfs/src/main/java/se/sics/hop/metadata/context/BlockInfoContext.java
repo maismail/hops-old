@@ -26,7 +26,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   protected Map<Long, BlockInfo> newBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, BlockInfo> modifiedBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, BlockInfo> removedBlocks = new HashMap<Long, BlockInfo>();
-  protected Map<Long, List<BlockInfo>> inodeBlocks = new HashMap<Long, List<BlockInfo>>();
+  protected Map<Integer, List<BlockInfo>> inodeBlocks = new HashMap<Integer, List<BlockInfo>>();
   protected boolean allBlocksRead = false;
   BlockInfoDataAccess<BlockInfo> dataAccess;
   private int nullCount = 0;
@@ -104,7 +104,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         return result;
       case MAX_BLK_INDX:
         //returning the block with max index
-        final long inodeID = (Long) params[0];
+        final int inodeID = (Integer) params[0];
         return findMaxBlk(inodeID);
     }
 
@@ -117,12 +117,12 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     List<BlockInfo> result = null;
     switch (bFinder) {
       case ByInodeId:
-        long inodeId = (Long) params[0];
+        Integer inodeId = (Integer) params[0];
         if (inodeBlocks.containsKey(inodeId)) {
-          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Long.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId)});
           return inodeBlocks.get(inodeId);
         } else {
-          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Long.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId)});
           aboutToAccessStorage();
           result = dataAccess.findByInodeId(inodeId);
           inodeBlocks.put(inodeId, syncBlockInfoInstances(result));
@@ -250,7 +250,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
   }
   
-  private BlockInfo findMaxBlk(final long inodeID) {
+  private BlockInfo findMaxBlk(final int inodeID) {
     // find the max block in the following lists
     // inodeBlocks
     // modified list

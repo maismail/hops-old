@@ -24,8 +24,8 @@ import se.sics.hop.exception.PersistanceException;
  */
 public class HopINodeIdGen {
   
-  public static long getUniqueINodeID() throws PersistanceException{
-    long lastInodeId =  Variables.getInodeId();
+  public static int getUniqueINodeID() throws PersistanceException{
+    int lastInodeId =  Variables.getInodeId();
     lastInodeId++;
     Variables.setInodeId(lastInodeId);
     return lastInodeId;

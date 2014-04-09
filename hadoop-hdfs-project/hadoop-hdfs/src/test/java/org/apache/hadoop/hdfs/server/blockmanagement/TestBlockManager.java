@@ -363,7 +363,7 @@ public class TestBlockManager {
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -475,7 +475,7 @@ public class TestBlockManager {
 
   private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
     return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {

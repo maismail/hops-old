@@ -5565,7 +5565,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //HOP    getEditLog().logSync();
         return locatedBlock;
       }
-      Long inodeID = null, pID = null;
+      Integer inodeID = null, pID = null;
       String name = null;
       @Override
       public void setUp() throws StorageException {
@@ -5603,7 +5603,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      final  ExtendedBlock newBlock, final DatanodeID[] newNodes)
       throws IOException {
       HDFSTransactionalRequestHandler updatePipelineHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_PIPELINE) {
-          Long inodeID = null, pID = null;
+          Integer inodeID = null, pID = null;
           String name = null;
           @Override
           public void setUp() throws StorageException {

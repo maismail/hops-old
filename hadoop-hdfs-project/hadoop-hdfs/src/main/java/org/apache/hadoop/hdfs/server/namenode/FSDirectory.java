@@ -2301,8 +2301,8 @@ public class FSDirectory implements Closeable {
         clone.setParentIdNoPersistance(inode.getParentId());
         clone.setUser(inode.getUserName());
       }else if(inode instanceof INodeFileUnderConstruction){
-        long id = ((INodeFileUnderConstruction)inode).getId();
-        long pid = ((INodeFileUnderConstruction)inode).getParentId();
+        int id = ((INodeFileUnderConstruction)inode).getId();
+        int pid = ((INodeFileUnderConstruction)inode).getParentId();
         byte[] name = ((INodeFileUnderConstruction)inode).getLocalNameBytes();
         short replication = ((INodeFileUnderConstruction)inode).getBlockReplication();
         long modificationTime = ((INodeFileUnderConstruction)inode).getModificationTime();

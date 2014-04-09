@@ -167,7 +167,7 @@ public class TestFsLimits {
     addChildWithName("4444", null);
   }
 
-  private static long id  = 1 + INodeDirectory.ROOT_ID;
+  private static int id  = 1 + INodeDirectory.ROOT_ID;
   private void addChildWithName(final String name, final Class<?> expected)
   throws Exception {
   HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
