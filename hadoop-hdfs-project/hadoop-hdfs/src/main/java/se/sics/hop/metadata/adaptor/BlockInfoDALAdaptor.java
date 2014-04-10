@@ -44,13 +44,13 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public BlockInfo findById(long blockId) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findById(blockId));
+  public BlockInfo findById(long blockId, int partKey) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findById(blockId, partKey));
   }
 
   @Override
-  public List<BlockInfo> findByInodeId(int id) throws StorageException {
-    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
+  public List<BlockInfo> findByInodeId(int id, int partKey) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id, partKey));
   }
 
   @Override
@@ -58,10 +58,10 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findAllBlocks());
   }
 
-  @Override
-  public List<BlockInfo> findByStorageId(int storageId) throws StorageException {
-    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
-  }
+//  @Override
+//  public List<BlockInfo> findByStorageId(int storageId) throws StorageException {
+//    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
+//  }
 
   @Override
   public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {
@@ -71,7 +71,7 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   @Override
   public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass) throws StorageException {
     if(hdfsClass != null){
-    HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
+    HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getPartKey(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
             hdfsClass.getGenerationStamp(), hdfsClass.getBlockUCState().ordinal(), hdfsClass.getTimestamp());
     if (hdfsClass instanceof BlockInfoUnderConstruction) {
       BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) hdfsClass;
@@ -100,6 +100,7 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     }
 
     blockInfo.setINodeIdNoPersistance(dalClass.getInodeId());
+    blockInfo.setPartKeyNoPersistance(dalClass.getPartKey());
     blockInfo.setTimestampNoPersistance(dalClass.getTimeStamp());
     blockInfo.setBlockIndexNoPersistance(dalClass.getBlockIndex());
 

@@ -9,10 +9,12 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
@@ -27,7 +29,9 @@ import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.BlockLookUpDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hop.HopBlockLookUp;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**
@@ -165,30 +169,30 @@ public class INodeUtil {
       }
   }
 
-  public static INode findINodeByBlockId(final long blockId) throws StorageException {
-    LOG.debug(String.format(
-            "About to read block with no transaction by bid=%d",
-            blockId));
-      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-              BlockInfo bInfo = bda.findById(blockId);
-              
-              if(bInfo == null) return null;
-              
-              INodeDataAccess<INode> ida = (INodeDataAccess)StorageFactory.getDataAccess(INodeDataAccess.class);
-              return ida.indexScanfindInodeById(bInfo.getInodeId());
-          }
-      };
-    INode inode;
-      try {
-          inode = (INode)handler.handle();
-      } catch (IOException ex) {
-          throw new StorageException(ex.getMessage());
-      }
-    return inode;
-  }
+//  public static INode findINodeByBlockId(final long blockId, final int partKey) throws StorageException {
+//    LOG.debug(String.format(
+//            "About to read block with no transaction by bid=%d",
+//            blockId));
+//      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+//          @Override
+//          public Object performTask() throws PersistanceException, IOException {
+//              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+//              BlockInfo bInfo = bda.findById(blockId, partKey);
+//              
+//              if(bInfo == null) return null;
+//              
+//              INodeDataAccess<INode> ida = (INodeDataAccess)StorageFactory.getDataAccess(INodeDataAccess.class);
+//              return ida.pruneIndexScanfindInodeById(bInfo.getInodeId(),partKey);
+//          }
+//      };
+//    INode inode;
+//      try {
+//          inode = (INode)handler.handle();
+//      } catch (IOException ex) {
+//          throw new StorageException(ex.getMessage());
+//      }
+//    return inode;
+//  }
   public static int findINodeIdByBlockId(final long blockId) throws StorageException {
     LOG.debug(String.format(
             "About to read block with no transaction by bid=%d",
@@ -277,5 +281,31 @@ public class INodeUtil {
         list.add(temp);
       }
     }
+  }
+  
+  public static INodeIdentifier resolveINodeFromBlockId(final Block b) throws StorageException{
+    INodeIdentifier inodeIdentifier;
+    if (b instanceof BlockInfo) {
+      inodeIdentifier = new INodeIdentifier(((BlockInfo) b).getInodeId(), ((BlockInfo) b).getPartKey());
+    } else {
+      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          
+          BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+          HopBlockLookUp blu = da.findByBlockId(b.getBlockId());
+          if (blu == null) {
+            return null;
+          }
+          return new INodeIdentifier(blu.getInodeId(), blu.getPartKey());
+        }
+      };      
+      try {
+        inodeIdentifier = (INodeIdentifier) handler.handle();
+      } catch (IOException ex) {
+        throw new StorageException(ex.getMessage());
+      }
+    }
+    return inodeIdentifier;
   }
 }

@@ -35,6 +35,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.log4j.NDC;
@@ -109,7 +110,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    *
    * @throws PersistanceException
    */
-  public HDFSTransactionLocks acquireByBlock(Integer id, Integer pid, String name) throws PersistanceException, UnresolvedPathException {
+  public HDFSTransactionLocks acquireByBlock(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException {
 //    if(id == null && pid == null && name == null && locks.getInodeResolveType() == null){
 //       throw new StorageException("Unable to take locks on inode");
 //    }
@@ -122,14 +123,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       }
     } 
     
-    if (inode == null && pid != null && name != null) {
-        inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), name, pid, locks);
-    }
+//    if (inode == null && pid != null && name != null) {
+//        inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), name, pid, locks);
+//    }
     
-    if (inode == null && id != null) {
+    if (inode == null && inodeIdentifer != null) {
       // dangling block
       // take lock on the indeId basically bring null in the cache
-      inode = iNodeScanLookUpByID(locks.getInodeLock(), id, locks);
+      inode = iNodePruneScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInode_id(), inodeIdentifer.getPart_key(), locks);
     }
     
 
@@ -812,13 +813,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return inode;
   }
 
-  private static INode iNodeScanLookUpByID(
+  private static INode iNodePruneScanLookUpByID(
           INodeLockType lock,
           int id,
+          int partKey,
           HDFSTransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
-    INode inode = EntityManager.find(INode.Finder.ByINodeID, id);
+    INode inode = EntityManager.find(INode.Finder.ByINodeID, id, partKey);
     locks.addLockedINodes(inode, lock);
     return inode;
   }

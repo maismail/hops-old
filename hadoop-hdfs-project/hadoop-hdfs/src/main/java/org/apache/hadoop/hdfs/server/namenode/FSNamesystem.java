@@ -3802,7 +3802,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addExcess().
                     addReplicaUc().
                     addUnderReplicatedBlock();
-            return tla.acquireByBlock(null,null,null/*resolved path is set*/);
+            return tla.acquireByBlock(null/*resolved path is set*/);
           }
 
           @Override
@@ -5541,7 +5541,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addINode(INodeLockType.READ).
                 addBlock(block.getBlockId()).
                 addGenerationStamp(LockType.WRITE);
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -5565,26 +5565,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //HOP    getEditLog().logSync();
         return locatedBlock;
       }
-      Integer inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = block.getLocalBlock();
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlockId(b);
       }
     };
     return (LocatedBlock) updateBlockForPipelineHandler.handle(this);
@@ -5603,26 +5588,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      final  ExtendedBlock newBlock, final DatanodeID[] newNodes)
       throws IOException {
       HDFSTransactionalRequestHandler updatePipelineHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_PIPELINE) {
-          Integer inodeID = null, pID = null;
-          String name = null;
+          INodeIdentifier inodeIdentifier;
           @Override
           public void setUp() throws StorageException {
-          name = null; pID = null; inodeID = null;
           Block b = oldBlock.getLocalBlock();
-          INode inode;
-          if (b instanceof BlockInfo) {
-            inodeID = ((BlockInfo) b).getInodeId();
-            inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-
-          } else {
-            inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-          }
-
-          if (inode != null) {
-            name = inode.getLocalName();
-            pID = inode.getParentId();
-            inodeID = inode.getId();
-          }
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockId(b);
         }
 
           @Override
@@ -5634,7 +5604,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addReplicaUc().
                     addLease(LockType.READ).
                     addLeasePath(LockType.READ);
-            return tla.acquireByBlock(inodeID,pID,name);
+            return tla.acquireByBlock(inodeIdentifier);
           }
 
           @Override
@@ -5859,7 +5829,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                   addReplica().
                   addCorrupt().
                   addExcess();
-          return tla.acquireByBlock(null,null,null/*resolved path is set*/);
+          return tla.acquireByBlock(null/*resolved path is set*/);
         }
 
         @Override

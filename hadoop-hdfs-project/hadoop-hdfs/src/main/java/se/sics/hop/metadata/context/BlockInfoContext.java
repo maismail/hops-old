@@ -85,21 +85,22 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ById:
         long id = (Long) params[0];
+        int  partKey = (Integer) params[1];
         result = blocks.get(id);
         if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
                                                          // some test intentionally look for blocks that are not in the DB
                                                          // duing the acquire lock phase if we see that an id does not
                                                          // exist in the db then we should put null in the cache for that id
 
-          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id)});
+          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"part_key", Integer.toString(partKey)});
           aboutToAccessStorage();
-          result = dataAccess.findById(id);
+          result = dataAccess.findById(id,partKey);
           if (result == null) {
             nullCount++;
           }
           blocks.put(id, result);
         } else {
-          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id)});
+          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"part_key", Integer.toString(partKey)});
         }
         return result;
       case MAX_BLK_INDX:
@@ -118,22 +119,23 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ByInodeId:
         Integer inodeId = (Integer) params[0];
+        Integer partKey = (Integer) params[1];
         if (inodeBlocks.containsKey(inodeId)) {
-          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
           return inodeBlocks.get(inodeId);
         } else {
-          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
           aboutToAccessStorage();
-          result = dataAccess.findByInodeId(inodeId);
+          result = dataAccess.findByInodeId(inodeId,partKey);
           inodeBlocks.put(inodeId, syncBlockInfoInstances(result));
           return result;
         }
-      case ByStorageId:
-        int storageId = (Integer) params[0];
-        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", Integer.toString(storageId)});
-        aboutToAccessStorage();
-        result = dataAccess.findByStorageId(storageId);
-        return syncBlockInfoInstances(result);
+//      case ByStorageId:
+//        int storageId = (Integer) params[0];
+//        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", Integer.toString(storageId)});
+//        aboutToAccessStorage();
+//        result = dataAccess.findByStorageId(storageId);
+//        return syncBlockInfoInstances(result);
       case All:
         if (allBlocksRead) {
           log("find-all-blocks", CacheHitState.HIT);

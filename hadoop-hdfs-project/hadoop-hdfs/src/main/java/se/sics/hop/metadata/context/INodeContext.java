@@ -81,18 +81,19 @@ public class INodeContext extends EntityContext<INode> {
     switch (iFinder) {
       case ByINodeID:
         Integer inodeId = (Integer) params[0];
+        Integer partKey = (Integer) params[1];
         if (removedInodes.containsKey(inodeId)) {
-          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
+          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
           result = null;
         } else if (inodesIdIndex.containsKey(inodeId)) {
-          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
+          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
           result = inodesIdIndex.get(inodeId);
         } else if (isRemoved(inodeId)) {
           return result;
         } else {
-          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
+          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
           aboutToAccessStorage();
-          result = dataAccess.indexScanfindInodeById(inodeId);
+          result = dataAccess.pruneIndexScanfindInodeById(inodeId,partKey);
           inodesIdIndex.put(inodeId, result);
           if (result != null) {
             inodesNameParentIndex.put(result.nameParentKey(), result);

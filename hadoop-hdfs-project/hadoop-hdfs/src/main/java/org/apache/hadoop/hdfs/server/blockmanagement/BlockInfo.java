@@ -122,6 +122,7 @@ public class BlockInfo extends Block {
   private int blockIndex = -1;  
   private long timestamp = 1;
   protected int inodeId = INode.NON_EXISTING_ID;
+  protected int partKey = 0;
   
   public BlockInfo(Block blk) {
     super(blk);
@@ -130,6 +131,7 @@ public class BlockInfo extends Block {
       this.blockIndex = ((BlockInfo) blk).blockIndex;
       this.timestamp = ((BlockInfo) blk).timestamp;
       this.inodeId = ((BlockInfo) blk).inodeId;
+      this.partKey = ((BlockInfo)blk).partKey;
     }
   }
   
@@ -147,6 +149,7 @@ public class BlockInfo extends Block {
     this.blockIndex = from.blockIndex;
     this.timestamp = from.timestamp;
     this.inodeId = from.inodeId;
+    this.partKey = from.partKey;
   }
   
   public BlockCollection getBlockCollection() throws PersistanceException {
@@ -159,6 +162,7 @@ public class BlockInfo extends Block {
     this.bc = bc; 
     if(bc == null){
       this.inodeId = INode.NON_EXISTING_ID;
+      this.partKey = 0;
     }
     return bc;
   }
@@ -166,7 +170,8 @@ public class BlockInfo extends Block {
   public void setBlockCollection(BlockCollection bc) throws PersistanceException {
     this.bc = bc;
     if (bc != null) {
-      setINodeId(bc.getId());      
+      setINodeId(bc.getId());  
+      setPartKey(bc.getPartKey());
     }
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
@@ -318,6 +323,19 @@ public class BlockInfo extends Block {
   public void setINodeId(int id) throws PersistanceException {
     setINodeIdNoPersistance(id);
     save();
+  }
+
+  public int getPartKey() {
+    return partKey;
+  }
+
+  public void setPartKey(int partKey) throws PersistanceException {
+    setPartKeyNoPersistance(partKey);
+    save();
+  }
+  
+  public void setPartKeyNoPersistance(int partKey) {
+    this.partKey = partKey;
   }
   
   public int getBlockIndex() {
