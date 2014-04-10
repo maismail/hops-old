@@ -101,7 +101,7 @@ public class INodeUtil {
     if (transactional) {
       // TODO - Memcache success check - do primary key instead.
       LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
-      return EntityManager.find(INode.Finder.ByPK_NameAndParentId, nameString, parentId);
+      return EntityManager.find(INode.Finder.ByPK_NameAndParentId, nameString, parentId, INode.getPartitionKey(name));
     } else {
       return findINodeWithNoTransaction(nameString, parentId);
     }
@@ -116,7 +116,7 @@ public class INodeUtil {
             parentId,
             name));
     INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-    return da.pkLookUpFindInodeByNameAndParentId(name, parentId);
+    return da.pkLookUpFindInodeByNameAndParentId(name, parentId, INode.getPartitionKey(name));
   }
 
   public static void resolvePathWithNoTransaction(

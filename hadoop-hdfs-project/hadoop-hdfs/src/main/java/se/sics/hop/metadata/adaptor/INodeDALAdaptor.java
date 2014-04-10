@@ -61,8 +61,8 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     }
 
     @Override
-    public INode pkLookUpFindInodeByNameAndParentId(String name, int parentId) throws StorageException {
-        return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId));
+    public INode pkLookUpFindInodeByNameAndParentId(String name, int parentId, int part_key) throws StorageException {
+        return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId, part_key));
     }
 
     @Override
@@ -92,6 +92,7 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                 hopINode.setPermission(permissionString.getData());
                 hopINode.setParentId(inode.getParentId());
                 hopINode.setId(inode.getId());
+                hopINode.setPartKey(inode.getPartKey());
 
                 if (inode instanceof INodeDirectory) {
                     hopINode.setIsUnderConstruction(0);
@@ -177,6 +178,7 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                 inode.setIdNoPersistance(hopINode.getId());
                 inode.setLocalNameNoPersistance(hopINode.getName());
                 inode.setParentIdNoPersistance(hopINode.getParentId());
+                inode.setPartKeyNoPersistance(hopINode.getPartKey());
             } catch (IOException e) {
                 throw new HopEnitityInitializationError(e);
             }

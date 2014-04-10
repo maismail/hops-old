@@ -70,7 +70,7 @@ public class INodeDirectory extends INode {
   /** constructor */
   INodeDirectory(byte[] localName, PermissionStatus permissions, long mTime) {
     this(permissions, mTime);
-    this.name = localName;
+    this.setLocalNameNoPersistance(localName);
   }
   
   /** copy constructor
@@ -123,7 +123,7 @@ public class INodeDirectory extends INode {
 
   private INode getChildINode(byte[] name) throws PersistanceException {
      INode existingInode = EntityManager.find(INode.Finder.ByPK_NameAndParentId,
-              DFSUtil.bytes2String(name), getId());
+              DFSUtil.bytes2String(name), getId(), INode.getPartitionKey(name));
     if (existingInode != null && existingInode.exists()) {
       return existingInode;
     }
@@ -347,7 +347,7 @@ public class INodeDirectory extends INode {
                               boolean propagateModTime
                               ) throws FileNotFoundException, PersistanceException {
     // insert into the parent children list
-    newNode.name = localname;
+    newNode.setLocalNameNoPersistance(localname);
     if(parent.addChild(newNode, propagateModTime) == null)
       return null;
     return parent;
@@ -386,7 +386,7 @@ public class INodeDirectory extends INode {
     if (pathComponents.length < 2) { // add root
       return null;
     }
-    newNode.name = pathComponents[pathComponents.length - 1];
+    newNode.setLocalNameNoPersistance(pathComponents[pathComponents.length - 1]);
     // insert into the parent children list
     INodeDirectory parent = getParent(pathComponents);
     return parent.addChild(newNode, propagateModTime) == null? null: parent;

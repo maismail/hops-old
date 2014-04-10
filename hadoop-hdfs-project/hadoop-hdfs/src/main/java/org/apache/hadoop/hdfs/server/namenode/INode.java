@@ -101,6 +101,7 @@ public abstract class INode implements Comparable<byte[]> {
   public static final int NON_EXISTING_ID = 0;
   protected int id = NON_EXISTING_ID;
   protected int parentId = NON_EXISTING_ID;
+  protected int part_key = -1;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -149,7 +150,7 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
   INode(PermissionStatus permissions, long mTime, long atime) {
-    this.name = null;
+    this.setLocalNameNoPersistance((byte[])null);
     this.parent = null;
     this.modificationTime = mTime;
     setAccessTimeNoPersistance(atime);
@@ -314,6 +315,7 @@ public abstract class INode implements Comparable<byte[]> {
    */
   public void setLocalNameNoPersistance(String name) {
     this.name = DFSUtil.string2Bytes(name);
+    this.part_key = getPartitionKey(this.name);
   }
 
   /**
@@ -321,6 +323,7 @@ public abstract class INode implements Comparable<byte[]> {
    */
   public void setLocalNameNoPersistance(byte[] name) {
     this.name = name;
+    this.part_key = getPartitionKey(this.name);
   }
   
   public String getFullPathName() throws PersistanceException{
@@ -549,6 +552,14 @@ public abstract class INode implements Comparable<byte[]> {
     return this.id;
   }
   
+  public int getPartKey(){
+    return part_key;
+  }
+  
+  public void setPartKeyNoPersistance(int part_key){
+    this.part_key = part_key;
+  }
+  
   public void setParent(INodeDirectory p) throws PersistanceException {
     setParentNoPersistance(p);
     save();
@@ -645,6 +656,23 @@ public abstract class INode implements Comparable<byte[]> {
     if(node instanceof INodeDirectoryWithQuota){
       ((INodeDirectoryWithQuota)node).removeAttributes();
     }
+  }
+  
+  public static int getPartitionKey(String strName){
+    if(strName == null || strName.equals("") || strName.isEmpty() ){
+      return 0;
+    }
+    else{
+      return strName.hashCode();
+    }
+  }
+  
+  public static int getPartitionKey(byte[] name){
+    String strName = "";
+    if(name != null){
+      strName = DFSUtil.bytes2String(name);
+    }
+    return getPartitionKey(strName);
   }
   //END_HOP_CODE:
 }

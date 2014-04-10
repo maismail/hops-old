@@ -2268,7 +2268,7 @@ public class FSDirectory implements Closeable {
        public Object performTask() throws PersistanceException {
           INodeDirectoryWithQuota newRootINode = null;
          INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.pkLookUpFindInodeByNameAndParentId(INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID);
+         INodeDirectoryWithQuota rootInode = (INodeDirectoryWithQuota) da.pkLookUpFindInodeByNameAndParentId(INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID, INode.getPartitionKey(INodeDirectory.ROOT_NAME));
          if (rootInode == null || overwrite == true) {
            newRootINode = INodeDirectoryWithQuota.createRootDir(ps);
            List<INode> newINodes = new ArrayList();

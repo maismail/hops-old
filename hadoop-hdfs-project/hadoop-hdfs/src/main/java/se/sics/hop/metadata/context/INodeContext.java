@@ -82,15 +82,15 @@ public class INodeContext extends EntityContext<INode> {
       case ByINodeID:
         Integer inodeId = (Integer) params[0];
         if (removedInodes.containsKey(inodeId)) {
-          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
+          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
           result = null;
         } else if (inodesIdIndex.containsKey(inodeId)) {
-          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
+          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
           result = inodesIdIndex.get(inodeId);
         } else if (isRemoved(inodeId)) {
           return result;
         } else {
-          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
+          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)/*,"part_key", Integer.toString(part_key)*/});
           aboutToAccessStorage();
           result = dataAccess.indexScanfindInodeById(inodeId);
           inodesIdIndex.put(inodeId, result);
@@ -100,8 +100,9 @@ public class INodeContext extends EntityContext<INode> {
         }
         break;
       case ByPK_NameAndParentId:
-        String name   = (String)  params[0];
-        Integer parentId = (Integer)    params[1];
+        String name       = (String)  params[0];
+        Integer parentId  = (Integer) params[1];
+        Integer part_key  = (Integer) params[2];
         String key = parentId + name;
         if (inodesNameParentIndex.containsKey(key)) {
           log("find-inode-by-name-parentid", CacheHitState.HIT,
@@ -114,18 +115,18 @@ public class INodeContext extends EntityContext<INode> {
         } else if (isRemoved(parentId, name)) {
           return result; // return null; the node was remove. 
         } else {
-          aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId);
-          result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
+          aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId+" part_key "+part_key);
+          result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId,part_key);
           if (result != null) {
             if (removedInodes.containsKey(result.getId())) {
               log("find-inode-by-name-parentid-removed", CacheHitState.LOSS,
-                      new String[]{"name", name, "pid", Integer.toString(parentId)});
+                      new String[]{"name", name, "pid", Integer.toString(parentId),"part_key", Integer.toString(part_key)});
               return null;
             }
             inodesIdIndex.put(result.getId(), result);
           }
           inodesNameParentIndex.put(key, result);
-          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Integer.toString(parentId)});
+          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Integer.toString(parentId),"part_key", Integer.toString(part_key)});
         }
         break;
     }
@@ -152,7 +153,6 @@ public class INodeContext extends EntityContext<INode> {
         }
         break;
     }
-
     return result;
   }
 

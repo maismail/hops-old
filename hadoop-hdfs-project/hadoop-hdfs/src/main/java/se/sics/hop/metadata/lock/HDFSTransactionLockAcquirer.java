@@ -807,14 +807,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           HDFSTransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
-    INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId);
+    INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId, INode.getPartitionKey(name));
     locks.addLockedINodes(inode, lock);
     return inode;
   }
 
   private static INode iNodeScanLookUpByID(
           INodeLockType lock,
-          long id,
+          int id,
           HDFSTransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
