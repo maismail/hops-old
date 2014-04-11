@@ -45,7 +45,9 @@ public enum BlockConstructionStage {
   // transfer RBW for adding datanodes
   TRANSFER_RBW,
   // transfer Finalized for adding datanodes
-  TRANSFER_FINALIZED;
+  TRANSFER_FINALIZED,
+  // pipeline set up for single block sending
+  PIPELINE_SETUP_SINGLE_BLOCK;
   
   final static private byte RECOVERY_BIT = (byte)1;
   

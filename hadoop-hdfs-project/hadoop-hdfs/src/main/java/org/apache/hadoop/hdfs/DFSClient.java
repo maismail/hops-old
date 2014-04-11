@@ -1347,7 +1347,17 @@ public class DFSClient implements java.io.Closeable {
     beginFileLease(src, result);
     return result;
   }
-  
+
+  public DFSOutputStream sendBlock(String src,
+                                LocatedBlock block,
+                                Progressable progress,
+                                ChecksumOpt checksumOpt) throws IOException {
+    checkOpen();
+    final DFSOutputStream result = DFSOutputStream.newStreamForSingleBlock(this,
+        src, dfsClientConf.ioBufferSize, progress, block, dfsClientConf.createChecksum(checksumOpt));
+    return result;
+  }
+
   /**
    * Append to an existing file if {@link CreateFlag#APPEND} is present
    */

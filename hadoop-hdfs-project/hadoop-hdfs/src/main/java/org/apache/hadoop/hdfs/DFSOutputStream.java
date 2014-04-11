@@ -47,14 +47,7 @@ import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream.SyncFlag;
-import org.apache.hadoop.hdfs.protocol.DSQuotaExceededException;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
-import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
-import org.apache.hadoop.hdfs.protocol.LocatedBlock;
-import org.apache.hadoop.hdfs.protocol.NSQuotaExceededException;
-import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import org.apache.hadoop.hdfs.protocol.*;
 import org.apache.hadoop.hdfs.protocol.datatransfer.BlockConstructionStage;
 import org.apache.hadoop.hdfs.protocol.datatransfer.DataTransferProtocol;
 import org.apache.hadoop.hdfs.protocol.datatransfer.DataTransferEncryptor;
@@ -138,6 +131,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   private Progressable progress;
   private final short blockReplication; // replication factor of file
   private boolean shouldSyncBlock = false; // force blocks to disk upon close
+  private boolean singleBlock = false;
   
   private class Packet {
     long    seqno;               // sequencenumber of buffer in block
@@ -178,9 +172,9 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       this.numChunks = 0;
       this.offsetInBlock = 0;
       this.seqno = HEART_BEAT_SEQNO;
-      
+
       buf = new byte[PacketHeader.PKT_MAX_HEADER_LEN];
-      
+
       checksumStart = checksumPos = dataPos = dataStart = PacketHeader.PKT_MAX_HEADER_LEN;
       maxChunks = 0;
     }
@@ -310,12 +304,24 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     /** Append on an existing block? */
     private final boolean isAppend;
 
+    // Information for sending a single block
+    private LocatedBlock lb;
+
     /**
      * Default construction for file create
      */
     private DataStreamer() {
       isAppend = false;
       stage = BlockConstructionStage.PIPELINE_SETUP_CREATE;
+    }
+
+    /**
+     * Construct a data streamer for single block transfer
+     */
+    private DataStreamer(LocatedBlock lb) {
+      isAppend = false;
+      stage = BlockConstructionStage.PIPELINE_SETUP_SINGLE_BLOCK;
+      this.lb = lb;
     }
     
     /**
@@ -468,6 +474,14 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
               DFSClient.LOG.debug("Append to block " + block);
             }
             setupPipelineForAppendOrRecovery();
+            initDataStreaming();
+          } else if (stage == BlockConstructionStage.PIPELINE_SETUP_SINGLE_BLOCK) {
+            // TODO This is sent by protobuf and somehow a hack
+            stage = BlockConstructionStage.PIPELINE_SETUP_CREATE;
+            if(DFSClient.LOG.isDebugEnabled()) {
+              DFSClient.LOG.debug("Send single block " + block);
+            }
+            nodes = setupPipelineForSingleBlock(lb);
             initDataStreaming();
           }
 
@@ -984,12 +998,36 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       return false; // do not sleep, continue processing
     }
 
-    /**
-     * Open a DataOutputStream to a DataNode so that it can be written to.
-     * This happens when a file is created and each time a new block is allocated.
-     * Must get block ID and the IDs of the destinations from the namenode.
-     * Returns the list of target datanodes.
-     */
+    private DatanodeInfo[] setupPipelineForSingleBlock(LocatedBlock lb) throws IOException {
+      DatanodeInfo[] nodes;
+      int count = dfsClient.getConf().nBlockWriteRetry;
+      boolean success;
+      do {
+        hasError = false;
+        lastException = null;
+        errorIndex = -1;
+
+        block = lb.getBlock();
+        block.setNumBytes(0);
+        accessToken = lb.getBlockToken();
+        nodes = lb.getLocations();
+
+        //
+        // Connect to first DataNode in the list.
+        //
+        success = createBlockOutputStream(nodes, 0L, false);
+
+        if (!success) {
+          // TODO Request another location from the NameNode
+        }
+      } while (!success && --count >= 0);
+
+      if (!success) {
+        throw new IOException("Unable to initiate single block send.");
+      }
+      return nodes;
+    }
+
     private DatanodeInfo[] nextBlockOutputStream(String client) throws IOException {
       LocatedBlock lb = null;
       DatanodeInfo[] nodes = null;
@@ -1355,6 +1393,27 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       HdfsFileStatus stat, DataChecksum checksum) throws IOException {
     final DFSOutputStream out = new DFSOutputStream(dfsClient, src, buffersize,
         progress, lastBlock, stat, checksum);
+    out.streamer.start();
+    return out;
+  }
+
+  /** Construct a new output stream for a single block. */
+  private DFSOutputStream(DFSClient dfsClient, String src, int buffersize, Progressable progress,
+      LocatedBlock lb, DataChecksum checksum) throws IOException {
+    this(dfsClient, src, lb.getBlockSize(), progress,
+        checksum, (short) lb.getLocations().length);
+    singleBlock = true;
+
+    computePacketChunkSize(dfsClient.getConf().writePacketSize,
+          checksum.getBytesPerChecksum());
+    streamer = new DataStreamer(lb);
+  }
+
+  static DFSOutputStream newStreamForSingleBlock(DFSClient dfsClient, String src,
+      int buffersize, Progressable progress, LocatedBlock block,
+      DataChecksum checksum) throws IOException {
+    final DFSOutputStream out = new DFSOutputStream(dfsClient, src, buffersize,
+        progress, block, checksum);
     out.streamer.start();
     return out;
   }
@@ -1801,6 +1860,10 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   // should be called holding (this) lock since setTestFilename() may 
   // be called during unit tests
   private void completeFile(ExtendedBlock last) throws IOException {
+    if (singleBlock) {
+      return;
+    }
+
     long localstart = Time.now();
     boolean fileComplete = false;
     while (!fileComplete) {

@@ -301,6 +301,15 @@ public class DistributedFileSystem extends FileSystem {
         bufferSize, null), statistics);
   }
 
+  public HdfsDataOutputStream sendBlock(Path f, LocatedBlock block,
+        Progressable progress, ChecksumOpt checksumOpt)
+          throws IOException {
+    statistics.incrementWriteOps(1);
+    final DFSOutputStream out = dfs.sendBlock(getPathName(f), block, progress,
+        checksumOpt);
+    return new HdfsDataOutputStream(out, statistics);
+  }
+
   @Override
   public boolean setReplication(Path src, 
                                 short replication
