@@ -34,6 +34,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -43,6 +45,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 
 /**
@@ -148,7 +151,7 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId())
+        tla.getLocks().addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
                 .addCorrupt();
         return tla.acquire();
                 
@@ -159,6 +162,13 @@ public class TestCorruptReplicaInfo {
         crm.addToCorruptReplicasMap(blk, dn, reason);
         return null;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }    
+
     }.handle();
   }
   
@@ -167,7 +177,7 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId())
+        tla.getLocks().addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
                 .addCorrupt();
         return tla.acquire();
       }
@@ -177,6 +187,12 @@ public class TestCorruptReplicaInfo {
         crm.removeFromCorruptReplicasMap(blk);
         return null;
       }
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }   
+        
     }.handle();
   }
 }

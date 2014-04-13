@@ -367,7 +367,7 @@ public class TestBlockManager {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        inodeIdentifier = INodeUtil.resolveINodeFromBlockId(blockInfo);
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(blockInfo);
       }
 
       @Override
@@ -375,7 +375,7 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(blockInfo.getBlockId()).
+                addBlock(blockInfo.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -406,7 +406,7 @@ public class TestBlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-        addBlock(blkId).
+        addBlock(blkId,inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
            addReplica();
         return tla.acquire();
       }
@@ -421,6 +421,13 @@ public class TestBlockManager {
         }
         return blockInfo;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blkId);
+        }    
+
     }.handle();
   }
 
@@ -449,7 +456,7 @@ public class TestBlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
          tla.getLocks().
-                 addBlock(blockId);
+                 addBlock(blockId,inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY);
          return tla.acquire();
       }
       @Override
@@ -457,6 +464,12 @@ public class TestBlockManager {
           bm.blocksMap.addBlockCollection(blockInfo, bc);
          return null;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blockId);
+        }  
     }.handle();
     
     return blockInfo;
@@ -467,7 +480,7 @@ public class TestBlockManager {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        inodeIdentifier = INodeUtil.resolveINodeFromBlockId(block);
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
       @Override
@@ -475,7 +488,7 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().

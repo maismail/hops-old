@@ -34,6 +34,8 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -42,6 +44,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 /**
  * Test if live nodes count per node is correct 
@@ -110,7 +113,7 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(block.getBlockId()).
+                  addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addExcess();
           return tla.acquire();
@@ -129,6 +132,12 @@ public class TestNodeCount {
           }
           return nonExcessDN;
         }
+        
+        INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        }    
       };
       
       DatanodeDescriptor nonExcessDN = (DatanodeDescriptor)getnonExcessDN.handle(namesystem);
@@ -200,7 +209,7 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
            tla.getLocks().
-                   addBlock(block.getBlockId()).
+                   addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                    addReplica().
                    addExcess().
                    addCorrupt();
@@ -213,6 +222,11 @@ public class TestNodeCount {
           lastNum = namesystem.getBlockManager().countNodes(block);
           return lastNum;
         }
+        INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+        } 
 
       }.handle(namesystem);
     } finally {

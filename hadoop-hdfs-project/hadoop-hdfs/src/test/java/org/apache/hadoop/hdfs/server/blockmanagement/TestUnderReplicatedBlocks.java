@@ -67,7 +67,7 @@ public class TestUnderReplicatedBlocks {
         @Override
         public void setUp() throws StorageException {
           Block blk = b.getLocalBlock();
-          inodeIdentifier = INodeUtil.resolveINodeFromBlockId(blk);
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
         }
 
         @Override
@@ -75,7 +75,7 @@ public class TestUnderReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
-                  addBlock(b.getBlockId()).
+                  addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);
@@ -106,7 +106,7 @@ public class TestUnderReplicatedBlocks {
         @Override
         public void setUp() throws StorageException {
           Block blk = b.getLocalBlock();
-          inodeIdentifier = INodeUtil.resolveINodeFromBlockId(blk);
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
         }
 
         @Override
@@ -114,7 +114,7 @@ public class TestUnderReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
-                  addBlock(b.getBlockId()).
+                  addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);

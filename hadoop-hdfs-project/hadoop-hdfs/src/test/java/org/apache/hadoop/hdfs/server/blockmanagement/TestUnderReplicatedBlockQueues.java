@@ -21,6 +21,8 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -31,6 +33,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Assert;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 public class TestUnderReplicatedBlockQueues extends Assert {
 
@@ -140,7 +143,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addUnderReplicatedBlock();
         return tla.acquire();
       }
@@ -149,6 +152,12 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public Object performTask() throws PersistanceException, IOException {
         return queues.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+        }    
     }.handle();
   }
 }

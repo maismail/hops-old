@@ -231,7 +231,7 @@ class PendingReplicationBlocks {
   }
 
   private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws PersistanceException {
-    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId());
+    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId(), pendingBlock.getPartKey());
   }
 
   private void addPendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
@@ -251,13 +251,13 @@ class PendingReplicationBlocks {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException { 
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(pbi.getBlockId());
+        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getPartKey());
         return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId());
+        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId(), pbi.getPartKey());
         if (block == null) {
           //this function is called from getTimedOutBlocks
           //which has already deleted the timeout rows from the table

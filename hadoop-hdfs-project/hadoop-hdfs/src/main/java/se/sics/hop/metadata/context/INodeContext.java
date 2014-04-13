@@ -14,6 +14,7 @@ import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
 import se.sics.hop.Common;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -81,19 +82,25 @@ public class INodeContext extends EntityContext<INode> {
     switch (iFinder) {
       case ByINodeID:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = (Integer) params[1];
+        Integer partKey = null;
+        if(params.length >1 && params[1] != null){
+          partKey = (Integer)params[1];
+        }
         if (removedInodes.containsKey(inodeId)) {
-          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
+          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           result = null;
         } else if (inodesIdIndex.containsKey(inodeId)) {
-          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
+          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           result = inodesIdIndex.get(inodeId);
         } else if (isRemoved(inodeId)) {
           return result;
         } else {
-          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
+          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           aboutToAccessStorage();
-          result = dataAccess.pruneIndexScanfindInodeById(inodeId,partKey);
+          if(partKey == null){
+            throw new NullPointerException("PartKey is not set");
+          }
+          result = dataAccess.pruneIndexScanByInodeId(inodeId,partKey);
           inodesIdIndex.put(inodeId, result);
           if (result != null) {
             inodesNameParentIndex.put(result.nameParentKey(), result);
@@ -278,6 +285,7 @@ public class INodeContext extends EntityContext<INode> {
       case INodePKChanged:
         //delete the previous row from db
         INode inode = (INode) params[0];
+        Boolean isRenamed = (Boolean)params[1];
         removedInodes.put(inode.getId(),inode);
         log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(), "pid", Integer.toString(inode.getParentId()) });
         break;

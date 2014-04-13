@@ -58,10 +58,10 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findAllBlocks());
   }
 
-//  @Override
-//  public List<BlockInfo> findByStorageId(int storageId) throws StorageException {
-//    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
-//  }
+  @Override
+  public List<BlockInfo> findByStorageId(int storageId) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByStorageId(storageId));
+  }
 
   @Override
   public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {

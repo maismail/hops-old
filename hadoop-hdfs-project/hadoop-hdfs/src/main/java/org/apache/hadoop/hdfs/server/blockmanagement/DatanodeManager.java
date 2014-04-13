@@ -1227,7 +1227,7 @@ public class DatanodeManager {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(),b.getPartKey()).
                 addReplica().
                 addReplicaUc();
         return tla.acquire();

@@ -90,7 +90,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (locks.getBlockLock() != null) {
-      if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
+      if (locks.getInodeLock() != null && locks.getBlockID() != null) {
         throw new StorageException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
       }
       blockResults.addAll(acquireBlockLock());
@@ -130,7 +130,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     if (inode == null && inodeIdentifer != null) {
       // dangling block
       // take lock on the indeId basically bring null in the cache
-      inode = iNodePruneScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInode_id(), inodeIdentifer.getPart_key(), locks);
+      inode = iNodePruneScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), inodeIdentifer.getPartKey(), locks);
     }
     
 
@@ -139,29 +139,29 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       resolvedINodeForBlk.add(inode);
       allResolvedINodes.add(resolvedINodeForBlk);
 
-      List<BlockInfo> allBlks =  (List<BlockInfo>)acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId());
+      List<BlockInfo> allBlks =  (List<BlockInfo>)acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId(), inode.getPartKey());
       blockResults.addAll(allBlks);
       
       // if the allBlks does not contain the locks.blocksParam block then
       // re-read it to bring null in the cache. the block was there in the pre-tx phase
       // but was deleted before the locks were acquired
       boolean found = false;
-      if (locks.getBlockParam() != null) {
+      if (locks.getBlockID() != null) {
         for (BlockInfo blk : allBlks) {
-          if (blk.getBlockId() == locks.getBlockParam()) {
+          if (blk.getBlockId() == locks.getBlockID()) {
             found = true;
             break;
           }
         }
 
         if (!found) {
-          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockParam());
+          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockPartKey());
           // we need to bring null for the other tables too. so put a dummy obj in the blocksResults list
           BlockInfo blk = new BlockInfo();
           if (inode != null) {
             blk.setINodeIdNoPersistance(inode.getId());
           }
-          blk.setBlockIdNoPersistance(locks.getBlockParam());
+          blk.setBlockIdNoPersistance(locks.getBlockID());
           
           blockResults.add(blk);
         }
@@ -173,7 +173,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (blockResults.isEmpty()) {
-      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockParam());
+      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(),locks.getBlockPartKey());
       if (block != null) {
         blockResults.add(block);
       }
@@ -270,7 +270,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (locks.getBlockLock() != null) {
-      if (locks.getInodeLock() != null && locks.getBlockParam() != null) {
+      if (locks.getInodeLock() != null && locks.getBlockID() != null) {
         throw new RuntimeException("Acquiring locks on block-infos using inode-id and block-id concurrently is not allowed!");
       }
       blockResults.addAll(acquireBlockLock());
@@ -585,8 +585,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       }
     } else // if blockResults is null then we can safely bring null in to cache
     {
-      if (locks.getBlockParam() != null) {
-        params.add(locks.getBlockParam()/*id*/);
+      if (locks.getBlockID() != null) {
+        params.add(locks.getBlockID()/*id*/);
       }
     }
     return params;
@@ -644,10 +644,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     LinkedList<BlockInfo> blocks = new LinkedList<BlockInfo>();
 
-    if (locks.getBlockParam() != null) {
-      long bid = (Long) locks.getBlockParam();
+    if (locks.getBlockID() != null) {
 
-      BlockInfo result = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, bid);
+      BlockInfo result = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, (Long) locks.getBlockID(), locks.getBlockPartKey());
       if (result != null) {
         blocks.add(result);
       }
@@ -655,7 +654,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
         for (INode inode : resolvedINodes) {
           if (inode instanceof INodeFile) {
-            blocks.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId()));
+            blocks.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId(), inode.getPartKey()));
           }
         }
       }

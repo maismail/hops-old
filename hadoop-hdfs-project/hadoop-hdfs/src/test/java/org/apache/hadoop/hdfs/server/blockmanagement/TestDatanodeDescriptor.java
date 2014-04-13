@@ -28,6 +28,8 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -36,6 +38,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 /**
  * This class tests that methods in DatanodeDescriptor
@@ -97,7 +100,7 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(blk.getBlockId()).
+                addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica();
         return tla.acquire();
       }
@@ -106,6 +109,12 @@ public class TestDatanodeDescriptor {
       public Object performTask() throws PersistanceException, IOException {
         return dn.addBlock(blk);
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }   
     }.handle();
   }
     
@@ -115,7 +124,7 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(blk.getBlockId()).
+                addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica();
         return tla.acquire();
       }
@@ -124,6 +133,11 @@ public class TestDatanodeDescriptor {
       public Object performTask() throws PersistanceException, IOException {
         return dn.removeBlock(blk);
       }
+       INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }   
     }.handle();
   }
 }

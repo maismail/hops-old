@@ -1193,11 +1193,11 @@ public class TestFileCreation {
     try {
 
       Path p = new Path("/f1");
-      Path p1 = new Path("/f2"); 
+      //Path p1 = new Path("/f2"); 
       
       FSDataOutputStream out = dfs.create(p);
       int i = 0;
-      for (; i < 200; i++) {
+      for (; i < 20; i++) {
         out.write(i);
       }
         
@@ -1207,6 +1207,8 @@ public class TestFileCreation {
       
      // dfs.rename(p, p1);
       out.close();
+      
+      dfs.delete(p);
       
       //cluster.restartNameNode();
 

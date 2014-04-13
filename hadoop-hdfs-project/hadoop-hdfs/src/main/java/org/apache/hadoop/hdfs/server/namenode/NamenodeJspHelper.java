@@ -809,13 +809,13 @@ class NamenodeJspHelper {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.READ).
-                    addBlock(block.getBlockId());
+                    addBlock(block.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY);
             return tla.acquireByBlock(inodeIdentifier);
           }
 
           @Override
           public void setUp() throws StorageException {
-            inodeIdentifier = INodeUtil.resolveINodeFromBlockId(block);
+            inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
           }
         }.handle();
       }

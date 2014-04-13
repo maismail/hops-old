@@ -2560,7 +2560,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     final INode[] inodes = dir.getRootDir().getExistingPathINodes(src, true);
     final INodeFileUnderConstruction pendingFile
         = checkLease(src, clientName, inodes[inodes.length - 1]);
+    
     BlockInfo lastBlockInFile = pendingFile.getLastBlock();
+    if(lastBlockInFile != null){
+      LOG.debug("LAST Block is "+lastBlockInFile.getBlockId());
+    }else{
+      LOG.debug("LAST Block is NULL");
+    }
+    
     if (!Block.matchingIdAndGenStamp(previousBlock, lastBlockInFile)) {
       // The block that the client claims is the current last block
       // doesn't match up with what we think is the last block. There are
@@ -3794,7 +3801,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                    addBlock(lastblock.getBlockId()).
+                    addBlock(lastblock.getBlockId(), INode.INVALID_PART_KEY).
                     addLease(LockType.WRITE).
                     addLeasePath(LockType.WRITE).
                     addReplica().
@@ -3909,7 +3916,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public void setUp() throws PersistanceException {
               preTxResolvedInodes.clear();
               isPreTxPathFullyResolved[0] = false;
-              INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(lastblock.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
+              INodeUtil.findPathINodesById(INodeUtil.resolveINodeFromBlock(lastblock.getLocalBlock()).getInodeId(), preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       commitBlockSyncHanlder.handle(this);   
@@ -5539,7 +5546,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.READ).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addGenerationStamp(LockType.WRITE);
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -5569,7 +5576,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public void setUp() throws StorageException {
         Block b = block.getLocalBlock();
-        inodeIdentifier = INodeUtil.resolveINodeFromBlockId(b);
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
     };
     return (LocatedBlock) updateBlockForPipelineHandler.handle(this);
@@ -5592,7 +5599,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public void setUp() throws StorageException {
           Block b = oldBlock.getLocalBlock();
-          inodeIdentifier = INodeUtil.resolveINodeFromBlockId(b);
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
         }
 
           @Override
@@ -5600,7 +5607,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.WRITE).
-                    addBlock(oldBlock.getBlockId()).
+                    addBlock(oldBlock.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                     addReplicaUc().
                     addLease(LockType.READ).
                     addLeasePath(LockType.READ);
@@ -5816,7 +5823,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           Block blk = (Block) getParams()[0];
           preTxResolvedInodes.clear();
           isPreTxPathFullyResolved[0] = false;
-          INodeUtil.findPathINodesById(INodeUtil.findINodeIdByBlockId(blk.getBlockId()), preTxResolvedInodes, isPreTxPathFullyResolved);
+          INodeUtil.findPathINodesById(INodeUtil.resolveINodeFromBlock(blk).getInodeId(), preTxResolvedInodes, isPreTxPathFullyResolved);
         }
 
         @Override
@@ -5825,7 +5832,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
                   addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
-                  addBlock(blk.getBlockId()).
+                  addBlock(blk.getBlockId(), INode.INVALID_PART_KEY).
                   addReplica().
                   addCorrupt().
                   addExcess();

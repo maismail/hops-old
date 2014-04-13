@@ -158,7 +158,7 @@ public class BlockInfo extends Block {
     //of the block is lying around is some secondary data structure ( not block_info )
     //if we call get block collection op of that copy then it should return null
 
-    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId);
+    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId, partKey);
     this.bc = bc; 
     if(bc == null){
       this.inodeId = INode.NON_EXISTING_ID;

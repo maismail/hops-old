@@ -42,6 +42,8 @@ import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -51,6 +53,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 public class TestOverReplicatedBlocks {
   /** Test processOverReplicatedBlock can handle corrupt replicas fine.
@@ -122,7 +125,7 @@ public class TestOverReplicatedBlocks {
             public TransactionLocks acquireLock() throws PersistanceException, IOException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
-                      addBlock(block.getBlockId()).
+                      addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                       addReplica().
                       addExcess().
                       addCorrupt();
@@ -136,6 +139,12 @@ public class TestOverReplicatedBlocks {
               assertEquals(1, bm.countNodes(block.getLocalBlock()).liveReplicas());
               return null;
             }
+            INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        }
+            
           }.handle(namesystem);
          
         }
@@ -244,7 +253,7 @@ public class TestOverReplicatedBlocks {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(block.getBlockId()).
+                  addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addExcess().
                   addCorrupt();
@@ -257,6 +266,11 @@ public class TestOverReplicatedBlocks {
                   .countNodes(block.getLocalBlock()).liveReplicas());
           return null;
         }
+        INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        } 
       }.handle(namesystem);
        
     } finally {

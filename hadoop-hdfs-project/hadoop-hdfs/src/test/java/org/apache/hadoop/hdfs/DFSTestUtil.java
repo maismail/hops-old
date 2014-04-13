@@ -96,6 +96,9 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.lock.INodeUtil;
 /** Utilities for HDFS tests */
 public class DFSTestUtil {
   static final Log LOG = LogFactory.getLog(DFSTestUtil.class);
@@ -357,7 +360,7 @@ public class DFSTestUtil {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addCorrupt();
         return tla.acquire();
       }
@@ -366,6 +369,12 @@ public class DFSTestUtil {
       public Object performTask() throws PersistanceException, IOException {
         return ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(b.getLocalBlock());
+        }
     };
     int repls = (Integer) corruptReplicasHandler.handle(ns);
     while (repls != corruptRepls && count < ATTEMPTS) {

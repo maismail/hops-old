@@ -3,6 +3,9 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -11,6 +14,8 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.Logger;
+import static se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds.INodePKChanged;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -85,22 +90,28 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ById:
         long id = (Long) params[0];
-        int  partKey = (Integer) params[1];
+        Integer  partKey =  null;
+        if(params.length > 1 && params[1] != null){
+          partKey = (Integer) params[1];
+        }
         result = blocks.get(id);
         if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
                                                          // some test intentionally look for blocks that are not in the DB
                                                          // duing the acquire lock phase if we see that an id does not
                                                          // exist in the db then we should put null in the cache for that id
 
-          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"part_key", Integer.toString(partKey)});
+          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           aboutToAccessStorage();
+          if(partKey == null){
+            throw new NullPointerException("Part Key is not set");
+          }
           result = dataAccess.findById(id,partKey);
           if (result == null) {
             nullCount++;
           }
           blocks.put(id, result);
         } else {
-          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"part_key", Integer.toString(partKey)});
+          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
         }
         return result;
       case MAX_BLK_INDX:
@@ -293,6 +304,55 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
-
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+        //delete the previous row from db
+        INode inode  = (INode) params[0];
+        Boolean bool = (Boolean) params[1];
+        updateBlocks(inode, bool);
+        break;
+    }
   }
+  
+  private void updateBlocks(INode inode, Boolean bool) throws PersistanceException {
+    // when you overwrite a file the dst file blocks are removed
+    // removedBlocks list may not be empty
+    if (!newBlocks.isEmpty() || !modifiedBlocks.isEmpty()) {//incase of move and rename the blocks should not have been modified in any way
+        throw new StorageException("Renaming a file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
+      }
+    
+    if (inode instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed or moved. 
+        
+      
+      if (bool == false) { //file name was changed. partKey has to be changed in the blocks of the src file
+        for (BlockInfo bInfo : blocks.values()) {
+          if (bInfo.getInodeId() == inode.getId()) {
+            BlockInfo removedBlk = cloneBlock(bInfo);
+            removedBlocks.put(removedBlk.getBlockId(), removedBlk);
+
+            bInfo.setPartKey(x);
+            modifiedBlocks.put(bInfo.getBlockId(), bInfo);
+          }
+        }
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(), "pid", Integer.toString(inode.getParentId())});
+      }
+    }
+  }
+  
+  
+  private BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
+    if(block instanceof BlockInfo){
+      return new BlockInfo(block);
+    }
+    else if(block instanceof  BlockInfoUnderConstruction){
+      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block);
+    }else{
+      throw new StorageException("Unable to create a clone of the Block");
+    }
+  }
+  
+  
+  
+  
 }

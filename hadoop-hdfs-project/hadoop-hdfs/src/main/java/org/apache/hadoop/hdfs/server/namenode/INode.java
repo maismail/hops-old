@@ -101,7 +101,8 @@ public abstract class INode implements Comparable<byte[]> {
   public static final int NON_EXISTING_ID = 0;
   protected int id = NON_EXISTING_ID;
   protected int parentId = NON_EXISTING_ID;
-  protected int part_key = -1;
+  public static final int INVALID_PART_KEY = Integer.MIN_VALUE;
+  protected int part_key = INVALID_PART_KEY;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -659,12 +660,13 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
   public static int getPartitionKey(String strName){
-    if(strName == null || strName.equals("") || strName.isEmpty() ){
-      return 0;
-    }
-    else{
-      return strName.hashCode();
-    }
+//    if(strName == null || strName.equals("") || strName.isEmpty() ){
+//      return 0;
+//    }
+//    else{
+//      return Math.abs(strName.hashCode());
+//    }
+    return 0;
   }
   
   public static int getPartitionKey(byte[] name){

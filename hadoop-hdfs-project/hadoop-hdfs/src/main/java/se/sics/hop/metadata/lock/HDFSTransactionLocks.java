@@ -25,7 +25,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private boolean preTxPathFullyResolved;
   //block
   private LockType blockLock = null;
-  private Long blockParam = null;
+  private Long blockID = null; //block id
+  private Integer  blockPartKey = null;
   // lease
   private LockType leaseLock = null;
   private String leaseParam = null;
@@ -113,14 +114,15 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return addINode(resolveType, lock, true, null);
   }
 
-  public HDFSTransactionLocks addBlock(Long param) {
+  public HDFSTransactionLocks addBlock(Long param, Integer partKey) {
     this.blockLock = LockType.READ_COMMITTED;
-    this.blockParam = param;
+    this.blockID = param;
+    this.blockPartKey = partKey;
     return this;
   }
 
   public HDFSTransactionLocks addBlock() {
-    addBlock(null);
+    addBlock(null,null);
     return this;
   }
 
@@ -233,8 +235,12 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return blockLock;
   }
 
-  public Long getBlockParam() {
-    return blockParam;
+  public Long getBlockID() {
+    return blockID;
+  }
+  
+  public Integer getBlockPartKey(){
+    return blockPartKey;
   }
 
   public LockType getLeaseLock() {

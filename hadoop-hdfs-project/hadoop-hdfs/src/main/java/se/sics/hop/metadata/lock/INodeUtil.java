@@ -193,29 +193,29 @@ public class INodeUtil {
 //      }
 //    return inode;
 //  }
-  public static int findINodeIdByBlockId(final long blockId) throws StorageException {
-    LOG.debug(String.format(
-            "About to read block with no transaction by bid=%d",
-            blockId));
-      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-              BlockInfo bInfo = bda.findById(blockId);
-              return bInfo;
-          }
-      };
-    BlockInfo bInfo;
-      try {
-          bInfo = (BlockInfo)handler.handle();
-      } catch (IOException ex) {
-          throw new StorageException(ex.getMessage());
-      }
-    if (bInfo == null) {
-      return INode.NON_EXISTING_ID;
-    }
-    return bInfo.getInodeId();
-  }
+//  public static int findINodeIdByBlockId(final long blockId) throws StorageException {
+//    LOG.debug(String.format(
+//            "About to read block with no transaction by bid=%d",
+//            blockId));
+//      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+//          @Override
+//          public Object performTask() throws PersistanceException, IOException {
+//              BlockInfoDataAccess<BlockInfo> bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+//              BlockInfo bInfo = bda.findById(blockId);
+//              return bInfo;
+//          }
+//      };
+//    BlockInfo bInfo;
+//      try {
+//          bInfo = (BlockInfo)handler.handle();
+//      } catch (IOException ex) {
+//          throw new StorageException(ex.getMessage());
+//      }
+//    if (bInfo == null) {
+//      return INode.NON_EXISTING_ID;
+//    }
+//    return bInfo.getInodeId();
+//  }
 
   public static void findPathINodesById(int inodeId,LinkedList<INode> preTxResolvedINodes,boolean[] isPreTxPathFullyResolved) throws PersistanceException {
     if (inodeId != INode.NON_EXISTING_ID) {
@@ -283,17 +283,14 @@ public class INodeUtil {
     }
   }
   
-  public static INodeIdentifier resolveINodeFromBlockId(final Block b) throws StorageException{
-    INodeIdentifier inodeIdentifier;
-    if (b instanceof BlockInfo) {
-      inodeIdentifier = new INodeIdentifier(((BlockInfo) b).getInodeId(), ((BlockInfo) b).getPartKey());
-    } else {
-      LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+  public static INodeIdentifier resolveINodeFromBlockID(final long bid) throws StorageException{
+    INodeIdentifier inodeIdentifier = null;
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           
-          BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-          HopBlockLookUp blu = da.findByBlockId(b.getBlockId());
+          BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockLookUpDataAccess.class);
+          HopBlockLookUp blu = da.findByBlockId(bid);
           if (blu == null) {
             return null;
           }
@@ -305,7 +302,15 @@ public class INodeUtil {
       } catch (IOException ex) {
         throw new StorageException(ex.getMessage());
       }
+      return inodeIdentifier;
+  }
+  
+  
+  public static INodeIdentifier resolveINodeFromBlock(final Block b) throws StorageException{
+    if (b instanceof BlockInfo) {
+      return new INodeIdentifier(((BlockInfo) b).getInodeId(), ((BlockInfo) b).getPartKey());
+    } else {
+      return resolveINodeFromBlockID(b.getBlockId());
     }
-    return inodeIdentifier;
   }
 }

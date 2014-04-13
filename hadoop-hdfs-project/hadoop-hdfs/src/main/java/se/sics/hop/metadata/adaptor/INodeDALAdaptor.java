@@ -49,8 +49,13 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     }
 
     @Override
-    public INode pruneIndexScanfindInodeById(int inodeId, int partKey) throws StorageException {
-      return convertDALtoHDFS(dataAccess.pruneIndexScanfindInodeById(inodeId, partKey));
+    public INode pruneIndexScanByInodeId(int inodeId, int partKey) throws StorageException {
+      return convertDALtoHDFS(dataAccess.pruneIndexScanByInodeId(inodeId, partKey));
+    }
+    
+    @Override
+    public INode indexScanfindInodeById(int inodeId) throws StorageException {
+      return convertDALtoHDFS(dataAccess.indexScanfindInodeById(inodeId));
     }
 
     @Override

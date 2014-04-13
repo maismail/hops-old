@@ -160,7 +160,7 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   }
 
   public static INodeDirectoryWithQuota getRootDir() throws PersistanceException {
-    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByINodeID, ROOT_ID);
+    return (INodeDirectoryWithQuota) EntityManager.find(INode.Finder.ByINodeID, ROOT_ID, INode.getPartitionKey(ROOT_NAME));
   }
   
   public INodeAttributes getINodeAttributes() throws PersistanceException{
