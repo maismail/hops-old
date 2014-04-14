@@ -1359,6 +1359,46 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (LocatedBlocks) getBlockLocationsHandler.handle(this);
   }
 
+  LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
+      FileNotFoundException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(
+          HDFSOperationType.GET_BLOCK_LOCATIONS) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks();
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LocatedBlocks blocks = new LocatedBlocks();
+        return blocks;
+      }
+    };
+    return (LocatedBlocks) getBlockLocationsHandler.handle(this);
+  }
+
+  LocatedBlock getLocatedBlockForRepair(final String clientMachine, String filePath, final ExtendedBlock block)
+        throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(
+          HDFSOperationType.GET_BLOCK_LOCATIONS) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks();
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LocatedBlock block = new LocatedBlock(null, null);
+        return block;
+      }
+    };
+    return (LocatedBlock) getBlockLocationsHandler.handle(this);
+  }
+
   /**
    * Get block locations within the specified range.
    * @see ClientProtocol#getBlockLocations(String, long, long)

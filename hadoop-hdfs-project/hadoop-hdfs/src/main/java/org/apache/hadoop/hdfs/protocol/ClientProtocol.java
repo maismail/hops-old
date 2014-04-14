@@ -118,6 +118,14 @@ public interface ClientProtocol {
       throws AccessControlException, FileNotFoundException,
       UnresolvedLinkException, IOException;
 
+  public LocatedBlocks getMissingBlockLocations(String filePath)
+      throws AccessControlException, FileNotFoundException,
+      UnresolvedLinkException, IOException;
+
+  public LocatedBlock getLocatedBlockForRepair(String filePath, ExtendedBlock block)
+      throws AccessControlException, FileNotFoundException,
+      UnresolvedLinkException, IOException;
+
   /**
    * Get server default values for a number of configuration params.
    * @return a set of server default configuration values

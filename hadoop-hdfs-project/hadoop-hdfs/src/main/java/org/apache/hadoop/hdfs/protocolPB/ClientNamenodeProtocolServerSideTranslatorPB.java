@@ -254,6 +254,42 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
+  public ClientNamenodeProtocolProtos.GetMissingBlockLocationsResponseProto getMissingBlockLocations(
+      RpcController controller, ClientNamenodeProtocolProtos.GetMissingBlockLocationsRequestProto req)
+      throws ServiceException {
+    try {
+      LocatedBlocks b = server.getMissingBlockLocations(req.getFilePath());
+      ClientNamenodeProtocolProtos.GetMissingBlockLocationsResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetMissingBlockLocationsResponseProto
+          .newBuilder();
+      if (b != null) {
+        builder.setLocations(PBHelper.convert(b)).build();
+      }
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public ClientNamenodeProtocolProtos.GetLocatedBlockForRepairResponseProto getLocatedBlockForRepair(
+      RpcController controller, ClientNamenodeProtocolProtos.GetLocatedBlockForRepairRequestProto req)
+      throws ServiceException {
+    try {
+      LocatedBlock b = server.getLocatedBlockForRepair(req.getFilePath(), PBHelper.convert(req.getBlock()));
+      ClientNamenodeProtocolProtos.GetLocatedBlockForRepairResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetLocatedBlockForRepairResponseProto
+              .newBuilder();
+      if (b != null) {
+        builder.setLocations(PBHelper.convert(b)).build();
+      }
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
   public GetServerDefaultsResponseProto getServerDefaults(
       RpcController controller, GetServerDefaultsRequestProto req)
       throws ServiceException {

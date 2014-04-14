@@ -1,9 +1,7 @@
 package se.sics.hop.erasure_coding;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 
 public abstract class BlockRepairManager extends ConfiguredExecutionResultCallbackCaller implements Stoppable {
 
@@ -17,6 +15,6 @@ public abstract class BlockRepairManager extends ConfiguredExecutionResultCallba
     super(conf, callback);
   }
 
-  public abstract void repairSourceBlocks(Codec codec, FileStatus sourceFile, FileStatus parityFile, LocatedBlocks missingBlocks);
-  public abstract void repairParityBlocks(Codec codec, FileStatus sourceFile, FileStatus parityFile, LocatedBlocks missingBlocks);
+  public abstract void repairSourceBlocks(String codecId, FileStatus sourceFile, FileStatus parityFile);
+  public abstract void repairParityBlocks(String codecId, FileStatus sourceFile, FileStatus parityFile);
 }
