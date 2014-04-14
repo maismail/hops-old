@@ -303,6 +303,19 @@
   
   <profiles>
     <profile>
+      <id>test</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>se.sics.hop.metadata</groupId>
+          <artifactId>hop-metadata-dal-impl-ndb</artifactId>
+          <version>1.0-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>src</id>
       <activation>
         <activeByDefault>false</activeByDefault>
