@@ -284,10 +284,10 @@ public class INodeContext extends EntityContext<INode> {
     switch (hopCmds){
       case INodePKChanged:
         //delete the previous row from db
-        INode inode = (INode) params[0];
-        Boolean isRenamed = (Boolean)params[1];
-        removedInodes.put(inode.getId(),inode);
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(), "pid", Integer.toString(inode.getParentId()) });
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
         break;
     }
   }

@@ -1182,7 +1182,7 @@ public class TestFileCreation {
     Configuration conf = new HdfsConfiguration();
    final int BYTES_PER_CHECKSUM = 1;
    final int PACKET_SIZE = BYTES_PER_CHECKSUM;
-   final int BLOCK_SIZE = 2*PACKET_SIZE;
+   final int BLOCK_SIZE = 1*PACKET_SIZE;
     conf.setInt(DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_KEY, BYTES_PER_CHECKSUM);
     conf.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, BLOCK_SIZE);
     conf.setInt(DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_KEY, PACKET_SIZE);
@@ -1192,31 +1192,34 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p = new Path("/f1");
-      //Path p1 = new Path("/f2"); 
+      Path p1 = new Path("/f1");
+      Path p2 = new Path("/f2"); 
       
-      FSDataOutputStream out = dfs.create(p);
+      int blocks  = 1;
+      FSDataOutputStream out = dfs.create(p1);
       int i = 0;
-      for (; i < 20; i++) {
+      for (; i < blocks; i++) {
         out.write(i);
       }
-        
+      out.close();  
 
-      //out = fs.create(p1);
-      //out.close();
+      out = dfs.create(p2);
+      //i = 0;
+      for (; i < blocks*2; i++) {
+        out.write(i);
+      }
+      out.close();  
       
-     // dfs.rename(p, p1);
-      out.close();
-      
-      dfs.delete(p);
-      
-      //cluster.restartNameNode();
+      dfs.concat(p1, new Path[]{p2});
+ 
+      System.exit(0);
+      cluster.restartNameNode();
 
       //verify
-//      FSDataInputStream in = fs.open(np);
-//      for (i = 0; i < 100; i++) {
-//        assertEquals(i, in.read());
-//      }
+      FSDataInputStream in = fs.open(p1);
+      for (i = 0; i < blocks*2; i++) {
+        assertEquals(i, in.read());
+      }
     } catch (Exception e) {
       e.printStackTrace();
     } finally {

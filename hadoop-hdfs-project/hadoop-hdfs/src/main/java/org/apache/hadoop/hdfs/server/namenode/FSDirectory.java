@@ -630,7 +630,8 @@ public class FSDirectory implements Closeable {
         // update moved leases with new filename
         getFSNamesystem().unprotectedChangeLease(src, dst);        
         //HOP_START_CODE
-        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, srcClone.getLocalName().equals(srcChildName)/*true if the file is renamed*/);
+        
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
         //HOP_END_CODE
         return true;
       }
@@ -804,7 +805,7 @@ public class FSDirectory implements Closeable {
           getFSNamesystem().removePathAndBlocks(src, collectedBlocks);
         }
         //HOP_START_CODE
-        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, srcClone.getLocalName().equals(srcChildName));
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
         //HOP_END_CODE
         return filesDeleted >0;
       }

@@ -308,34 +308,34 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (hopCmds) {
       case INodePKChanged:
         //delete the previous row from db
-        INode inode  = (INode) params[0];
-        Boolean bool = (Boolean) params[1];
-        updateBlocks(inode, bool);
+        INode inodeBeforeChange  = (INode) params[0];
+        INode inodeAfterChange   = (INode) params[1];
+        updateBlocks(inodeBeforeChange, inodeAfterChange);
         break;
     }
   }
   
-  private void updateBlocks(INode inode, Boolean bool) throws PersistanceException {
+  private void updateBlocks(INode inodeBeforeChange, INode inodeAfterChange) throws PersistanceException {
     // when you overwrite a file the dst file blocks are removed
     // removedBlocks list may not be empty
     if (!newBlocks.isEmpty() || !modifiedBlocks.isEmpty()) {//incase of move and rename the blocks should not have been modified in any way
         throw new StorageException("Renaming a file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
       }
     
-    if (inode instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed or moved. 
+    if (inodeBeforeChange instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed or moved. 
         
       
-      if (bool == false) { //file name was changed. partKey has to be changed in the blocks of the src file
+      if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) { //file name was changed. partKey has to be changed in the blocks of the src file
         for (BlockInfo bInfo : blocks.values()) {
-          if (bInfo.getInodeId() == inode.getId()) {
+          if (bInfo.getInodeId() == inodeBeforeChange.getId()) {
             BlockInfo removedBlk = cloneBlock(bInfo);
             removedBlocks.put(removedBlk.getBlockId(), removedBlk);
 
-            bInfo.setPartKey(x);
+            bInfo.setPartKeyNoPersistance(inodeAfterChange.getPartKey());
             modifiedBlocks.put(bInfo.getBlockId(), bInfo);
           }
         }
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(), "pid", Integer.toString(inode.getParentId())});
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId())});
       }
     }
   }
