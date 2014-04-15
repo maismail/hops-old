@@ -1212,7 +1212,7 @@ public class TestFileCreation {
       
       dfs.concat(p1, new Path[]{p2});
  
-      System.exit(0);
+      
       cluster.restartNameNode();
 
       //verify
