@@ -15,5 +15,5 @@ public abstract class EncodingManager extends ConfiguredExecutionResultCallbackC
     super(conf, callback);
   }
 
-  public abstract void encodeFile(String codecId, FileStatus sourceFile, FileStatus parityFile);
+  public abstract void encodeFile(String codecId, FileStatus sourceFile, String parityFilePath);
 }

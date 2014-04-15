@@ -114,7 +114,7 @@ class PolicyInfo implements Writable {
    */
   public void setSrcPath(String in) throws IOException {
     srcPath = new Path(in);
-    srcPath = srcPath.makeQualified(srcPath.getFileSystem(conf));
+//    srcPath = srcPath.makeQualified(srcPath.getFileSystem(conf));
   }
 
   /**
