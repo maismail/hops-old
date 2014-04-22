@@ -846,11 +846,13 @@ public class TestReplicationPolicy {
       // Adding QUEUE_WITH_CORRUPT_BLOCKS block
       add(underReplicatedBlocks, new Block(blockID++), 0, 0, 3);
     }
+   
 
     // Choose 6 blocks from UnderReplicatedBlocks. Then it should pick 5 blocks
     // from
     // QUEUE_HIGHEST_PRIORITY and 1 block from QUEUE_VERY_UNDER_REPLICATED.
     List<List<Block>> chosenBlocks = underReplicatedBlocks.chooseUnderReplicatedBlocks(6);
+
     assertTheChosenBlocks(chosenBlocks, 5, 1, 0, 0, 0);
 
     // Choose 10 blocks from UnderReplicatedBlocks. Then it should pick 4 blocks from
@@ -1000,14 +1002,18 @@ public class TestReplicationPolicy {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addUnderReplicatedBlock();
         return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EntityManager.add(new BlockInfo(block));
+        EntityManager.add(new BlockInfo(block,
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY));
         return queue.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
       INodeIdentifier inodeIdentifier;

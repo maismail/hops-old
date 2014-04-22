@@ -12,6 +12,7 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
@@ -307,7 +308,7 @@ public class INodeUtil {
   
   
   public static INodeIdentifier resolveINodeFromBlock(final Block b) throws StorageException{
-    if (b instanceof BlockInfo) {
+    if (b instanceof BlockInfo || b instanceof BlockInfoUnderConstruction) {
       return new INodeIdentifier(((BlockInfo) b).getInodeId(), ((BlockInfo) b).getPartKey());
     } else {
       return resolveINodeFromBlockID(b.getBlockId());

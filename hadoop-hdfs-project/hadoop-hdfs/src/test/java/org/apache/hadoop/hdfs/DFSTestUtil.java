@@ -360,7 +360,9 @@ public class DFSTestUtil {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addCorrupt();
         return tla.acquire();
       }

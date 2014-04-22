@@ -1032,7 +1032,9 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(blk.getBlockId(), inodeIdentifier.getPartKey()).
+                addBlock(blk.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -1671,7 +1673,9 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess();
@@ -1738,7 +1742,9 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -1790,7 +1796,9 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -1886,7 +1894,9 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(iblk.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(iblk.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -2074,7 +2084,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rbi.getBlock().getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(rbi.getBlock().getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess().
@@ -2438,7 +2450,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addInvalidatedBlock().
                 addReplica().
                 addCorrupt().
@@ -2784,7 +2798,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
-                addBlock(block.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addInvalidatedBlock();
         return tla.acquireByBlock(inodeIdentifier);
@@ -2877,7 +2893,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rdbi.getBlock().getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(rdbi.getBlock().getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3060,7 +3078,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(block.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3121,7 +3141,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(block.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3550,7 +3572,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3582,7 +3606,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3658,7 +3684,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(timedOutItem.getBlockId(), inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(timedOutItem.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica().
                 addExcess().
                 addCorrupt().

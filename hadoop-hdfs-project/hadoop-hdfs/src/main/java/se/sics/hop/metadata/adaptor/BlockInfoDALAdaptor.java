@@ -91,12 +91,12 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     BlockInfo blockInfo = null;
 
     if (dalClass.getBlockUCState() > 0) { //UNDER_CONSTRUCTION, UNDER_RECOVERY, COMMITED
-      blockInfo = new BlockInfoUnderConstruction(b);
+      blockInfo = new BlockInfoUnderConstruction(b, dalClass.getInodeId(), dalClass.getPartKey());
       ((BlockInfoUnderConstruction) blockInfo).setBlockUCStateNoPersistance(HdfsServerConstants.BlockUCState.values()[dalClass.getBlockUCState()]);
       ((BlockInfoUnderConstruction) blockInfo).setPrimaryNodeIndexNoPersistance(dalClass.getPrimaryNodeIndex());
       ((BlockInfoUnderConstruction) blockInfo).setBlockRecoveryIdNoPersistance(dalClass.getBlockRecoveryId());
     } else if (dalClass.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal()) {
-      blockInfo = new BlockInfo(b);
+      blockInfo = new BlockInfo(b, dalClass.getInodeId(), dalClass.getPartKey());
     }
 
     blockInfo.setINodeIdNoPersistance(dalClass.getInodeId());

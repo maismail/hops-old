@@ -151,7 +151,9 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
+        tla.getLocks().addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
                 .addCorrupt();
         return tla.acquire();
                 
@@ -177,7 +179,9 @@ public class TestCorruptReplicaInfo {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
+        tla.getLocks().addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
                 .addCorrupt();
         return tla.acquire();
       }

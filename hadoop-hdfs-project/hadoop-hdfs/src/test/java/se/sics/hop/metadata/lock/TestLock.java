@@ -226,16 +226,17 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 
     
      //............... Blocks ...............................................
-    BlockInfo block = new BlockInfo(new BlockInfoUnderConstruction(new Block(1, 1, 1)));
+    BlockInfo block = new BlockInfo();
     block.setINodeIdNoPersistance(file1.getId());
+    block.setPartKeyNoPersistance(INode.INVALID_PART_KEY);
     List<BlockInfo> newBlocks = new LinkedList<BlockInfo>();
     newBlocks.add(block);
 
     //............... Replicas ...............................................
     List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
-    replicas.add(new HopIndexedReplica(1, 1, 1));
-    replicas.add(new HopIndexedReplica(1, 1, 2));
-    replicas.add(new HopIndexedReplica(1, 1, 3));
+    replicas.add(new HopIndexedReplica(1, 1, 1, 1, 1));
+    replicas.add(new HopIndexedReplica(1, 1, 2, 1, 2));
+    replicas.add(new HopIndexedReplica(1, 1, 3, 1, 3));
     
     //............... Pending Replicas ...............................................
     List<PendingBlockInfo> pendingList = new LinkedList<PendingBlockInfo>();
@@ -252,7 +253,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
     //............... Replica Under Construction ...............................................
     List<ReplicaUnderConstruction> replicasUC = new LinkedList<ReplicaUnderConstruction>();
     
-    replicasUC.add(new ReplicaUnderConstruction(ReplicaState.FINALIZED, 1, 1, 1));
+    replicasUC.add(new ReplicaUnderConstruction(ReplicaState.FINALIZED, 1, 1, 1, 1, 1));
     
     
     //............... Excess Replica ...............................................

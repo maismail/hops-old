@@ -72,8 +72,8 @@ public class TestDatanodeDescriptor {
     
     DatanodeDescriptor dd = DFSTestUtil.getLocalDatanodeDescriptor();
     assertEquals(0, dd.numBlocks());
-    BlockInfo blk = new BlockInfo(new Block(1L));
-    BlockInfo blk1 = new BlockInfo(new Block(2L));
+    BlockInfo blk = new BlockInfo(new Block(1L), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
+    BlockInfo blk1 = new BlockInfo(new Block(2L), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
     // add first block
     assertTrue(addBlock(dd, blk));
     assertEquals(1, dd.numBlocks());
@@ -82,6 +82,7 @@ public class TestDatanodeDescriptor {
     assertEquals(1, dd.numBlocks());
     // add an existent block
     assertFalse(addBlock(dd, blk));
+    System.out.println("number of blks are " + dd.numBlocks());
     assertEquals(1, dd.numBlocks());
     // add second block
     assertTrue(addBlock(dd, blk1));
@@ -100,7 +101,9 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica();
         return tla.acquire();
       }
@@ -124,7 +127,9 @@ public class TestDatanodeDescriptor {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(blk.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addReplica();
         return tla.acquire();
       }

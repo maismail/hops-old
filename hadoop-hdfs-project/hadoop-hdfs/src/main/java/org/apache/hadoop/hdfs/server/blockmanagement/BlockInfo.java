@@ -121,17 +121,22 @@ public class BlockInfo extends Block {
   private BlockCollection bc;
   private int blockIndex = -1;  
   private long timestamp = 1;
-  protected int inodeId = INode.NON_EXISTING_ID;
-  protected int partKey = 0;
   
-  public BlockInfo(Block blk) {
+  protected int inodeId = INode.NON_EXISTING_ID;
+  protected int partKey = INode.INVALID_PART_KEY;
+  
+  public BlockInfo(Block blk, int inodeId, int partKey) {
     super(blk);
+    this.inodeId = inodeId;
+    this.partKey = partKey;
     if (blk instanceof BlockInfo) {
       this.bc = ((BlockInfo) blk).bc;
       this.blockIndex = ((BlockInfo) blk).blockIndex;
       this.timestamp = ((BlockInfo) blk).timestamp;
-      this.inodeId = ((BlockInfo) blk).inodeId;
-      this.partKey = ((BlockInfo)blk).partKey;
+      if(partKey != ((BlockInfo)blk).partKey || inodeId != ((BlockInfo) blk).inodeId)
+      {
+        throw new IllegalArgumentException("inodeId or partKey does not match");
+      }
     }
   }
   
@@ -194,7 +199,7 @@ public class BlockInfo extends Block {
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
   List<HopIndexedReplica> getReplicasNoCheck() throws PersistanceException {
-    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId());
+    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId(), getPartKey());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
     } else {
@@ -215,8 +220,8 @@ public class BlockInfo extends Block {
   /**
    * Adds new replica for this block.
    */
-  HopIndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
-    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(),/*FIXME [M]*/ getReplicasNoCheck().size());
+  HopIndexedReplica addReplica(DatanodeDescriptor dn, BlockInfo b) throws PersistanceException {
+    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(), b.getInodeId(), b.getPartKey(), getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
@@ -303,7 +308,7 @@ public class BlockInfo extends Block {
   public BlockInfoUnderConstruction convertToBlockUnderConstruction(
           BlockUCState s, DatanodeDescriptor[] targets) throws PersistanceException {
     if (isComplete()) {
-      return new BlockInfoUnderConstruction(this, s, targets);
+      return new BlockInfoUnderConstruction(this, this.getInodeId(), this.getPartKey(), s, targets);
     }
     // the block is already under construction
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) this;

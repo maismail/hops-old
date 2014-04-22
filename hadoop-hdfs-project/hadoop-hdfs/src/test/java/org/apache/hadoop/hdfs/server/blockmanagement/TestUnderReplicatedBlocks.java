@@ -75,7 +75,9 @@ public class TestUnderReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
-                  addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  addBlock(b.getBlockId(),
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);
@@ -114,7 +116,9 @@ public class TestUnderReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
-                  addBlock(b.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  addBlock(b.getBlockId(),
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);

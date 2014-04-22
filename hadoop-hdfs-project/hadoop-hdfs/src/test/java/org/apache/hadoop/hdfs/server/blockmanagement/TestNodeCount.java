@@ -113,7 +113,9 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  addBlock(block.getBlockId(),
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                   addReplica().
                   addExcess();
           return tla.acquire();
@@ -209,7 +211,9 @@ public class TestNodeCount {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
            tla.getLocks().
-                   addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                   addBlock(block.getBlockId(),
+                   inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                   inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                    addReplica().
                    addExcess().
                    addCorrupt();

@@ -127,7 +127,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EntityManager.add(new BlockInfo(block));
+        EntityManager.add(new BlockInfo(block,INode.NON_EXISTING_ID,INode.INVALID_PART_KEY));
         return null;
       }
     }.handle();
@@ -143,7 +143,9 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId(),inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
+                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
                 addUnderReplicatedBlock();
         return tla.acquire();
       }

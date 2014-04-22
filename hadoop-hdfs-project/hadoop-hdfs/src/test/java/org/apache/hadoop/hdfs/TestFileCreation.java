@@ -1195,35 +1195,40 @@ public class TestFileCreation {
       Path p1 = new Path("/f1");
       Path p2 = new Path("/f2"); 
       
-      int blocks  = 1;
+      int blocks  = 2;
       FSDataOutputStream out = dfs.create(p1);
       int i = 0;
       for (; i < blocks; i++) {
         out.write(i);
       }
-      out.close();  
-
-      out = dfs.create(p2);
-      //i = 0;
-      for (; i < blocks*2; i++) {
-        out.write(i);
-      }
-      out.close();  
+      out.close();
       
-      dfs.concat(p1, new Path[]{p2});
- 
-      
-      cluster.restartNameNode();
-
-      //verify
       FSDataInputStream in = fs.open(p1);
-      for (i = 0; i < blocks*2; i++) {
+      for (i = 0; i < blocks; i++) {
         assertEquals(i, in.read());
       }
+      
+//      out = dfs.create(p2);
+//      //i = 0;
+//      for (; i < blocks*2; i++) {
+//        out.write(i);
+//      }
+//      out.close();  
+//      
+//      dfs.concat(p1, new Path[]{p2});
+// 
+//      
+//      cluster.restartNameNode();
+//
+//      //verify
+//      FSDataInputStream in = fs.open(p1);
+//      for (i = 0; i < blocks*2; i++) {
+//        assertEquals(i, in.read());
+//      }
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      cluster.shutdown();
+      //cluster.shutdown();
     }
   }
 

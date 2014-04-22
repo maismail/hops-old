@@ -615,7 +615,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock().
-                addBlock(urb.getBlockId(),urb.getPartKey());
+                addBlock(urb.getBlockId(),urb.getInodeId(), urb.getPartKey());
         return tla.acquire();
       }
       

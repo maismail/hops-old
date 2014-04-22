@@ -384,6 +384,8 @@ public class FSDirectory implements Closeable {
       BlockInfoUnderConstruction blockInfo =
         new BlockInfoUnderConstruction(
             block,
+            fileINode.getId(),
+            fileINode.getPartKey(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
       getBlockManager().addBlockCollection(blockInfo, fileINode);

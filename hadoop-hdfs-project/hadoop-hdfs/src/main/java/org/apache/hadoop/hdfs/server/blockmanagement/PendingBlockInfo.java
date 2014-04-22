@@ -64,6 +64,10 @@ public class PendingBlockInfo {
   public int getPartKey(){
     return 0;
   }
+  
+  public int getInodeId(){
+    return 0;
+  }
 
   /**
    * @param blockId the blockId to set

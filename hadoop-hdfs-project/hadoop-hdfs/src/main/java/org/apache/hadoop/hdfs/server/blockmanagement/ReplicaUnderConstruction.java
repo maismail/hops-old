@@ -18,7 +18,7 @@ public class ReplicaUnderConstruction extends HopIndexedReplica {
 
   public static enum Finder implements FinderType<ReplicaUnderConstruction> {
 
-    ByBlockId;
+    ByBlockId, ByINodeId;
 
     @Override
     public Class getType() {
@@ -42,8 +42,8 @@ public class ReplicaUnderConstruction extends HopIndexedReplica {
   }
   HdfsServerConstants.ReplicaState state;
 
-  public ReplicaUnderConstruction(ReplicaState state, int storageId, long blockId, int index) {
-    super(blockId, storageId, index);
+  public ReplicaUnderConstruction(ReplicaState state, int storageId, long blockId, int inodeId, int partKey, int index) {
+    super(blockId, storageId, inodeId, partKey, index);
     this.state = state;
   }
 

@@ -54,16 +54,16 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * Create block and set its state to {@link BlockUCState#UNDER_CONSTRUCTION}.
    */
   //HOP: remove the replication we don't need it anymore
-  public BlockInfoUnderConstruction(Block blk) {
-    this(blk, BlockUCState.UNDER_CONSTRUCTION);
+  public BlockInfoUnderConstruction(Block blk, int inodeId, int partKey) {
+    this(blk, inodeId, partKey, BlockUCState.UNDER_CONSTRUCTION);
   }
 
   //HOP:
   /**
    * Create a block that is currently being constructed.
    */
-  public BlockInfoUnderConstruction(Block blk, BlockUCState state) {
-    super(blk);
+  private BlockInfoUnderConstruction(Block blk, int inodeId, int partKey, BlockUCState state) {
+    super(blk, inodeId, partKey);
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "BlockInfoUnderConstruction cannot be in COMPLETE state";
     this.blockUCState = state;
@@ -73,9 +73,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   /**
    * Create a block that is currently being constructed.
    */
-  public BlockInfoUnderConstruction(Block blk, BlockUCState state,
+  public BlockInfoUnderConstruction(Block blk, int inodeId, int partKey, BlockUCState state,
           DatanodeDescriptor[] targets) throws PersistanceException {
-    this(blk, state);
+    this(blk, inodeId, partKey, state);
     setExpectedLocations(targets);
   }
 
@@ -244,7 +244,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   }
 
   private List<ReplicaUnderConstruction> getExpectedReplicas() throws PersistanceException {
-    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId());
+    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId(), getPartKey(), getInodeId());
     if (replicas != null) {
       Collections.sort(replicas, ReplicaUnderConstruction.Order.ByIndex);
     } else {
@@ -258,7 +258,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
       NameNode.blockStateChangeLog.warn("BLOCK* Trying to store multiple blocks of the file on one DataNode. Returning null");
       return null;
     }
-    ReplicaUnderConstruction replica = new ReplicaUnderConstruction(rState, storageId, getBlockId(), getExpectedReplicas().size());
+    ReplicaUnderConstruction replica = new ReplicaUnderConstruction(rState, storageId, getBlockId(), getInodeId(), getPartKey(), getExpectedReplicas().size());
     add(replica);
     return replica;
   }

@@ -343,10 +343,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   
   private BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
     if(block instanceof BlockInfo){
-      return new BlockInfo(block);
+      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId(),((BlockInfo)block).getPartKey());
     }
     else if(block instanceof  BlockInfoUnderConstruction){
-      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block);
+      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId(),((BlockInfoUnderConstruction)block).getPartKey());
     }else{
       throw new StorageException("Unable to create a clone of the Block");
     }
