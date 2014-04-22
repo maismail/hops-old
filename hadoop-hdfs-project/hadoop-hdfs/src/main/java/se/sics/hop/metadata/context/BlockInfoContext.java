@@ -312,6 +312,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         INode inodeAfterChange   = (INode) params[1];
         updateBlocks(inodeBeforeChange, inodeAfterChange);
         break;
+      case Concat:
+        // do nothing here
+        // the concat function addes the blocks to the inode and updates the id and partkey
+        break;
     }
   }
   

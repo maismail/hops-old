@@ -14,11 +14,32 @@
  * limitations under the License.
  */
 package se.sics.hop.metadata.context;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+
 /**
  *
  * @author salman
  */
-public enum HOPTransactionContextMaintenanceCmds implements TransactionContextMaintenanceCmds {
-    INodePKChanged, Concat;   //remove the old inode row and reinsert the row
+public class INodePK {
+
+  public int id;
+  public int partKey;
+
+  public INodePK(int id, int partKey) {
+    this.id = id;
+    this.partKey = partKey;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if(!(obj  instanceof INodePK)) {
+      return false;
+    }
+    INodePK other = (INodePK) obj;
+    if(other.id == id && other.partKey == partKey){
+      return true;
+    }
+    return false;
+  }
+  
+  
 }

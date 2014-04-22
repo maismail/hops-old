@@ -207,6 +207,45 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          //do nothing here
+        break;
+      case Concat:
+        if (newReplicas.size() != 0 || modifiedReplicas.size() != 0 || removedReplicas.size() != 0) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No replica should have been changed during the Tx");
+        }
+        INodePK trg_param = (INodePK)params[0];
+        List<INodePK> srcs_param = (List<INodePK>)params[1];
+        updateReplicas(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void updateReplicas(INodePK trg_param, List<INodePK> srcs_param){
     
+    for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
+      for(HopIndexedReplica replica : replicas){
+        INodePK pk = new INodePK(replica.getInodeID(), replica.getPartKey());
+        if(!trg_param.equals(pk) && srcs_param.contains(pk)){
+          HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);
+          HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
+          
+          removedReplicas.put(toBeDeleted, toBeDeleted);
+          
+          //both inode id and partKey has changed
+          toBeAdded.setInodeID(trg_param.id);
+          toBeAdded.setPartKey(trg_param.partKey);
+          newReplicas.put(toBeAdded, toBeAdded);
+        }
+      }
+    }
+  }
+  
+  private HopIndexedReplica cloneReplicaObj(HopIndexedReplica src){
+    return new HopIndexedReplica(src.getBlockId(), src.getStorageId(), src.getInodeID(), src.getPartKey(), src.getIndex());
   }
 }
+

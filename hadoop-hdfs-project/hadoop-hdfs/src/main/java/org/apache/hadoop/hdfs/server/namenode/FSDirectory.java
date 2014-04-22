@@ -73,6 +73,7 @@ import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.context.INodePK;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
@@ -1019,6 +1020,14 @@ public class FSDirectory implements Closeable {
     }
     trgInode.appendBlocks(allSrcInodes, totalBlocks); // copy the blocks
     
+    //HOP_START_CODE
+    //params for updating the snapshots
+    INodePK trg_param = new INodePK(trgInode.getId(),trgInode.getPartKey());
+    List<INodePK> srcs_param = new ArrayList<INodePK>();
+    for(int j = 0; j < allSrcInodes.length; j++) {
+      srcs_param.add(new INodePK(allSrcInodes[j].getId(), allSrcInodes[j].getPartKey()));
+    }
+    //END_HOP_CODE
     // since we are in the same dir - we can use same parent to remove files
     int count = 0;
     for(INodeFile nodeToRemove: allSrcInodes) {
@@ -1033,6 +1042,10 @@ public class FSDirectory implements Closeable {
     trgParent.setModificationTime(timestamp);
     // update quota on the parent directory ('count' files removed, 0 space)
     unprotectedUpdateCount(trgINodes, trgINodes.length-1, - count, 0);
+    
+    //HOP_START_CODE
+    EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.Concat, trg_param, srcs_param);
+    //HOP_END_CODE
   }
 
   /**

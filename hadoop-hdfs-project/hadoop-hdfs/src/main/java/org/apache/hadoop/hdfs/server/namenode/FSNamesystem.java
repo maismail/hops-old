@@ -1508,7 +1508,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, paths).
-                addBlock();
+                addBlock().
+                // These are added
+                addReplica().addReplicaUc().addCorrupt().addExcess().addPendingBlock().addUnderReplicatedBlock().addInvalidatedBlock();
         return tla.acquire();
       }
 
@@ -3000,7 +3002,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addBlock().
                     addReplica().
                     addReplicaUc().
-                    addInvalidatedBlock();
+                    addInvalidatedBlock().addCorrupt().addExcess().addPendingBlock().addUnderReplicatedBlock();
             return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
 
@@ -3091,7 +3093,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addReplicaUc().
                       addUnderReplicatedBlock().
                       addInvalidatedBlock().
-                      addPendingBlock();
+                      addPendingBlock().addExcess();
               return tla.acquireForRename();
             }
 

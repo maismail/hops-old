@@ -289,6 +289,9 @@ public class INodeContext extends EntityContext<INode> {
         removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
         log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
         break;
+      case Concat:
+        // do nothing
+        break;
     }
   }
 

@@ -43,6 +43,8 @@ import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.context.BlockPK;
+import se.sics.hop.metadata.context.INodePK;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.WRITE_ON_PARENT;
@@ -344,14 +346,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
              EntityManager.readCommited();
            }
            if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
-             for(INodeParam inodeParam : parallelReadParams.getInodeIds()){
+             for(INodePK inodeParam : parallelReadParams.getInodeIds()){
                if (!terminateAsyncThread) {
                  acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.id, inodeParam.partKey );
                }
              }
            }
            else if (parallelReadParams.getBlockIds() != null && !parallelReadParams.getBlockIds().isEmpty() && parallelReadParams.getBlockFinder() != null ){
-             for(BlockParam blkParam : parallelReadParams.getBlockIds()){
+             for(BlockPK blkParam : parallelReadParams.getBlockIds()){
                if (!terminateAsyncThread) {
                  acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
                }
@@ -392,7 +394,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           EntityManager.readCommited();
           }
           if(parallelReadParams.getBlockIds()!= null && !parallelReadParams.getBlockIds().isEmpty()){
-          for (BlockParam param : parallelReadParams.getBlockIds()) {
+          for (BlockPK param : parallelReadParams.getBlockIds()) {
               if(!terminateAsyncThread)
               acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getBlockFinder(), param.id);
           } }
@@ -426,7 +428,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           EntityManager.readCommited();
           }
           if(parallelReadParams.getBlockIds()!=null && !parallelReadParams.getBlockIds().isEmpty()){
-          for (BlockParam param : parallelReadParams.getBlockIds()) {
+          for (BlockPK param : parallelReadParams.getBlockIds()) {
               if(!terminateAsyncThread)
               acquireLock(LockType.READ_COMMITTED, parallelReadParams.getBlockFinder(), param.id);
             }
@@ -634,37 +636,15 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       
     }
   }
-  
-  private class INodeParam {
-      int id;
-      int partKey;
-
-      public INodeParam(int id, int partKey) {
-        this.id = id;
-        this.partKey = partKey;
-      }
-  }
-  
-  private class BlockParam {
-      long id;
-      int inodeId;
-      int partKey;
-
-      public BlockParam(long id, int inodeId, int partKey) {
-        this.id = id;
-        this.inodeId = inodeId;
-        this.partKey = partKey;
-      }
-  }
-  
+   
   private class ParallelReadParams{
-    private final List<BlockParam> blockIds;
-    private final List<INodeParam> inodeIds;
+    private final List<BlockPK> blockIds;
+    private final List<INodePK> inodeIds;
     private final FinderType blockFinder;
     private final FinderType inodeFinder;
     private final FinderType defaultFinder;
 
-    public ParallelReadParams(List<BlockParam> blockIds, FinderType blockFinder, List<INodeParam> inodeIds, FinderType inodeFinder, FinderType defFinder) {
+    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, List<INodePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
       this.blockIds = blockIds;
       this.inodeIds = inodeIds;
       this.blockFinder = blockFinder;
@@ -672,11 +652,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       this.defaultFinder = defFinder;
     }
 
-    public List<BlockParam> getBlockIds() {
+    public List<BlockPK> getBlockIds() {
       return blockIds;
     }
 
-    public List<INodeParam> getInodeIds() {
+    public List<INodePK> getInodeIds() {
       return inodeIds;
     }
 
@@ -693,15 +673,15 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
   }
   private ParallelReadParams getBlockParameters(FinderType blockFinder, FinderType inodeFinder, FinderType defaultFinder) {
-    List<INodeParam> inodesParams = new ArrayList<INodeParam>();
-    List<BlockParam> blocksParams = new ArrayList<BlockParam>();
+    List<INodePK> inodesParams = new ArrayList<INodePK>();
+    List<BlockPK> blocksParams = new ArrayList<BlockPK>();
     
     // first try to take locks based on inodes
     if (allResolvedINodes != null) {
       for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
         for (INode inode : resolvedINodes) {
           if (inode instanceof INodeFile || inode instanceof INodeFileUnderConstruction) {
-            INodeParam param = new INodeParam(inode.getId(), inode.getPartKey());
+            INodePK param = new INodePK(inode.getId(), inode.getPartKey());
             inodesParams.add(param);
           //  LOG.debug("Param inode "+param.id+" paratKey "+param.partKey);
           }
@@ -714,13 +694,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    if( inodesParams.isEmpty() ){
       if (blockResults != null && !blockResults.isEmpty()) {
         for (BlockInfo b : blockResults) {
-          blocksParams.add(new BlockParam(b.getBlockId(), b.getInodeId(), b.getPartKey()));
+          blocksParams.add(new BlockPK(b.getBlockId(), b.getInodeId(), b.getPartKey()));
          // LOG.debug("Param blk "+b.getBlockId()+" paratKey "+b.getPartKey());
         }
       } else // if blockResults is null then we can safely bring null in to cache
       {
         if (locks.getBlockID() != null) {
-          blocksParams.add(new BlockParam(locks.getBlockID(),locks.getBlockInodeId(),locks.getBlockPartKey()));
+          blocksParams.add(new BlockPK(locks.getBlockID(),locks.getBlockInodeId(),locks.getBlockPartKey()));
         }
       }      
 //    }
