@@ -170,10 +170,6 @@ message HdfsFileStatusProto {
   optional uint32 block_replication = 10 [default = 0]; // only 16bits used
   optional uint64 blocksize = 11 [default = 0];
   optional LocatedBlocksProto locations = 12;  // suppled only if asked by client
-
-
-  // Optional fields for erasure coding
-  optional int32 encoding_status = 13 [default = 0]; // status of erasure coded files
 } 
 
 /**

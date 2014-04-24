@@ -138,6 +138,7 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingResponseProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
  * This class is used on the server side. Calls come across the wire for the
@@ -912,14 +913,14 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
-  public ClientNamenodeProtocolProtos.GetCodecResponseProto getCodec(
+  public ClientNamenodeProtocolProtos.GetEncodingStatusResponseProto getCodec(
       RpcController controller,
-      ClientNamenodeProtocolProtos.GetCodecRequestProto request) throws ServiceException {
+      ClientNamenodeProtocolProtos.GetEncodingStatusRequestProto request) throws ServiceException {
     try {
-      String codec = server.getCodec(request.getPath());
-      ClientNamenodeProtocolProtos.GetCodecResponseProto.Builder builder =
-          ClientNamenodeProtocolProtos.GetCodecResponseProto.newBuilder();
-      builder.setCodec(codec);
+      EncodingStatus status = server.getEncodingStatus(request.getPath());
+      ClientNamenodeProtocolProtos.GetEncodingStatusResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetEncodingStatusResponseProto.newBuilder();
+      builder.setEncodingStatus(PBHelper.convert(status));
       return builder.build();
     } catch (IOException e) {
       throw new ServiceException(e);

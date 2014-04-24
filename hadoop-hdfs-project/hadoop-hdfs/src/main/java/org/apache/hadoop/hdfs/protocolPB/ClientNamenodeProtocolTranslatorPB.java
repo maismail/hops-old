@@ -124,6 +124,7 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingRe
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.Codec;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
  * This class forwards NN's ClientProtocol calls as RPC calls to the NN server
@@ -936,13 +937,13 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public String getCodec(String filePath) throws IOException {
+  public EncodingStatus getEncodingStatus(String filePath) throws IOException {
     try {
-      ClientNamenodeProtocolProtos.GetCodecRequestProto request =
-          ClientNamenodeProtocolProtos.GetCodecRequestProto.newBuilder()
+      ClientNamenodeProtocolProtos.GetEncodingStatusRequestProto request =
+          ClientNamenodeProtocolProtos.GetEncodingStatusRequestProto.newBuilder()
             .setPath(filePath)
             .build();
-      return rpcProxy.getCodec(null, request).getCodec();
+      return PBHelper.convert(rpcProxy.getCodec(null, request).getEncodingStatus());
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }

@@ -53,12 +53,6 @@ public class ErasureCodingService {
     Configuration.addDefaultResource("raid-site.xml");
   }
 
-  public static enum EncodingStatus {
-    NOT_ENCODED,
-    ENCODED,
-    ENCODING_REQUESTED
-  }
-
   public static enum LOGTYPES {
     ONLINE_RECONSTRUCTION,
     OFFLINE_RECONSTRUCTION,

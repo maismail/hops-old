@@ -46,6 +46,8 @@ import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.erasure_coding.ErasureCodingService;
 
 /**********************************************************************
  * ClientProtocol is used by user code via 
@@ -1024,7 +1026,7 @@ public interface ClientProtocol {
   // Erasure coding
   ///////////////////////////////////////
 
-  public String getCodec(String filePath) throws IOException;
+  public EncodingStatus getEncodingStatus(String filePath) throws IOException;
 
   public void encodeFile(String filePath, String codec) throws IOException;
 

@@ -66,6 +66,7 @@ import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.token.SecretManager.InvalidToken;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.Progressable;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 
 /****************************************************************
@@ -834,11 +835,6 @@ public class DistributedFileSystem extends FileSystem {
     }
   }
 
-  public HdfsFileStatus getHdfsFileStatus(Path f) throws IOException {
-    statistics.incrementReadOps(1);
-    return dfs.getFileInfo(getPathName(f));
-  }
-
   @Override
   public MD5MD5CRC32FileChecksum getFileChecksum(Path f) throws IOException {
     statistics.incrementReadOps(1);
@@ -971,8 +967,8 @@ public class DistributedFileSystem extends FileSystem {
     return setSafeMode(SafeModeAction.SAFEMODE_GET, true);
   }
 
-  public String getCodec(final String filePath) throws IOException {
-    return dfs.getCodec(filePath);
+  public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
+    return dfs.getEncodingStatus(filePath);
   }
 
   public void encodeFile(final String filePath, final String codec) throws IOException {

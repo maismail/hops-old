@@ -125,6 +125,7 @@ import com.google.protobuf.BlockingService;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -1151,7 +1152,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public String getCodec(String filePath) throws IOException {
+  public EncodingStatus getEncodingStatus(String filePath) throws IOException {
     // TODO Implement getCodec
     return null;
   }

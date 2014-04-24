@@ -458,12 +458,23 @@ message ActiveNamenodeListResponseProto {
   repeated ActiveNamenodeProto namenodes = 1;
 }
 
-message GetCodecRequestProto {
+message EncodingStatusProto {
+    enum StatusProto {
+        NOT_ENCODED = 0;
+        ENCODED = 1;
+        ENCODING_REQUESTED = 2;
+    }
+
+    required StatusProto status = 1;
+    optional string codec = 2;
+}
+
+message GetEncodingStatusRequestProto {
     required string path = 1;
 }
 
-message GetCodecResponseProto {
-    required string codec = 1;
+message GetEncodingStatusResponseProto {
+    required EncodingStatusProto encodingStatus = 1;
 }
 
 message EncodeFileRequestProto {
@@ -564,8 +575,8 @@ service ClientNamenodeProtocol {
   //START_HOP_CODE
   rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
   rpc ping (PingRequestProto) returns (PingResponseProto);
-  rpc getCodec(GetCodecRequestProto)
-    returns(GetCodecResponseProto);
+  rpc getCodec(GetEncodingStatusRequestProto)
+    returns(GetEncodingStatusResponseProto);
   rpc encodeFile(EncodeFileRequestProto)
     returns(EncodeFileResponseProto);
   rpc revokeEncoding(RevokeEncodingRequestProto)

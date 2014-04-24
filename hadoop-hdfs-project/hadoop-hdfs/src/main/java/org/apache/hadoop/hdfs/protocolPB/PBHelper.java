@@ -144,6 +144,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNameno
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
  * Utilities for converting protobuf classes to and from implementation classes
@@ -1394,6 +1395,47 @@ public class PBHelper {
        anlrpb.addNamenodes(anp);
     }
     return anlrpb.build();
+  }
+
+  public static EncodingStatus convert (ClientNamenodeProtocolProtos.EncodingStatusProto encodingStatusProto) {
+    EncodingStatus.Status status = convert(encodingStatusProto.getStatus());
+    String codec = encodingStatusProto.hasCodec()? encodingStatusProto.getCodec() : null;
+    return new EncodingStatus(status, codec);
+  }
+
+  public static ClientNamenodeProtocolProtos.EncodingStatusProto convert (EncodingStatus encodingStatus) {
+    ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto status = convert(encodingStatus.getStatus());
+    ClientNamenodeProtocolProtos.EncodingStatusProto.Builder builder =
+        ClientNamenodeProtocolProtos.EncodingStatusProto.newBuilder();
+    builder.setStatus(status);
+    if (encodingStatus.getCodec() != null) {
+      builder.setCodec(encodingStatus.getCodec());
+    }
+    return builder.build();
+  }
+
+  public static EncodingStatus.Status convert(ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto status) {
+    switch (status) {
+      case NOT_ENCODED:
+        return EncodingStatus.Status.NOT_ENCODED;
+      case ENCODED:
+        return EncodingStatus.Status.ENCODED;
+      case ENCODING_REQUESTED:
+        return EncodingStatus.Status.ENCODING_REQUESTED;
+    }
+    return null;
+  }
+
+  public static ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto convert(EncodingStatus.Status status) {
+    switch (status) {
+      case NOT_ENCODED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.NOT_ENCODED;
+      case ENCODED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODED;
+      case ENCODING_REQUESTED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_REQUESTED;
+    }
+    return null;
   }
 
 //HOP_CODE_END

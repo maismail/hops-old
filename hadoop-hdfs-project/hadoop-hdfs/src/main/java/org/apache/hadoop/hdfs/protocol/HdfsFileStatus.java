@@ -41,8 +41,7 @@ public class HdfsFileStatus {
   private FsPermission permission;
   private String owner;
   private String group;
-  private ErasureCodingService.EncodingStatus encodingStatus;
-  
+
   public static final byte[] EMPTY_NAME = new byte[0];
 
   /**
@@ -77,28 +76,6 @@ public class HdfsFileStatus {
     this.group = (group == null) ? "" : group;
     this.symlink = symlink;
     this.path = path;
-  }
-
-  /**
-   * Constructor
-   * @param length the number of bytes the file has
-   * @param isdir if the path is a directory
-   * @param block_replication the replication factor
-   * @param blocksize the block size
-   * @param modification_time modification time
-   * @param access_time access time
-   * @param permission permission
-   * @param owner the owner of the path
-   * @param group the group of the path
-   * @param path the local name in java UTF8 encoding the same as that in-memory
-   */
-  public HdfsFileStatus(long length, boolean isdir, int block_replication,
-                        long blocksize, long modification_time, long access_time,
-                        FsPermission permission, String owner, String group,
-                        byte[] symlink, byte[] path, ErasureCodingService.EncodingStatus encodingStatus) {
-    this(length, isdir, block_replication, blocksize, modification_time, access_time, permission, owner, group,
-        symlink, path);
-    this.encodingStatus = encodingStatus;
   }
 
   /**
@@ -246,13 +223,5 @@ public class HdfsFileStatus {
   
   final public byte[] getSymlinkInBytes() {
     return symlink;
-  }
-
-  final public ErasureCodingService.EncodingStatus getEncodingStatus() {
-    return encodingStatus;
-  }
-
-  final public boolean isEncoded() {
-    return encodingStatus == ErasureCodingService.EncodingStatus.ENCODED;
   }
 }

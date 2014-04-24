@@ -169,6 +169,7 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingStatus;
 
 /********************************************************
  * DFSClient can connect to a Hadoop Filesystem and 
@@ -2844,14 +2845,14 @@ public class DFSClient implements java.io.Closeable {
         return (Boolean) doClientActionWithRetry(handler, "complete");
     }
 
-  public String getCodec(final String filePath) throws IOException {
+  public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws IOException {
-        return namenode.getCodec(filePath);
+        return namenode.getEncodingStatus(filePath);
       }
     };
-    return (String) doClientActionWithRetry(handler, "getCodec");
+    return (EncodingStatus) doClientActionWithRetry(handler, "EncodingStatus");
   }
 
   public void encodeFile(final String filePath, final String codec) throws IOException {
