@@ -461,8 +461,10 @@ message ActiveNamenodeListResponseProto {
 message EncodingStatusProto {
     enum StatusProto {
         NOT_ENCODED = 0;
-        ENCODED = 1;
-        ENCODING_REQUESTED = 2;
+        ENCODING_REQUESTED = 1;
+        ENCODING_ACTIVE = 2;
+        ENCODED = 3;
+        REPAIR_ACTIVE = 4;
     }
 
     required StatusProto status = 1;

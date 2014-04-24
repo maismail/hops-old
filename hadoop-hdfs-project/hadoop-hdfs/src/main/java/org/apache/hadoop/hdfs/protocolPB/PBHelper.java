@@ -1418,10 +1418,14 @@ public class PBHelper {
     switch (status) {
       case NOT_ENCODED:
         return EncodingStatus.Status.NOT_ENCODED;
-      case ENCODED:
-        return EncodingStatus.Status.ENCODED;
       case ENCODING_REQUESTED:
         return EncodingStatus.Status.ENCODING_REQUESTED;
+      case ENCODING_ACTIVE:
+        return EncodingStatus.Status.ENCODING_ACTIVE;
+      case ENCODED:
+        return EncodingStatus.Status.ENCODED;
+      case REPAIR_ACTIVE:
+        return EncodingStatus.Status.REPAIR_ACTIVE;
     }
     return null;
   }
@@ -1430,10 +1434,14 @@ public class PBHelper {
     switch (status) {
       case NOT_ENCODED:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.NOT_ENCODED;
-      case ENCODED:
-        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODED;
       case ENCODING_REQUESTED:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_REQUESTED;
+      case ENCODING_ACTIVE:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_ACTIVE;
+      case ENCODED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODED;
+      case REPAIR_ACTIVE:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_ACTIVE;
     }
     return null;
   }

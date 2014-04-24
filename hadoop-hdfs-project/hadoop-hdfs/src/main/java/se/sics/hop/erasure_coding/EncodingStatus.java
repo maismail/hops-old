@@ -4,8 +4,10 @@ public class EncodingStatus {
 
   public static enum Status {
     NOT_ENCODED,
+    ENCODING_REQUESTED,
+    ENCODING_ACTIVE,
     ENCODED,
-    ENCODING_REQUESTED
+    REPAIR_ACTIVE
   }
 
   private Status status;

@@ -1153,7 +1153,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override
   public EncodingStatus getEncodingStatus(String filePath) throws IOException {
-    // TODO Implement getCodec
+    // TODO Implement getEncodingStatus
     return null;
   }
 
