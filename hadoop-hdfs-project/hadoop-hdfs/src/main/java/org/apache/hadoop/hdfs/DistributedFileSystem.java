@@ -272,6 +272,15 @@ public class DistributedFileSystem extends FileSystem {
         replication, blockSize, progress, bufferSize, checksumOpt);
     return new HdfsDataOutputStream(out, statistics);
   }
+
+  public HdfsDataOutputStream create(Path f, FsPermission permission,
+      EnumSet<CreateFlag> cflags, int bufferSize, short replication, long blockSize,
+      Progressable progress, ChecksumOpt checksumOpt, String codec) throws IOException {
+    statistics.incrementWriteOps(1);
+    final DFSOutputStream out = dfs.create(getPathName(f), permission, cflags,
+        replication, blockSize, progress, bufferSize, checksumOpt);
+    return new HdfsDataOutputStream(out, statistics);
+  }
   
   @SuppressWarnings("deprecation")
   @Override
@@ -825,6 +834,11 @@ public class DistributedFileSystem extends FileSystem {
     }
   }
 
+  public HdfsFileStatus getHdfsFileStatus(Path f) throws IOException {
+    statistics.incrementReadOps(1);
+    return dfs.getFileInfo(getPathName(f));
+  }
+
   @Override
   public MD5MD5CRC32FileChecksum getFileChecksum(Path f) throws IOException {
     statistics.incrementReadOps(1);
@@ -955,5 +969,17 @@ public class DistributedFileSystem extends FileSystem {
    */
   public boolean isInSafeMode() throws IOException {
     return setSafeMode(SafeModeAction.SAFEMODE_GET, true);
+  }
+
+  public String getCodec(final String filePath) throws IOException {
+    return dfs.getCodec(filePath);
+  }
+
+  public void encodeFile(final String filePath, final String codec) throws IOException {
+    dfs.encodeFile(filePath, codec);
+  }
+
+  public void revokeEncoding(final String filePath) throws IOException {
+    dfs.revokeEncoding(filePath);
   }
 }

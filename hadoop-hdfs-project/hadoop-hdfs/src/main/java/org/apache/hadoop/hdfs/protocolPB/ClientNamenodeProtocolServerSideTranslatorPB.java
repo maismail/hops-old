@@ -311,7 +311,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       server.create(req.getSrc(), PBHelper.convert(req.getMasked()),
           req.getClientName(), PBHelper.convert(req.getCreateFlag()),
           req.getCreateParent(), (short) req.getReplication(),
-          req.getBlockSize());
+          req.getBlockSize(), req.getCodec());
     } catch (IOException e) {
       throw new ServiceException(e);
     }
@@ -910,7 +910,50 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(ex);
     }
   }
-  
+
+  @Override
+  public ClientNamenodeProtocolProtos.GetCodecResponseProto getCodec(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.GetCodecRequestProto request) throws ServiceException {
+    try {
+      String codec = server.getCodec(request.getPath());
+      ClientNamenodeProtocolProtos.GetCodecResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetCodecResponseProto.newBuilder();
+      builder.setCodec(codec);
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public ClientNamenodeProtocolProtos.EncodeFileResponseProto encodeFile(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.EncodeFileRequestProto request) throws ServiceException {
+    try {
+      server.encodeFile(request.getPath(), request.getCodec());
+      ClientNamenodeProtocolProtos.EncodeFileResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.EncodeFileResponseProto.newBuilder();
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public ClientNamenodeProtocolProtos.RevokeEncodingResponseProto revokeEncoding(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request) throws ServiceException {
+    try {
+      server.revokeEncoding(request.getPath());
+      ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.newBuilder();
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
   @Override
   public ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto getActiveNamenodesForClient(RpcController controller, ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto request) throws ServiceException {
         try

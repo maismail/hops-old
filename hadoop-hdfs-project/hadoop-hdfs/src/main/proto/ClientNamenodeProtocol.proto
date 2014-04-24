@@ -82,6 +82,7 @@ message CreateRequestProto {
   required bool createParent = 5;
   required uint32 replication = 6; // Short: Only 16 bits used
   required uint64 blockSize = 7;
+  optional string codec = 8 [default = "none"]; // Codec used for erasure coding if required
 }
 
 message CreateResponseProto { // void response
@@ -456,6 +457,31 @@ message ActiveNamenodeListRequestProto {
 message ActiveNamenodeListResponseProto {
   repeated ActiveNamenodeProto namenodes = 1;
 }
+
+message GetCodecRequestProto {
+    required string path = 1;
+}
+
+message GetCodecResponseProto {
+    required string codec = 1;
+}
+
+message EncodeFileRequestProto {
+    required string path = 1;
+    required string codec = 2;
+}
+
+message EncodeFileResponseProto { // void response
+
+}
+
+message RevokeEncodingRequestProto {
+    required string path = 1;
+}
+
+message RevokeEncodingResponseProto { // void response
+
+}
 //END_HOP_CODE
 
 service ClientNamenodeProtocol {
@@ -538,6 +564,12 @@ service ClientNamenodeProtocol {
   //START_HOP_CODE
   rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
   rpc ping (PingRequestProto) returns (PingResponseProto);
+  rpc getCodec(GetCodecRequestProto)
+    returns(GetCodecResponseProto);
+  rpc encodeFile(EncodeFileRequestProto)
+    returns(EncodeFileResponseProto);
+  rpc revokeEncoding(RevokeEncodingRequestProto)
+    returns(RevokeEncodingResponseProto);
   //END_HOP_CODE
 
 }

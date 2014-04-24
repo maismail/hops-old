@@ -44,6 +44,7 @@ public class Codec implements Serializable {
   public static final Log LOG = LogFactory.getLog(Codec.class);
   
   public static final String ERASURE_CODE_KEY_PREFIX = "hdfs.raid.erasure.code.";
+  public static final String NO_ENCODING = "none"; // Do not change. Used as default value for protobuf.
 
   /**
    * Used by ErasureCode.init() to get Code specific extra parameters.

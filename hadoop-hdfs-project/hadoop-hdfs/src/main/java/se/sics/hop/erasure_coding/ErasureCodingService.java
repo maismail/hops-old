@@ -42,7 +42,7 @@ import java.util.Date;
 //import se.sics.hop.erasure_coding.DistBlockIntegrityMonitor.CorruptFileCounter;
 //import se.sics.hop.erasure_coding.DistBlockIntegrityMonitor.Worker;
 
-class ErasureCodingService {
+public class ErasureCodingService {
 
   static{
     Configuration.addDefaultResource("hdfs-default.xml");
@@ -51,6 +51,12 @@ class ErasureCodingService {
     Configuration.addDefaultResource("mapred-site.xml");
     Configuration.addDefaultResource("raid-default.xml");
     Configuration.addDefaultResource("raid-site.xml");
+  }
+
+  public static enum EncodingStatus {
+    NOT_ENCODED,
+    ENCODED,
+    ENCODING_REQUESTED
   }
 
   public static enum LOGTYPES {

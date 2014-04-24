@@ -2802,6 +2802,23 @@ public class DFSClient implements java.io.Closeable {
         doClientActionWithRetry(handler, "create");
     }
 
+  public void create(final String src, final FsPermission masked, final String clientName,
+      final EnumSetWritable<CreateFlag> flag, final boolean createParent,
+      final short replication, final long blockSize, final String codec) throws AccessControlException,
+        AlreadyBeingCreatedException, DSQuotaExceededException,
+        FileAlreadyExistsException, FileNotFoundException,
+        NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
+        UnresolvedLinkException, IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        namenode.create(src, masked, clientName, flag, createParent, replication, blockSize, codec);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler, "create");
+  }
+
     public void fsync(final String src, final String client, final long lastBlockLength)
             throws AccessControlException, FileNotFoundException,
             UnresolvedLinkException, IOException {
@@ -2826,5 +2843,37 @@ public class DFSClient implements java.io.Closeable {
         };
         return (Boolean) doClientActionWithRetry(handler, "complete");
     }
+
+  public String getCodec(final String filePath) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws IOException {
+        return namenode.getCodec(filePath);
+      }
+    };
+    return (String) doClientActionWithRetry(handler, "getCodec");
+  }
+
+  public void encodeFile(final String filePath, final String codec) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws IOException {
+        namenode.encodeFile(filePath, codec);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler, "encodeFile");
+  }
+
+  public void revokeEncoding(final String filePath) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws IOException {
+        namenode.revokeEncoding(filePath);
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler, "revokeEncoding");
+  }
   //END_HOP_CODE
 }

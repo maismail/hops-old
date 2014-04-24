@@ -428,9 +428,9 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override // ClientProtocol
-  public void create(String src, 
+  public void create(String src,
                      FsPermission masked,
-                     String clientName, 
+                     String clientName,
                      EnumSetWritable<CreateFlag> flag,
                      boolean createParent,
                      short replication,
@@ -438,7 +438,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
     String clientMachine = getClientMachine();
     if (stateChangeLog.isDebugEnabled()) {
       stateChangeLog.debug("*DIR* NameNode.create: file "
-                         +src+" for "+clientName+" at "+clientMachine);
+          +src+" for "+clientName+" at "+clientMachine);
     }
     if (!checkPathLength(src)) {
       throw new IOException("create: Pathname too long.  Limit "
@@ -450,6 +450,19 @@ class NameNodeRpcServer implements NamenodeProtocols {
         clientName, clientMachine, flag.get(), createParent, replication, blockSize);
     metrics.incrFilesCreated();
     metrics.incrCreateFileOps();
+  }
+
+  @Override // ClientProtocol
+  public void create(String src, 
+                     FsPermission masked,
+                     String clientName, 
+                     EnumSetWritable<CreateFlag> flag,
+                     boolean createParent,
+                     short replication,
+                     long blockSize,
+                     String codec) throws IOException {
+    create(src, masked, clientName, flag, createParent, replication, blockSize);
+    // TODO Add encoding type to database
   }
 
   @Override // ClientProtocol
@@ -1136,5 +1149,21 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
     return nn.getActiveNamenodes();
   }
-    //HOP_CODE_END
+
+  @Override
+  public String getCodec(String filePath) throws IOException {
+    // TODO Implement getCodec
+    return null;
+  }
+
+  @Override
+  public void encodeFile(String filePath, String codec) throws IOException {
+    // TODO Implement encodeFile
+  }
+
+  @Override
+  public void revokeEncoding(String filePath) throws IOException {
+    // TODO Implement revokeEncoding
+  }
+  //HOP_CODE_END
 }

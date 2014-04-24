@@ -123,6 +123,7 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingRequestProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.Codec;
 
 /**
  * This class forwards NN's ClientProtocol calls as RPC calls to the NN server
@@ -245,7 +246,18 @@ public class ClientNamenodeProtocolTranslatorPB implements
       FileAlreadyExistsException, FileNotFoundException,
       NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
       UnresolvedLinkException, IOException {
-    CreateRequestProto req = CreateRequestProto.newBuilder()
+    create(src, masked, clientName, flag, createParent, replication, blockSize, null);
+  }
+
+  @Override
+  public void create(String src, FsPermission masked, String clientName,
+      EnumSetWritable<CreateFlag> flag, boolean createParent,
+      short replication, long blockSize, String codec) throws AccessControlException,
+      AlreadyBeingCreatedException, DSQuotaExceededException,
+      FileAlreadyExistsException, FileNotFoundException,
+      NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
+      UnresolvedLinkException, IOException {
+    CreateRequestProto.Builder builder = CreateRequestProto.newBuilder()
         .setSrc(src)
         .setMasked(PBHelper.convert(masked))
         .setClientName(clientName)
@@ -253,13 +265,16 @@ public class ClientNamenodeProtocolTranslatorPB implements
         .setCreateParent(createParent)
         .setReplication(replication)
         .setBlockSize(blockSize)
-        .build();
+        .setCodec(codec);
+    if (codec != null) {
+      builder.setCodec(codec);
+    }
+    CreateRequestProto req = builder.build();
     try {
       rpcProxy.create(null, req);
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }
-
   }
 
   @Override
@@ -919,8 +934,48 @@ public class ClientNamenodeProtocolTranslatorPB implements
       throw ProtobufHelper.getRemoteException(se);
     }
   }
-  
-    private SortedActiveNamenodeList convertProtoANListToANList(ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto p) {
+
+  @Override
+  public String getCodec(String filePath) throws IOException {
+    try {
+      ClientNamenodeProtocolProtos.GetCodecRequestProto request =
+          ClientNamenodeProtocolProtos.GetCodecRequestProto.newBuilder()
+            .setPath(filePath)
+            .build();
+      return rpcProxy.getCodec(null, request).getCodec();
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
+  public void encodeFile(String filePath, String codec) throws IOException {
+    try {
+      ClientNamenodeProtocolProtos.EncodeFileRequestProto request =
+          ClientNamenodeProtocolProtos.EncodeFileRequestProto.newBuilder()
+              .setPath(filePath)
+              .setCodec(codec)
+              .build();
+      rpcProxy.encodeFile(null, request);
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
+  public void revokeEncoding(String filePath) throws IOException {
+    try {
+      ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request =
+          ClientNamenodeProtocolProtos.RevokeEncodingRequestProto.newBuilder()
+              .setPath(filePath)
+              .build();
+      rpcProxy.revokeEncoding(null, request);
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  private SortedActiveNamenodeList convertProtoANListToANList(ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto p) {
     List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
     List<ClientNamenodeProtocolProtos.ActiveNamenodeProto> anlp = p.getNamenodesList();
     for (int i = 0; i < anlp.size(); i++) {

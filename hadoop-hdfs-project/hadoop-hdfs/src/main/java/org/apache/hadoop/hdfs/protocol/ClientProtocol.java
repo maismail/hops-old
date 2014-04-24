@@ -158,6 +158,7 @@ public interface ClientProtocol {
    * @param createParent create missing parent directory if true
    * @param replication block replication factor.
    * @param blockSize maximum block size.
+   * @param codec name of the codec used for erasure coding. Use Codec.NO_ENCODING fo no encoding
    * 
    * @throws AccessControlException If access is denied
    * @throws AlreadyBeingCreatedException if the path does not exist.
@@ -179,7 +180,58 @@ public interface ClientProtocol {
    */
   public void create(String src, FsPermission masked, String clientName,
       EnumSetWritable<CreateFlag> flag, boolean createParent,
-      short replication, long blockSize) throws AccessControlException,
+      short replication, long blockSize, String codec) throws AccessControlException,
+      AlreadyBeingCreatedException, DSQuotaExceededException,
+      FileAlreadyExistsException, FileNotFoundException,
+      NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
+      UnresolvedLinkException, IOException;
+
+  /**
+   * Create a new file entry in the namespace.
+   * <p>
+   * This will create an empty file specified by the source path.
+   * The path should reflect a full path originated at the root.
+   * The name-node does not have a notion of "current" directory for a client.
+   * <p>
+   * Once created, the file is visible and available for read to other clients.
+   * Although, other clients cannot {@link #delete(String, boolean)}, re-create or
+   * {@link #rename(String, String)} it until the file is completed
+   * or explicitly as a result of lease expiration.
+   * <p>
+   * Blocks have a maximum size.  Clients that intend to create
+   * multi-block files must also use
+   * {@link #addBlock(String, String, ExtendedBlock, DatanodeInfo[])}
+   *
+   * @param src path of the file being created.
+   * @param masked masked permission.
+   * @param clientName name of the current client.
+   * @param flag indicates whether the file should be
+   * overwritten if it already exists or create if it does not exist or append.
+   * @param createParent create missing parent directory if true
+   * @param replication block replication factor.
+   * @param blockSize maximum block size.
+   *
+   * @throws AccessControlException If access is denied
+   * @throws AlreadyBeingCreatedException if the path does not exist.
+   * @throws DSQuotaExceededException If file creation violates disk space
+   *           quota restriction
+   * @throws FileAlreadyExistsException If file <code>src</code> already exists
+   * @throws FileNotFoundException If parent of <code>src</code> does not exist
+   *           and <code>createParent</code> is false
+   * @throws ParentNotDirectoryException If parent of <code>src</code> is not a
+   *           directory.
+   * @throws NSQuotaExceededException If file creation violates name space
+   *           quota restriction
+   * @throws SafeModeException create not allowed in safemode
+   * @throws UnresolvedLinkException If <code>src</code> contains a symlink
+   * @throws IOException If an I/O error occurred
+   *
+   * RuntimeExceptions:
+   * @throws InvalidPathException Path <code>src</code> is invalid
+   */
+  public void create(String src, FsPermission masked, String clientName,
+                     EnumSetWritable<CreateFlag> flag, boolean createParent,
+                     short replication, long blockSize) throws AccessControlException,
       AlreadyBeingCreatedException, DSQuotaExceededException,
       FileAlreadyExistsException, FileNotFoundException,
       NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
@@ -967,4 +1019,14 @@ public interface ClientProtocol {
   public void ping() throws IOException ;   // client checks if the NN is alive
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
   //END_HOP_CODE
+
+  ///////////////////////////////////////
+  // Erasure coding
+  ///////////////////////////////////////
+
+  public String getCodec(String filePath) throws IOException;
+
+  public void encodeFile(String filePath, String codec) throws IOException;
+
+  public void revokeEncoding(String filePath) throws  IOException;
 }

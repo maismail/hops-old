@@ -2136,6 +2136,7 @@ public class FSDirectory implements Closeable {
        replication = fileNode.getBlockReplication();
        blocksize = fileNode.getPreferredBlockSize();
      }
+     // TODO Add encoding status
      return new HdfsFileStatus(
         size, 
         node.isDirectory(), 
