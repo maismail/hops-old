@@ -26,6 +26,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   private Map<Long, PendingBlockInfo> newPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> modifiedPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> removedPendings = new HashMap<Long, PendingBlockInfo>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   private boolean allPendingRead = false;
   private PendingBlockDataAccess<PendingBlockInfo> dataAccess;
 
@@ -53,6 +54,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     newPendings.clear();
     modifiedPendings.clear();
     removedPendings.clear();
+    inodesRead.clear();
     allPendingRead = false;
   }
 
@@ -87,6 +89,22 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
           }
         }
         return result;
+      case ByInodeId:;
+        Integer inodeId = (Integer) params[0];
+        Integer partKey = (Integer) params[1];
+        if(inodesRead.contains(inodeId)){
+          log("find-pendings-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          return getPendingReplicasForINode(inodeId);
+        }else{
+          log("find-pendings-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          aboutToAccessStorage();
+          result = dataAccess.findByINodeId(inodeId, partKey);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+        }       
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -99,22 +117,40 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     switch (pFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
+        Integer inodeId = (Integer) params[1];
+        Integer partKey = (Integer) params[2];
         if (this.pendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           result = this.pendings.get(blockId);
-        } else if (!this.removedPendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
+        } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
+          return null;
+        }
+        else if (!this.removedPendings.containsKey(blockId)) {
+          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           aboutToAccessStorage();
-          result = dataAccess.findByPKey(blockId);
+          result = dataAccess.findByPKey(blockId,inodeId,partKey);
           this.pendings.put(blockId, result);
         } 
-        //else {
-        //  throw new IllegalStateException("Illegal Cache State");
-        //}
         return result;
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
+  }
+  
+  private List<PendingBlockInfo> getPendingReplicasForINode(int inodeId){
+    List<PendingBlockInfo>  list = new ArrayList<PendingBlockInfo>();
+    for(PendingBlockInfo pbi: pendings.values()){
+      if(pbi.getInodeId() == inodeId){
+        list.add(pbi);
+      }
+    }
+    return list;
+  }
+  
+   private void saveLists(List<PendingBlockInfo> list){
+     for(PendingBlockInfo pbi : list){
+       pendings.put(pbi.getBlockId(), pbi);
+     }
   }
 
     @Override

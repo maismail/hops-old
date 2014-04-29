@@ -69,7 +69,7 @@ public class TestPendingReplication {
     // Add 10 blocks to pendingReplications.
     //
     for (int i = 0; i < 10; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0), i, i);
       increment(pendingReplications, block, i);
     }
     
@@ -80,7 +80,7 @@ public class TestPendingReplication {
     //
     // remove one item and reinsert it
     //
-    Block blk = new Block(8, 8, 0);
+    BlockInfo blk = new BlockInfo(new Block(8, 8, 0),8,8);
     decrement(pendingReplications, blk);             // removes one replica
     assertEquals("pendingReplications.getNumReplicas ",
                  7, getNumReplicas(pendingReplications, blk));
@@ -97,7 +97,7 @@ public class TestPendingReplication {
     // are sane.
     //
     for (int i = 0; i < 10; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i,i);
       int numReplicas = getNumReplicas(pendingReplications, block);
       assertTrue(numReplicas == i);
     }
@@ -116,7 +116,7 @@ public class TestPendingReplication {
     }
 
     for (int i = 10; i < 15; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i,i);
       increment(pendingReplications, block, i);
     }
     assertTrue(pendingReplications.size() == 15);
@@ -194,8 +194,7 @@ public class TestPendingReplication {
       BlockManagerTestUtil.computeAllPendingWork(bm);
       BlockManagerTestUtil.updateState(bm);
       assertEquals(bm.getPendingReplicationBlocksCount(), 1L);
-      assertEquals(getNumReplicas(bm.pendingReplications, block.getBlock()
-          .getLocalBlock()), 2);
+      assertEquals(getNumReplicas(bm.pendingReplications, (BlockInfo)block.getBlock().getLocalBlock()), 2);
       
       // 4. delete the file
       fs.delete(filePath, true);
@@ -215,15 +214,15 @@ public class TestPendingReplication {
   }
   
   
-  private void increment(final PendingReplicationBlocks pendingReplications, final Block block, final int numReplicas) throws IOException {
+  private void increment(final PendingReplicationBlocks pendingReplications, final BlockInfo block, final int numReplicas) throws IOException {
     incrementOrDecrementPendingReplications(pendingReplications, block, true, numReplicas);
   }
 
-  private void decrement(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
+  private void decrement(final PendingReplicationBlocks pendingReplications, final BlockInfo block) throws IOException {
     incrementOrDecrementPendingReplications(pendingReplications, block, false, -1);
   }
 
-  private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final Block block, final boolean inc, final int numReplicas) throws IOException {
+  private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final BlockInfo block, final boolean inc, final int numReplicas) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -254,7 +253,7 @@ public class TestPendingReplication {
     }.handle();
   }
 
-  private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
+  private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final BlockInfo block) throws IOException {
     return (Integer) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {

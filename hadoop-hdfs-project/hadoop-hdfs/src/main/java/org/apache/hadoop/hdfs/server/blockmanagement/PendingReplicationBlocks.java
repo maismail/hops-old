@@ -72,10 +72,10 @@ class PendingReplicationBlocks {
   /**
    * Add a block to the list of pending Replications
    */
-  void increment(Block block, int numReplicas) throws PersistanceException {
+  void increment(BlockInfo block, int numReplicas) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found == null) {
-      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(), now(), numReplicas));
+      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(),block.getInodeId(),block.getPartKey(), now(), numReplicas));
     } else {
       found.incrementReplicas(numReplicas);
       found.setTimeStamp(now());
@@ -88,7 +88,7 @@ class PendingReplicationBlocks {
    * Decrement the number of pending replication requests
    * for this block.
    */
-  void decrement(Block block) throws PersistanceException {
+  void decrement(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       if (LOG.isDebugEnabled()) {
@@ -108,7 +108,7 @@ class PendingReplicationBlocks {
    * @param block The given block whose pending replication requests need to be
    *              removed
    */
-  void remove(Block block) throws PersistanceException {
+  void remove(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null) {
       removePendingBlockInfo(found);
@@ -142,7 +142,7 @@ class PendingReplicationBlocks {
   /**
    * How many copies of this block is pending replication?
    */
-  int getNumReplicas(Block block) throws PersistanceException {
+  int getNumReplicas(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       return found.getNumReplicas();
@@ -222,8 +222,8 @@ class PendingReplicationBlocks {
     return now() - timeout;
   }
 
-  private PendingBlockInfo getPendingBlock(Block block) throws PersistanceException {
-    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId());
+  private PendingBlockInfo getPendingBlock(BlockInfo block) throws PersistanceException {
+    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId(), block.getPartKey());
   }
 
   private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {

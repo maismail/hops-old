@@ -355,7 +355,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            else if (parallelReadParams.getBlockIds() != null && !parallelReadParams.getBlockIds().isEmpty() && parallelReadParams.getBlockFinder() != null ){
              for(BlockPK blkParam : parallelReadParams.getBlockIds()){
                if (!terminateAsyncThread) {
-                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
+                 if(parallelReadParams.isListBlockFinder){
+                   acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
+                 }else{
+                   acquireLock(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
+                 }
                }
              }
            }
@@ -564,43 +568,43 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     // blocks related tables
     List<Thread> threads = new ArrayList<Thread>();
     if (locks.getReplicaLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, HopIndexedReplica.Finder.ByINodeId, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, true, HopIndexedReplica.Finder.ByINodeId, null);
       threads.add(acquireReplicasLockASyncNEW(parallelReadParams));
     }
 
     if (locks.getCrLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, null, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, true, null, null);
       threads.add(acquireReplicasLockASync(parallelReadParams));
     }
 
     if (locks.getErLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, null, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, null, null);
       threads.add(acquireReplicasLockASync(parallelReadParams));
     }
 
     if (locks.getRucLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, ReplicaUnderConstruction.Finder.ByINodeId , null);
+      ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, true, ReplicaUnderConstruction.Finder.ByINodeId , null);
       threads.add(acquireReplicasLockASyncNEW(parallelReadParams));
     }
 
     if (locks.getInvLocks() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, null, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, null, null);
       threads.add(acquireReplicasLockASync(parallelReadParams));
     }
 
     if (locks.getUrbLock() != null) {
       if(locks.isUrbLockFindAll()){
-        ParallelReadParams parallelReadParams = new ParallelReadParams(null, null, null, null,HopUnderReplicatedBlock.Finder.All );
+        ParallelReadParams parallelReadParams = new ParallelReadParams(null, null, false, null, null,HopUnderReplicatedBlock.Finder.All );
         threads.add(acquireBlockRelatedLockASync(parallelReadParams));
       }else{
-        ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, null, null);
+        ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, false, null, null);
         threads.add(acquireBlockRelatedLockASync(parallelReadParams));
       }
     }
 
     if (locks.getPbLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId,null,null);
-      threads.add(acquireBlockRelatedLockASync( parallelReadParams));
+      ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId, false,PendingBlockInfo.Finder.ByInodeId,null);
+      threads.add(acquireReplicasLockASyncNEW( parallelReadParams));
     }
     
     InterruptedException intrException = null;
@@ -641,15 +645,17 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     private final List<BlockPK> blockIds;
     private final List<INodePK> inodeIds;
     private final FinderType blockFinder;
+    private final boolean isListBlockFinder;
     private final FinderType inodeFinder;
     private final FinderType defaultFinder;
 
-    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, List<INodePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
+    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, boolean isListBlockFinder, List<INodePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
       this.blockIds = blockIds;
       this.inodeIds = inodeIds;
       this.blockFinder = blockFinder;
       this.inodeFinder = inodeFinder;
       this.defaultFinder = defFinder;
+      this.isListBlockFinder = isListBlockFinder;
     }
 
     public List<BlockPK> getBlockIds() {
@@ -672,7 +678,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       return defaultFinder;
     }
   }
-  private ParallelReadParams getBlockParameters(FinderType blockFinder, FinderType inodeFinder, FinderType defaultFinder) {
+  private ParallelReadParams getBlockParameters(FinderType blockFinder, boolean isListBlockFinder, FinderType inodeFinder, FinderType defaultFinder) {
     List<INodePK> inodesParams = new ArrayList<INodePK>();
     List<BlockPK> blocksParams = new ArrayList<BlockPK>();
     
@@ -706,7 +712,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    }
     
 
-    return new ParallelReadParams(blocksParams, blockFinder, inodesParams, inodeFinder, defaultFinder);
+    return new ParallelReadParams(blocksParams, blockFinder, isListBlockFinder, inodesParams, inodeFinder, defaultFinder);
   }
 
   private void acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {

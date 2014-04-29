@@ -216,7 +216,14 @@ public class INodeContext extends EntityContext<INode> {
 
     inodesIdIndex.put(inode.getId(), inode);
     inodesNameParentIndex.put(inode.nameParentKey(), inode);
-    modifiedInodes.put(inode.getId(), inode);
+    //if in new list then update in the new list
+    if(newInodes.containsKey(inode.getId()))
+    {
+      newInodes.put(inode.getId(), inode);
+    }else{
+      modifiedInodes.put(inode.getId(), inode);
+    }
+    
     log("updated-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName()});
   }
 

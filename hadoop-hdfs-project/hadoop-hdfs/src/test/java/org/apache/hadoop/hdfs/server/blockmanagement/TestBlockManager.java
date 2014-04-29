@@ -482,7 +482,7 @@ public class TestBlockManager {
     return blockInfo;
   }
 
-  private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
+  private DatanodeDescriptor[] scheduleSingleReplication(final BlockInfo block) throws IOException {
     return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
       INodeIdentifier inodeIdentifier;
       @Override

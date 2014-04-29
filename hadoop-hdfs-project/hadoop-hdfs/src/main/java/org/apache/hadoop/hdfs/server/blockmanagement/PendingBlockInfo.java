@@ -16,7 +16,7 @@ public class PendingBlockInfo {
 
   public static enum Finder implements FinderType<PendingBlockInfo> {
 
-    ByBlockId, All, ByTimeLimit;
+    ByBlockId, ByInodeId, All, ByTimeLimit;
 
     @Override
     public Class getType() {
@@ -24,11 +24,15 @@ public class PendingBlockInfo {
     }
   }
   private long blockId;
+  private int inodeId;
+  private int partKey;
   private long timeStamp;
   private int numReplicasInProgress;
 
-  public PendingBlockInfo(long blockId, long timestamp, int numReplicas) {
+  public PendingBlockInfo(long blockId, int inodeId, int partKey, long timestamp, int numReplicas) {
     this.blockId = blockId;
+    this.inodeId = inodeId;
+    this.partKey = partKey;
     this.timeStamp = timestamp;
     this.numReplicasInProgress = numReplicas;
   }
@@ -62,11 +66,11 @@ public class PendingBlockInfo {
   }
   
   public int getPartKey(){
-    return 0;
+    return partKey;
   }
   
   public int getInodeId(){
-    return 0;
+    return inodeId;
   }
 
   /**

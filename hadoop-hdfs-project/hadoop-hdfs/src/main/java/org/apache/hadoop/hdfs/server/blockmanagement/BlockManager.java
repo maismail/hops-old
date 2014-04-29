@@ -1246,10 +1246,10 @@ public class BlockManager {
             assert liveReplicaNodes.size() == numReplicas.liveReplicas();
             // do not schedule more if enough replicas is already pending
             numEffectiveReplicas = numReplicas.liveReplicas() +
-                                    pendingReplications.getNumReplicas(blk);
+                                    pendingReplications.getNumReplicas(blocksMap.getStoredBlock(blk));
       
             if (numEffectiveReplicas >= requiredReplication) {
-              if ( (pendingReplications.getNumReplicas(blk) > 0) ||
+              if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(blk)) > 0) ||
                    (blockHasEnoughRacks(blk)) ) {
                 neededReplications.remove(blk, priority1); // remove from neededReplications
                 neededReplications.decrementReplicationIndex(priority1);
@@ -1320,10 +1320,10 @@ public class BlockManager {
           // do not schedule more if enough replicas is already pending
           NumberReplicas numReplicas = countNodes(block);
           numEffectiveReplicas = numReplicas.liveReplicas() +
-            pendingReplications.getNumReplicas(block);
+            pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block));
 
           if (numEffectiveReplicas >= requiredReplication) {
-            if ( (pendingReplications.getNumReplicas(block) > 0) ||
+            if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) > 0) ||
                  (blockHasEnoughRacks(block)) ) {
               neededReplications.remove(block, priority); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority);
@@ -1353,7 +1353,7 @@ public class BlockManager {
           // Move the block-replication into a "pending" state.
           // The reason we use 'pending' is so we can retry
           // replications that fail after an appropriate amount of time.
-          pendingReplications.increment(block, targets.length);
+          pendingReplications.increment(blocksMap.getStoredBlock(block), targets.length);
           if(blockLog.isDebugEnabled()) {
             blockLog.debug(
                 "BLOCK* block " + block
@@ -2844,7 +2844,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     //
     // Modify the blocks->datanode map and node's map.
     //
-    pendingReplications.decrement(block);
+    pendingReplications.decrement(blocksMap.getStoredBlock(block));
     processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
         delHintNode);
   }
@@ -3177,7 +3177,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
               }
             }
             if (!neededReplications.contains(block)
-                    && pendingReplications.getNumReplicas(block) == 0) {
+                    && pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) == 0) {
               //
               // These blocks have been reported from the datanode
               // after the startDecommission method has been executed. These
@@ -3229,9 +3229,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     block.setNumBytesNoPersistance(BlockCommand.NO_ACK);
     addToInvalidates(block);
     corruptReplicas.removeFromCorruptReplicasMap(block);
+    BlockInfo storedBlock = blocksMap.getStoredBlock(block);
     blocksMap.removeBlock(block);
     // Remove the block from pendingReplications
-    pendingReplications.remove(block);
+    pendingReplications.remove(storedBlock);
     if (postponedMisreplicatedBlocks.remove(block)) {
       postponedMisreplicatedBlocksCount.decrementAndGet();
     }
