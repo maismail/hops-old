@@ -1203,6 +1203,8 @@ public class TestFileCreation {
       }
       out.close();
       
+      
+      
       FSDataInputStream in = fs.open(p1);
       for (i = 0; i < blocks; i++) {
         assertEquals(i, in.read());
@@ -1216,7 +1218,9 @@ public class TestFileCreation {
       out.close();  
       
       dfs.concat(p1, new Path[]{p2});
-// 
+      
+ //     dfs.rename(p1, p2);
+//// 
 //      
 //      cluster.restartNameNode();
 //

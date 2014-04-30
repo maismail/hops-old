@@ -92,7 +92,7 @@ public class BlockManagerTestUtil {
         public Object performTask() throws PersistanceException, IOException {
           return new int[]{getNumberOfRacks(bm, b),
             bm.countNodes(b).liveReplicas(),
-            bm.neededReplications.contains(b) ? 1 : 0};
+            bm.neededReplications.contains(bm.getStoredBlock(b)) ? 1 : 0};
 
         }
         

@@ -2,7 +2,9 @@ package se.sics.hop.metadata.context;
 
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
@@ -231,6 +233,56 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        log("snapshot-maintenance-removed-pending", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
+        List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
+        deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+        updateReplicaUCs(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        INodePK trg_param = (INodePK)params[0];
+        List<INodePK> srcs_param = (List<INodePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateReplicaUCs(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newPendings.size() != 0 || removedPendings.size() != 0 || modifiedPendings.size() != 0) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No pending replicas row should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicaUCs(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
     
+    
+      for(PendingBlockInfo pending : pendings.values()){
+        INodePK pk = new INodePK(pending.getInodeId(), pending.getPartKey());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          PendingBlockInfo toBeDeleted = clonePendingReplicaObj(pending);
+          PendingBlockInfo toBeAdded = clonePendingReplicaObj(pending);
+          
+          removedPendings.put(toBeDeleted.getBlockId(), toBeDeleted);
+          
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.id);
+          toBeAdded.setPartKey(trg_param.partKey);
+          newPendings.put(toBeAdded.getBlockId(), toBeAdded);
+        }
+      }
+    
+  }
+  
+  private PendingBlockInfo clonePendingReplicaObj(PendingBlockInfo src){
+    return new PendingBlockInfo(src.getBlockId(),src.getInodeId(),src.getPartKey(),src.getTimeStamp(),src.getNumReplicas());
   }
 }

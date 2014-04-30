@@ -660,13 +660,13 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
   public static int getPartitionKey(String strName){
-//    if(strName == null || strName.equals("") || strName.isEmpty() ){
-//      return 0;
-//    }
-//    else{
-//      return Math.abs(strName.hashCode());
-//    }
-    return 0;
+    if(strName == null || strName.equals("") || strName.isEmpty() ){
+      return 0;
+    }
+    else{
+      return Math.abs(strName.hashCode());
+    }
+//    return 0;
   }
   
   public static int getPartitionKey(byte[] name){

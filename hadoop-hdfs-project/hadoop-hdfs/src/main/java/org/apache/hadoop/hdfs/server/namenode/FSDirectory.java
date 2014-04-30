@@ -1018,7 +1018,8 @@ public class FSDirectory implements Closeable {
       allSrcInodes[i++] = srcInode;
       totalBlocks += srcInode.numBlocks();  
     }
-    trgInode.appendBlocks(allSrcInodes, totalBlocks); // copy the blocks
+    List<BlockInfo> oldBlks = trgInode.appendBlocks(allSrcInodes, totalBlocks); // copy the blocks
+    //HOP now the blocks are added to the targed file. copy of the old block infos is returned for snapshot maintenance
     
     //HOP_START_CODE
     //params for updating the snapshots
@@ -1044,7 +1045,7 @@ public class FSDirectory implements Closeable {
     unprotectedUpdateCount(trgINodes, trgINodes.length-1, - count, 0);
     
     //HOP_START_CODE
-    EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.Concat, trg_param, srcs_param);
+    EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.Concat, trg_param, srcs_param, oldBlks);
     //HOP_END_CODE
   }
 

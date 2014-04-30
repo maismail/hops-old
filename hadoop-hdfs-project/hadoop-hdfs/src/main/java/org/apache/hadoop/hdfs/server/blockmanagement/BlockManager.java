@@ -1224,7 +1224,7 @@ public class BlockManager {
             bc = blocksMap.getBlockCollection(blk);
             // abandoned block or block reopened for append
             if(bc == null || bc instanceof MutableBlockCollection) {
-              neededReplications.remove(blk, priority1); // remove from neededReplications
+              neededReplications.remove(blocksMap.getStoredBlock(blk), priority1); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority1);
               return scheduledWork;
             }
@@ -1251,7 +1251,7 @@ public class BlockManager {
             if (numEffectiveReplicas >= requiredReplication) {
               if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(blk)) > 0) ||
                    (blockHasEnoughRacks(blk)) ) {
-                neededReplications.remove(blk, priority1); // remove from neededReplications
+                neededReplications.remove(blocksMap.getStoredBlock(blk), priority1); // remove from neededReplications
                 neededReplications.decrementReplicationIndex(priority1);
                 blockLog.info("BLOCK* Removing " + blk
                     + " from neededReplications as it has enough replicas");
@@ -1310,7 +1310,7 @@ public class BlockManager {
           bc = blocksMap.getBlockCollection(block);
           // abandoned block or block reopened for append
           if(bc == null || bc instanceof MutableBlockCollection) {
-            neededReplications.remove(block, priority); // remove from neededReplications
+            neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
             rw.targets = null;
             neededReplications.decrementReplicationIndex(priority);
             continue;
@@ -1325,7 +1325,7 @@ public class BlockManager {
           if (numEffectiveReplicas >= requiredReplication) {
             if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) > 0) ||
                  (blockHasEnoughRacks(block)) ) {
-              neededReplications.remove(block, priority); // remove from neededReplications
+              neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority);
               rw.targets = null;
               blockLog.info("BLOCK* Removing " + block
@@ -1362,7 +1362,7 @@ public class BlockManager {
 
           // remove from neededReplications
           if(numEffectiveReplicas + targets.length >= requiredReplication) {
-            neededReplications.remove(block, priority); // remove from neededReplications
+            neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
             neededReplications.decrementReplicationIndex(priority);
           }
         }
@@ -3176,14 +3176,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 underReplicatedInOpenFiles[0]++;
               }
             }
-            if (!neededReplications.contains(block)
+            if (!neededReplications.contains(blocksMap.getStoredBlock(block))
                     && pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) == 0) {
               //
               // These blocks have been reported from the datanode
               // after the startDecommission method has been executed. These
               // blocks were in flight when the decommissioning was started.
               //
-              neededReplications.add(block,
+              neededReplications.add(blocksMap.getStoredBlock(block),
                       curReplicas,
                       num.decommissionedReplicas(),
                       curExpectedReplicas);
@@ -3253,13 +3253,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       NumberReplicas repl = countNodes(block);
       int curExpectedReplicas = getReplication(block);
       if (isNeededReplication(block, curExpectedReplicas, repl.liveReplicas())) {
-        neededReplications.update(block, repl.liveReplicas(), repl
+        neededReplications.update(blocksMap.getStoredBlock(block), repl.liveReplicas(), repl
             .decommissionedReplicas(), curExpectedReplicas, curReplicasDelta,
             expectedReplicasDelta);
       } else {
         int oldReplicas = repl.liveReplicas()-curReplicasDelta;
         int oldExpectedReplicas = curExpectedReplicas-expectedReplicasDelta;
-        neededReplications.remove(block, oldReplicas, repl.decommissionedReplicas(),
+        neededReplications.remove(blocksMap.getStoredBlock(block), oldReplicas, repl.decommissionedReplicas(),
                                   oldExpectedReplicas);
       }
     } finally {
@@ -3278,7 +3278,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     for (Block block : bc.getBlocks()) {
       final NumberReplicas n = countNodes(block);
       if (isNeededReplication(block, expected, n.liveReplicas())) { 
-        neededReplications.add(block, n.liveReplicas(),
+        neededReplications.add(blocksMap.getStoredBlock(block), n.liveReplicas(),
             n.decommissionedReplicas(), expected);
       } else if (n.liveReplicas() > expected) {
         processOverReplicatedBlock(block, expected, null, null);
@@ -3704,7 +3704,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           NumberReplicas num = countNodes(timedOutItem);
           if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                                  num.liveReplicas())) {
-            neededReplications.add(timedOutItem,
+            neededReplications.add(blocksMap.getStoredBlock(timedOutItem),
                                    num.liveReplicas(),
                                    num.decommissionedReplicas(),
                                    getReplication(timedOutItem));

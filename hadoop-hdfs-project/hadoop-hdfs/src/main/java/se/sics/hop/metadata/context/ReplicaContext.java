@@ -7,6 +7,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
@@ -15,6 +16,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.exception.StorageException;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -210,26 +212,38 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:
-          //do nothing here
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        log("snapshot-maintenance-removed-replicas", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
+        List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
+        deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+        updateReplicas(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
         break;
       case Concat:
-        if (newReplicas.size() != 0 || modifiedReplicas.size() != 0 || removedReplicas.size() != 0) // during the tx no replica should have been changed
-        {
-          throw new IllegalStateException("No replica should have been changed during the Tx");
-        }
+        checkForSnapshotChange();
         INodePK trg_param = (INodePK)params[0];
         List<INodePK> srcs_param = (List<INodePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
         updateReplicas(trg_param, srcs_param);
         break;
     }
   }
   
-  private void updateReplicas(INodePK trg_param, List<INodePK> srcs_param){
+  private void checkForSnapshotChange(){
+     if (newReplicas.size() != 0 || modifiedReplicas.size() != 0 || removedReplicas.size() != 0) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No replica should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicas(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
     
     for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
       for(HopIndexedReplica replica : replicas){
         INodePK pk = new INodePK(replica.getInodeID(), replica.getPartKey());
-        if(!trg_param.equals(pk) && srcs_param.contains(pk)){
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);
           HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
           

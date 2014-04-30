@@ -313,26 +313,49 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         updateBlocks(inodeBeforeChange, inodeAfterChange);
         break;
       case Concat:
-        // do nothing here
-        // the concat function addes the blocks to the inode and updates the id and partkey
+        //checkForSnapshotChange();
+        INodePK trg_param = (INodePK)params[0];
+        List<INodePK> srcs_param = (List<INodePK>)params[1]; // these are the merged inodes    
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        deleteBlocksForConcat(trg_param,srcs_param,oldBlks);
+        //new blocks have been added by the concat function
+        //we just have to delete the blocks rows that dont make sence 
+        
         break;
     }
   }
   
-  private void updateBlocks(INode inodeBeforeChange, INode inodeAfterChange) throws PersistanceException {
+  private void checkForSnapshotChange(){
     // when you overwrite a file the dst file blocks are removed
     // removedBlocks list may not be empty
     if (!newBlocks.isEmpty() || !modifiedBlocks.isEmpty()) {//incase of move and rename the blocks should not have been modified in any way
-        throw new StorageException("Renaming a file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
+        throw new IllegalStateException("Renaming a file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
+      }
+  }
+  
+  private void deleteBlocksForConcat(INodePK trg_param, List<INodePK> deleteINodes, List<BlockInfo> oldBlks /* blks with old pk*/){
+    
+    if (!removedBlocks.isEmpty()) {//in case of concat new block_infos rows are added by the concat fn
+        throw new IllegalStateException("Concat file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
       }
     
-    if (inodeBeforeChange instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed or moved. 
-        
-      
+    for(BlockInfo bInfo: oldBlks){
+      INodePK pk = new INodePK(bInfo.getInodeId(), bInfo.getPartKey());
+      if(deleteINodes.contains(pk)){
+        //remove the block
+        removedBlocks.put(bInfo.getBlockId(), bInfo);
+      }   
+    }
+  }
+  
+  private void updateBlocks(INode inodeBeforeChange, INode inodeAfterChange) throws PersistanceException {
+    checkForSnapshotChange();
+    
+    if (inodeBeforeChange instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed. 
       if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) { //file name was changed. partKey has to be changed in the blocks of the src file
         for (BlockInfo bInfo : blocks.values()) {
           if (bInfo.getInodeId() == inodeBeforeChange.getId()) {
-            BlockInfo removedBlk = cloneBlock(bInfo);
+            BlockInfo removedBlk = BlockInfo.cloneBlock(bInfo);
             removedBlocks.put(removedBlk.getBlockId(), removedBlk);
 
             bInfo.setPartKeyNoPersistance(inodeAfterChange.getPartKey());
@@ -343,20 +366,5 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       }
     }
   }
-  
-  
-  private BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
-    if(block instanceof BlockInfo){
-      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId(),((BlockInfo)block).getPartKey());
-    }
-    else if(block instanceof  BlockInfoUnderConstruction){
-      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId(),((BlockInfoUnderConstruction)block).getPartKey());
-    }else{
-      throw new StorageException("Unable to create a clone of the Block");
-    }
-  }
-  
-  
-  
   
 }

@@ -156,7 +156,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** Check if a block is in the neededReplication queue */
-  boolean contains(Block block) throws PersistanceException {
+  boolean contains(BlockInfo block) throws PersistanceException {
     return getUnderReplicatedBlock(block) != null;
   }
 
@@ -203,7 +203,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param expectedReplicas expected number of replicas of the block
    * @return true if the block was added to a queue.
    */
-  boolean add(Block block,
+  boolean add(BlockInfo block,
                            int curReplicas, 
                            int decomissionedReplicas,
                            int expectedReplicas) throws PersistanceException {
@@ -226,7 +226,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** remove a block from a under replication queue */
-  boolean remove(Block block, 
+  boolean remove(BlockInfo block, 
                               int oldReplicas, 
                               int decommissionedReplicas,
                               int oldExpectedReplicas) throws PersistanceException {
@@ -251,7 +251,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param priLevel expected privilege level
    * @return true if the block was found and removed from one of the priority queues
    */
-  boolean remove(Block block, int priLevel) throws PersistanceException {
+  boolean remove(BlockInfo block, int priLevel) throws PersistanceException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if(priLevel >= 0 && priLevel < LEVEL 
             && remove(urb)) {
@@ -297,7 +297,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param curReplicasDelta the change in the replicate count from before
    * @param expectedReplicasDelta the change in the expected replica count from before
    */
-  void update(Block block, int curReplicas,
+  void update(BlockInfo block, int curReplicas,
                            int decommissionedReplicas,
                            int curExpectedReplicas,
                            int curReplicasDelta, int expectedReplicasDelta) throws PersistanceException {
@@ -559,10 +559,10 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
    
   // return true if it does not exist other wise return false
-  private boolean add(Block block, int priLevel) throws PersistanceException {
+  private boolean add(BlockInfo block, int priLevel) throws PersistanceException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if (urb == null) {
-      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId()));
+      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId(), block.getInodeId(), block.getPartKey()));
       return true;
     }
     return false;
@@ -589,8 +589,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }
   }
   
-  private HopUnderReplicatedBlock getUnderReplicatedBlock(Block blk) throws PersistanceException{
-     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId());
+  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException{
+     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId(), blk.getPartKey());
   }
  
   private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {

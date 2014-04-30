@@ -21,10 +21,7 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 import java.io.IOException;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
@@ -33,7 +30,6 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Assert;
 import org.junit.Test;
-import se.sics.hop.metadata.lock.INodeUtil;
 
 public class TestUnderReplicatedBlockQueues extends Assert {
 
@@ -48,11 +44,11 @@ public class TestUnderReplicatedBlockQueues extends Assert {
     StorageFactory.getConnector().formatStorage();
     
     UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
-    Block block1 = add(new Block(1));
-    Block block2 = add(new Block(2));
-    Block block_very_under_replicated = add(new Block(3));
-    Block block_corrupt = add(new Block(4));
-
+    BlockInfo block1 = add(new BlockInfo(new Block(1),1,1));
+    BlockInfo block2 = add(new BlockInfo(new Block(2),2,2));
+    BlockInfo block_very_under_replicated = add(new BlockInfo(new Block(3),3,3));
+    BlockInfo block_corrupt = add( new BlockInfo(new Block(4),4,4));
+    
     //add a block with a single entry
     assertAdded(queues, block1, 1, 0, 3);
 
@@ -83,7 +79,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   }
 
   private void assertAdded(UnderReplicatedBlocks queues,
-                           Block block,
+                           BlockInfo block,
                            int curReplicas,
                            int decomissionedReplicas,
                            int expectedReplicas) throws IOException {
@@ -105,7 +101,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
    * @param level level to select
    */
   private void assertInLevel(UnderReplicatedBlocks queues,
-                             Block block,
+                             BlockInfo block,
                              int level) {
     UnderReplicatedBlocks.BlockIterator bi = queues.iterator(level);
     while (bi.hasNext()) {
@@ -118,7 +114,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   }
   
   
-  private Block add(final Block block) throws IOException {
+  private BlockInfo add(final BlockInfo block) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -127,14 +123,14 @@ public class TestUnderReplicatedBlockQueues extends Assert {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EntityManager.add(new BlockInfo(block,INode.NON_EXISTING_ID,INode.INVALID_PART_KEY));
+        EntityManager.add(new BlockInfo(block));
         return null;
       }
     }.handle();
     return block;
   }
 
-  private boolean add(final UnderReplicatedBlocks queues, final Block block,
+  private boolean add(final UnderReplicatedBlocks queues, final BlockInfo block,
           final int curReplicas,
           final int decomissionedReplicas,
           final int expectedReplicas) throws IOException {
@@ -143,9 +139,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                addBlock(block.getBlockId(), block.getInodeId(), block.getPartKey()).
                 addUnderReplicatedBlock();
         return tla.acquire();
       }
@@ -154,12 +148,6 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public Object performTask() throws PersistanceException, IOException {
         return queues.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
-        }    
     }.handle();
   }
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
@@ -202,8 +203,58 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     return stat;
   }
 
-  @Override
+   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        log("snapshot-maintenance-removed-replicauc", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
+        List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
+        deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+        updateReplicaUCs(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        INodePK trg_param = (INodePK)params[0];
+        List<INodePK> srcs_param = (List<INodePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateReplicaUCs(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newReplicasUc.size() != 0 || removedReplicasUc.size() != 0 ) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No replica under construction row should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicaUCs(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
     
+    for(List<ReplicaUnderConstruction> replicasUC : blockReplicasUCAll.values()){
+      for(ReplicaUnderConstruction replicaUC : replicasUC){
+        INodePK pk = new INodePK(replicaUC.getInodeID(), replicaUC.getPartKey());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          ReplicaUnderConstruction toBeDeleted = cloneReplicaUCObj(replicaUC);
+          ReplicaUnderConstruction toBeAdded = cloneReplicaUCObj(replicaUC);
+          
+          removedReplicasUc.put(toBeDeleted, toBeDeleted);
+          
+          //both inode id and partKey has changed
+          toBeAdded.setInodeID(trg_param.id);
+          toBeAdded.setPartKey(trg_param.partKey);
+          newReplicasUc.put(toBeAdded, toBeAdded);
+        }
+      }
+    }
+  }
+  
+  private ReplicaUnderConstruction cloneReplicaUCObj(ReplicaUnderConstruction src){
+    return new ReplicaUnderConstruction(src.getState(),src.getStorageId(),src.getBlockId(),src.getInodeID(),src.getPartKey(),src.getIndex());
   }
 }

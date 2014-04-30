@@ -32,6 +32,7 @@ import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given
@@ -449,6 +450,19 @@ public class BlockInfo extends Block {
   protected void remove(BlockInfo blk) throws PersistanceException {
     EntityManager.remove(blk);
   }
+  
+  public static BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
+    if(block instanceof BlockInfo){
+      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId(),((BlockInfo)block).getPartKey());
+    }
+    else if(block instanceof  BlockInfoUnderConstruction){
+      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId(),((BlockInfoUnderConstruction)block).getPartKey());
+    }else{
+      throw new StorageException("Unable to create a clone of the Block");
+    }
+  }
+
+  
   //END_HOP_CODE
 
 

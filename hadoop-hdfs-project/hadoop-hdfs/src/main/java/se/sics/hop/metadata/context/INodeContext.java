@@ -298,6 +298,9 @@ public class INodeContext extends EntityContext<INode> {
         break;
       case Concat:
         // do nothing
+        // why? files y and z are merged into file x. 
+        // all the blocks will be added to file x and the inodes y and z will be deleted.
+        // Inode deletion is handled by the concat function
         break;
     }
   }

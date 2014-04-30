@@ -80,6 +80,15 @@ public class PendingBlockInfo {
     this.blockId = blockId;
   }
 
+  public void setInodeId(int inodeId) {
+    this.inodeId = inodeId;
+  }
+
+  public void setPartKey(int partKey) {
+    this.partKey = partKey;
+  }
+  
+
   @Override
   public boolean equals(Object obj) {
     if (obj == null || !(obj instanceof PendingBlockInfo)) {

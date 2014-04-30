@@ -800,14 +800,16 @@ public class TestReplicationPolicy {
           .getNamesystem().getBlockManager().neededReplications;
       for (int i = 0; i < 100; i++) {
         // Adding the blocks directly to normal priority
-        add(neededReplications, new Block(random.nextLong()), 2, 0, 3);
+        int blkId = random.nextInt();
+        add(neededReplications, new BlockInfo(new Block(blkId),blkId, blkId), 2, 0, 3);
       }
       // Lets wait for the replication interval, to start process normal
       // priority blocks
       Thread.sleep(DFS_NAMENODE_REPLICATION_INTERVAL);
       
       // Adding the block directly to high priority list
-      add(neededReplications, new Block(random.nextLong()), 1, 0, 3);
+      int blkId = random.nextInt();
+      add(neededReplications, new BlockInfo(new Block(blkId),blkId, blkId), 1, 0, 3);
       
       // Lets wait for the replication interval
       Thread.sleep(3 * DFS_NAMENODE_REPLICATION_INTERVAL);
@@ -827,24 +829,29 @@ public class TestReplicationPolicy {
   @Test
   public void testChooseUnderReplicatedBlocks() throws Exception { 
     StorageFactory.getConnector().formatStorage();
-    long blockID = 0;
+    int blockID = 0;
     UnderReplicatedBlocks underReplicatedBlocks = new UnderReplicatedBlocks();
 
     for (int i = 0; i < 5; i++) {
       // Adding QUEUE_HIGHEST_PRIORITY block
-      add(underReplicatedBlocks, new Block(blockID++), 1, 0, 3);
+      int blockIdTmp = blockID++;
+      add(underReplicatedBlocks, new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 1, 0, 3);
 
       // Adding QUEUE_VERY_UNDER_REPLICATED block
-      add(underReplicatedBlocks, new Block(blockID++), 2, 0, 7);
+      blockIdTmp = blockID++;
+      add(underReplicatedBlocks, new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 2, 0, 7);
 
       // Adding QUEUE_REPLICAS_BADLY_DISTRIBUTED block
-      add(underReplicatedBlocks, new Block(blockID++), 6, 0, 6);
+      blockIdTmp = blockID++;
+      add(underReplicatedBlocks, new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 6, 0, 6);
 
       // Adding QUEUE_UNDER_REPLICATED block
-      add(underReplicatedBlocks, new Block(blockID++), 5, 0, 6);
+      blockIdTmp = blockID++;
+      add(underReplicatedBlocks, new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 5, 0, 6);
 
       // Adding QUEUE_WITH_CORRUPT_BLOCKS block
-      add(underReplicatedBlocks, new Block(blockID++), 0, 0, 3);
+      blockIdTmp = blockID++;
+      add(underReplicatedBlocks, new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 0, 0, 3);
     }
    
 
@@ -862,7 +869,8 @@ public class TestReplicationPolicy {
     assertTheChosenBlocks(chosenBlocks, 0, 4, 5, 1, 0);
 
     // Adding QUEUE_HIGHEST_PRIORITY
-    add(underReplicatedBlocks, new Block(blockID++), 1, 0, 3);
+    int blockIdTmp = blockID++;
+    add(underReplicatedBlocks,  new BlockInfo(new Block(blockIdTmp),blockIdTmp, blockIdTmp), 1, 0, 3);
 
     // Choose 10 blocks from UnderReplicatedBlocks. Then it should pick 1 block from
     // QUEUE_HIGHEST_PRIORITY, 4 blocks from QUEUE_REPLICAS_BADLY_DISTRIBUTED
@@ -993,7 +1001,7 @@ public class TestReplicationPolicy {
     blocksReplWorkMultiplier = DFSUtil.getReplWorkMultiplier(conf);
   }
   
-  private boolean add(final UnderReplicatedBlocks queue, final Block block,
+  private boolean add(final UnderReplicatedBlocks queue, final BlockInfo block,
           final int curReplicas,
           final int decomissionedReplicas,
           final int expectedReplicas) throws IOException {
