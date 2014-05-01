@@ -262,7 +262,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 
     //............... Corrupted Replica ...............................................
     List<HopCorruptReplica> crlist = new LinkedList<HopCorruptReplica>();
-    crlist.add(new HopCorruptReplica(1, 1));
+    crlist.add(new HopCorruptReplica(1, 1,1,1));
   
     //............... Invalidated Blocks ...............................................
     List<HopInvalidatedBlock> iblist = new LinkedList<HopInvalidatedBlock>();

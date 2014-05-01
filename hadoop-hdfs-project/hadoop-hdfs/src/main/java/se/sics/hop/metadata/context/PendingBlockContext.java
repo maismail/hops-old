@@ -240,29 +240,31 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
         checkForSnapshotChange();        
         INode inodeBeforeChange = (INode) params[0];
         INode inodeAfterChange  = (INode) params[1];
-        log("snapshot-maintenance-removed-pending", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
-        List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
-        deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-        updateReplicaUCs(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
+          log("snapshot-maintenance-pending-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
+          List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
+          deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+          updatePendingReplicas(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        }
         break;
       case Concat:
         checkForSnapshotChange();
         INodePK trg_param = (INodePK)params[0];
         List<INodePK> srcs_param = (List<INodePK>)params[1];
         List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
-        updateReplicaUCs(trg_param, srcs_param);
+        updatePendingReplicas(trg_param, srcs_param);
         break;
     }
   }
   
   private void checkForSnapshotChange(){
-     if (newPendings.size() != 0 || removedPendings.size() != 0 || modifiedPendings.size() != 0) // during the tx no replica should have been changed
+     if (!newPendings.isEmpty() || !removedPendings.isEmpty() || !modifiedPendings.isEmpty()) // during the tx no replica should have been changed
         {
           throw new IllegalStateException("No pending replicas row should have been changed during the Tx");
         }
   }
   
-  private void updateReplicaUCs(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
+  private void updatePendingReplicas(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
     
     
       for(PendingBlockInfo pending : pendings.values()){
@@ -272,11 +274,13 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
           PendingBlockInfo toBeAdded = clonePendingReplicaObj(pending);
           
           removedPendings.put(toBeDeleted.getBlockId(), toBeDeleted);
+          log("snapshot-maintenance-removed-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
           
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.id);
           toBeAdded.setPartKey(trg_param.partKey);
           newPendings.put(toBeAdded.getBlockId(), toBeAdded);
+          log("snapshot-maintenance-added-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
         }
       }
     

@@ -497,7 +497,7 @@ public class BlockManager {
               " e: " + numReplicas.excessReplicas() + ") "); 
 
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(block);
+                                  corruptReplicas.getNodes(blocksMap.getStoredBlock(block));
     
     for (Iterator<DatanodeDescriptor> jt = blocksMap.nodeIterator(block);
          jt.hasNext();) {
@@ -1467,7 +1467,7 @@ public class BlockManager {
     int corrupt = 0;
     int excess = 0;
     Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(block);
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(blocksMap.getStoredBlock(block));
     while(it.hasNext()) {
       DatanodeDescriptor node = it.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node)))
@@ -2592,7 +2592,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     Collection<DatanodeDescriptor> nonExcess = new ArrayList<DatanodeDescriptor>();
     Collection<DatanodeDescriptor> corruptNodes = corruptReplicas
-        .getNodes(block);
+        .getNodes(blocksMap.getStoredBlock(block));
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
          it.hasNext();) {
       DatanodeDescriptor cur = it.next();
@@ -2774,7 +2774,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       // Remove the replica from corruptReplicas
-      corruptReplicas.removeFromCorruptReplicasMap(block, node);
+      corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block), node);
     }
   }
 
@@ -2986,7 +2986,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     int stale = 0;
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(blocksMap.getStoredBlock(b));
     while (nodeIter.hasNext()) {
       DatanodeDescriptor node = nodeIter.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node))) {
@@ -3228,7 +3228,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     // file already removes them from the block map below.
     block.setNumBytesNoPersistance(BlockCommand.NO_ACK);
     addToInvalidates(block);
-    corruptReplicas.removeFromCorruptReplicasMap(block);
+    corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block));
     BlockInfo storedBlock = blocksMap.getStoredBlock(block);
     blocksMap.removeBlock(block);
     // Remove the block from pendingReplications
@@ -3324,7 +3324,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     boolean enoughRacks = false;;
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(b);
+                                  corruptReplicas.getNodes(blocksMap.getStoredBlock(b));
     int numExpectedReplicas = getReplication(b);
     String rackName = null;
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(b); 
@@ -3378,13 +3378,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   public int numCorruptReplicas(Block block) throws PersistanceException {
-    return corruptReplicas.numCorruptReplicas(block);
+    return corruptReplicas.numCorruptReplicas(blocksMap.getStoredBlock(block));
   }
 
   public void removeBlockFromMap(Block block) throws PersistanceException {
     blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
-    corruptReplicas.removeFromCorruptReplicasMap(block);
+    corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block));
   }
 
   public int getCapacity() {

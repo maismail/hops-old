@@ -116,7 +116,7 @@ public class BlockManagerTestUtil {
       final Block b) throws PersistanceException {
     final Set<String> rackSet = new HashSet<String>(0);
     final Collection<DatanodeDescriptor> corruptNodes = 
-       getCorruptReplicas(blockManager).getNodes(b);
+       getCorruptReplicas(blockManager).getNodes(blockManager.blocksMap.getStoredBlock(b));
     for (Iterator<DatanodeDescriptor> it = blockManager.blocksMap.nodeIterator(b); 
          it.hasNext();) {
       DatanodeDescriptor cur = it.next();

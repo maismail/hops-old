@@ -1219,7 +1219,7 @@ public class TestFileCreation {
       
       dfs.concat(p1, new Path[]{p2});
       
- //     dfs.rename(p1, p2);
+      dfs.rename(p1, p2);
 //// 
 //      
 //      cluster.restartNameNode();

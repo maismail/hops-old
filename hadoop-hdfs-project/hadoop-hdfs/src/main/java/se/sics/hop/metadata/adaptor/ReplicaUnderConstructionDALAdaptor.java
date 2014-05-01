@@ -55,7 +55,7 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
   @Override
   public HopReplicaUnderConstruction convertHDFStoDAL(ReplicaUnderConstruction hdfsClass) throws StorageException {
     if (hdfsClass != null) {
-      return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getInodeID(), hdfsClass.getPartKey(), hdfsClass.getIndex());
+      return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getPartKey(), hdfsClass.getIndex());
     } else {
       return null;
     }

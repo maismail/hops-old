@@ -294,7 +294,8 @@ public class INodeContext extends EntityContext<INode> {
         INode inodeBeforeChange = (INode) params[0];
         INode inodeAfterChange  = (INode) params[1];
         removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
+        log("snapshot-maintenance-inode-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
+        log("snapshot-maintenance-removed-inode",CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(),"inodeId", Integer.toString(inodeBeforeChange.getId()), "partKey", Integer.toString(inodeBeforeChange.getPartKey()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
         break;
       case Concat:
         // do nothing

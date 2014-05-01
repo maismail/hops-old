@@ -282,10 +282,12 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
         checkForSnapshotChange();        
         INode inodeBeforeChange = (INode) params[0];
         INode inodeAfterChange  = (INode) params[1];
-        log("snapshot-maintenance-removed-urblock", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()) });
-        List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
-        deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-        updateReplicaUCs(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
+          log("snapshot-maintenance-urblock-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
+          List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
+          deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+          updateReplicaUCs(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+        }
         break;
       case Concat:
         checkForSnapshotChange();
@@ -314,11 +316,12 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
           HopUnderReplicatedBlock toBeAdded = cloneURBObj(pending);
           
           removedurBlocks.put(toBeDeleted.getBlockId(), toBeDeleted);
-          
+          log("snapshot-maintenance-removed-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.id);
           toBeAdded.setPartKey(trg_param.partKey);
           newurBlocks.put(toBeAdded.getBlockId(), toBeAdded);
+          log("snapshot-maintenance-added-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
         }
       }
   }

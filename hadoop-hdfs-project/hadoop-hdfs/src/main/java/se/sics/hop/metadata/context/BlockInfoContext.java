@@ -344,6 +344,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       if(deleteINodes.contains(pk)){
         //remove the block
         removedBlocks.put(bInfo.getBlockId(), bInfo);
+        log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId()), "partKey", Integer.toString(bInfo.getPartKey())});
       }   
     }
   }
@@ -353,16 +354,17 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     
     if (inodeBeforeChange instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed. 
       if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) { //file name was changed. partKey has to be changed in the blocks of the src file
+        log("snapshot-maintenance-blockinfo-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
         for (BlockInfo bInfo : blocks.values()) {
           if (bInfo.getInodeId() == inodeBeforeChange.getId()) {
             BlockInfo removedBlk = BlockInfo.cloneBlock(bInfo);
             removedBlocks.put(removedBlk.getBlockId(), removedBlk);
-
+            log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(removedBlk.getBlockId()),"inodeId", Integer.toString(removedBlk.getInodeId()), "partKey", Integer.toString(removedBlk.getPartKey())});
             bInfo.setPartKeyNoPersistance(inodeAfterChange.getPartKey());
             modifiedBlocks.put(bInfo.getBlockId(), bInfo);
+            log("snapshot-maintenance-added-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId()), "partKey", Integer.toString(bInfo.getPartKey())});
           }
-        }
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId())});
+        }        
       }
     }
   }
