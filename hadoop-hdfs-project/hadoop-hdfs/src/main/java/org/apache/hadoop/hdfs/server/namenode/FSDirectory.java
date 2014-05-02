@@ -2292,7 +2292,7 @@ public class FSDirectory implements Closeable {
            newINodes.add(newRootINode);
            da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
            
-           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
+           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),newRootINode.getPartKey(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
            INodeAttributesDataAccess ida = (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
            List<INodeAttributes> attrList = new ArrayList();
            attrList.add(inodeAttributes);

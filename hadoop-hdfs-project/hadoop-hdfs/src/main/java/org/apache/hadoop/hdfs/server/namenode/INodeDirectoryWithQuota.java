@@ -164,11 +164,11 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   }
   
   public INodeAttributes getINodeAttributes() throws PersistanceException{
-    return EntityManager.find(INodeAttributes.Finder.ByPKey, (Integer)id);
+    return EntityManager.find(INodeAttributes.Finder.ByPKey, (Integer)id, (Integer)part_key);
   }
   
   private void createINodeAttributes(Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) throws PersistanceException{
-    INodeAttributes attr = new INodeAttributes(id, nsQuota, nsCount, dsQuota, diskspace);
+    INodeAttributes attr = new INodeAttributes(id, part_key, nsQuota, nsCount, dsQuota, diskspace);
     EntityManager.add(attr);
   }
   

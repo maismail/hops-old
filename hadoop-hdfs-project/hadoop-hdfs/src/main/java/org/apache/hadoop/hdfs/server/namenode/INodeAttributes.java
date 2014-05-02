@@ -37,13 +37,15 @@ public class INodeAttributes {
     }
   }
   private Integer inodeId;
+  private Integer partKey;
   private Long nsQuota; /// NameSpace quota
   private Long nsCount;
   private Long dsQuota; /// disk space quota
   private Long diskspace;
 
-  public INodeAttributes(Integer inodeId, Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) {
+  public INodeAttributes(Integer inodeId, Integer partKey, Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) {
     this.inodeId = inodeId;
+    this.partKey = partKey;
     if (nsQuota != null) {
       this.nsQuota = nsQuota;
     } else {
@@ -67,6 +69,10 @@ public class INodeAttributes {
 
   }
 
+  public Integer getPartKey() {
+    return partKey;
+  }
+
   public Integer getInodeId() {
     return inodeId;
   }
@@ -87,6 +93,15 @@ public class INodeAttributes {
     return diskspace;
   }
 
+  public void setPartKeyNoPersistance(Integer partKey) {
+    this.partKey = partKey;
+  }
+
+  public void setPartKey(Integer partKey) throws PersistanceException {
+    setPartKeyNoPersistance(partKey);
+    saveAttributes();
+  }
+  
   public void setInodeId(Integer inodeId) throws PersistanceException {
     setInodeIdNoPersistance(inodeId);
     saveAttributes();

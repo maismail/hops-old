@@ -16,6 +16,7 @@
 package se.sics.hop.metadata.adaptor;
 
 import java.util.Collection;
+import java.util.Map;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import se.sics.hop.metadata.DALAdaptor;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
@@ -35,8 +36,8 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public INodeAttributes findAttributesByPk(Integer inodeId) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId));
+  public INodeAttributes findAttributesByPk(Integer inodeId, Integer partKey) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId, partKey));
   }
 
   @Override
@@ -50,6 +51,7 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
     if (attribute != null) {
       HopINodeAttributes hia = new HopINodeAttributes(
               attribute.getInodeId(),
+              attribute.getPartKey(),
               attribute.getNsQuota(),
               attribute.getNsCount(),
               attribute.getDsQuota(),
@@ -65,6 +67,7 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
     if (hia != null) {
       INodeAttributes iNodeAttributes = new INodeAttributes(
               hia.getInodeId(),
+              hia.getPartKey(),
               hia.getNsQuota(),
               hia.getNsCount(),
               hia.getDsQuota(),
@@ -76,7 +79,7 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public Collection<INodeAttributes> findAttributesByPkList(Collection<Integer> inodeIds) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findAttributesByPkList(inodeIds));
+  public Collection<INodeAttributes> findAttributesByPkList(Map<Integer, Integer> inodes) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findAttributesByPkList(inodes));
   }
 }

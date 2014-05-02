@@ -2913,6 +2913,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public Object performTask() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
+        if(inodeIdentifier == null){
+          //HOP blocksMap.getStoredBlock(..) will return null for that
+          //a quick fix is to put dummy obj
+          BlockInfo dummy = new BlockInfo(new Block(rdbi.getBlock().getBlockId(), rdbi.getBlock().getNumBytes(),rdbi.getBlock().getGenerationStamp()), INode.NON_EXISTING_ID,INode.INVALID_PART_KEY);
+          rdbi.setBlock(dummy);
+        }
         LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus());
         switch (rdbi.getStatus()) {
         case DELETED_BLOCK:

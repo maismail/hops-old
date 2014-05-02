@@ -7,8 +7,10 @@ import se.sics.hop.exception.INodeResolveException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.logging.Level;
@@ -1001,16 +1003,16 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private void readINodeAttributes() throws PersistanceException {
-    List<Integer> ids = new ArrayList<Integer>();
+    Map<Integer/*inodeid*/, Integer/*partkey*/> inodes = new HashMap<Integer,Integer>();
     for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
       for (INode inode : resolvedINodes) {
         if (inode instanceof INodeDirectoryWithQuota) {
-          ids.add(inode.getId());
+          inodes.put(inode.getId(), inode.getPartKey());
         }
       }
     }
-    if(!ids.isEmpty()){
-      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, ids);
+    if(!inodes.isEmpty()){
+      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, inodes);
     }
   }
   

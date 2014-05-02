@@ -15,6 +15,7 @@
  */
 package se.sics.hop.metadata.lock;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -37,6 +38,10 @@ import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.handler.RequestHandler;
+import se.sics.hop.transaction.handler.RequestHandler.OperationType;
 
 /**
  *
@@ -57,44 +62,54 @@ public class TestNDBSizer {
 
   }
 
-  @Test
+ // @Test
   public void testInsertData() throws Exception {
-
-    //insertData();
+    insertData();
   }
 
-  private void insertData() throws StorageException, PersistanceException {
+  private void insertData() throws StorageException, PersistanceException, IOException {
     System.out.println("Building the data...");
-    
-    
-    int NUM_INODES = 1000000;
-    int NUM_BLOCKS = 2000000;
-    int NUM_REPLICAS = 6000000;
-    int BATCH_SIZE = 1000;
 
 
+    final int NUM_INODES = 500000;
+    final int NUM_BLOCKS = 1200000;//2000000;
+    final int NUM_REPLICAS = 3600000;//6000000;
+    final int BATCH_SIZE = 5000;
 
-    List<INode> newFiles = new LinkedList<INode>();
-    for (int i = 0; i < NUM_INODES; i++) {  
-      INodeDirectory dir = new INodeDirectoryWithQuota("",new PermissionStatus("salman", "usr", new FsPermission((short) 0777)));
+
+    String filename = "";
+    for(int i =0; i < 100; i++){
+      filename+="-";
+    }
+
+    final List<INode> newFiles = new LinkedList<INode>();
+    for (int i = 0; i < NUM_INODES; i++) {
+      INodeDirectory dir = new INodeDirectoryWithQuota("", new PermissionStatus("salman", "usr", new FsPermission((short) 0777)));
       dir.setIdNoPersistance(i);
-      dir.setLocalNameNoPersistance(Integer.toString(i));
+      dir.setLocalNameNoPersistance(filename+Integer.toString(i));
       dir.setParentIdNoPersistance(i);
       newFiles.add(dir);
       if (newFiles.size() >= BATCH_SIZE) {
-        //StorageFactory.getConnector().beginTransaction();
-        INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-        da.prepare(new LinkedList<INode>(), newFiles, new LinkedList<INode>());
-        //StorageFactory.getConnector().commit();
-        newFiles.clear();
-        System.out.println("INode written are "+i);
+        final int j = i;
+        new LightWeightRequestHandler(HDFSOperationType.TEST) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+            da.prepare(new LinkedList<INode>(), newFiles, new LinkedList<INode>());
+            newFiles.clear();
+            showProgressBar("INodes", j,NUM_INODES);
+            return null;
+          }
+        }.handle();
+
       }
     }
 
 
+    System.out.println();
 
 
-    List<BlockInfo> newBlocks = new LinkedList<BlockInfo>();
+    final List<BlockInfo> newBlocks = new LinkedList<BlockInfo>();
     for (int i = 0; i < NUM_BLOCKS; i++) {
       BlockInfo block = new BlockInfo();
       block.setINodeIdNoPersistance(i);
@@ -102,31 +117,58 @@ public class TestNDBSizer {
       block.setPartKeyNoPersistance(i);
       newBlocks.add(block);
       if (newBlocks.size() >= BATCH_SIZE) {
-        //StorageFactory.getConnector().beginTransaction();
-        BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        bda.prepare(new LinkedList<BlockInfo>(), newBlocks, new LinkedList<BlockInfo>());
-        //StorageFactory.getConnector().commit();
-        newBlocks.clear();
-        System.out.println("Blocks written are "+i);
+        final int j = i;
+        new LightWeightRequestHandler(HDFSOperationType.TEST) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+            bda.prepare(new LinkedList<BlockInfo>(), newBlocks, new LinkedList<BlockInfo>());
+            newBlocks.clear();
+            showProgressBar("Blocks", j,NUM_BLOCKS);
+            return null;
+          }
+        }.handle();
+
       }
     }
 
+
+    System.out.println();
     
-      List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
-      for (int i = 0; i < NUM_REPLICAS; i++) {
-        replicas.add(new HopIndexedReplica(i, i, i, i, i));
-         if (replicas.size() >= BATCH_SIZE) {
-        //StorageFactory.getConnector().beginTransaction();
-        ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
-        rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
-        //StorageFactory.getConnector().commit();
-        replicas.clear();
-        System.out.println("Replicas written are "+i);
+    final List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
+    for (int i = 0; i < NUM_REPLICAS; i++) {
+      replicas.add(new HopIndexedReplica(i, i, i, i, i));
+      if (replicas.size() >= BATCH_SIZE) {
+        final int j = i;
+        new LightWeightRequestHandler(HDFSOperationType.TEST) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
+            rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
+            //StorageFactory.getConnector().commit();
+            replicas.clear();
+            showProgressBar("Replicas", j,NUM_REPLICAS);
+            return null;
+          }
+        }.handle();
+
       }
-      }
-     
-
-
-
+    }
+  }
+  
+  public static void showProgressBar(String msg, double achieved, double total) throws IOException{
+    int percent = (int)((achieved/total)*(double)100);
+    System.out.print("\r");
+    StringBuffer bar = new StringBuffer(msg+" |");
+    for(int i = 0; i < percent; i++){
+      bar.append(".");
+    }
+    for(int i = 0 ; i < (100-percent);i++){
+      bar.append(" ");
+    }
+    bar.append("|"+" "+percent+"%");   
+   
+    System.out.println(bar);
+    //System.out.write((int)achieved);
   }
 }

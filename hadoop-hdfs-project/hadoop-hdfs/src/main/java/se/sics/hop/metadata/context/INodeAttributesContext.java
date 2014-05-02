@@ -93,17 +93,19 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   @Override
   public INodeAttributes find(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
-    Integer inodeId = (Integer) params[0];
+    
 
     switch (qfinder) {
       case ByPKey:
+        Integer inodeId = (Integer) params[0];
+        Integer partKey = (Integer) params[1];
         if (cachedRows.containsKey(inodeId)) {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId), "partKey", Integer.toString(partKey)});
           return cachedRows.get(inodeId).getAttributes();
         } else {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId), "partKey", Integer.toString(partKey)});
           aboutToAccessStorage(" id = " + inodeId);
-          INodeAttributes quota = da.findAttributesByPk(inodeId);
+          INodeAttributes quota = da.findAttributesByPk(inodeId,partKey);
           //dont worry if it is null. 
           AttributeWrapper wrapper = new AttributeWrapper(quota, CacheRowStatus.UN_MODIFIED);
           cachedRows.put(inodeId, wrapper);
@@ -117,27 +119,27 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   @Override
   public Collection<INodeAttributes> findList(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
-    List<Integer> inodeIds = (List<Integer>) params[0];
+    Map<Integer, Integer> inodes = (Map<Integer/*inodeid*/, Integer/*partKey*/>) params[0];
     switch (qfinder) {
       case ByPKList: //only used for batch reading
         boolean allDataRead = true;
-        for (int i = 0; i < inodeIds.size(); i++) {
-          if (!cachedRows.containsKey(inodeIds.get(i))) {
+        for(Integer inodeId : inodes.keySet()){
+          if (!cachedRows.containsKey(inodeId)) {
             allDataRead = false;
             break;
           }
         }
         if (allDataRead) {
-          log("find-attributes-by-pk-list", EntityContext.CacheHitState.HIT, new String[]{"id", Arrays.toString(inodeIds.toArray())});
+          log("find-attributes-by-pk-list", EntityContext.CacheHitState.HIT, new String[]{"id", Arrays.toString(inodes.keySet().toArray())});
           List<INodeAttributes> retQuotaList = new ArrayList<INodeAttributes>();
-          for (int i = 0; i < inodeIds.size(); i++) {
-            retQuotaList.add(cachedRows.get(inodeIds.get(i)).getAttributes());
+          for(Integer inodeId : inodes.keySet()) {
+            retQuotaList.add(cachedRows.get(inodeId).getAttributes());
           }
           return retQuotaList;
         } else {
-          log("find-attributes-by-pk-list", EntityContext.CacheHitState.LOSS, new String[]{"id", Arrays.toString(inodeIds.toArray())});
-          aboutToAccessStorage(" ids = " + Arrays.toString(inodeIds.toArray()));
-          List<INodeAttributes> quotaList = (List<INodeAttributes>) da.findAttributesByPkList(inodeIds);
+          log("find-attributes-by-pk-list", EntityContext.CacheHitState.LOSS, new String[]{"id", Arrays.toString(inodes.keySet().toArray())});
+          aboutToAccessStorage(" ids = " + Arrays.toString(inodes.keySet().toArray()));
+          List<INodeAttributes> quotaList = (List<INodeAttributes>) da.findAttributesByPkList(inodes);
           for (int i = 0; i < quotaList.size(); i++) {
             INodeAttributes quota = quotaList.get(i);
             AttributeWrapper wrapper = new AttributeWrapper(quota, CacheRowStatus.UN_MODIFIED);
