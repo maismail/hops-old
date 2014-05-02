@@ -234,8 +234,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
   
   private void checkForSnapshotChange(){
-     if (newReplicas.size() != 0 || modifiedReplicas.size() != 0 || removedReplicas.size() != 0) // during the tx no replica should have been changed
-        {
+     if (newReplicas.size() != 0 || modifiedReplicas.size() != 0) // during the tx no replica should have been changed
+        {// renaming to existing file will put replicas in the deleted list
           throw new IllegalStateException("No replica should have been changed during the Tx");
         }
   }

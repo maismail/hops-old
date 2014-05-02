@@ -3382,9 +3382,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   public void removeBlockFromMap(Block block) throws PersistanceException {
-    blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
     corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block));
+    blocksMap.removeBlock(block);
   }
 
   public int getCapacity() {

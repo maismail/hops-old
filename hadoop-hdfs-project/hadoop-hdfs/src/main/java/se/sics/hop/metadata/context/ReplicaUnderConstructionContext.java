@@ -104,9 +104,6 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
           log("find-replicaucs-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
           aboutToAccessStorage();
           result = dataAccess.findReplicaUnderConstructionByINodeId(inodeId, partKey);
-          if(result != null){
-            System.out.println("RUC size "+result.size());
-          }
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);

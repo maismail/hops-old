@@ -95,7 +95,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           partKey = (Integer) params[1];
         }
         result = blocks.get(id);
-        if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
+        if(result == null && removedBlocks.containsKey(id)){
+          return null;
+        }
+        else if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
                                                          // some test intentionally look for blocks that are not in the DB
                                                          // duing the acquire lock phase if we see that an id does not
                                                          // exist in the db then we should put null in the cache for that id
