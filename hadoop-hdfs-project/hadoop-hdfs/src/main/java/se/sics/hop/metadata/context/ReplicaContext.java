@@ -19,6 +19,7 @@ import se.sics.hop.exception.StorageException;
 import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -218,15 +219,15 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         INode inodeAfterChange  = (INode) params[1];
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) {
           log("snapshot-maintenance-replicas-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-          List<INodePK> deletedINodesPK = new ArrayList<INodePK>();
-          deletedINodesPK.add(new INodePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateReplicas(new INodePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
+          updateReplicas(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
         }
         break;
       case Concat:
         checkForSnapshotChange();
-        INodePK trg_param = (INodePK)params[0];
-        List<INodePK> srcs_param = (List<INodePK>)params[1];
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
         List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
         updateReplicas(trg_param, srcs_param);
         break;
@@ -240,11 +241,11 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         }
   }
   
-  private void updateReplicas(INodePK trg_param, List<INodePK> toBeDeletedSrcs){
+  private void updateReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
     for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
       for(HopIndexedReplica replica : replicas){
-        INodePK pk = new INodePK(replica.getInodeId(), replica.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(replica.getInodeId(), replica.getPartKey());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);
           HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
@@ -253,8 +254,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
           log("snapshot-maintenance-removed-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
           
           //both inode id and partKey has changed
-          toBeAdded.setInodeID(trg_param.id);
-          toBeAdded.setPartKey(trg_param.partKey);
+          toBeAdded.setInodeID(trg_param.getInodeId());
+          toBeAdded.setPartKey(trg_param.getPartKey());
           newReplicas.put(toBeAdded, toBeAdded);
           log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
         }

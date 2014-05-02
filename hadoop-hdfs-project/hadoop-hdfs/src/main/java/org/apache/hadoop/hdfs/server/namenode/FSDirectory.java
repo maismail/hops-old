@@ -73,7 +73,7 @@ import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
-import se.sics.hop.metadata.context.INodePK;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
@@ -1023,10 +1023,10 @@ public class FSDirectory implements Closeable {
     
     //HOP_START_CODE
     //params for updating the snapshots
-    INodePK trg_param = new INodePK(trgInode.getId(),trgInode.getPartKey());
-    List<INodePK> srcs_param = new ArrayList<INodePK>();
+    HopINodeCandidatePK trg_param = new HopINodeCandidatePK(trgInode.getId(),trgInode.getPartKey());
+    List<HopINodeCandidatePK> srcs_param = new ArrayList<HopINodeCandidatePK>();
     for(int j = 0; j < allSrcInodes.length; j++) {
-      srcs_param.add(new INodePK(allSrcInodes[j].getId(), allSrcInodes[j].getPartKey()));
+      srcs_param.add(new HopINodeCandidatePK(allSrcInodes[j].getId(), allSrcInodes[j].getPartKey()));
     }
     //END_HOP_CODE
     // since we are in the same dir - we can use same parent to remove files

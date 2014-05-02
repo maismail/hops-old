@@ -7,20 +7,14 @@ import se.sics.hop.exception.INodeResolveException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
-import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
@@ -46,15 +40,12 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.context.BlockPK;
-import se.sics.hop.metadata.context.INodePK;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.WRITE_ON_PARENT;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.READ;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.READ_COMMITTED;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.LockType.WRITE;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.lock.ParallelReadThread;
@@ -348,9 +339,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
              EntityManager.readCommited();
            }
            if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
-             for(INodePK inodeParam : parallelReadParams.getInodeIds()){
+             for(HopINodeCandidatePK inodeParam : parallelReadParams.getInodeIds()){
                if (!terminateAsyncThread) {
-                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.id, inodeParam.partKey );
+                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.getInodeId(), inodeParam.getPartKey() );
                }
              }
            }
@@ -580,8 +571,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (locks.getErLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, null, null);
-      threads.add(acquireReplicasLockASync(parallelReadParams));
+      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, HopExcessReplica.Finder.ByINodeId, null);
+      threads.add(acquireReplicasLockASyncNEW(parallelReadParams));
     }
 
     if (locks.getRucLock() != null) {
@@ -645,13 +636,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    
   private class ParallelReadParams{
     private final List<BlockPK> blockIds;
-    private final List<INodePK> inodeIds;
+    private final List<HopINodeCandidatePK> inodeIds;
     private final FinderType blockFinder;
     private final boolean isListBlockFinder;
     private final FinderType inodeFinder;
     private final FinderType defaultFinder;
 
-    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, boolean isListBlockFinder, List<INodePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
+    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, boolean isListBlockFinder, List<HopINodeCandidatePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
       this.blockIds = blockIds;
       this.inodeIds = inodeIds;
       this.blockFinder = blockFinder;
@@ -664,7 +655,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       return blockIds;
     }
 
-    public List<INodePK> getInodeIds() {
+    public List<HopINodeCandidatePK> getInodeIds() {
       return inodeIds;
     }
 
@@ -681,7 +672,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
   }
   private ParallelReadParams getBlockParameters(FinderType blockFinder, boolean isListBlockFinder, FinderType inodeFinder, FinderType defaultFinder) {
-    List<INodePK> inodesParams = new ArrayList<INodePK>();
+    List<HopINodeCandidatePK> inodesParams = new ArrayList<HopINodeCandidatePK>();
     List<BlockPK> blocksParams = new ArrayList<BlockPK>();
     
     // first try to take locks based on inodes
@@ -689,7 +680,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
         for (INode inode : resolvedINodes) {
           if (inode instanceof INodeFile || inode instanceof INodeFileUnderConstruction) {
-            INodePK param = new INodePK(inode.getId(), inode.getPartKey());
+            HopINodeCandidatePK param = new HopINodeCandidatePK(inode.getId(), inode.getPartKey());
             inodesParams.add(param);
           //  LOG.debug("Param inode "+param.id+" paratKey "+param.partKey);
           }
@@ -1003,16 +994,17 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private void readINodeAttributes() throws PersistanceException {
-    Map<Integer/*inodeid*/, Integer/*partkey*/> inodes = new HashMap<Integer,Integer>();
+    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
     for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
       for (INode inode : resolvedINodes) {
         if (inode instanceof INodeDirectoryWithQuota) {
-          inodes.put(inode.getId(), inode.getPartKey());
+          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId(), inode.getPartKey());
+          pks.add(pk);
         }
       }
     }
-    if(!inodes.isEmpty()){
-      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, inodes);
+    if(!pks.isEmpty()){
+      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, pks);
     }
   }
   

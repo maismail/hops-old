@@ -18,6 +18,7 @@ import static se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds.
 import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -317,8 +318,8 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         break;
       case Concat:
         //checkForSnapshotChange();
-        INodePK trg_param = (INodePK)params[0];
-        List<INodePK> srcs_param = (List<INodePK>)params[1]; // these are the merged inodes    
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1]; // these are the merged inodes    
         List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
         deleteBlocksForConcat(trg_param,srcs_param,oldBlks);
         //new blocks have been added by the concat function
@@ -336,14 +337,14 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       }
   }
   
-  private void deleteBlocksForConcat(INodePK trg_param, List<INodePK> deleteINodes, List<BlockInfo> oldBlks /* blks with old pk*/){
+  private void deleteBlocksForConcat(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> deleteINodes, List<BlockInfo> oldBlks /* blks with old pk*/){
     
     if (!removedBlocks.isEmpty()) {//in case of concat new block_infos rows are added by the concat fn
         throw new IllegalStateException("Concat file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
       }
     
     for(BlockInfo bInfo: oldBlks){
-      INodePK pk = new INodePK(bInfo.getInodeId(), bInfo.getPartKey());
+      HopINodeCandidatePK pk = new HopINodeCandidatePK(bInfo.getInodeId(), bInfo.getPartKey());
       if(deleteINodes.contains(pk)){
         //remove the block
         removedBlocks.put(bInfo.getBlockId(), bInfo);

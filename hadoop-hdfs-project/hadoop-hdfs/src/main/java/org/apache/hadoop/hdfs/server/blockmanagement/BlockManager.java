@@ -1474,7 +1474,7 @@ public class BlockManager {
         corrupt++;
       else if (node.isDecommissionInProgress() || node.isDecommissioned())
         decommissioned++;
-      else if (excessReplicateMap.contains(node.getStorageID(), block)) {
+      else if (excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(block))) {
         excess++;
       } else {
         nodesContainingLiveReplicas.add(node);
@@ -1495,8 +1495,8 @@ public class BlockManager {
         continue;
       }
       // the block must not be scheduled for removal on srcNode
-      if(excessReplicateMap.contains(node.getStorageID(), block))
-        continue;
+      if(excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(block))) 
+       continue;
       // never use already decommissioned nodes
       if(node.isDecommissioned())
         continue;
@@ -2604,7 +2604,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         postponeBlock(block);
         return;
       }
-      if (!excessReplicateMap.contains(cur.getStorageID(), block)) {
+      if (!excessReplicateMap.contains(cur.getStorageID(), blocksMap.getStoredBlock(block))) {
         if (!cur.isDecommissionInProgress() && !cur.isDecommissioned()) {
           // exclude corrupt replicas
           if (corruptNodes == null || !corruptNodes.contains(cur)) {
@@ -2720,7 +2720,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
   private void addToExcessReplicate(DatanodeInfo dn, Block block) throws PersistanceException {
     assert namesystem.hasWriteLock();
-    if (excessReplicateMap.put(dn.getStorageID(), block)) {
+    if (excessReplicateMap.put(dn.getStorageID(), blocksMap.getStoredBlock(block))) {
       excessBlocksCount.incrementAndGet();
       if(blockLog.isDebugEnabled()) {
         blockLog.debug("BLOCK* addToExcessReplicate:"
@@ -2765,7 +2765,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       // We've removed a block from a node, so it's definitely no longer
       // in "excess" there.
       //
-      if (excessReplicateMap.remove(node.getStorageID(), block)) {
+      if (excessReplicateMap.remove(node.getStorageID(), blocksMap.getStoredBlock(block))) {
         excessBlocksCount.decrementAndGet();
         if (blockLog.isDebugEnabled()) {
           blockLog.debug("BLOCK* removeStoredBlock: "
@@ -3000,7 +3000,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       } else if (node.isDecommissionInProgress() || node.isDecommissioned()) {
         decommissioned++;
       } else {
-        if (excessReplicateMap.contains(node.getStorageID(), b)) {
+        if (excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(b))) {
           excess++;
         } else {
           live++;
