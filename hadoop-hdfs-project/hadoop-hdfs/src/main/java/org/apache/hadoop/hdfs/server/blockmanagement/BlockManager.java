@@ -2840,11 +2840,18 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             + " is expected to be removed from an unrecorded node " + delHint);
       }
     }
-
+    
     //
     // Modify the blocks->datanode map and node's map.
     //
-    pendingReplications.decrement(blocksMap.getStoredBlock(block));
+    //HOP_START_CODE
+    BlockInfo temp = blocksMap.getStoredBlock(block);
+    if(temp==null)
+    {
+      temp = new BlockInfo(block, INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
+    }
+    //HOP_END_CODE
+    pendingReplications.decrement(temp);
     processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
         delHintNode);
   }
@@ -2873,9 +2880,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
+        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];        
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(rdbi.getBlock());
+        LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
         if(inodeIdentifier == null)
         {
           LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
@@ -2913,11 +2920,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public Object performTask() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        if(inodeIdentifier == null){
+        if(blocksMap.getStoredBlock(rdbi.getBlock()) == null || inodeIdentifier == null || inodeIdentifier.getInodeId() == INode.NON_EXISTING_ID){  // file/block was deleted 
           //HOP blocksMap.getStoredBlock(..) will return null for that
-          //a quick fix is to put dummy obj
-          BlockInfo dummy = new BlockInfo(new Block(rdbi.getBlock().getBlockId(), rdbi.getBlock().getNumBytes(),rdbi.getBlock().getGenerationStamp()), INode.NON_EXISTING_ID,INode.INVALID_PART_KEY);
-          rdbi.setBlock(dummy);
+          LOG.error("ERROR: Dangling block. Block id="+rdbi.getBlock().getBlockId());
         }
         LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus());
         switch (rdbi.getStatus()) {
