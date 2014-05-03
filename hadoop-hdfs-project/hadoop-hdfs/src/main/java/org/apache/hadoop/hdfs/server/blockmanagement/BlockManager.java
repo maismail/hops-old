@@ -497,7 +497,7 @@ public class BlockManager {
               " e: " + numReplicas.excessReplicas() + ") "); 
 
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(blocksMap.getStoredBlock(block));
+                                  corruptReplicas.getNodes(getBlockInfo(block));
     
     for (Iterator<DatanodeDescriptor> jt = blocksMap.nodeIterator(block);
          jt.hasNext();) {
@@ -1224,7 +1224,7 @@ public class BlockManager {
             bc = blocksMap.getBlockCollection(blk);
             // abandoned block or block reopened for append
             if(bc == null || bc instanceof MutableBlockCollection) {
-              neededReplications.remove(blocksMap.getStoredBlock(blk), priority1); // remove from neededReplications
+              neededReplications.remove(getBlockInfo(blk), priority1); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority1);
               return scheduledWork;
             }
@@ -1246,12 +1246,12 @@ public class BlockManager {
             assert liveReplicaNodes.size() == numReplicas.liveReplicas();
             // do not schedule more if enough replicas is already pending
             numEffectiveReplicas = numReplicas.liveReplicas() +
-                                    pendingReplications.getNumReplicas(blocksMap.getStoredBlock(blk));
+                                    pendingReplications.getNumReplicas(getBlockInfo(blk));
       
             if (numEffectiveReplicas >= requiredReplication) {
-              if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(blk)) > 0) ||
+              if ( (pendingReplications.getNumReplicas(getBlockInfo(blk)) > 0) ||
                    (blockHasEnoughRacks(blk)) ) {
-                neededReplications.remove(blocksMap.getStoredBlock(blk), priority1); // remove from neededReplications
+                neededReplications.remove(getBlockInfo(blk), priority1); // remove from neededReplications
                 neededReplications.decrementReplicationIndex(priority1);
                 blockLog.info("BLOCK* Removing " + blk
                     + " from neededReplications as it has enough replicas");
@@ -1310,7 +1310,7 @@ public class BlockManager {
           bc = blocksMap.getBlockCollection(block);
           // abandoned block or block reopened for append
           if(bc == null || bc instanceof MutableBlockCollection) {
-            neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
+            neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
             rw.targets = null;
             neededReplications.decrementReplicationIndex(priority);
             continue;
@@ -1320,12 +1320,12 @@ public class BlockManager {
           // do not schedule more if enough replicas is already pending
           NumberReplicas numReplicas = countNodes(block);
           numEffectiveReplicas = numReplicas.liveReplicas() +
-            pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block));
+            pendingReplications.getNumReplicas(getBlockInfo(block));
 
           if (numEffectiveReplicas >= requiredReplication) {
-            if ( (pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) > 0) ||
+            if ( (pendingReplications.getNumReplicas(getBlockInfo(block)) > 0) ||
                  (blockHasEnoughRacks(block)) ) {
-              neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
+              neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority);
               rw.targets = null;
               blockLog.info("BLOCK* Removing " + block
@@ -1353,7 +1353,7 @@ public class BlockManager {
           // Move the block-replication into a "pending" state.
           // The reason we use 'pending' is so we can retry
           // replications that fail after an appropriate amount of time.
-          pendingReplications.increment(blocksMap.getStoredBlock(block), targets.length);
+          pendingReplications.increment(getBlockInfo(block), targets.length);
           if(blockLog.isDebugEnabled()) {
             blockLog.debug(
                 "BLOCK* block " + block
@@ -1362,7 +1362,7 @@ public class BlockManager {
 
           // remove from neededReplications
           if(numEffectiveReplicas + targets.length >= requiredReplication) {
-            neededReplications.remove(blocksMap.getStoredBlock(block), priority); // remove from neededReplications
+            neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
             neededReplications.decrementReplicationIndex(priority);
           }
         }
@@ -1467,14 +1467,14 @@ public class BlockManager {
     int corrupt = 0;
     int excess = 0;
     Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(blocksMap.getStoredBlock(block));
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(getBlockInfo(block));
     while(it.hasNext()) {
       DatanodeDescriptor node = it.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node)))
         corrupt++;
       else if (node.isDecommissionInProgress() || node.isDecommissioned())
         decommissioned++;
-      else if (excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(block))) {
+      else if (excessReplicateMap.contains(node.getStorageID(), getBlockInfo(block))) {
         excess++;
       } else {
         nodesContainingLiveReplicas.add(node);
@@ -1495,7 +1495,7 @@ public class BlockManager {
         continue;
       }
       // the block must not be scheduled for removal on srcNode
-      if(excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(block))) 
+      if(excessReplicateMap.contains(node.getStorageID(), getBlockInfo(block))) 
        continue;
       // never use already decommissioned nodes
       if(node.isDecommissioned())
@@ -2592,7 +2592,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     Collection<DatanodeDescriptor> nonExcess = new ArrayList<DatanodeDescriptor>();
     Collection<DatanodeDescriptor> corruptNodes = corruptReplicas
-        .getNodes(blocksMap.getStoredBlock(block));
+        .getNodes(getBlockInfo(block));
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
          it.hasNext();) {
       DatanodeDescriptor cur = it.next();
@@ -2604,7 +2604,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         postponeBlock(block);
         return;
       }
-      if (!excessReplicateMap.contains(cur.getStorageID(), blocksMap.getStoredBlock(block))) {
+      if (!excessReplicateMap.contains(cur.getStorageID(), getBlockInfo(block))) {
         if (!cur.isDecommissionInProgress() && !cur.isDecommissioned()) {
           // exclude corrupt replicas
           if (corruptNodes == null || !corruptNodes.contains(cur)) {
@@ -2720,7 +2720,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
   private void addToExcessReplicate(DatanodeInfo dn, Block block) throws PersistanceException {
     assert namesystem.hasWriteLock();
-    if (excessReplicateMap.put(dn.getStorageID(), blocksMap.getStoredBlock(block))) {
+    if (excessReplicateMap.put(dn.getStorageID(), getBlockInfo(block))) {
       excessBlocksCount.incrementAndGet();
       if(blockLog.isDebugEnabled()) {
         blockLog.debug("BLOCK* addToExcessReplicate:"
@@ -2765,7 +2765,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       // We've removed a block from a node, so it's definitely no longer
       // in "excess" there.
       //
-      if (excessReplicateMap.remove(node.getStorageID(), blocksMap.getStoredBlock(block))) {
+      if (excessReplicateMap.remove(node.getStorageID(), getBlockInfo(block))) {
         excessBlocksCount.decrementAndGet();
         if (blockLog.isDebugEnabled()) {
           blockLog.debug("BLOCK* removeStoredBlock: "
@@ -2774,7 +2774,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       // Remove the replica from corruptReplicas
-      corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block), node);
+      corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block), node);
     }
   }
 
@@ -2844,14 +2844,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     //
     // Modify the blocks->datanode map and node's map.
     //
-    //HOP_START_CODE
-    BlockInfo temp = blocksMap.getStoredBlock(block);
-    if(temp==null)
-    {
-      temp = new BlockInfo(block, INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
-    }
-    //HOP_END_CODE
-    pendingReplications.decrement(temp);
+    pendingReplications.decrement(getBlockInfo(block));
     processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
         delHintNode);
   }
@@ -2920,10 +2913,6 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public Object performTask() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        if(blocksMap.getStoredBlock(rdbi.getBlock()) == null || inodeIdentifier == null || inodeIdentifier.getInodeId() == INode.NON_EXISTING_ID){  // file/block was deleted 
-          //HOP blocksMap.getStoredBlock(..) will return null for that
-          LOG.error("ERROR: Dangling block. Block id="+rdbi.getBlock().getBlockId());
-        }
         LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus());
         switch (rdbi.getStatus()) {
         case DELETED_BLOCK:
@@ -2997,7 +2986,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     int stale = 0;
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(blocksMap.getStoredBlock(b));
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(getBlockInfo(b));
     while (nodeIter.hasNext()) {
       DatanodeDescriptor node = nodeIter.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node))) {
@@ -3005,7 +2994,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       } else if (node.isDecommissionInProgress() || node.isDecommissioned()) {
         decommissioned++;
       } else {
-        if (excessReplicateMap.contains(node.getStorageID(), blocksMap.getStoredBlock(b))) {
+        if (excessReplicateMap.contains(node.getStorageID(), getBlockInfo(b))) {
           excess++;
         } else {
           live++;
@@ -3187,14 +3176,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 underReplicatedInOpenFiles[0]++;
               }
             }
-            if (!neededReplications.contains(blocksMap.getStoredBlock(block))
-                    && pendingReplications.getNumReplicas(blocksMap.getStoredBlock(block)) == 0) {
+            if (!neededReplications.contains(getBlockInfo(block))
+                    && pendingReplications.getNumReplicas(getBlockInfo(block)) == 0) {
               //
               // These blocks have been reported from the datanode
               // after the startDecommission method has been executed. These
               // blocks were in flight when the decommissioning was started.
               //
-              neededReplications.add(blocksMap.getStoredBlock(block),
+              neededReplications.add(getBlockInfo(block),
                       curReplicas,
                       num.decommissionedReplicas(),
                       curExpectedReplicas);
@@ -3239,8 +3228,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     // file already removes them from the block map below.
     block.setNumBytesNoPersistance(BlockCommand.NO_ACK);
     addToInvalidates(block);
-    corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block));
-    BlockInfo storedBlock = blocksMap.getStoredBlock(block);
+    corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block));
+    BlockInfo storedBlock = getBlockInfo(block);
     blocksMap.removeBlock(block);
     // Remove the block from pendingReplications
     pendingReplications.remove(storedBlock);
@@ -3264,13 +3253,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       NumberReplicas repl = countNodes(block);
       int curExpectedReplicas = getReplication(block);
       if (isNeededReplication(block, curExpectedReplicas, repl.liveReplicas())) {
-        neededReplications.update(blocksMap.getStoredBlock(block), repl.liveReplicas(), repl
+        neededReplications.update(getBlockInfo(block), repl.liveReplicas(), repl
             .decommissionedReplicas(), curExpectedReplicas, curReplicasDelta,
             expectedReplicasDelta);
       } else {
         int oldReplicas = repl.liveReplicas()-curReplicasDelta;
         int oldExpectedReplicas = curExpectedReplicas-expectedReplicasDelta;
-        neededReplications.remove(blocksMap.getStoredBlock(block), oldReplicas, repl.decommissionedReplicas(),
+        neededReplications.remove(getBlockInfo(block), oldReplicas, repl.decommissionedReplicas(),
                                   oldExpectedReplicas);
       }
     } finally {
@@ -3289,7 +3278,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     for (Block block : bc.getBlocks()) {
       final NumberReplicas n = countNodes(block);
       if (isNeededReplication(block, expected, n.liveReplicas())) { 
-        neededReplications.add(blocksMap.getStoredBlock(block), n.liveReplicas(),
+        neededReplications.add(getBlockInfo(block), n.liveReplicas(),
             n.decommissionedReplicas(), expected);
       } else if (n.liveReplicas() > expected) {
         processOverReplicatedBlock(block, expected, null, null);
@@ -3335,7 +3324,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     boolean enoughRacks = false;;
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(blocksMap.getStoredBlock(b));
+                                  corruptReplicas.getNodes(getBlockInfo(b));
     int numExpectedReplicas = getReplication(b);
     String rackName = null;
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(b); 
@@ -3389,12 +3378,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   public int numCorruptReplicas(Block block) throws PersistanceException {
-    return corruptReplicas.numCorruptReplicas(blocksMap.getStoredBlock(block));
+    return corruptReplicas.numCorruptReplicas(getBlockInfo(block));
   }
 
   public void removeBlockFromMap(Block block) throws PersistanceException {
     // If block is removed from blocksMap remove it from corruptReplicasMap
-    corruptReplicas.removeFromCorruptReplicasMap(blocksMap.getStoredBlock(block));
+    corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block));
     blocksMap.removeBlock(block);
   }
 
@@ -3715,7 +3704,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           NumberReplicas num = countNodes(timedOutItem);
           if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                                  num.liveReplicas())) {
-            neededReplications.add(blocksMap.getStoredBlock(timedOutItem),
+            neededReplications.add(getBlockInfo(timedOutItem),
                                    num.liveReplicas(),
                                    num.decommissionedReplicas(),
                                    getReplication(timedOutItem));
@@ -3730,6 +3719,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if(isBlockTokenEnabled()){
       blockTokenSecretManager.updateLeaderState(isLeader);
     }
+  }
+  
+  private BlockInfo getBlockInfo(Block b) throws PersistanceException{
+    BlockInfo binfo = blocksMap.getStoredBlock(b);
+    if(binfo == null){
+      LOG.error("ERROR: Dangling Block. bid="+b.getBlockId());
+      binfo = new BlockInfo(b,INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
+    }
+    return binfo;
   }
   //END_HOP_CODE
 }

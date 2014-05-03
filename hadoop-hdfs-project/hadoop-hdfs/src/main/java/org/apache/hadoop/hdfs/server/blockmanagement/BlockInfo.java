@@ -335,7 +335,7 @@ public class BlockInfo extends Block {
     return partKey;
   }
 
-  public void setPartKey(int partKey) throws PersistanceException {
+  private void setPartKey(int partKey) throws PersistanceException {
     setPartKeyNoPersistance(partKey);
     save();
   }
@@ -411,7 +411,7 @@ public class BlockInfo extends Block {
   
   @Override
   public String toString(){
-   return "ID = "+getBlockId()+"  State = "+getBlockUCState();
+   return "bid= "+getBlockId()+"  State = "+getBlockUCState();
   }
   //START_HOP_CODE
   

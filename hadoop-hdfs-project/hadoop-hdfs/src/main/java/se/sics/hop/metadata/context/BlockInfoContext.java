@@ -223,6 +223,11 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     modifiedBlocks.put(block.getBlockId(), block);
     updateInodeBlocks(block);
     log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId()), "inodeId", Long.toString(block.getInodeId()), "blk index", Integer.toString(block.getBlockIndex())});
+    if(block.getBlockId() == Long.MIN_VALUE){
+      for(int i = 0; i < Thread.currentThread().getStackTrace().length;i++){
+        System.out.println("Error BC "+Thread.currentThread().getStackTrace()[i]);
+      }
+    }
   }
 
   private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks) {

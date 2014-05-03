@@ -40,6 +40,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.context.BlockPK;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
@@ -81,6 +82,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException { //start taking locks from inodes
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
+      
+      setPartitioningKey(locks.getInodeParam()[0]);
+    
       acquireInodeLocks(locks.getInodeParam());
     }
 
@@ -106,23 +110,24 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    * @throws PersistanceException
    */
   public HDFSTransactionLocks acquireByBlock(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException {
-//    if(id == null && pid == null && name == null && locks.getInodeResolveType() == null){
-//       throw new StorageException("Unable to take locks on inode");
-//    }
+    boolean isPartKeySet = false;
     INode inode = null;
     if (locks.getInodeResolveType() == INodeResolveType.PATH) {
       checkPathIsResolved();
       if (!locks.getPreTxResolvedInodes().isEmpty()) {
+        if(!isPartKeySet){
+          isPartKeySet = true;
+          setPartitioningKey(locks.getPreTxResolvedInodes().peekLast().getPartKey(),true);
+        }
         inode = takeLocksFromRootToLeaf(locks.getPreTxResolvedInodes(), locks.getInodeLock());
         allResolvedINodes.add(locks.getPreTxResolvedInodes());
       }
     } 
     
-//    if (inode == null && pid != null && name != null) {
-//        inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), name, pid, locks);
-//    }
-    
     if (inode == null && inodeIdentifer != null) {
+      if(!isPartKeySet){
+          setPartitioningKey(inodeIdentifer.getPartKey(),true);
+        }
       // dangling block
       // take lock on the indeId basically bring null in the cache
       inode = iNodePruneScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), inodeIdentifer.getPartKey(), locks);
@@ -155,7 +160,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           BlockInfo blk = new BlockInfo();
           if (inode != null) {
             blk.setINodeIdNoPersistance(inode.getId());
-            blk.setPartKey(inode.getPartKey());
+            blk.setPartKeyNoPersistance(inode.getPartKey());
           }
           blk.setBlockIdNoPersistance(locks.getBlockID());
           
@@ -187,7 +192,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     if (locks.getLeaseParam() == null) {
       return locks;
     }
-
+    
+    setPartitioningKey(sortedPaths.first());
+      
     acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
     blockResults.addAll(acquireBlockLock());
@@ -231,6 +238,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   public HDFSTransactionLocks acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
+    
+    setPartitioningKey(locks.getInodeParam()[0]);
+    
     byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
@@ -1010,5 +1020,26 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   
   private String getTransactionName(){
     return NDC.peek()+" Async";
+  }
+  
+  private void setPartitioningKey(String path){
+    byte[][] components = INode.getPathComponents(path);
+    byte[] file = components[components.length-1];
+    int partKey = INode.getPartitionKey(file);
+    LOG.debug("Setting Partitioning Key for file "+file+" toBe "+ partKey);
+    setPartitioningKey(partKey, false);
+    
+  }
+  private void setPartitioningKey(int partKey, boolean printMsg){
+    //set partitioning key
+      Object[] key = new Object[3];
+      key[0] = 0; //pid
+      key[1] = ""; // name
+      key[2] = partKey;
+      EntityManager.setPartitionKey(INodeDataAccess.class, key);
+      
+      if(printMsg){
+        LOG.debug("Setting Partitioning Key to be "+ partKey);
+      }
   }
 }
