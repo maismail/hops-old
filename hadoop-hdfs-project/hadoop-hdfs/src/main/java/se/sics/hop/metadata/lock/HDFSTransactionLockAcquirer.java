@@ -591,8 +591,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (locks.getInvLocks() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, null, null);
-      threads.add(acquireReplicasLockASync(parallelReadParams));
+      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, HopInvalidatedBlock.Finder.ByINodeId, null);
+      threads.add(acquireReplicasLockASyncNEW(parallelReadParams));
     }
 
     if (locks.getUrbLock() != null) {

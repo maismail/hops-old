@@ -70,8 +70,8 @@ class InvalidateBlocks {
    * @param the block to look for
    * 
    */
-  boolean contains(final String storageID, final Block block) throws PersistanceException {
-    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId());
+  boolean contains(final String storageID, final BlockInfo block) throws PersistanceException {
+    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId(), block.getPartKey());
     if (blkFound == null) {
       return false;
     }
@@ -82,9 +82,9 @@ class InvalidateBlocks {
    * Add a block to the block collection
    * which will be invalidated on the specified datanode.
    */
-  void add(final Block block, final DatanodeInfo datanode,
+  void add(final BlockInfo block, final DatanodeInfo datanode,
       final boolean log) throws PersistanceException {
-    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes());
+    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId(),block.getPartKey());
     if (add(invBlk)) {
       if (log) {
         NameNode.blockStateChangeLog.info("BLOCK* " + getClass().getSimpleName()
@@ -106,8 +106,8 @@ class InvalidateBlocks {
   }
 
   /** Remove the block from the specified storage. */
-  void remove(final String storageID, final Block block) throws PersistanceException {
-    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes()));
+  void remove(final String storageID, final BlockInfo block) throws PersistanceException {
+    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId(),block.getPartKey()));
   }
 
   /** Print the contents to out. */
@@ -209,7 +209,7 @@ class InvalidateBlocks {
   
   
   private boolean add(HopInvalidatedBlock invBlk) throws PersistanceException {
-    HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId());
+    HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId(),invBlk.getInodeId(), invBlk.getPartKey());
     if (found == null) {
       addInvalidatedBlockToDB(invBlk);
       return true;
@@ -238,8 +238,8 @@ class InvalidateBlocks {
     }.handle();
   }
   
-  private HopInvalidatedBlock findBlock(long blkId, int storageID) throws PersistanceException {
-    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPrimaryKey, blkId, storageID);
+  private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId, int partKey) throws PersistanceException {
+    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId, partKey);
   }
   
   private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws PersistanceException {

@@ -704,7 +704,7 @@ public class BlockManager {
   /**
    * Get all valid locations of the block
    */
-  private List<String> getValidLocations(Block block) throws PersistanceException {
+  private List<String> getValidLocations(BlockInfo block) throws PersistanceException {
     ArrayList<String> machineSet =
       new ArrayList<String>(blocksMap.numNodes(block));
     for(Iterator<DatanodeDescriptor> it =
@@ -988,7 +988,8 @@ public class BlockManager {
    * datanode and log the operation
    */
   void addToInvalidates(final Block block, final DatanodeInfo datanode) throws PersistanceException {
-    invalidateBlocks.add(block, datanode, true);
+    BlockInfo temp = getBlockInfo(block);
+    invalidateBlocks.add(temp, datanode, true);
   }
 
   /**
@@ -1000,7 +1001,8 @@ public class BlockManager {
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(b); it
         .hasNext();) {
       DatanodeDescriptor node = it.next();
-      invalidateBlocks.add(b, node, false);
+      BlockInfo temp = getBlockInfo(b);
+      invalidateBlocks.add(temp, node, false);
       datanodes.append(node).append(" ");
     }
     if (datanodes.length() != 0) {
@@ -2000,7 +2002,7 @@ public class BlockManager {
     }
 
     // Ignore replicas already scheduled to be removed from the DN
-    if(invalidateBlocks.contains(dn.getStorageID(), block)) {
+    if(invalidateBlocks.contains(dn.getStorageID(), getBlockInfo(block))) {
 /*  TODO: following assertion is incorrect, see HDFS-2668
 assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         + " in recentInvalidatesSet should not appear in DN " + dn; */
@@ -2807,7 +2809,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        final List<String> ms = getValidLocations(block);
+        BlockInfo temp = getBlockInfo(block);
+        final List<String> ms = getValidLocations(temp);
         machineSet.addAll(ms);
         return null;
       }

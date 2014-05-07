@@ -140,7 +140,6 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   @Override
   public Collection<HopExcessReplica> findList(FinderType<HopExcessReplica> finder, Object... params) throws PersistanceException {
     HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
-    TreeSet<HopExcessReplica> result = null;
 
     switch (eFinder) {
       case ByBlockId:
@@ -169,8 +168,7 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
             syncExcessReplicaInstances(list);
           }
         }
-        result = blockIdToExReplica.get(bId);
-        return result;
+        return new ArrayList<HopExcessReplica>(this.blockIdToExReplica.get(bId)); //clone the list reference
        case ByINodeId:;
         inodeId = (Integer) params[0];
         partKey = (Integer) params[1];
@@ -227,6 +225,11 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
 
     newExReplica.remove(exReplica);
     removedExReplica.put(exReplica, exReplica);
+    
+    if (blockIdToExReplica.containsKey(exReplica.getBlockId())) {
+      TreeSet<HopExcessReplica> ibs = blockIdToExReplica.get(exReplica.getBlockId());
+      ibs.remove(exReplica);
+    }
     log("removed-excess", CacheHitState.NA,
             new String[]{"bid", Long.toString(exReplica.getBlockId()), "sid", Integer.toString(exReplica.getStorageId())});
   }
