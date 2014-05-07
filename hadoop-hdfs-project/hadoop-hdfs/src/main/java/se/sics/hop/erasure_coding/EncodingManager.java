@@ -2,19 +2,16 @@ package se.sics.hop.erasure_coding;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.fs.FileStatus;
+import org.apache.hadoop.fs.Path;
 
-public abstract class EncodingManager extends Configured implements Stoppable {
+import java.util.List;
 
-  public static enum Result{
-    SUCCESS,
-    FAILED,
-    ABORTED
-  }
+public abstract class EncodingManager extends Configured implements Cancelable<String> {
 
   public EncodingManager(Configuration conf) {
     super(conf);
   }
 
-  public abstract void encodeFile(String codecId, String filePath);
+  public abstract void encodeFile(String codecId, Path sourceFile);
+  public abstract List<Report> computeReports();
 }

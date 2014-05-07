@@ -251,6 +251,19 @@ public class Codec implements Serializable {
     return prefix;
   }
 
+  public Path getParityPath(Path sourceFile) {
+    return new Path(getParityPrefix() + makeRelative(sourceFile));
+  }
+
+  private Path makeRelative(Path path) {
+    if (!path.isAbsolute()) {
+      return path;
+    }
+    String p = path.toUri().getPath();
+    String relative = p.substring(1, p.length());
+    return new Path(relative);
+  }
+
   /**
    * Used by unit test only
    */

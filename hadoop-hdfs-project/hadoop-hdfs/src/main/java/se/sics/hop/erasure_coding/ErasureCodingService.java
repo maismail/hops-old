@@ -30,7 +30,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.xml.sax.SAXException;
 
-import javax.swing.*;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.text.DateFormat;
@@ -59,21 +58,21 @@ public class ErasureCodingService {
     ENCODING
   };
 
-  private class EncodingManagerCallback implements ExecutionResultCallback<FileStatus, EncodingManager.Result> {
-
-    @Override
-    public void reportExecutionResult(FileStatus fileStatus, EncodingManager.Result result) {
-      LOG.info(fileStatus.toString() + " encoding result is " + result.toString());
-    }
-  }
-
-  private class BlockRepairManagerCallback implements ExecutionResultCallback<FileStatus, BlockRepairManager.Result> {
-
-    @Override
-    public void reportExecutionResult(FileStatus fileStatus, BlockRepairManager.Result result) {
-      LOG.info(fileStatus.toString() + " repair result is " + result.toString());
-    }
-  }
+//  private class EncodingManagerCallback implements ExecutionResultCallback<FileStatus, EncodingManager.Result> {
+//
+//    @Override
+//    public void reportExecutionResult(FileStatus fileStatus, EncodingManager.Result result) {
+//      LOG.info(fileStatus.toString() + " encoding result is " + result.toString());
+//    }
+//  }
+//
+//  private class BlockRepairManagerCallback implements ExecutionResultCallback<FileStatus, BlockRepairManager.Result> {
+//
+//    @Override
+//    public void reportExecutionResult(FileStatus fileStatus, BlockRepairManager.Result result) {
+//      LOG.info(fileStatus.toString() + " repair result is " + result.toString());
+//    }
+//  }
 
   public static final Log LOG = LogFactory.getLog(ErasureCodingService.class);
   public static final Log ENCODER_METRICS_LOG = LogFactory.getLog("RaidMetrics");

@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.util.Daemon;
@@ -21,6 +22,7 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
+import java.util.List;
 
 import static org.apache.hadoop.util.ExitUtil.terminate;
 
@@ -58,7 +60,7 @@ public class ErasureCodingManager extends Configured{
         throw new ClassNotFoundException("Not an implementation of " + EncodingManager.class.getCanonicalName());
       }
       Constructor<?> encodingManagerConstructor = encodingManagerClass.getConstructor(
-          new Class[] {Configuration.class, ExecutionResultCallback.class} );
+          new Class[] {Configuration.class} );
       encodingManager = (EncodingManager) encodingManagerConstructor.newInstance(getConf(), null);
 
       Class<?> blockRepairManagerClass = getConf().getClass(BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
@@ -66,7 +68,7 @@ public class ErasureCodingManager extends Configured{
         throw new ClassNotFoundException("Not an implementation of " + BlockRepairManager.class.getCanonicalName());
       }
       Constructor<?> blockRepairManagerConstructor = blockRepairManagerClass.getConstructor(
-          new Class[] {Configuration.class, ExecutionResultCallback.class} );
+          new Class[] {Configuration.class} );
       blockRepairManager = (BlockRepairManager) blockRepairManagerConstructor.newInstance(getConf(), null);
     } catch (Exception e) {
       LOG.error("Could not load erasure coding classes", e);
@@ -130,7 +132,19 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkActiveEncodings() {
-
+    List<Report> reports = encodingManager.computeReports();
+    for (Report report : reports) {
+      switch (report.getStatus()) {
+        case ACTIVE:
+          break;
+        case FINISHED:
+          break;
+        case FAILED:
+          break;
+        case CANCELED:
+          break;
+      }
+    }
   }
 
   private void scheduleEncodings() {
@@ -146,8 +160,7 @@ public class ErasureCodingManager extends Configured{
       for (EncodingStatus encodingStatus : requestedEncodings) {
         // TODO STEFFEN - Check if file was completely written yet
         INode iNode = findInode(encodingStatus.getInodeId());
-        iNode.getFullPathName();
-        encodingManager.encodeFile(encodingStatus.getCodec(), iNode.getFullPathName());
+        encodingManager.encodeFile(encodingStatus.getCodec(), new Path(iNode.getFullPathName()));
       }
     } catch (IOException e) {
       LOG.error(e);
@@ -175,7 +188,19 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkActiveRepairs() {
-
+    List<Report> reports = blockRepairManager.computeReports();
+    for (Report report : reports) {
+      switch (report.getStatus()) {
+        case ACTIVE:
+          break;
+        case FINISHED:
+          break;
+        case FAILED:
+          break;
+        case CANCELED:
+          break;
+      }
+    }
   }
 
   private void scheduleRepairs() {
