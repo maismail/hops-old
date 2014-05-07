@@ -9,11 +9,12 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import se.sics.hop.metadata.context.ReplicaUnderConstructionContext;
-import se.sics.hop.metadata.context.ExcessReplicaContext;
-import se.sics.hop.metadata.context.LeaderContext;
+
+import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.metadata.adaptor.*;
+import se.sics.hop.metadata.context.*;
+import se.sics.hop.metadata.hdfs.dal.*;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
-import se.sics.hop.metadata.context.LeaseContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
@@ -21,37 +22,6 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
-import se.sics.hop.metadata.adaptor.LeaseDALAdaptor;
-import se.sics.hop.metadata.context.BlockInfoContext;
-import se.sics.hop.metadata.context.CorruptReplicaContext;
-import se.sics.hop.metadata.context.INodeAttributesContext;
-import se.sics.hop.metadata.context.INodeContext;
-import se.sics.hop.metadata.context.InvalidatedBlockContext;
-import se.sics.hop.metadata.context.LeasePathContext;
-import se.sics.hop.metadata.context.PendingBlockContext;
-import se.sics.hop.metadata.context.ReplicaContext;
-import se.sics.hop.metadata.context.UnderReplicatedBlockContext;
-import se.sics.hop.metadata.context.VariableContext;
-import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
-import se.sics.hop.metadata.hdfs.dal.EntityDataAccess;
-import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
-import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
-import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
-import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
-import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
-import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
-import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
-import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
-import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
-import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
-import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
-import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
-import se.sics.hop.metadata.adaptor.BlockInfoDALAdaptor;
-import se.sics.hop.metadata.adaptor.INodeAttributeDALAdaptor;
-import se.sics.hop.metadata.adaptor.INodeDALAdaptor;
-import se.sics.hop.metadata.adaptor.PendingBlockInfoDALAdaptor;
-import se.sics.hop.metadata.adaptor.ReplicaUnderConstructionDALAdaptor;
 import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
@@ -129,6 +99,7 @@ public class StorageFactory {
     dataAccessAdaptors.put(PendingBlockDataAccess.class, new PendingBlockInfoDALAdaptor((PendingBlockDataAccess) getDataAccess(PendingBlockDataAccess.class)));
     dataAccessAdaptors.put(INodeDataAccess.class, new INodeDALAdaptor((INodeDataAccess) getDataAccess(INodeDataAccess.class)));
     dataAccessAdaptors.put(INodeAttributesDataAccess.class, new INodeAttributeDALAdaptor((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
+    dataAccessAdaptors.put(EncodingStatusDataAccess.class, new EncodingStatusDALAdaptor((EncodingStatusDataAccess) getDataAccess(EncodingStatusDataAccess.class)));
   }
 
   private static ContextInitializer getContextInitializer() {
@@ -167,6 +138,8 @@ public class StorageFactory {
         entityContexts.put(HopArrayVariable.class, variableContext);
         entityContexts.put(HopLeader.class, new LeaderContext((LeaderDataAccess) getDataAccess(LeaderDataAccess.class)));
         entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
+
+        entityContexts.put(EncodingStatus.class, new EncodingStatusContext((EncodingStatusDataAccess) getDataAccess(EncodingStatusDataAccess.class)));
 
 
         return entityContexts;

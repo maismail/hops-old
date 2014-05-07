@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.lock;
 
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;

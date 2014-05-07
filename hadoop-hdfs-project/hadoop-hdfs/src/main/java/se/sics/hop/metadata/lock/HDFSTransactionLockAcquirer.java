@@ -73,6 +73,10 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     this.locks = new HDFSTransactionLocks();
   }
 
+  public HDFSTransactionLockAcquirer(HDFSTransactionLocks locks) {
+    this.locks = locks;
+  }
+
   public HDFSTransactionLockAcquirer(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
     this.locks = new HDFSTransactionLocks(resolvedInodes, preTxPathFullyResolved);
   }
@@ -688,24 +692,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
     LOG.debug(msg.toString());
     return lockedLeafINode;
-  }
-
-  //TransacationLockAcquirer Code
-  private static <T> Collection<T> acquireLockList(LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
-    setLockMode(lock);
-    if (param == null) {
-      return EntityManager.findList(finder);
-    } else {
-      return EntityManager.findList(finder, param);
-    }
-  }
-
-  private static <T> T acquireLock(LockType lock, FinderType<T> finder, Object... param) throws PersistanceException {
-    setLockMode(lock);
-    if (param == null) {
-      return null;
-    }
-    return EntityManager.find(finder, param);
   }
 
   private static LinkedList<INode> acquireLockOnRestOfPath(INodeLockType lock, INode baseInode,
