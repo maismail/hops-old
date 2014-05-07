@@ -1,9 +1,10 @@
 package se.sics.hop.erasure_coding;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileStatus;
 
-public abstract class BlockRepairManager extends ConfiguredExecutionResultCallbackCaller implements Stoppable {
+public abstract class BlockRepairManager extends Configured implements Stoppable {
 
   public static enum Result{
     SUCCESS,
@@ -11,10 +12,10 @@ public abstract class BlockRepairManager extends ConfiguredExecutionResultCallba
     ABORTED
   }
 
-  public BlockRepairManager(Configuration conf, ExecutionResultCallback<FileStatus, Result> callback) {
-    super(conf, callback);
+  public BlockRepairManager(Configuration conf) {
+    super(conf);
   }
 
-  public abstract void repairSourceBlocks(String codecId, FileStatus sourceFile, FileStatus parityFile);
-  public abstract void repairParityBlocks(String codecId, FileStatus sourceFile, FileStatus parityFile);
+  public abstract void repairSourceBlocks(String codecId, String sourceFile);
+  public abstract void repairParityBlocks(String codecId, String sourceFile);
 }

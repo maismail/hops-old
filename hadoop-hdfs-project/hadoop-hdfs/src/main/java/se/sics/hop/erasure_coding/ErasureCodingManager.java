@@ -4,10 +4,23 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.util.Daemon;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
+import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.util.Collection;
 
 import static org.apache.hadoop.util.ExitUtil.terminate;
 
@@ -15,22 +28,27 @@ public class ErasureCodingManager extends Configured{
 
   static final Log LOG = LogFactory.getLog(ErasureCodingManager.class);
 
-  public static String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
-  public static String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
+  public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
+  public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
+  public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
+  public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
+  public static final int DEFAULT_RECHECK_INTERVAL = 10 * 60 * 1000;
+  public static final String ACTIVE_ENCODING_LIMIT_KEY = "se.sics.hop.erasure_coding.active_encoding_limit";
+  public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
 
   private final Namesystem namesystem;
-  private final long recheckInterval;
+  private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
   private EncodingManager encodingManager;
   private BlockRepairManager blockRepairManager;
-
-  final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
+  private final long recheckInterval;
+  private final int activeEncodingLimit;
+  private int activeEncodings = 0;
 
   public ErasureCodingManager(Namesystem namesystem, Configuration conf) {
     super(conf);
     this.namesystem = namesystem;
-
-    // TODO STEFFEN - Read this from the config file
-    this.recheckInterval = 10 * 1000;
+    this.recheckInterval = conf.getInt(RECHECK_INTERVAL_KEY, DEFAULT_RECHECK_INTERVAL);
+    this.activeEncodingLimit = conf.getInt(ACTIVE_ENCODING_LIMIT_KEY, DEFAULT_ACTIVE_ENCODING_LIMIT);
   }
 
   private boolean loadRaidNodeClasses() {
@@ -80,8 +98,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   public static boolean isErasureCodingEnabled(Configuration conf) {
-    // TODO STEFFEN - Read from config file
-    return true;
+    return conf.getBoolean(ERASURE_CODING_ENABLED_KEY, false);
   }
 
   private class ErasureCodingMonitor implements Runnable {
@@ -91,7 +108,10 @@ public class ErasureCodingManager extends Configured{
       while (namesystem.isRunning()) {
         try {
           if(namesystem.isLeader()){
-            // TODO STEFFEN - Do your work
+            checkActiveEncodings();
+            scheduleEncodings();
+            checkActiveRepairs();
+            scheduleRepairs();
           }
           Thread.sleep(recheckInterval);
         } catch (InterruptedException ie) {
@@ -107,5 +127,58 @@ public class ErasureCodingManager extends Configured{
         }
       }
     }
+  }
+
+  private void checkActiveEncodings() {
+
+  }
+
+  private void scheduleEncodings() {
+    int limit = activeEncodingLimit - activeEncodings;
+    if (limit <= 0) {
+      return;
+    }
+
+    try {
+      Collection<EncodingStatus> requestedEncodings = EntityManager.findList(
+          EncodingStatus.Finder.LimitedByStatusRequestEncodings, limit);
+
+      for (EncodingStatus encodingStatus : requestedEncodings) {
+        // TODO STEFFEN - Check if file was completely written yet
+        INode iNode = findInode(encodingStatus.getInodeId());
+        iNode.getFullPathName();
+        encodingManager.encodeFile(encodingStatus.getCodec(), iNode.getFullPathName());
+      }
+    } catch (IOException e) {
+      LOG.error(e);
+    }
+  }
+
+  private INode findInode(final long id) throws IOException {
+    HDFSTransactionalRequestHandler findInodeHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        // TODO STEFFEN - Is this the right lock?
+        tla.getLocks().addINode(TransactionLockTypes.INodeLockType.READ);
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return EntityManager.find(INode.Finder.ByINodeID, id);
+      }
+    };
+    return (INode) findInodeHandler.handle(this);
+  }
+
+  private void checkActiveRepairs() {
+
+  }
+
+  private void scheduleRepairs() {
+
   }
 }
