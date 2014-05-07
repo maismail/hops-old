@@ -1178,7 +1178,7 @@ public class ErasureCodingService {
 //      // default to distributed raid node
 //      // TODO Check if returning null as default value was a smart idea
 //      Class<?> raidNodeClass =
-//          conf.getClass(RAIDNODE_CLASSNAME_KEY, null);
+//          conf.getClass(ENCODING_MANAGER_CLASSNAME_KEY, null);
 //      if (!ErasureCodingService.class.isAssignableFrom(raidNodeClass)) {
 //        throw new ClassNotFoundException("not an implementation of ErasureCodingService");
 //      }

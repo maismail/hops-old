@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.erasure_coding.ErasureCodingManager;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIDGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
@@ -224,6 +225,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import sun.util.calendar.Era;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -403,6 +405,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    private long nameNodeId;   // id of the name node. set by the NameNode instance
    private static boolean systemLevelLockEnabled = false;
    private static boolean rowLevelLockEnabled = true;
+  private final boolean ecEnabled;
+  private final ErasureCodingManager erasureCodingManager;
   //END_HOP_CODE
     
   /**
@@ -527,6 +531,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_DEFAULT);
 
       this.blockManager = new BlockManager(this, this, conf);
+      this.ecEnabled = ErasureCodingManager.isErasureCodingEnabled(conf);
+      this.erasureCodingManager = new ErasureCodingManager(this, conf);
       this.datanodeStatistics = blockManager.getDatanodeManager().getDatanodeStatistics();
 
       this.fsOwner = UserGroupInformation.getCurrentUser();
@@ -806,6 +812,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       //ResourceMonitor required only at ActiveNN. See HDFS-2914
       this.nnrmthread = new Daemon(new NameNodeResourceMonitor());
       nnrmthread.start();
+
+      if (ecEnabled) {
+        erasureCodingManager.activate();
+      }
     } finally {
       writeUnlock();
     }
@@ -840,6 +850,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //        // so that the tailer starts from the right spot.
 //        dir.fsImage.updateLastAppliedTxIdFromWritten();
 //      }
+      if (erasureCodingManager != null) {
+        erasureCodingManager.close();
+      }
     } finally {
       writeUnlock();
     }
