@@ -29,7 +29,6 @@ public class TestEncodingStatus extends TestCase {
 
   static {
     try {
-      addToClassPath("/home/steffeng/Repositories/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar");
       final DALStorageFactory sf = DALDriver.load("se.sics.hop.metadata.ndb.NdbStorageFactory");
       sf.setConfiguration("ndb-config.properties");
     } catch (StorageInitializtionException e) {
@@ -40,31 +39,6 @@ public class TestEncodingStatus extends TestCase {
       StorageFactory.setConfiguration(new Configuration());
     } catch (StorageInitializtionException e) {
       e.printStackTrace();
-    }
-  }
-
-  //[M]: just for testing purposes
-  private static void addToClassPath(String s) throws StorageInitializtionException {
-    try {
-      File f = new File(s);
-      URL u = f.toURI().toURL();
-      URLClassLoader urlClassLoader = (URLClassLoader) ClassLoader.getSystemClassLoader();
-      Class urlClass = URLClassLoader.class;
-      Method method = urlClass.getDeclaredMethod("addURL", new Class[]{URL.class});
-      method.setAccessible(true);
-      method.invoke(urlClassLoader, new Object[]{u});
-    } catch (MalformedURLException ex) {
-      throw new StorageInitializtionException(ex);
-    } catch (IllegalAccessException ex) {
-      throw new StorageInitializtionException(ex);
-    } catch (IllegalArgumentException ex) {
-      throw new StorageInitializtionException(ex);
-    } catch (InvocationTargetException ex) {
-      throw new StorageInitializtionException(ex);
-    } catch (NoSuchMethodException ex) {
-      throw new StorageInitializtionException(ex);
-    } catch (SecurityException ex) {
-      throw new StorageInitializtionException(ex);
     }
   }
 
