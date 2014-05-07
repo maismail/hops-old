@@ -225,7 +225,6 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
-import sun.util.calendar.Era;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
