@@ -268,10 +268,8 @@ public class DistributedFileSystem extends FileSystem {
   public HdfsDataOutputStream create(Path f, FsPermission permission,
     EnumSet<CreateFlag> cflags, int bufferSize, short replication, long blockSize,
     Progressable progress, ChecksumOpt checksumOpt) throws IOException {
-    statistics.incrementWriteOps(1);
-    final DFSOutputStream out = dfs.create(getPathName(f), permission, cflags,
-        replication, blockSize, progress, bufferSize, checksumOpt);
-    return new HdfsDataOutputStream(out, statistics);
+    return create(f, permission, cflags, bufferSize, replication, blockSize,
+    progress, checksumOpt, null);
   }
 
   public HdfsDataOutputStream create(Path f, FsPermission permission,
@@ -279,7 +277,7 @@ public class DistributedFileSystem extends FileSystem {
       Progressable progress, ChecksumOpt checksumOpt, String codec) throws IOException {
     statistics.incrementWriteOps(1);
     final DFSOutputStream out = dfs.create(getPathName(f), permission, cflags,
-        replication, blockSize, progress, bufferSize, checksumOpt);
+        replication, blockSize, progress, bufferSize, checksumOpt, codec);
     return new HdfsDataOutputStream(out, statistics);
   }
   

@@ -265,8 +265,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
         .setCreateFlag(PBHelper.convertCreateFlag(flag))
         .setCreateParent(createParent)
         .setReplication(replication)
-        .setBlockSize(blockSize)
-        .setCodec(codec);
+        .setBlockSize(blockSize);
     if (codec != null) {
       builder.setCodec(codec);
     }

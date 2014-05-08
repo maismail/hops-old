@@ -1348,6 +1348,60 @@ public class DFSClient implements java.io.Closeable {
   }
 
   /**
+   * Call {@link #create(String, FsPermission, EnumSet, boolean, short,
+   * long, Progressable, int, ChecksumOpt)} with <code>createParent</code>
+   *  set to true.
+   */
+  public DFSOutputStream create(String src,
+                                FsPermission permission,
+                                EnumSet<CreateFlag> flag,
+                                short replication,
+                                long blockSize,
+                                Progressable progress,
+                                int buffersize,
+                                ChecksumOpt checksumOpt,
+                                String codec)
+      throws IOException {
+    return create(src, permission, flag, true,
+        replication, blockSize, progress, buffersize, checksumOpt);
+  }
+
+  /**
+   * Create a new dfs file with the specified block replication
+   * with write-progress reporting and return an output stream for writing
+   * into the file.
+   *
+   * @param src File name
+   * @param permission The permission of the directory being created.
+   *          If null, use default permission {@link FsPermission#getFileDefault()}
+   * @param flag indicates create a new file or create/overwrite an
+   *          existing file or append to an existing file
+   * @param createParent create missing parent directory if true
+   * @param replication block replication
+   * @param blockSize maximum block size
+   * @param progress interface for reporting client progress
+   * @param buffersize underlying buffer size
+   * @param checksumOpt checksum options
+   *
+   * @return output stream
+   *
+   * @see ClientProtocol#create(String, FsPermission, String, EnumSetWritable,
+   * boolean, short, long) for detailed description of exceptions thrown
+   */
+  public DFSOutputStream create(String src,
+                                FsPermission permission,
+                                EnumSet<CreateFlag> flag,
+                                boolean createParent,
+                                short replication,
+                                long blockSize,
+                                Progressable progress,
+                                int buffersize,
+                                ChecksumOpt checksumOpt) throws IOException {
+    return create(src, permission, flag, createParent, replication, blockSize,
+        progress, buffersize, checksumOpt, null);
+  }
+
+  /**
    * Create a new dfs file with the specified block replication 
    * with write-progress reporting and return an output stream for writing
    * into the file.  
@@ -1377,7 +1431,8 @@ public class DFSClient implements java.io.Closeable {
                              long blockSize,
                              Progressable progress,
                              int buffersize,
-                             ChecksumOpt checksumOpt) throws IOException {
+                             ChecksumOpt checksumOpt,
+                             String codec) throws IOException {
     checkOpen();
     if (permission == null) {
       permission = FsPermission.getFileDefault();
@@ -1388,7 +1443,7 @@ public class DFSClient implements java.io.Closeable {
     }
     final DFSOutputStream result = DFSOutputStream.newStreamForCreate(this,
         src, masked, flag, createParent, replication, blockSize, progress,
-        buffersize, dfsClientConf.createChecksum(checksumOpt));
+        buffersize, dfsClientConf.createChecksum(checksumOpt), codec);
     beginFileLease(src, result);
     return result;
   }
