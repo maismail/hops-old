@@ -1,16 +1,11 @@
 package se.sics.hop.erasure_coding;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.json.JSONArray;
 
 import java.io.IOException;
 import java.util.Random;
-
-import static org.mockito.Mockito.mock;
 
 public class TestUtil {
 
@@ -31,14 +26,5 @@ public class TestUtil {
     final Random rand = new Random(seed);
     rand.nextBytes(b);
     return b;
-  }
-
-  public static boolean encodeFile(Configuration conf, DistributedFileSystem dfs, Codec codec, Path sourceFile,
-                                   Path parityPath) throws IOException {
-    LocalEncodingManager encodingManager = new LocalEncodingManager(conf);
-
-    BaseEncodingManager.Statistics stats = new BaseEncodingManager.Statistics();
-    return encodingManager.doFileRaid(conf, sourceFile, parityPath, codec, stats,
-        RaidUtils.NULL_PROGRESSABLE, false, 1, 1);
   }
 }
