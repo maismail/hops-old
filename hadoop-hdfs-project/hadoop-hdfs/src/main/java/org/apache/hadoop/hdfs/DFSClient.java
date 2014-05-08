@@ -1363,7 +1363,7 @@ public class DFSClient implements java.io.Closeable {
                                 String codec)
       throws IOException {
     return create(src, permission, flag, true,
-        replication, blockSize, progress, buffersize, checksumOpt);
+        replication, blockSize, progress, buffersize, checksumOpt, codec);
   }
 
   /**
@@ -2904,7 +2904,11 @@ public class DFSClient implements java.io.Closeable {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws IOException {
-        return namenode.getEncodingStatus(filePath);
+        try {
+          return namenode.getEncodingStatus(filePath);
+        } catch (RemoteException e) {
+          throw e.unwrapRemoteException();
+        }
       }
     };
     return (EncodingStatus) doClientActionWithRetry(handler, "EncodingStatus");

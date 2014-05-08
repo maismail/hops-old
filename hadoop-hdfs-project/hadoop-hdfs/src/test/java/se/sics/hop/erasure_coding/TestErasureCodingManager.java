@@ -1,11 +1,51 @@
 package se.sics.hop.erasure_coding;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.Path;
 import org.junit.Test;
+
+import java.io.IOException;
 
 public class TestErasureCodingManager extends BasicClusterTestCase {
 
+  private final Path testFile = new Path("/test_file");
+
   @Test
-  public void testStartErasureCodingManager() {
-    assertTrue(true);
+  public void testCreateEncodedFile() throws IOException {
+    FSDataOutputStream out = getDfs().create(testFile);
+    out.close();
+
+    assertNotNull(getDfs().getEncodingStatus(testFile.toUri().getPath()));
+  }
+
+  @Test
+  public void testGetEncodingStatusIfRequested() throws IOException {
+    Codec codec = Codec.getCodec("src");
+    FSDataOutputStream out = getDfs().create(testFile, codec.getId());
+    out.close();
+
+    EncodingStatus status = getDfs().getEncodingStatus(testFile.toUri().getPath());
+    assertNotNull(status);
+    assertEquals(EncodingStatus.Status.ENCODING_REQUESTED, status.getStatus());
+  }
+
+  public void testGetEncodingStatusForNonExistingFile() throws IOException {
+    try {
+      getDfs().getEncodingStatus("/DEAD_BEEF");
+      fail();
+    } catch (IOException e) {
+
+    }
+  }
+
+  @Test
+  public void testGetEncodingStatusIfNotRequested() throws IOException {
+    FSDataOutputStream out = getDfs().create(testFile);
+    out.close();
+
+    EncodingStatus status = getDfs().getEncodingStatus(testFile.toUri().getPath());
+    assertNotNull(status);
+    assertEquals(EncodingStatus.Status.NOT_ENCODED, status.getStatus());
   }
 }

@@ -55,6 +55,7 @@ public class ErasureCodingManager extends Configured{
 
   private boolean loadRaidNodeClasses() {
     try {
+      // TODO STEFFEN - Use ReflectionUtils
       Class<?> encodingManagerClass = getConf().getClass(ENCODING_MANAGER_CLASSNAME_KEY, null);
       if (encodingManagerClass == null || !EncodingManager.class.isAssignableFrom(encodingManagerClass)) {
         throw new ClassNotFoundException("Not an implementation of " + EncodingManager.class.getCanonicalName());
