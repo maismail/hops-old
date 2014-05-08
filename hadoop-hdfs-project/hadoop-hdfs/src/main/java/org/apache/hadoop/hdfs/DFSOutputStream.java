@@ -1333,7 +1333,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   private DFSOutputStream(DFSClient dfsClient, String src, FsPermission masked,
       EnumSet<CreateFlag> flag, boolean createParent, short replication,
       long blockSize, Progressable progress, int buffersize,
-      DataChecksum checksum) throws IOException {
+      DataChecksum checksum, String codec) throws IOException {
     this(dfsClient, src, blockSize, progress, checksum, replication);
     this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
 
@@ -1342,7 +1342,8 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
 
     try {
       dfsClient.create(
-          src, masked, dfsClient.clientName, new EnumSetWritable<CreateFlag>(flag), createParent, replication, blockSize);
+          src, masked, dfsClient.clientName, new EnumSetWritable<CreateFlag>(flag),
+          createParent, replication, blockSize, codec);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      DSQuotaExceededException.class,
@@ -1360,9 +1361,17 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
       short replication, long blockSize, Progressable progress, int buffersize,
       DataChecksum checksum) throws IOException {
+    return newStreamForCreate(dfsClient, src, masked, flag, createParent,
+        replication, blockSize, progress, buffersize, checksum, null);
+  }
+
+  static DFSOutputStream newStreamForCreate(DFSClient dfsClient, String src,
+      FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
+      short replication, long blockSize, Progressable progress, int buffersize,
+      DataChecksum checksum, String codec) throws IOException {
     final DFSOutputStream out = new DFSOutputStream(dfsClient, src, masked,
         flag, createParent, replication, blockSize, progress, buffersize,
-        checksum);
+        checksum, codec);
     out.streamer.start();
     return out;
   }

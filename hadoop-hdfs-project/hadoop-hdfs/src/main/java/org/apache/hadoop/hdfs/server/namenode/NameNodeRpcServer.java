@@ -463,7 +463,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
                      long blockSize,
                      String codec) throws IOException {
     create(src, masked, clientName, flag, createParent, replication, blockSize);
-    // TODO Add encoding type to database
+    // TODO STEFFEN - Add encoding type to database
   }
 
   @Override // ClientProtocol
