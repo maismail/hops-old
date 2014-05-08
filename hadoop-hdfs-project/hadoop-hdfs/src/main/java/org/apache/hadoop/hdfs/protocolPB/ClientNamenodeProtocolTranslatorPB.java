@@ -123,6 +123,7 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingRequestProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import org.mortbay.log.Log;
 import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingStatus;
 

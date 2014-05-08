@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -125,7 +126,18 @@ import com.google.protobuf.BlockingService;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -454,7 +466,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override // ClientProtocol
-  public void create(String src, 
+  public void create(String src,
                      FsPermission masked,
                      String clientName, 
                      EnumSetWritable<CreateFlag> flag,
@@ -463,7 +475,10 @@ class NameNodeRpcServer implements NamenodeProtocols {
                      long blockSize,
                      String codec) throws IOException {
     create(src, masked, clientName, flag, createParent, replication, blockSize);
-    // TODO STEFFEN - Add encoding type to database
+    LOG.info("Create file " + src + " with codec " + codec);
+    if (codec.equals(Codec.NO_ENCODING) == false) {
+      addEncodingStatus(src, codec);
+    }
   }
 
   @Override // ClientProtocol
@@ -1152,19 +1167,92 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public EncodingStatus getEncodingStatus(String filePath) throws IOException {
-    // TODO Implement getEncodingStatus
-    return null;
+  public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
+    final long inodeId = findInodeId(filePath);
+
+    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        // TODO STEFFEN - It's not really nice to query the inode a second time after finding it
+        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
+        lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+      }
+    };
+    Object result = findReq.handle();
+    if (result == null) {
+      return new EncodingStatus(EncodingStatus.Status.NOT_ENCODED);
+    }
+    return (EncodingStatus) result;
+  }
+
+  private long findInodeId (final String filePath) throws IOException {
+    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+        HDFSOperationType.GET_INODE) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();
+        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+            TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INode inode = namesystem.dir.getINode(filePath);
+        if (inode == null) {
+          throw new IOException("File not found.");
+        }
+        return inode.getId();
+      }
+    };
+    return (Long) findReq.handle();
   }
 
   @Override
   public void encodeFile(String filePath, String codec) throws IOException {
-    // TODO Implement encodeFile
+    addEncodingStatus(filePath, codec);
   }
 
   @Override
   public void revokeEncoding(String filePath) throws IOException {
+    throw new NotImplementedException();
     // TODO Implement revokeEncoding
+  }
+
+  private void addEncodingStatus(final String src, final String codec) throws IOException {
+    HDFSTransactionalRequestHandler addEncodingStatusHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{src});
+            return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            long inodeId = namesystem.dir.getINode(src).getId();
+            EncodingStatus encodingStatus = new EncodingStatus(
+                inodeId,
+                EncodingStatus.Status.ENCODING_REQUESTED,
+                codec,
+                System.currentTimeMillis());
+            EntityManager.add(encodingStatus);
+            return null;
+          }
+        };
+    addEncodingStatusHandler.handle(this);
   }
   //HOP_CODE_END
 }

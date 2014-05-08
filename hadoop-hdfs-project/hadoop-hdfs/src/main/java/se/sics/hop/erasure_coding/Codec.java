@@ -301,4 +301,8 @@ public class Codec implements Serializable {
     this.isDirRaid = isDirRaid;
     this.simulateBlockFix = simulateBlockFix;
   }
+
+  public String getId() {
+    return id;
+  }
 }

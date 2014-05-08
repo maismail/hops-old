@@ -254,6 +254,42 @@ public class DistributedFileSystem extends FileSystem {
     return dfs.append(getPathName(f), bufferSize, progress, statistics);
   }
 
+  public HdfsDataOutputStream create(Path f, String codec) throws IOException {
+    return create(f, true, codec);
+  }
+
+  public HdfsDataOutputStream create(Path f, boolean overwrite, String codec)
+      throws IOException {
+    return create(f, overwrite,
+        getConf().getInt("io.file.buffer.size", 4096),
+        getDefaultReplication(f),
+        getDefaultBlockSize(f),
+        null,
+        codec);
+  }
+
+  public HdfsDataOutputStream create(
+        Path f,
+        boolean overwrite,
+        int bufferSize,
+        short replication,
+        long blockSize,
+        Progressable progress,
+        String codec) throws IOException {
+    return this.create(f, FsPermission.getFileDefault().applyUMask(
+            FsPermission.getUMask(getConf())), overwrite, bufferSize,
+        replication, blockSize, progress, codec);
+  }
+
+  public HdfsDataOutputStream create(Path f, FsPermission permission,
+         boolean overwrite, int bufferSize, short replication, long blockSize,
+         Progressable progress, String codec) throws IOException {
+    return this.create(f, permission,
+        overwrite ? EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE)
+            : EnumSet.of(CreateFlag.CREATE), bufferSize, replication,
+        blockSize, progress, null, codec);
+  }
+
   @Override
   public HdfsDataOutputStream create(Path f, FsPermission permission,
       boolean overwrite, int bufferSize, short replication, long blockSize,
