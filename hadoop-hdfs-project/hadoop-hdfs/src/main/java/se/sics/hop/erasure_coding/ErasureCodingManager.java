@@ -9,7 +9,12 @@ import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.StringUtils;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -59,7 +64,7 @@ public class ErasureCodingManager extends Configured{
       }
       Constructor<?> encodingManagerConstructor = encodingManagerClass.getConstructor(
           new Class[] {Configuration.class} );
-      encodingManager = (EncodingManager) encodingManagerConstructor.newInstance(getConf(), null);
+      encodingManager = (EncodingManager) encodingManagerConstructor.newInstance(getConf());
 
       Class<?> blockRepairManagerClass = getConf().getClass(BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
       if (blockRepairManagerClass == null || !BlockRepairManager.class.isAssignableFrom(blockRepairManagerClass)) {
@@ -67,7 +72,7 @@ public class ErasureCodingManager extends Configured{
       }
       Constructor<?> blockRepairManagerConstructor = blockRepairManagerClass.getConstructor(
           new Class[] {Configuration.class} );
-      blockRepairManager = (BlockRepairManager) blockRepairManagerConstructor.newInstance(getConf(), null);
+      blockRepairManager = (BlockRepairManager) blockRepairManagerConstructor.newInstance(getConf());
     } catch (Exception e) {
       LOG.error("Could not load erasure coding classes", e);
       return false;
@@ -153,14 +158,23 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleEncodings() {
-    int limit = activeEncodingLimit - activeEncodings;
+    final int limit = activeEncodingLimit - activeEncodings;
     if (limit <= 0) {
       return;
     }
 
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_REQUESTED_ENCODINGS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findRequestedEncodings(limit);
+      }
+    };
+
     try {
-      Collection<EncodingStatus> requestedEncodings = EntityManager.findList(
-          EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
+      Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
 
       for (EncodingStatus encodingStatus : requestedEncodings) {
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
@@ -200,15 +214,23 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleRepairs() {
-    int limit = activeRepairLimit - activeRepairs;
+    final int limit = activeRepairLimit - activeRepairs;
     if (limit <= 0) {
       return;
     }
 
-    try {
-      Collection<EncodingStatus> requestedEncodings = EntityManager.findList(
-          EncodingStatus.Finder.LimitedByStatusRequestedRepair, limit);
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_REQUESTED_REPAIRS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findRequestedRepairs(limit);
+      }
+    };
 
+    try {
+      Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedEncodings) {
         // TODO STEFFEN - Check if file was completely written yet
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
