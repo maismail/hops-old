@@ -51,10 +51,14 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return EncodingStatus.Status.ENCODING_REQUESTED;
       case HopEncodingStatus.ENCODING_ACTIVE:
         return EncodingStatus.Status.ENCODING_ACTIVE;
+      case HopEncodingStatus.ENCODING_FAILED:
+        return EncodingStatus.Status.ENCODING_FAILED;
       case HopEncodingStatus.ENCODED:
         return EncodingStatus.Status.ENCODED;
       case HopEncodingStatus.REPAIR_ACTIVE:
         return EncodingStatus.Status.REPAIR_ACTIVE;
+      case HopEncodingStatus.REPAIR_FAILED:
+        return EncodingStatus.Status.REPAIR_FAILED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -66,10 +70,14 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return HopEncodingStatus.ENCODING_REQUESTED;
       case ENCODING_ACTIVE:
         return HopEncodingStatus.ENCODING_ACTIVE;
+      case ENCODING_FAILED:
+        return HopEncodingStatus.ENCODING_FAILED;
       case ENCODED:
         return HopEncodingStatus.ENCODED;
       case REPAIR_ACTIVE:
         return HopEncodingStatus.REPAIR_ACTIVE;
+      case REPAIR_FAILED:
+        return  HopEncodingStatus.REPAIR_FAILED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }

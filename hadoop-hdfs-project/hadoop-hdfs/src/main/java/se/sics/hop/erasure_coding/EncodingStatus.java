@@ -9,8 +9,10 @@ public class EncodingStatus {
     NOT_ENCODED,
     ENCODING_REQUESTED,
     ENCODING_ACTIVE,
+    ENCODING_FAILED,
     ENCODED,
-    REPAIR_ACTIVE
+    REPAIR_ACTIVE,
+    REPAIR_FAILED
   }
 
   public static enum Counter implements CounterType<EncodingStatus> {
