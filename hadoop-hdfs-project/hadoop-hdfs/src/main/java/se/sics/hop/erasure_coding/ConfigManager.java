@@ -104,8 +104,11 @@ class ConfigManager {
       throw new IOException(msg);
     }
     reloadConfigs();
-    lastSuccessfulReload = ErasureCodingService.now();
-    lastReloadAttempt = ErasureCodingService.now();
+    lastSuccessfulReload = System.currentTimeMillis();
+    lastReloadAttempt = System.currentTimeMillis();
+    // TODO Check if this replacement is valid
+//    lastSuccessfulReload = ErasureCodingService.now();
+//    lastReloadAttempt = ErasureCodingService.now();
     running = true;
   }
   
@@ -114,7 +117,9 @@ class ConfigManager {
    * Returns true if the file was reloaded.
    */
   public synchronized boolean reloadConfigsIfNecessary() {
-    long time = ErasureCodingService.now();
+    // TODO Check if this replacement is valid
+//    long time = ErasureCodingService.now();
+    long time = System.currentTimeMillis();
     if (time > lastReloadAttempt + reloadInterval) {
       lastReloadAttempt = time;
       try {

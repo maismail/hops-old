@@ -47,7 +47,6 @@ import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifie
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.erasure_coding.ErasureCodingService;
 
 /**********************************************************************
  * ClientProtocol is used by user code via 

@@ -22,7 +22,6 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSUtil;
-import se.sics.hop.erasure_coding.ErasureCodingService;
 
 /** Interface that represents the over the wire information for a file.
  */
