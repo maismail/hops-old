@@ -140,7 +140,7 @@ public class LeaderElection extends Thread {
     
     while (nn.getNamesystem().isRunning()) {
       try {
-        LOG.info(hostname+") Leader Election timeout. Updating the counter and checking for new leader");
+//        LOG.info(hostname+") Leader Election timeout. Updating the counter and checking for new leader");
         leaderElectionHandler.handle(null/*fanamesystem*/);
         Thread.sleep(leadercheckInterval);
 
@@ -244,7 +244,7 @@ public class LeaderElection extends Thread {
     // otherwise create a new row
     
     HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
-    LOG.info(hostname+") Adding/updating row "+leader.toString());
+//    LOG.info(hostname+") Adding/updating row "+leader.toString());
     EntityManager.add(leader);
   }
 
