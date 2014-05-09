@@ -121,6 +121,11 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
+  public Collection<EncodingStatus> findRequestedRepairs(long limit) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findRequestedRepairs(limit));
+  }
+
+  @Override
   public int countRequestedEncodings() throws StorageException {
     return dataAccess.countRequestedEncodings();
   }

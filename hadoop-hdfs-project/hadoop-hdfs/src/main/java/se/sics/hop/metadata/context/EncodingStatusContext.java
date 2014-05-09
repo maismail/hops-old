@@ -88,7 +88,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
 
     // TODO STEFFEN - Do I need to synchronize results with the cache to support multiple operations per transaction?
     switch (eFinder) {
-      case LimitedByStatusRequestEncodings:
+      case LimitedByStatusRequestedEncodings:
         return dataAccess.findRequestedEncodings((Long) params[0]);
       case ByStatusActiveEncodings:
         return  dataAccess.findActiveEncodings();
@@ -96,6 +96,8 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
         return dataAccess.findActiveRepairs();
       case LimitedByStatusEncoded:
         return dataAccess.findEncoded((Long) params[0]);
+      case LimitedByStatusRequestedRepair:
+        return dataAccess.findRequestedRepairs((Long) params[0]);
       default:
         throw new RuntimeException(UNSUPPORTED_FINDER);
     }

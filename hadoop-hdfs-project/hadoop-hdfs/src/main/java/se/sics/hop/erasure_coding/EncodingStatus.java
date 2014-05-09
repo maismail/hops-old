@@ -32,10 +32,11 @@ public class EncodingStatus {
 
   public static enum Finder implements FinderType<EncodingStatus> {
     ByInodeId,
-    LimitedByStatusRequestEncodings,
+    LimitedByStatusRequestedEncodings,
     ByStatusActiveEncodings,
     ByStatusActiveRepairs,
-    LimitedByStatusEncoded;
+    LimitedByStatusEncoded,
+    LimitedByStatusRequestedRepair;
 
     @Override
     public Class getType() {
