@@ -5,19 +5,11 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.util.Daemon;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import org.apache.hadoop.util.StringUtils;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.EncodingStatusOperationType;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -34,23 +26,28 @@ public class ErasureCodingManager extends Configured{
   public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
   public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
   public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
-  public static final int DEFAULT_RECHECK_INTERVAL = 10 * 60 * 1000;
+  public static final int DEFAULT_RECHECK_INTERVAL = 1 * 60 * 1000;
   public static final String ACTIVE_ENCODING_LIMIT_KEY = "se.sics.hop.erasure_coding.active_encoding_limit";
   public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
+  public static final String ACTIVE_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
+  public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
 
-  private final Namesystem namesystem;
+  private final FSNamesystem namesystem;
   private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
   private EncodingManager encodingManager;
   private BlockRepairManager blockRepairManager;
   private final long recheckInterval;
   private final int activeEncodingLimit;
   private int activeEncodings = 0;
+  private final int activeRepairLimit;
+  private int activeRepairs = 0;
 
-  public ErasureCodingManager(Namesystem namesystem, Configuration conf) {
+  public ErasureCodingManager(FSNamesystem namesystem, Configuration conf) {
     super(conf);
     this.namesystem = namesystem;
     this.recheckInterval = conf.getInt(RECHECK_INTERVAL_KEY, DEFAULT_RECHECK_INTERVAL);
     this.activeEncodingLimit = conf.getInt(ACTIVE_ENCODING_LIMIT_KEY, DEFAULT_ACTIVE_ENCODING_LIMIT);
+    this.activeRepairLimit = conf.getInt(ACTIVE_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_REPAIR_LIMIT);
   }
 
   private boolean loadRaidNodeClasses() {
@@ -118,15 +115,8 @@ public class ErasureCodingManager extends Configured{
           }
           Thread.sleep(recheckInterval);
         } catch (InterruptedException ie) {
-          LOG.warn("ReplicationMonitor thread received InterruptedException.", ie);
+          LOG.warn("ErasureCodingMonitor thread received InterruptedException.", ie);
           break;
-        } /*catch (StorageException e){
-          LOG.warn("ReplicationMonitor thread received StorageException.", e);
-          break;
-        }*/
-        catch (Throwable t) {
-          LOG.fatal("ReplicationMonitor thread received Runtime exception. ", t);
-          terminate(1, t);
         }
       }
     }
@@ -139,12 +129,26 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
+          activeEncodings--;
           break;
         case FAILED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODING_FAILED);
+          activeEncodings--;
           break;
         case CANCELED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODING_CANCELED);
+          activeEncodings--;
           break;
       }
+    }
+  }
+
+  private void updateEncodingStatus(String filePath, EncodingStatus.Status status) {
+    try {
+      namesystem.updateEncodingStatus(filePath, status);
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
     }
   }
 
@@ -156,36 +160,21 @@ public class ErasureCodingManager extends Configured{
 
     try {
       Collection<EncodingStatus> requestedEncodings = EntityManager.findList(
-          EncodingStatus.Finder.LimitedByStatusRequestEncodings, limit);
+          EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
 
       for (EncodingStatus encodingStatus : requestedEncodings) {
-        // TODO STEFFEN - Check if file was completely written yet
-        INode iNode = findInode(encodingStatus.getInodeId());
+        INode iNode = namesystem.findInode(encodingStatus.getInodeId());
+        if (iNode.isUnderConstruction()) {
+          // The it might still be written to the file
+          continue;
+        }
         encodingManager.encodeFile(encodingStatus.getCodec(), new Path(iNode.getFullPathName()));
+        namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.ENCODING_ACTIVE);
+        activeEncodings++;
       }
     } catch (IOException e) {
-      LOG.error(e);
+      LOG.error(StringUtils.stringifyException(e));
     }
-  }
-
-  private INode findInode(final long id) throws IOException {
-    HDFSTransactionalRequestHandler findInodeHandler =
-        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        // TODO STEFFEN - Is this the right lock?
-        tla.getLocks().addINode(TransactionLockTypes.INodeLockType.READ);
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return EntityManager.find(INode.Finder.ByINodeID, id);
-      }
-    };
-    return (INode) findInodeHandler.handle(this);
   }
 
   private void checkActiveRepairs() {
@@ -195,16 +184,40 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
+          activeRepairs--;
           break;
         case FAILED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_FAILED);
+          activeRepairs--;
           break;
         case CANCELED:
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_CANCELED);
+          activeRepairs--;
           break;
       }
     }
   }
 
   private void scheduleRepairs() {
+    int limit = activeRepairLimit - activeRepairs;
+    if (limit <= 0) {
+      return;
+    }
 
+    try {
+      Collection<EncodingStatus> requestedEncodings = EntityManager.findList(
+          EncodingStatus.Finder.LimitedByStatusRequestedRepair, limit);
+
+      for (EncodingStatus encodingStatus : requestedEncodings) {
+        // TODO STEFFEN - Check if file was completely written yet
+        INode iNode = namesystem.findInode(encodingStatus.getInodeId());
+        encodingManager.encodeFile(encodingStatus.getCodec(), new Path(iNode.getFullPathName()));
+        namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.REPAIR_ACTIVE);
+        activeRepairs++;
+      }
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
+    }
   }
 }

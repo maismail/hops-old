@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIDGen;
@@ -212,8 +213,14 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.Common;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLocks;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -6578,8 +6585,130 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       safeMode.performSafeModePendingOperation();
     }
   }
-  
-  //END_HOP_CODE
-  
 
+  public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
+    // TODO STEFFEN - This starts a second transaction. Can it be done in one?
+    final long inodeId = findInodeId(filePath);
+
+    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+            TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
+        lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+      }
+    };
+    Object result = findReq.handle();
+    if (result == null) {
+      return new EncodingStatus(EncodingStatus.Status.NOT_ENCODED);
+    }
+    return (EncodingStatus) result;
+  }
+
+  public INode findInode(final long id) throws IOException {
+    HDFSTransactionalRequestHandler findInodeHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            // TODO STEFFEN - Is this the right lock?
+            tla.getLocks().addINode(TransactionLockTypes.INodeLockType.READ);
+            return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            return EntityManager.find(INode.Finder.ByINodeID, id);
+          }
+        };
+    return (INode) findInodeHandler.handle();
+  }
+
+  public long findInodeId (final String filePath) throws IOException {
+    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+        HDFSOperationType.GET_INODE) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();
+        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+            TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INode inode = dir.getINode(filePath);
+        if (inode == null) {
+          throw new IOException("File not found.");
+        }
+        return inode.getId();
+      }
+    };
+    return (Long) findReq.handle();
+  }
+
+  public void addEncodingStatus(final String sourcePath, final String codec) throws IOException {
+    HDFSTransactionalRequestHandler addEncodingStatusHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourcePath});
+            return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            long inodeId = dir.getINode(sourcePath).getId();
+            EncodingStatus encodingStatus = new EncodingStatus(
+                inodeId,
+                EncodingStatus.Status.ENCODING_REQUESTED,
+                codec,
+                System.currentTimeMillis());
+            EntityManager.add(encodingStatus);
+            return null;
+          }
+        };
+    addEncodingStatusHandler.handle();
+  }
+
+  public void updateEncodingStatus(final String sourceFile, final EncodingStatus.Status status) throws IOException {
+    // TODO STEFFEN - This starts a second transaction. Can it be done in one?
+    final EncodingStatus encodingStatus = getEncodingStatus(sourceFile);
+    encodingStatus.setStatus(status);
+    encodingStatus.setModificationTime(System.currentTimeMillis());
+
+    HDFSTransactionalRequestHandler updateEncodingStatusHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourceFile});
+            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ,
+                encodingStatus.getInodeId());
+            return lockAcquirer.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            EntityManager.update(encodingStatus);
+            return null;
+          }
+        };
+    updateEncodingStatusHandler.handle();
+  }
+  //END_HOP_CODE
 }

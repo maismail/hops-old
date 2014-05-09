@@ -15,13 +15,7 @@ import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
-import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -281,7 +275,7 @@ public class TestEncodingStatus extends TestCase {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Long limit = (Long) getParams()[0];
-        return EntityManager.findList(EncodingStatus.Finder.LimitedByStatusRequestEncodings, limit);
+        return EntityManager.findList(EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
       }
     };
     findReq.setParams(Long.MAX_VALUE);

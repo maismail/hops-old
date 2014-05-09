@@ -466,22 +466,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override // ClientProtocol
-  public void create(String src,
-                     FsPermission masked,
-                     String clientName, 
-                     EnumSetWritable<CreateFlag> flag,
-                     boolean createParent,
-                     short replication,
-                     long blockSize,
-                     String codec) throws IOException {
-    create(src, masked, clientName, flag, createParent, replication, blockSize);
-    LOG.info("Create file " + src + " with codec " + codec);
-    if (codec.equals(Codec.NO_ENCODING) == false) {
-      addEncodingStatus(src, codec);
-    }
-  }
-
-  @Override // ClientProtocol
   public LocatedBlock append(String src, String clientName) 
       throws IOException {
     String clientMachine = getClientMachine();
@@ -1166,93 +1150,37 @@ class NameNodeRpcServer implements NamenodeProtocols {
     return nn.getActiveNamenodes();
   }
 
-  @Override
-  public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
-    final long inodeId = findInodeId(filePath);
-
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
-        EncodingStatusOperationType.FIND_BY_INODE_ID) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        // TODO STEFFEN - It's not really nice to query the inode a second time after finding it
-        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
-        lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
-        return lockAcquirer.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
-      }
-    };
-    Object result = findReq.handle();
-    if (result == null) {
-      return new EncodingStatus(EncodingStatus.Status.NOT_ENCODED);
+  @Override // ClientProtocol
+  public void create(
+      String src,
+      FsPermission masked,
+      String clientName,
+      EnumSetWritable<CreateFlag> flag,
+      boolean createParent,
+      short replication,
+      long blockSize,
+      String codec) throws IOException {
+    create(src, masked, clientName, flag, createParent, replication, blockSize);
+    LOG.info("Create file " + src + " with codec " + codec);
+    if (codec.equals(Codec.NO_ENCODING) == false) {
+      namesystem.addEncodingStatus(src, codec);
     }
-    return (EncodingStatus) result;
   }
 
-  private long findInodeId (final String filePath) throws IOException {
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
-        HDFSOperationType.GET_INODE) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();
-        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-            TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
-        return lockAcquirer.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        INode inode = namesystem.dir.getINode(filePath);
-        if (inode == null) {
-          throw new IOException("File not found.");
-        }
-        return inode.getId();
-      }
-    };
-    return (Long) findReq.handle();
+  @Override
+  public EncodingStatus getEncodingStatus(String filePath) throws IOException {
+    return namesystem.getEncodingStatus(filePath);
   }
 
   @Override
   public void encodeFile(String filePath, String codec) throws IOException {
-    addEncodingStatus(filePath, codec);
+    namesystem.addEncodingStatus(filePath, codec);
   }
 
   @Override
   public void revokeEncoding(String filePath) throws IOException {
     throw new NotImplementedException();
     // TODO Implement revokeEncoding
-  }
-
-  private void addEncodingStatus(final String src, final String codec) throws IOException {
-    HDFSTransactionalRequestHandler addEncodingStatusHandler =
-        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-
-          @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{src});
-            return tla.acquire();
-          }
-
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-            long inodeId = namesystem.dir.getINode(src).getId();
-            EncodingStatus encodingStatus = new EncodingStatus(
-                inodeId,
-                EncodingStatus.Status.ENCODING_REQUESTED,
-                codec,
-                System.currentTimeMillis());
-            EntityManager.add(encodingStatus);
-            return null;
-          }
-        };
-    addEncodingStatusHandler.handle(this);
   }
   //HOP_CODE_END
 }
