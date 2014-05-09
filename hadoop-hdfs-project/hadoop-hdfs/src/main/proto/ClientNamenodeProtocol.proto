@@ -74,6 +74,11 @@ enum CreateFlagProto {
   APPEND = 0x04;    // Append to a file
 }
 
+message EncodingPolicyProto {
+  required string codec = 1;
+  required uint32 targetReplication = 2;
+}
+
 message CreateRequestProto {
   required string src = 1;
   required FsPermissionProto masked = 2;
@@ -82,7 +87,7 @@ message CreateRequestProto {
   required bool createParent = 5;
   required uint32 replication = 6; // Short: Only 16 bits used
   required uint64 blockSize = 7;
-  optional string codec = 8 [default = "none"]; // Codec used for erasure coding if required
+  optional EncodingPolicyProto policy = 8; // Policy used for erasure coding if required
 }
 
 message CreateResponseProto { // void response
@@ -468,7 +473,7 @@ message EncodingStatusProto {
     }
 
     required StatusProto status = 1;
-    optional string codec = 2;
+    optional EncodingPolicyProto policy = 2;
 }
 
 message GetEncodingStatusRequestProto {
@@ -481,7 +486,7 @@ message GetEncodingStatusResponseProto {
 
 message EncodeFileRequestProto {
     required string path = 1;
-    required string codec = 2;
+    required EncodingPolicyProto policy = 2;
 }
 
 message EncodeFileResponseProto { // void response

@@ -127,6 +127,7 @@ import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.Codec;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
@@ -1159,11 +1160,11 @@ class NameNodeRpcServer implements NamenodeProtocols {
       boolean createParent,
       short replication,
       long blockSize,
-      String codec) throws IOException {
+      EncodingPolicy policy) throws IOException {
     create(src, masked, clientName, flag, createParent, replication, blockSize);
-    LOG.info("Create file " + src + " with codec " + codec);
-    if (codec.equals(Codec.NO_ENCODING) == false) {
-      namesystem.addEncodingStatus(src, codec);
+    LOG.info("Create file " + src + " with policy " + policy.toString());
+    if (policy != null) {
+      namesystem.addEncodingStatus(src, policy);
     }
   }
 
@@ -1173,8 +1174,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public void encodeFile(String filePath, String codec) throws IOException {
-    namesystem.addEncodingStatus(filePath, codec);
+  public void encodeFile(String filePath, EncodingPolicy policy) throws IOException {
+    namesystem.addEncodingStatus(filePath, policy);
   }
 
   @Override

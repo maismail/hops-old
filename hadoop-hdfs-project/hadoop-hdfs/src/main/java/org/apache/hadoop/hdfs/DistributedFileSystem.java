@@ -66,6 +66,7 @@ import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.token.SecretManager.InvalidToken;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.Progressable;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
 
@@ -254,18 +255,18 @@ public class DistributedFileSystem extends FileSystem {
     return dfs.append(getPathName(f), bufferSize, progress, statistics);
   }
 
-  public HdfsDataOutputStream create(Path f, String codec) throws IOException {
-    return create(f, true, codec);
+  public HdfsDataOutputStream create(Path f, EncodingPolicy policy) throws IOException {
+    return create(f, true, policy);
   }
 
-  public HdfsDataOutputStream create(Path f, boolean overwrite, String codec)
+  public HdfsDataOutputStream create(Path f, boolean overwrite, EncodingPolicy policy)
       throws IOException {
     return create(f, overwrite,
         getConf().getInt("io.file.buffer.size", 4096),
         getDefaultReplication(f),
         getDefaultBlockSize(f),
         null,
-        codec);
+        policy);
   }
 
   public HdfsDataOutputStream create(
@@ -275,19 +276,19 @@ public class DistributedFileSystem extends FileSystem {
         short replication,
         long blockSize,
         Progressable progress,
-        String codec) throws IOException {
+        EncodingPolicy policy) throws IOException {
     return this.create(f, FsPermission.getFileDefault().applyUMask(
             FsPermission.getUMask(getConf())), overwrite, bufferSize,
-        replication, blockSize, progress, codec);
+        replication, blockSize, progress, policy);
   }
 
   public HdfsDataOutputStream create(Path f, FsPermission permission,
          boolean overwrite, int bufferSize, short replication, long blockSize,
-         Progressable progress, String codec) throws IOException {
+         Progressable progress, EncodingPolicy policy) throws IOException {
     return this.create(f, permission,
         overwrite ? EnumSet.of(CreateFlag.CREATE, CreateFlag.OVERWRITE)
             : EnumSet.of(CreateFlag.CREATE), bufferSize, replication,
-        blockSize, progress, null, codec);
+        blockSize, progress, null, policy);
   }
 
   @Override
@@ -310,10 +311,10 @@ public class DistributedFileSystem extends FileSystem {
 
   public HdfsDataOutputStream create(Path f, FsPermission permission,
       EnumSet<CreateFlag> cflags, int bufferSize, short replication, long blockSize,
-      Progressable progress, ChecksumOpt checksumOpt, String codec) throws IOException {
+      Progressable progress, ChecksumOpt checksumOpt, EncodingPolicy policy) throws IOException {
     statistics.incrementWriteOps(1);
     final DFSOutputStream out = dfs.create(getPathName(f), permission, cflags,
-        replication, blockSize, progress, bufferSize, checksumOpt, codec);
+        replication, blockSize, progress, bufferSize, checksumOpt, policy);
     return new HdfsDataOutputStream(out, statistics);
   }
   
@@ -1005,8 +1006,8 @@ public class DistributedFileSystem extends FileSystem {
     return dfs.getEncodingStatus(filePath);
   }
 
-  public void encodeFile(final String filePath, final String codec) throws IOException {
-    dfs.encodeFile(filePath, codec);
+  public void encodeFile(final String filePath, final EncodingPolicy policy) throws IOException {
+    dfs.encodeFile(filePath, policy);
   }
 
   public void revokeEncoding(final String filePath) throws IOException {

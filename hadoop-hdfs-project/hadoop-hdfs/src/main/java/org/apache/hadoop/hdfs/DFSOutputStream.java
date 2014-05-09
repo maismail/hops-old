@@ -75,6 +75,7 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 
 
 /****************************************************************
@@ -1333,7 +1334,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   private DFSOutputStream(DFSClient dfsClient, String src, FsPermission masked,
       EnumSet<CreateFlag> flag, boolean createParent, short replication,
       long blockSize, Progressable progress, int buffersize,
-      DataChecksum checksum, String codec) throws IOException {
+      DataChecksum checksum, EncodingPolicy policy) throws IOException {
     this(dfsClient, src, blockSize, progress, checksum, replication);
     this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
 
@@ -1343,7 +1344,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     try {
       dfsClient.create(
           src, masked, dfsClient.clientName, new EnumSetWritable<CreateFlag>(flag),
-          createParent, replication, blockSize, codec);
+          createParent, replication, blockSize, policy);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      DSQuotaExceededException.class,
@@ -1368,10 +1369,10 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   static DFSOutputStream newStreamForCreate(DFSClient dfsClient, String src,
       FsPermission masked, EnumSet<CreateFlag> flag, boolean createParent,
       short replication, long blockSize, Progressable progress, int buffersize,
-      DataChecksum checksum, String codec) throws IOException {
+      DataChecksum checksum, EncodingPolicy policy) throws IOException {
     final DFSOutputStream out = new DFSOutputStream(dfsClient, src, masked,
         flag, createParent, replication, blockSize, progress, buffersize,
-        checksum, codec);
+        checksum, policy);
     out.streamer.start();
     return out;
   }

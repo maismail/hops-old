@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
@@ -6621,7 +6622,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             // TODO STEFFEN - Is this the right lock?
-            tla.getLocks().addINode(TransactionLockTypes.INodeLockType.READ);
+            tla.getLocks().addINode(INodeLockType.READ_COMMITED);
             return tla.acquire();
           }
 
@@ -6656,7 +6657,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (Long) findReq.handle();
   }
 
-  public void addEncodingStatus(final String sourcePath, final String codec) throws IOException {
+  public void addEncodingStatus(final String sourcePath, final EncodingPolicy policy) throws IOException {
     HDFSTransactionalRequestHandler addEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
@@ -6674,7 +6675,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             EncodingStatus encodingStatus = new EncodingStatus(
                 inodeId,
                 EncodingStatus.Status.ENCODING_REQUESTED,
-                codec,
+                policy,
                 System.currentTimeMillis());
             EntityManager.add(encodingStatus);
             return null;

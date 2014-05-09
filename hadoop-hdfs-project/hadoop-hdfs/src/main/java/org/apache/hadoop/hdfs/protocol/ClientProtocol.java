@@ -46,6 +46,7 @@ import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**********************************************************************
@@ -181,7 +182,7 @@ public interface ClientProtocol {
    */
   public void create(String src, FsPermission masked, String clientName,
       EnumSetWritable<CreateFlag> flag, boolean createParent,
-      short replication, long blockSize, String codec) throws AccessControlException,
+      short replication, long blockSize, EncodingPolicy policy) throws AccessControlException,
       AlreadyBeingCreatedException, DSQuotaExceededException,
       FileAlreadyExistsException, FileNotFoundException,
       NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
@@ -1027,7 +1028,7 @@ public interface ClientProtocol {
 
   public EncodingStatus getEncodingStatus(String filePath) throws IOException;
 
-  public void encodeFile(String filePath, String codec) throws IOException;
+  public void encodeFile(String filePath, EncodingPolicy policy) throws IOException;
 
   public void revokeEncoding(String filePath) throws  IOException;
 }

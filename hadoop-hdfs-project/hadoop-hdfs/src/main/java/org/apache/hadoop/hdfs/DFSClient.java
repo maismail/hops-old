@@ -169,6 +169,7 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
 /********************************************************
@@ -1360,10 +1361,10 @@ public class DFSClient implements java.io.Closeable {
                                 Progressable progress,
                                 int buffersize,
                                 ChecksumOpt checksumOpt,
-                                String codec)
+                                EncodingPolicy policy)
       throws IOException {
     return create(src, permission, flag, true,
-        replication, blockSize, progress, buffersize, checksumOpt, codec);
+        replication, blockSize, progress, buffersize, checksumOpt, policy);
   }
 
   /**
@@ -1432,7 +1433,7 @@ public class DFSClient implements java.io.Closeable {
                              Progressable progress,
                              int buffersize,
                              ChecksumOpt checksumOpt,
-                             String codec) throws IOException {
+                             EncodingPolicy policy) throws IOException {
     checkOpen();
     if (permission == null) {
       permission = FsPermission.getFileDefault();
@@ -1443,7 +1444,7 @@ public class DFSClient implements java.io.Closeable {
     }
     final DFSOutputStream result = DFSOutputStream.newStreamForCreate(this,
         src, masked, flag, createParent, replication, blockSize, progress,
-        buffersize, dfsClientConf.createChecksum(checksumOpt), codec);
+        buffersize, dfsClientConf.createChecksum(checksumOpt), policy);
     beginFileLease(src, result);
     return result;
   }
@@ -2860,7 +2861,7 @@ public class DFSClient implements java.io.Closeable {
 
   public void create(final String src, final FsPermission masked, final String clientName,
       final EnumSetWritable<CreateFlag> flag, final boolean createParent,
-      final short replication, final long blockSize, final String codec) throws AccessControlException,
+      final short replication, final long blockSize, final EncodingPolicy policy) throws AccessControlException,
         AlreadyBeingCreatedException, DSQuotaExceededException,
         FileAlreadyExistsException, FileNotFoundException,
         NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
@@ -2868,7 +2869,7 @@ public class DFSClient implements java.io.Closeable {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-        namenode.create(src, masked, clientName, flag, createParent, replication, blockSize, codec);
+        namenode.create(src, masked, clientName, flag, createParent, replication, blockSize, policy);
         return null;
       }
     };
@@ -2914,11 +2915,11 @@ public class DFSClient implements java.io.Closeable {
     return (EncodingStatus) doClientActionWithRetry(handler, "EncodingStatus");
   }
 
-  public void encodeFile(final String filePath, final String codec) throws IOException {
+  public void encodeFile(final String filePath, final EncodingPolicy policy) throws IOException {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws IOException {
-        namenode.encodeFile(filePath, codec);
+        namenode.encodeFile(filePath, policy);
         return null;
       }
     };

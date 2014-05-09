@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.adaptor;
 
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.DALAdaptor;
@@ -25,7 +26,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
 
     HopEncodingStatus converted = new HopEncodingStatus();
     converted.setInodeId(encodingStatus.getInodeId());
-    converted.setCodec(encodingStatus.getCodec());
+    converted.setCodec(encodingStatus.getEncodingPolicy().getCodec());
+    converted.setTargetReplication(encodingStatus.getEncodingPolicy().getTargetReplication());
     converted.setStatus(convertStatus(encodingStatus.getStatus()));
     converted.setModification_time(encodingStatus.getModificationTime());
     return converted;
@@ -39,7 +41,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
 
     EncodingStatus converted = new EncodingStatus();
     converted.setInodeId(hopEncodingStatus.getInodeId());
-    converted.setCodec(hopEncodingStatus.getCodec());
+    EncodingPolicy policy = new EncodingPolicy(hopEncodingStatus.getCodec(), hopEncodingStatus.getTargetReplication());
+    converted.setEncodingPolicy(policy);
     converted.setStatus(convertStatus(hopEncodingStatus.getStatus()));
     converted.setModificationTime(hopEncodingStatus.getModificationTime());
     return converted;

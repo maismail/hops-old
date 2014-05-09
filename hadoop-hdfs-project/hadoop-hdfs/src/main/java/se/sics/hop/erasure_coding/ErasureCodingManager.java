@@ -12,7 +12,6 @@ import org.apache.hadoop.util.StringUtils;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
-import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
@@ -116,7 +115,8 @@ public class ErasureCodingManager extends Configured{
             checkActiveEncodings();
             scheduleEncodings();
             checkActiveRepairs();
-            scheduleRepairs();
+            scheduleSourceRepairs();
+            scheduleParityRepairs();
           }
           Thread.sleep(recheckInterval);
         } catch (InterruptedException ie) {
@@ -182,7 +182,7 @@ public class ErasureCodingManager extends Configured{
           // The it might still be written to the file
           continue;
         }
-        encodingManager.encodeFile(encodingStatus.getCodec(), new Path(iNode.getFullPathName()));
+        encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(iNode.getFullPathName()));
         namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.ENCODING_ACTIVE);
         activeEncodings++;
       }
@@ -213,7 +213,7 @@ public class ErasureCodingManager extends Configured{
     }
   }
 
-  private void scheduleRepairs() {
+  private void scheduleSourceRepairs() {
     final int limit = activeRepairLimit - activeRepairs;
     if (limit <= 0) {
       return;
@@ -232,14 +232,18 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedEncodings) {
-        // TODO STEFFEN - Check if file was completely written yet
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
-        encodingManager.encodeFile(encodingStatus.getCodec(), new Path(iNode.getFullPathName()));
+        blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(),
+            new Path(iNode.getFullPathName()));
         namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.REPAIR_ACTIVE);
         activeRepairs++;
       }
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
     }
+  }
+
+  private void scheduleParityRepairs() {
+    // TODO STEFFEN - Implement parity repair
   }
 }

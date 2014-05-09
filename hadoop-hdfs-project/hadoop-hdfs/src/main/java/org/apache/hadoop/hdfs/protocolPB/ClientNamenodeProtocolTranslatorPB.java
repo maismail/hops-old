@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.protocolPB;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.security.Policy;
 import java.util.Arrays;
 
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -125,6 +126,7 @@ import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.mortbay.log.Log;
 import se.sics.hop.erasure_coding.Codec;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
@@ -254,7 +256,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
   @Override
   public void create(String src, FsPermission masked, String clientName,
       EnumSetWritable<CreateFlag> flag, boolean createParent,
-      short replication, long blockSize, String codec) throws AccessControlException,
+      short replication, long blockSize, EncodingPolicy policy) throws AccessControlException,
       AlreadyBeingCreatedException, DSQuotaExceededException,
       FileAlreadyExistsException, FileNotFoundException,
       NSQuotaExceededException, ParentNotDirectoryException, SafeModeException,
@@ -267,8 +269,8 @@ public class ClientNamenodeProtocolTranslatorPB implements
         .setCreateParent(createParent)
         .setReplication(replication)
         .setBlockSize(blockSize);
-    if (codec != null) {
-      builder.setCodec(codec);
+    if (policy != null) {
+      builder.setPolicy(PBHelper.convert(policy));
     }
     CreateRequestProto req = builder.build();
     try {
@@ -950,12 +952,12 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public void encodeFile(String filePath, String codec) throws IOException {
+  public void encodeFile(String filePath, EncodingPolicy policy) throws IOException {
     try {
       ClientNamenodeProtocolProtos.EncodeFileRequestProto request =
           ClientNamenodeProtocolProtos.EncodeFileRequestProto.newBuilder()
               .setPath(filePath)
-              .setCodec(codec)
+              .setPolicy(PBHelper.convert(policy))
               .build();
       rpcProxy.encodeFile(null, request);
     } catch (ServiceException e) {

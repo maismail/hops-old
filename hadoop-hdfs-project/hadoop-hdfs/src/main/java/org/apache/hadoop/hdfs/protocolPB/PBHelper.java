@@ -144,6 +144,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNameno
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
 /**
@@ -1399,8 +1400,8 @@ public class PBHelper {
 
   public static EncodingStatus convert (ClientNamenodeProtocolProtos.EncodingStatusProto encodingStatusProto) {
     EncodingStatus.Status status = convert(encodingStatusProto.getStatus());
-    String codec = encodingStatusProto.hasCodec()? encodingStatusProto.getCodec() : null;
-    return new EncodingStatus(status, codec);
+    EncodingPolicy policy = encodingStatusProto.hasPolicy()? PBHelper.convert(encodingStatusProto.getPolicy()) : null;
+    return new EncodingStatus(status, policy);
   }
 
   public static ClientNamenodeProtocolProtos.EncodingStatusProto convert (EncodingStatus encodingStatus) {
@@ -1408,10 +1409,22 @@ public class PBHelper {
     ClientNamenodeProtocolProtos.EncodingStatusProto.Builder builder =
         ClientNamenodeProtocolProtos.EncodingStatusProto.newBuilder();
     builder.setStatus(status);
-    if (encodingStatus.getCodec() != null) {
-      builder.setCodec(encodingStatus.getCodec());
+    if (encodingStatus.getEncodingPolicy() != null) {
+      builder.setPolicy(PBHelper.convert(encodingStatus.getEncodingPolicy()));
     }
     return builder.build();
+  }
+
+  public static ClientNamenodeProtocolProtos.EncodingPolicyProto convert(EncodingPolicy encodingPolicy) {
+    ClientNamenodeProtocolProtos.EncodingPolicyProto.Builder builder =
+        ClientNamenodeProtocolProtos.EncodingPolicyProto.newBuilder();
+    builder.setCodec(encodingPolicy.getCodec());
+    builder.setTargetReplication(encodingPolicy.getTargetReplication());
+    return  builder.build();
+  }
+
+  public static EncodingPolicy convert(ClientNamenodeProtocolProtos.EncodingPolicyProto encodingPolicyProto) {
+    return new EncodingPolicy(encodingPolicyProto.getCodec(), encodingPolicyProto.getTargetReplication());
   }
 
   public static EncodingStatus.Status convert(ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto status) {

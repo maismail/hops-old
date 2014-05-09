@@ -309,10 +309,17 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   public CreateResponseProto create(RpcController controller,
       CreateRequestProto req) throws ServiceException {
     try {
-      server.create(req.getSrc(), PBHelper.convert(req.getMasked()),
-          req.getClientName(), PBHelper.convert(req.getCreateFlag()),
-          req.getCreateParent(), (short) req.getReplication(),
-          req.getBlockSize(), req.getCodec());
+      if (req.hasPolicy()) {
+        server.create(req.getSrc(), PBHelper.convert(req.getMasked()),
+            req.getClientName(), PBHelper.convert(req.getCreateFlag()),
+            req.getCreateParent(), (short) req.getReplication(),
+            req.getBlockSize(), PBHelper.convert(req.getPolicy()));
+      } else {
+        server.create(req.getSrc(), PBHelper.convert(req.getMasked()),
+            req.getClientName(), PBHelper.convert(req.getCreateFlag()),
+            req.getCreateParent(), (short) req.getReplication(),
+            req.getBlockSize());
+      }
     } catch (IOException e) {
       throw new ServiceException(e);
     }
@@ -932,7 +939,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       RpcController controller,
       ClientNamenodeProtocolProtos.EncodeFileRequestProto request) throws ServiceException {
     try {
-      server.encodeFile(request.getPath(), request.getCodec());
+      server.encodeFile(request.getPath(), PBHelper.convert(request.getPolicy()));
       ClientNamenodeProtocolProtos.EncodeFileResponseProto.Builder builder =
           ClientNamenodeProtocolProtos.EncodeFileResponseProto.newBuilder();
       return builder.build();

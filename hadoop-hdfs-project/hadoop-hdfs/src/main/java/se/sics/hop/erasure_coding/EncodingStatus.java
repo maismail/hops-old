@@ -46,7 +46,7 @@ public class EncodingStatus {
 
   private long inodeId;
   private Status status;
-  private String codec;
+  private EncodingPolicy encodingPolicy;
   private long modificationTime;
 
   public EncodingStatus() {
@@ -57,15 +57,15 @@ public class EncodingStatus {
     this.status = status;
   }
 
-  public EncodingStatus(Status status, String codec) {
+  public EncodingStatus(Status status, EncodingPolicy encodingPolicy) {
     this.status = status;
-    this.codec = codec;
+    this.encodingPolicy = encodingPolicy;
   }
 
-  public EncodingStatus(long inodeId, Status status, String codec, long modificationTime) {
+  public EncodingStatus(long inodeId, Status status, EncodingPolicy encodingPolicy, long modificationTime) {
     this.inodeId = inodeId;
     this.status = status;
-    this.codec = codec;
+    this.encodingPolicy = encodingPolicy;
     this.modificationTime = modificationTime;
   }
 
@@ -89,16 +89,16 @@ public class EncodingStatus {
     this.status = status;
   }
 
-  public void setCodec(String codec) {
-    this.codec = codec;
-  }
-
   public Status getStatus() {
     return status;
   }
 
-  public String getCodec() {
-    return codec;
+  public EncodingPolicy getEncodingPolicy() {
+    return encodingPolicy;
+  }
+
+  public void setEncodingPolicy(EncodingPolicy encodingPolicy) {
+    this.encodingPolicy = encodingPolicy;
   }
 
   public boolean isEncoded() {
