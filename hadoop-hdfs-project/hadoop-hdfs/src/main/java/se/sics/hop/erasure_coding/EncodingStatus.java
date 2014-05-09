@@ -102,6 +102,15 @@ public class EncodingStatus {
   }
 
   public boolean isEncoded() {
-    return status == Status.ENCODED;
+    switch (status) {
+      case ENCODED:
+      case REPAIR_REQUESTED:
+      case REPAIR_ACTIVE:
+      case REPAIR_CANCELED:
+      case REPAIR_FAILED:
+        return true;
+      default:
+        return false;
+    }
   }
 }
