@@ -24,6 +24,7 @@ public abstract class BasicClusterTestCase extends TestCase {
 
   protected BasicClusterTestCase() {
     this(new HdfsConfiguration());
+    conf.setBoolean(ErasureCodingManager.ERASURE_CODING_ENABLED_KEY, true);
     conf.set(ErasureCodingManager.ENCODING_MANAGER_CLASSNAME_KEY, ENCODING_MANAGER_CLASSNAME);
     conf.set(ErasureCodingManager.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, BLOCK_REPAIR_MANAGER_CLASSNAME);
     conf.setLong(DFS_BLOCK_SIZE_KEY, DFS_TEST_BLOCK_SIZE);
