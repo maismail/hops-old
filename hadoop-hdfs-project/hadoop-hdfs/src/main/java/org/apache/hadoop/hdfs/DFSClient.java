@@ -2926,15 +2926,37 @@ public class DFSClient implements java.io.Closeable {
     doClientActionWithRetry(handler, "encodeFile");
   }
 
-  public void revokeEncoding(final String filePath) throws IOException {
+  public void revokeEncoding(final String filePath, final int replication) throws IOException {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws IOException {
-        namenode.revokeEncoding(filePath);
+        namenode.revokeEncoding(filePath, replication);
         return null;
       }
     };
     doClientActionWithRetry(handler, "revokeEncoding");
+  }
+
+  public LocatedBlock getRepairedBlockLocations(final String path, final long blockId)
+      throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+        return callGetRepairedBlockLocations(namenode, path, blockId);
+      }
+    };
+    return (LocatedBlock) doClientActionWithRetry(handler, "getMissingLocatedBlocks");
+  }
+
+  static LocatedBlock callGetRepairedBlockLocations(ClientProtocol namenode, String filePath, long blockId)
+      throws IOException {
+    try {
+      return namenode.getRepairedBlockLocations(filePath, blockId);
+    } catch(RemoteException re) {
+      throw re.unwrapRemoteException(AccessControlException.class,
+          FileNotFoundException.class,
+          UnresolvedPathException.class);
+    }
   }
   //END_HOP_CODE
 }

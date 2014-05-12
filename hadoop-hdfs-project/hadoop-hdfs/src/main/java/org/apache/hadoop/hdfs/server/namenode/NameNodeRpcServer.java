@@ -1179,9 +1179,15 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public void revokeEncoding(String filePath) throws IOException {
+  public void revokeEncoding(String filePath, int replication) throws IOException {
     throw new NotImplementedException();
     // TODO Implement revokeEncoding
+  }
+
+  @Override
+  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException {
+    throw new NotImplementedException();
+    // TODO Implement getRepairedBlockLocations
   }
   //HOP_CODE_END
 }

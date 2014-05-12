@@ -966,11 +966,26 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public void revokeEncoding(String filePath) throws IOException {
+  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException {
+    ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto request =
+        ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto.newBuilder()
+          .setPath(path)
+          .setBlockId(blockId)
+          .build();
+    try {
+      return PBHelper.convert(rpcProxy.getRepairedBlockLocations(null, request).getLocatedBlocks());
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
+  public void revokeEncoding(String filePath, int replication) throws IOException {
     try {
       ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request =
           ClientNamenodeProtocolProtos.RevokeEncodingRequestProto.newBuilder()
               .setPath(filePath)
+              .setReplication(replication)
               .build();
       rpcProxy.revokeEncoding(null, request);
     } catch (ServiceException e) {

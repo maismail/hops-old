@@ -1030,5 +1030,7 @@ public interface ClientProtocol {
 
   public void encodeFile(String filePath, EncodingPolicy policy) throws IOException;
 
-  public void revokeEncoding(String filePath) throws  IOException;
+  public void revokeEncoding(String filePath, int replication) throws  IOException;
+
+  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException;
 }

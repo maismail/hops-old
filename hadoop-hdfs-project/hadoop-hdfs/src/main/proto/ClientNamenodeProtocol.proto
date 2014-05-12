@@ -495,11 +495,22 @@ message EncodeFileResponseProto { // void response
 
 message RevokeEncodingRequestProto {
     required string path = 1;
+    required uint32 replication = 2;
 }
 
 message RevokeEncodingResponseProto { // void response
 
 }
+
+message GetRepairedBlockLocationsRequsestProto {
+    required string path = 1;
+    required uint64 blockId = 2;
+}
+
+message GetRepairedBlockLocationsResponseProto {
+    required LocatedBlockProto locatedBlocks = 1;
+}
+
 //END_HOP_CODE
 
 service ClientNamenodeProtocol {
@@ -588,6 +599,8 @@ service ClientNamenodeProtocol {
     returns(EncodeFileResponseProto);
   rpc revokeEncoding(RevokeEncodingRequestProto)
     returns(RevokeEncodingResponseProto);
+  rpc getRepairedBlockLocations(GetRepairedBlockLocationsRequsestProto)
+    returns(GetRepairedBlockLocationsResponseProto);
   //END_HOP_CODE
 
 }

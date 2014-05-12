@@ -953,9 +953,27 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       RpcController controller,
       ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request) throws ServiceException {
     try {
-      server.revokeEncoding(request.getPath());
+      server.revokeEncoding(request.getPath(), request.getReplication());
       ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.Builder builder =
           ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.newBuilder();
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
+  public ClientNamenodeProtocolProtos.GetRepairedBlockLocationsResponseProto getRepairedBlockLocations(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto request) throws ServiceException {
+    try {
+      LocatedBlock b = server.getRepairedBlockLocations(request.getPath(), request.getBlockId());
+      ClientNamenodeProtocolProtos.GetRepairedBlockLocationsResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetRepairedBlockLocationsResponseProto
+              .newBuilder();
+      if (b != null) {
+        builder.setLocatedBlocks(PBHelper.convert(b)).build();
+      }
       return builder.build();
     } catch (IOException e) {
       throw new ServiceException(e);
