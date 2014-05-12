@@ -17,14 +17,6 @@ public class TestUtil {
     out.close();
   }
 
-  public static void createRandomFile(DistributedFileSystem dfs, Path path, long seed, int blockCount,
-                                      int blockSize, EncodingPolicy policy) throws IOException {
-    FSDataOutputStream out = dfs.create(path, policy);
-    byte[] buffer = randomBytes(seed, blockCount, blockSize);
-    out.write(buffer, 0, buffer.length);
-    out.close();
-  }
-
   public static byte[] randomBytes(long seed, int blockCount, int blockSize) {
     return randomBytes(seed, blockCount * blockSize);
   }
