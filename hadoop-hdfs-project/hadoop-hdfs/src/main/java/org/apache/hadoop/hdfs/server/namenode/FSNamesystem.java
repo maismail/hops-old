@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIDGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
@@ -219,17 +220,14 @@ import se.sics.hop.metadata.lock.ErasureCodingTransactionLocks;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.EncodingStatusOperationType;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
@@ -6615,23 +6613,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   public INode findInode(final long id) throws IOException {
-    HDFSTransactionalRequestHandler findInodeHandler =
-        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-
-          @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            // TODO STEFFEN - Is this the right lock?
-            tla.getLocks().addINode(INodeLockType.READ_COMMITED);
-            return tla.acquire();
-          }
-
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-            return EntityManager.find(INode.Finder.ByINodeID, id);
-          }
-        };
-    return (INode) findInodeHandler.handle();
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_REQUESTED_REPAIRS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return dataAccess.indexScanfindInodeById(id);
+      }
+    };
+    return (INode) findHandler.handle();
   }
 
   public long findInodeId (final String filePath) throws IOException {
