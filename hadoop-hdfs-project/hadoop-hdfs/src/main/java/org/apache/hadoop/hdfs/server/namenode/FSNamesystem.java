@@ -6613,8 +6613,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   public INode findInode(final long id) throws IOException {
-    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
-        EncodingStatusOperationType.FIND_REQUESTED_REPAIRS) {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
@@ -6624,9 +6623,28 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (INode) findHandler.handle();
   }
 
+  public String getPath(INode iNode) throws IOException {
+    LinkedList<INode> resolvedInodes = new LinkedList<INode>();
+    boolean resovled[] = new boolean[1];
+    INodeUtil.findPathINodesById(iNode.getId(), resolvedInodes, resovled);
+
+    if (resovled[0] == false) {
+      throw new IOException("Path could not be resolved");
+    }
+
+    StringBuilder builder = new StringBuilder();
+    for (INode node : resolvedInodes) {
+      if (node.isDirectory()) {
+        builder.append("/");
+      } else {
+        builder.append(node.getLocalName());
+      }
+    }
+    return builder.toString();
+  }
+
   public long findInodeId (final String filePath) throws IOException {
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
-        HDFSOperationType.GET_INODE) {
+    TransactionalRequestHandler findReq = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();

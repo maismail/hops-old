@@ -178,12 +178,20 @@ public class ErasureCodingManager extends Configured{
 
       for (EncodingStatus encodingStatus : requestedEncodings) {
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
-        if (iNode.isUnderConstruction()) {
-          // The it might still be written to the file
+        if (iNode == null) {
+          LOG.error("findInode returned null for id " + encodingStatus.getInodeId());
           continue;
         }
-        encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(iNode.getFullPathName()));
-        namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.ENCODING_ACTIVE);
+        if (iNode.isUnderConstruction()) {
+          // It might still be written to the file
+          LOG.info("Still under construction. Encoding not scheduled for " + iNode.getId());
+          continue;
+        }
+
+        String path = namesystem.getPath(iNode);
+        LOG.info("Schedule encoding for " + path);
+        encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path));
+        namesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODING_ACTIVE);
         activeEncodings++;
       }
     } catch (IOException e) {
@@ -233,9 +241,9 @@ public class ErasureCodingManager extends Configured{
       Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedEncodings) {
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
-        blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(),
-            new Path(iNode.getFullPathName()));
-        namesystem.updateEncodingStatus(iNode.getFullPathName(), EncodingStatus.Status.REPAIR_ACTIVE);
+        String path = namesystem.getPath(iNode);
+        blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path));
+        namesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_ACTIVE);
         activeRepairs++;
       }
     } catch (IOException e) {

@@ -15,7 +15,7 @@ public class EncodingStatus {
     REPAIR_REQUESTED,
     REPAIR_ACTIVE,
     REPAIR_CANCELED,
-    REPAIR_FAILED
+    REPAIR_FAILED,
   }
 
   public static enum Counter implements CounterType<EncodingStatus> {
@@ -112,5 +112,15 @@ public class EncodingStatus {
       default:
         return false;
     }
+  }
+
+  @Override
+  public String toString() {
+    return "EncodingStatus{" +
+        "inodeId=" + inodeId +
+        ", status=" + status +
+        ", encodingPolicy=" + encodingPolicy +
+        ", modificationTime=" + modificationTime +
+        '}';
   }
 }
