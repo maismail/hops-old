@@ -423,18 +423,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
     return namesystem.getBlockLocations(getClientMachine(), 
                                         src, offset, length);
   }
-
-  @Override // ClientProtocol
-  public LocatedBlocks getMissingBlockLocations(String filePath)
-      throws IOException {
-    return namesystem.getMissingBlockLocations(getClientMachine(), filePath);
-  }
-
-  @Override // ClientProtocol
-  public LocatedBlock getLocatedBlockForRepair(String filePath, ExtendedBlock block)
-      throws IOException {
-    return namesystem.getLocatedBlockForRepair(getClientMachine(), filePath, block);
-  }
   
   @Override // ClientProtocol
   public FsServerDefaults getServerDefaults() throws IOException {
@@ -1182,6 +1170,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public void revokeEncoding(String filePath, int replication) throws IOException {
     throw new NotImplementedException();
     // TODO Implement revokeEncoding
+  }
+
+  @Override // ClientProtocol
+  public LocatedBlocks getMissingBlockLocations(String filePath)
+      throws IOException {
+    return namesystem.getMissingBlockLocations(getClientMachine(), filePath);
   }
 
   @Override

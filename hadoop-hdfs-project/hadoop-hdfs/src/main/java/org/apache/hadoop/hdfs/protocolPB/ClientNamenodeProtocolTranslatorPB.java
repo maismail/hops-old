@@ -212,26 +212,6 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public LocatedBlock getLocatedBlockForRepair(String filePath, ExtendedBlock block)
-      throws AccessControlException, FileNotFoundException,
-      UnresolvedLinkException, IOException {
-    ClientNamenodeProtocolProtos.GetLocatedBlockForRepairRequestProto req =
-        ClientNamenodeProtocolProtos.GetLocatedBlockForRepairRequestProto
-            .newBuilder()
-            .setFilePath(filePath)
-            .setBlock(PBHelper.convert(block))
-            .build();
-    try {
-      ClientNamenodeProtocolProtos.GetLocatedBlockForRepairResponseProto resp =
-          rpcProxy.getLocatedBlockForRepair(null, req);
-      return resp.hasLocations() ?
-          PBHelper.convert(resp.getLocations()) : null;
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
   public FsServerDefaults getServerDefaults() throws IOException {
     GetServerDefaultsRequestProto req = VOID_GET_SERVER_DEFAULT_REQUEST;
     try {

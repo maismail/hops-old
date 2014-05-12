@@ -17,6 +17,8 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import org.apache.hadoop.hdfs.server.namenode.*;
+import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.metadata.blockmanagement.ExcessReplicasMap;
 import static org.apache.hadoop.util.ExitUtil.terminate;
 
@@ -60,9 +62,6 @@ import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingDataNodeMessages.ReportedBlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
-import org.apache.hadoop.hdfs.server.namenode.FSClusterStats;
-import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
@@ -80,8 +79,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -1097,12 +1094,25 @@ public class BlockManager {
 
     // Add this replica to corruptReplicas Map
     corruptReplicas.addToCorruptReplicasMap(b.corrupted, node, b.reason);
-    if (countNodes(b.stored).liveReplicas() >= bc.getBlockReplication()) {
+    NumberReplicas numberReplicas = countNodes(b.stored);
+    if (numberReplicas.liveReplicas() >= bc.getBlockReplication()) {
       // the block is over-replicated so invalidate the replicas immediately
       invalidateBlock(b, node);
     } else if (namesystem.isPopulatingReplQueues()) {
       // add the block to neededReplication
       updateNeededReplications(b.stored, -1, 0);
+    }
+
+    if (numberReplicas.liveReplicas() == 0) {
+      // TODO STEFFEN - These operations might be quite expensive
+      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
+      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
+        String path = fsNamesystem.getPath(bc.getId());
+        fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
+      }
+    } else {
+      // TODO STEFFEN - Check if corrupt blocks are left and if not change the status
     }
   }
 

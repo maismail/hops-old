@@ -1082,28 +1082,6 @@ public class DFSClient implements java.io.Closeable {
     }
   }
 
-  public LocatedBlock getLocatedBlockForRepair(final String filePath, final ExtendedBlock block)
-      throws IOException {
-    ClientActionHandler handler = new ClientActionHandler() {
-      @Override
-      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-        return callGetLocatedBlockForRepair(namenode, filePath, block);
-      }
-    };
-    return (LocatedBlock) doClientActionWithRetry(handler, "getLocatedBlockForRepair");
-  }
-
-  static LocatedBlock callGetLocatedBlockForRepair(ClientProtocol namenode, String filePath, ExtendedBlock block)
-      throws IOException {
-    try {
-      return namenode.getLocatedBlockForRepair(filePath, block);
-    } catch(RemoteException re) {
-      throw re.unwrapRemoteException(AccessControlException.class,
-          FileNotFoundException.class,
-          UnresolvedPathException.class);
-    }
-  }
-
   /**
    * Recover a file's lease
    * @param src a file's path

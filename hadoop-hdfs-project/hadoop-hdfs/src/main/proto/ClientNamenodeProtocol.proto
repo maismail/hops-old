@@ -52,15 +52,6 @@ message GetMissingBlockLocationsResponseProto {
     optional LocatedBlocksProto locations = 1;
 }
 
-message GetLocatedBlockForRepairRequestProto {
-    required string filePath = 1;
-    required ExtendedBlockProto block = 2;
-}
-
-message GetLocatedBlockForRepairResponseProto {
-    optional LocatedBlockProto locations = 1;
-}
-
 message GetServerDefaultsRequestProto { // No parameters
 }
 
@@ -518,8 +509,6 @@ service ClientNamenodeProtocol {
       returns(GetBlockLocationsResponseProto);
   rpc getMissingBlockLocations(GetMissingBlockLocationsRequestProto)
       returns(GetMissingBlockLocationsResponseProto);
-  rpc getLocatedBlockForRepair(GetLocatedBlockForRepairRequestProto)
-    returns(GetLocatedBlockForRepairResponseProto);
   rpc getServerDefaults(GetServerDefaultsRequestProto)
       returns(GetServerDefaultsResponseProto);
   rpc create(CreateRequestProto)returns(CreateResponseProto);

@@ -206,7 +206,8 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
-          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
+          // There should no be a need to update this. The Block manager should trigger this already.
+//          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
           activeRepairs--;
           break;
         case FAILED:

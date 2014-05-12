@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
+import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIDGen;
@@ -1375,46 +1376,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     };
     return (LocatedBlocks) getBlockLocationsHandler.handle(this);
-  }
-
-  LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
-      FileNotFoundException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(
-          HDFSOperationType.GET_BLOCK_LOCATIONS) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks();
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        LocatedBlocks blocks = new LocatedBlocks();
-        return blocks;
-      }
-    };
-    return (LocatedBlocks) getBlockLocationsHandler.handle(this);
-  }
-
-  LocatedBlock getLocatedBlockForRepair(final String clientMachine, String filePath, final ExtendedBlock block)
-        throws AccessControlException, FileNotFoundException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(
-          HDFSOperationType.GET_BLOCK_LOCATIONS) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks();
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        LocatedBlock block = new LocatedBlock(null, null);
-        return block;
-      }
-    };
-    return (LocatedBlock) getBlockLocationsHandler.handle(this);
   }
 
   /**
@@ -6623,6 +6584,28 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (INode) findHandler.handle();
   }
 
+  public EncodingStatus findEncodingStatus(final long inodeId) throws IOException {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess =
+            (EncodingStatusDataAccess) StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findByInodeId(inodeId);
+      }
+    };
+    Object result = findHandler.handle();
+    if (result == null) {
+      return new EncodingStatus(EncodingStatus.Status.NOT_ENCODED);
+    }
+    return (EncodingStatus) result;
+  }
+
+  public String getPath(long inodeId) throws IOException {
+    INode iNode = findInode(inodeId);
+    return getPath(iNode);
+  }
+
   public String getPath(INode iNode) throws IOException {
     LinkedList<INode> resolvedInodes = new LinkedList<INode>();
     boolean resovled[] = new boolean[1];
@@ -6663,6 +6646,20 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     };
     return (Long) findReq.handle();
+  }
+
+  LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
+      FileNotFoundException, UnresolvedLinkException, IOException {
+
+    LocatedBlocks blocks = getBlockLocations(clientMachine, filePath, 0, Long.MAX_VALUE);
+    Iterator<LocatedBlock> iterator = blocks.getLocatedBlocks().iterator();
+    while (iterator.hasNext()) {
+      LocatedBlock block = iterator.next();
+      if (block.isCorrupt() == false) {
+        iterator.remove();
+      }
+    }
+    return blocks;
   }
 
   public void addEncodingStatus(final String sourcePath, final EncodingPolicy policy) throws IOException {
