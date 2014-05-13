@@ -81,6 +81,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
@@ -1104,19 +1105,18 @@ public class BlockManager {
     }
 
     // TODO STEFFEN - Are other instances of Namesystem being used?
-//    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-//    if (!fsNamesystem.isErasueCodingEnabled()) {
-//      return;
-//    }
-//
-//    // TODO STEFFEN - These operations might be quite expensive
-//    if (numberReplicas.liveReplicas() == 0) {
-//      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
-//      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
-//        String path = fsNamesystem.getPath(bc.getId());
-//        fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
-//      }
-//    }
+    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+    if (!fsNamesystem.isErasueCodingEnabled()) {
+      return;
+    }
+
+    if (numberReplicas.liveReplicas() == 0) {
+      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
+        status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+        EntityManager.update(status);
+      }
+    }
   }
 
   /**
@@ -2398,12 +2398,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     assert bc != null : "Block must belong to a file";
 
     // TODO STEFFEN - Are other instances of Namesystem being used?
-//    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-//    NumberReplicas numBeforeAdding = null;
-//    if (fsNamesystem.isErasueCodingEnabled()) {
+    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+    NumberReplicas numBeforeAdding = null;
+    if (fsNamesystem.isErasueCodingEnabled()) {
       // TODO STEFFEN - Not so nice to count it twice is liveReplicas - 1 OK?
-//      numBeforeAdding = countNodes(block);
-//    }
+      numBeforeAdding = countNodes(block);
+    }
 
     // add block to the datanode
     boolean added = node.addBlock(storedBlock);
@@ -2471,17 +2471,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if ((corruptReplicasCount > 0) && (numLiveReplicas >= fileReplication))
       invalidateCorruptReplicas(storedBlock);
 
-    // TODO STEFFEN - Might be too expensive
-//    if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
-//      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
-//      if (status.isEncoded() && status.isCorrupt()) {
-//        String path = fsNamesystem.getPath(bc.getId());
-//        LocatedBlocks missingBlocks = fsNamesystem.getMissingBlockLocations("", path);
-//        if (missingBlocks.getLocatedBlocks().size() == 0) {
-//          fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODED);
-//        }
-//      }
-//    }
+    if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
+      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+      if (status.isEncoded() && status.isCorrupt()) {
+        String path = fsNamesystem.getPath(bc.getId());
+        if (fsNamesystem.isFileCorrupt(path) == false) {
+          fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODED);
+        }
+      }
+    }
 
     return storedBlock;
   }
@@ -2900,20 +2898,18 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       // Remove the replica from corruptReplicas
       corruptReplicas.removeFromCorruptReplicasMap(block, node);
 
-      // TODO STEFFEN - This cast might lead to problems
-//      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-//      if (fsNamesystem.isErasueCodingEnabled()) {
-//        BlockInfo blockInfo = getStoredBlock(block);
-//        // TODO STEFFEN - It is extremely inefficient to query the path to get an encoding status
-//        String path = fsNamesystem.getPath(blockInfo.getInodeId());
-//        EncodingStatus status = fsNamesystem.getEncodingStatus(path);
-//        if (status.isEncoded() && status.isCorrupt() == false) {
-//          NumberReplicas numberReplicas = countNodes(block);
-//          if (numberReplicas.liveReplicas() == 0) {
-//            fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
-//          }
-//        }
-//      }
+      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+      if (fsNamesystem.isErasueCodingEnabled()) {
+        BlockInfo blockInfo = getStoredBlock(block);
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
+        if (status.isEncoded() && (status.isCorrupt() == false)) {
+          NumberReplicas numberReplicas = countNodes(block);
+          if (numberReplicas.liveReplicas() == 0) {
+            status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+            EntityManager.update(status);
+          }
+        }
+      }
     }
   }
 

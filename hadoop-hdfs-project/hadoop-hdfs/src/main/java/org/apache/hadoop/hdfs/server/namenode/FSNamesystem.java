@@ -1425,6 +1425,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
 
+  public boolean isFileCorrupt(String filePath) throws IOException {
+    LocatedBlocks blocks =  getBlockLocationsInternal(filePath, 0, Long.MAX_VALUE, true, true, true);
+    Iterator<LocatedBlock> iterator = blocks.getLocatedBlocks().iterator();
+    for (LocatedBlock b : blocks.getLocatedBlocks()) {
+      if (b.isCorrupt() || (b.getLocations().length == 0 && b.getBlockSize() > 0)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   private LocatedBlocks getBlockLocationsInt(FSPermissionChecker pc,
       String src, long offset, long length, boolean doAccessTime,
       boolean needBlockToken, boolean checkSafeMode)
