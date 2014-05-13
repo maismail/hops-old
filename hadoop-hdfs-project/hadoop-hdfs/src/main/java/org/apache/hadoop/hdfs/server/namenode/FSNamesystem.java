@@ -6654,8 +6654,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     LocatedBlocks blocks = getBlockLocations(clientMachine, filePath, 0, Long.MAX_VALUE);
     Iterator<LocatedBlock> iterator = blocks.getLocatedBlocks().iterator();
     while (iterator.hasNext()) {
-      LocatedBlock block = iterator.next();
-      if (block.isCorrupt() == false) {
+      LocatedBlock b = iterator.next();
+      if ((b.isCorrupt() || (b.getLocations().length == 0 && b.getBlockSize() > 0)) == false) {
         iterator.remove();
       }
     }
