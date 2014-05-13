@@ -114,6 +114,18 @@ public class EncodingStatus {
     }
   }
 
+  public boolean isCorrupt() {
+    switch (status) {
+      case REPAIR_REQUESTED:
+      case REPAIR_ACTIVE:
+      case REPAIR_CANCELED:
+      case REPAIR_FAILED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   @Override
   public String toString() {
     return "EncodingStatus{" +

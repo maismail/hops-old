@@ -215,9 +215,7 @@ import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import se.sics.hop.Common;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLocks;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
@@ -411,7 +409,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    private long nameNodeId;   // id of the name node. set by the NameNode instance
    private static boolean systemLevelLockEnabled = false;
    private static boolean rowLevelLockEnabled = true;
-  private final boolean ecEnabled;
+  private final boolean erasureCodingEnabled;
+
   private final ErasureCodingManager erasureCodingManager;
   //END_HOP_CODE
     
@@ -537,7 +536,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_DEFAULT);
 
       this.blockManager = new BlockManager(this, this, conf);
-      this.ecEnabled = ErasureCodingManager.isErasureCodingEnabled(conf);
+      this.erasureCodingEnabled = ErasureCodingManager.isErasureCodingEnabled(conf);
       this.erasureCodingManager = new ErasureCodingManager(this, conf);
       this.datanodeStatistics = blockManager.getDatanodeManager().getDatanodeStatistics();
 
@@ -819,7 +818,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       this.nnrmthread = new Daemon(new NameNodeResourceMonitor());
       nnrmthread.start();
 
-      if (ecEnabled) {
+      if (erasureCodingEnabled) {
         erasureCodingManager.activate();
       }
     } finally {
@@ -6648,7 +6647,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (Long) findReq.handle();
   }
 
-  LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
+  public LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
       FileNotFoundException, UnresolvedLinkException, IOException {
 
     LocatedBlocks blocks = getBlockLocations(clientMachine, filePath, 0, Long.MAX_VALUE);
@@ -6716,5 +6715,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         };
     updateEncodingStatusHandler.handle();
   }
+
+  public boolean isErasueCodingEnabled() {
+    return erasureCodingEnabled;
+  }
+
   //END_HOP_CODE
 }

@@ -946,11 +946,11 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException {
+  public LocatedBlock getRepairedBlockLocations(String path, LocatedBlock block) throws IOException {
     ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto request =
         ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto.newBuilder()
           .setPath(path)
-          .setBlockId(blockId)
+          .setBlock(PBHelper.convert(block))
           .build();
     try {
       return PBHelper.convert(rpcProxy.getRepairedBlockLocations(null, request).getLocatedBlocks());

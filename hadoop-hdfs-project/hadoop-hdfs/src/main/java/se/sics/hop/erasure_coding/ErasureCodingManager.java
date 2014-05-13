@@ -30,11 +30,13 @@ public class ErasureCodingManager extends Configured{
   public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
   public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
   public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
-  public static final int DEFAULT_RECHECK_INTERVAL = 1 * 60 * 1000;
+  public static final int DEFAULT_RECHECK_INTERVAL = 5 * 60 * 1000;
   public static final String ACTIVE_ENCODING_LIMIT_KEY = "se.sics.hop.erasure_coding.active_encoding_limit";
   public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
   public static final String ACTIVE_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
   public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
+  public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
+  public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
 
   private final FSNamesystem namesystem;
   private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
@@ -45,6 +47,7 @@ public class ErasureCodingManager extends Configured{
   private int activeEncodings = 0;
   private final int activeRepairLimit;
   private int activeRepairs = 0;
+  private final int repairDelay;
 
   public ErasureCodingManager(FSNamesystem namesystem, Configuration conf) {
     super(conf);
@@ -52,6 +55,7 @@ public class ErasureCodingManager extends Configured{
     this.recheckInterval = conf.getInt(RECHECK_INTERVAL_KEY, DEFAULT_RECHECK_INTERVAL);
     this.activeEncodingLimit = conf.getInt(ACTIVE_ENCODING_LIMIT_KEY, DEFAULT_ACTIVE_ENCODING_LIMIT);
     this.activeRepairLimit = conf.getInt(ACTIVE_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_REPAIR_LIMIT);
+    this.repairDelay = conf.getInt(REPAIR_DELAY_KEY, DEFAULT_REPAIR_DELAY_KEY);
   }
 
   private boolean loadRaidNodeClasses() {
@@ -241,6 +245,10 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedEncodings) {
+        if (System.currentTimeMillis() - encodingStatus.getModificationTime() < repairDelay) {
+          continue;
+        }
+
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
         String path = namesystem.getPath(iNode);
         blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path));

@@ -663,5 +663,9 @@ public class BlockPlacementPolicyDefault extends BlockPlacementPolicy {
   void setPreferLocalNode(boolean prefer) {
     this.preferLocalNode = prefer;
   }
+
+  public DatanodeDescriptor getRandomNode() {
+    return (DatanodeDescriptor)(clusterMap.chooseRandom(NodeBase.ROOT));
+  }
 }
 

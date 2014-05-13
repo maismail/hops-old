@@ -86,6 +86,9 @@ import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolServerSideTr
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicy;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault;
+import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.IncorrectVersionException;
 import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
@@ -1179,9 +1182,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException {
-    throw new NotImplementedException();
-    // TODO Implement getRepairedBlockLocations
+  public LocatedBlock getRepairedBlockLocations(String path, LocatedBlock block) throws IOException {
+    // TODO STEFFEN - Consider block placement and replication factor. Random node for now and only one.
+    BlockPlacementPolicyDefault placementPolicy = (BlockPlacementPolicyDefault)
+        namesystem.getBlockManager().getBlockPlacementPolicy();
+    DatanodeDescriptor[] descriptors = new DatanodeDescriptor[]{placementPolicy.getRandomNode()};
+    return new LocatedBlock(block.getBlock(), descriptors);
   }
   //HOP_CODE_END
 }

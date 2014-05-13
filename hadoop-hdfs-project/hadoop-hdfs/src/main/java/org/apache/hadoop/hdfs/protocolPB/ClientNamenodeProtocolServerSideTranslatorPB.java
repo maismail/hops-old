@@ -949,7 +949,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       RpcController controller,
       ClientNamenodeProtocolProtos.GetRepairedBlockLocationsRequsestProto request) throws ServiceException {
     try {
-      LocatedBlock b = server.getRepairedBlockLocations(request.getPath(), request.getBlockId());
+      LocatedBlock b = server.getRepairedBlockLocations(request.getPath(), PBHelper.convert(request.getBlock()));
       ClientNamenodeProtocolProtos.GetRepairedBlockLocationsResponseProto.Builder builder =
           ClientNamenodeProtocolProtos.GetRepairedBlockLocationsResponseProto
               .newBuilder();

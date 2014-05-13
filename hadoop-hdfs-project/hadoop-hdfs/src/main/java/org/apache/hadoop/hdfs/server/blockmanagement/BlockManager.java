@@ -1103,17 +1103,20 @@ public class BlockManager {
       updateNeededReplications(b.stored, -1, 0);
     }
 
-    if (numberReplicas.liveReplicas() == 0) {
-      // TODO STEFFEN - These operations might be quite expensive
-      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
-      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
-        String path = fsNamesystem.getPath(bc.getId());
-        fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
-      }
-    } else {
-      // TODO STEFFEN - Check if corrupt blocks are left and if not change the status
-    }
+    // TODO STEFFEN - Are other instances of Namesystem being used?
+//    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+//    if (!fsNamesystem.isErasueCodingEnabled()) {
+//      return;
+//    }
+//
+//    // TODO STEFFEN - These operations might be quite expensive
+//    if (numberReplicas.liveReplicas() == 0) {
+//      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
+//      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
+//        String path = fsNamesystem.getPath(bc.getId());
+//        fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
+//      }
+//    }
   }
 
   /**
@@ -2394,6 +2397,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     BlockCollection bc = storedBlock.getBlockCollection();
     assert bc != null : "Block must belong to a file";
 
+    // TODO STEFFEN - Are other instances of Namesystem being used?
+//    FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+//    NumberReplicas numBeforeAdding = null;
+//    if (fsNamesystem.isErasueCodingEnabled()) {
+      // TODO STEFFEN - Not so nice to count it twice is liveReplicas - 1 OK?
+//      numBeforeAdding = countNodes(block);
+//    }
+
     // add block to the datanode
     boolean added = node.addBlock(storedBlock);
     int curReplicaDelta;
@@ -2459,6 +2470,19 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     if ((corruptReplicasCount > 0) && (numLiveReplicas >= fileReplication))
       invalidateCorruptReplicas(storedBlock);
+
+    // TODO STEFFEN - Might be too expensive
+//    if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
+//      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
+//      if (status.isEncoded() && status.isCorrupt()) {
+//        String path = fsNamesystem.getPath(bc.getId());
+//        LocatedBlocks missingBlocks = fsNamesystem.getMissingBlockLocations("", path);
+//        if (missingBlocks.getLocatedBlocks().size() == 0) {
+//          fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODED);
+//        }
+//      }
+//    }
+
     return storedBlock;
   }
 
@@ -2875,6 +2899,21 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       // Remove the replica from corruptReplicas
       corruptReplicas.removeFromCorruptReplicasMap(block, node);
+
+      // TODO STEFFEN - This cast might lead to problems
+//      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+//      if (fsNamesystem.isErasueCodingEnabled()) {
+//        BlockInfo blockInfo = getStoredBlock(block);
+//        // TODO STEFFEN - It is extremely inefficient to query the path to get an encoding status
+//        String path = fsNamesystem.getPath(blockInfo.getInodeId());
+//        EncodingStatus status = fsNamesystem.getEncodingStatus(path);
+//        if (status.isEncoded() && status.isCorrupt() == false) {
+//          NumberReplicas numberReplicas = countNodes(block);
+//          if (numberReplicas.liveReplicas() == 0) {
+//            fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_REQUESTED);
+//          }
+//        }
+//      }
     }
   }
 

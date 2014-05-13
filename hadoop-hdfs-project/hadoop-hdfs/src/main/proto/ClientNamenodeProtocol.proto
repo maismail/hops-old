@@ -495,7 +495,7 @@ message RevokeEncodingResponseProto { // void response
 
 message GetRepairedBlockLocationsRequsestProto {
     required string path = 1;
-    required uint64 blockId = 2;
+    required LocatedBlockProto block = 2;
 }
 
 message GetRepairedBlockLocationsResponseProto {

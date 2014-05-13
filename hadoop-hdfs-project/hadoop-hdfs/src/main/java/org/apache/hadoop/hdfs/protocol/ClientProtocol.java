@@ -1028,5 +1028,5 @@ public interface ClientProtocol {
 
   public void revokeEncoding(String filePath, int replication) throws  IOException;
 
-  public LocatedBlock getRepairedBlockLocations(String path, long blockId) throws IOException;
+  public LocatedBlock getRepairedBlockLocations(String path, LocatedBlock block) throws IOException;
 }
