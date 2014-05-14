@@ -254,7 +254,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
           log("snapshot-maintenance-removed-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
           
           //both inode id and partKey has changed
-          toBeAdded.setInodeID(trg_param.getInodeId());
+          toBeAdded.setInodeId(trg_param.getInodeId());
           toBeAdded.setPartKey(trg_param.getPartKey());
           newReplicas.put(toBeAdded, toBeAdded);
           log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
