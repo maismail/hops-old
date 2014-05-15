@@ -2477,7 +2477,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if ((corruptReplicasCount > 0) && (numLiveReplicas >= fileReplication))
       invalidateCorruptReplicas(storedBlock);
 
-    if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
+    INode iNode = EntityManager.find(INode.Finder.ByINodeID, bc.getId());
+    if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
       EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
       if (status.isEncoded() && status.isCorrupt()
           && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {

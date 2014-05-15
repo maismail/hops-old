@@ -121,15 +121,15 @@ public class ErasureCodingManager extends Configured{
     @Override
     public void run() {
       while (namesystem.isRunning()) {
+        if(namesystem.isLeader()){
+          checkPotentiallyFixedFiles();
+          checkActiveEncodings();
+          scheduleEncodings();
+          checkActiveRepairs();
+          scheduleSourceRepairs();
+          scheduleParityRepairs();
+        }
         try {
-          if(namesystem.isLeader()){
-            checkPotentiallyFixedFiles();
-            checkActiveEncodings();
-            scheduleEncodings();
-            checkActiveRepairs();
-            scheduleSourceRepairs();
-            scheduleParityRepairs();
-          }
           Thread.sleep(recheckInterval);
         } catch (InterruptedException ie) {
           LOG.warn("ErasureCodingMonitor thread received InterruptedException.", ie);
@@ -146,7 +146,7 @@ public class ErasureCodingManager extends Configured{
       public Object performTask() throws PersistanceException, IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
-        return dataAccess.findRequestedEncodings(Long.MAX_VALUE);
+        return dataAccess.findPotentiallyFixed(Long.MAX_VALUE);
       }
     };
 
