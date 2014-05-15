@@ -135,4 +135,29 @@ public class EncodingStatus {
         ", modificationTime=" + modificationTime +
         '}';
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    EncodingStatus that = (EncodingStatus) o;
+
+    if (inodeId != that.inodeId) return false;
+    if (modificationTime != that.modificationTime) return false;
+    if (encodingPolicy != null ? !encodingPolicy.equals(that.encodingPolicy) : that.encodingPolicy != null)
+      return false;
+    if (status != that.status) return false;
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = (int) (inodeId ^ (inodeId >>> 32));
+    result = 31 * result + (status != null ? status.hashCode() : 0);
+    result = 31 * result + (encodingPolicy != null ? encodingPolicy.hashCode() : 0);
+    result = 31 * result + (int) (modificationTime ^ (modificationTime >>> 32));
+    return result;
+  }
 }
