@@ -13,5 +13,6 @@ public enum EncodingStatusOperationType implements RequestHandler.OperationType 
   COUNT_ACTIVE_ENCODINGS,
   COUNT_ENCODED,
   COUNT_ACTIVE_REPAIRS,
-  FIND_REQUESTED_REPAIRS
+  FIND_REQUESTED_REPAIRS,
+  FIND_POTENTIALLY_FIXED
 }

@@ -16,13 +16,15 @@ public class EncodingStatus {
     REPAIR_ACTIVE,
     REPAIR_CANCELED,
     REPAIR_FAILED,
+    POTENTIALLY_FIXED
   }
 
   public static enum Counter implements CounterType<EncodingStatus> {
     RequestedEncodings,
     ActiveEncodings,
     ActiveRepairs,
-    Encoded;
+    Encoded,
+    PotentiallyFixed;
 
     @Override
     public Class getType() {
@@ -36,7 +38,8 @@ public class EncodingStatus {
     ByStatusActiveEncodings,
     ByStatusActiveRepairs,
     LimitedByStatusEncoded,
-    LimitedByStatusRequestedRepair;
+    LimitedByStatusRequestedRepair,
+    LimitedByStatusPotentiallyFixed;
 
     @Override
     public Class getType() {
@@ -108,6 +111,7 @@ public class EncodingStatus {
       case REPAIR_ACTIVE:
       case REPAIR_CANCELED:
       case REPAIR_FAILED:
+      case POTENTIALLY_FIXED:
         return true;
       default:
         return false;

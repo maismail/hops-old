@@ -68,6 +68,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return EncodingStatus.Status.REPAIR_CANCELED;
       case HopEncodingStatus.REPAIR_FAILED:
         return EncodingStatus.Status.REPAIR_FAILED;
+      case HopEncodingStatus.POTENTIALLY_FIXED:
+        return EncodingStatus.Status.POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -93,6 +95,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return HopEncodingStatus.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return  HopEncodingStatus.REPAIR_FAILED;
+      case POTENTIALLY_FIXED:
+        return HopEncodingStatus.POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -161,5 +165,15 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   @Override
   public int countActiveRepairs() throws StorageException {
     return dataAccess.countActiveRepairs();
+  }
+
+  @Override
+  public Collection<EncodingStatus> findPotentiallyFixed(long limit) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findPotentiallyFixed(limit));
+  }
+
+  @Override
+  public int countPotentiallyFixed() throws StorageException {
+    return dataAccess.countPotentiallyFixed();
   }
 }

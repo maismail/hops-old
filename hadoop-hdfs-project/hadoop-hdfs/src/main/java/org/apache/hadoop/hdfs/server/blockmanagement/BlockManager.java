@@ -78,6 +78,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
@@ -1041,16 +1042,17 @@ public class BlockManager {
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(blk.getBlockId()).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock().
-                addReplicaUc().
-                addInvalidatedBlock();
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(blk.getBlockId()).
+            addReplica().
+            addExcess().
+            addCorrupt().
+            addUnderReplicatedBlock().
+            addReplicaUc().
+            addInvalidatedBlock();
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1111,8 +1113,7 @@ public class BlockManager {
     }
 
     if (numberReplicas.liveReplicas() == 0) {
-//      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
+      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
       if (status.getStatus() == EncodingStatus.Status.ENCODED) {
         status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
         EntityManager.update(status);
@@ -1793,14 +1794,15 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks()
-                .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+        tla.getLocks().
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(b.getBlockId()).
+            addReplica().
+            addExcess().
+            addCorrupt().
+            addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1860,18 +1862,19 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block b = (Block) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
-                addReplica().
-                addCorrupt().
-                addExcess().
-                addReplicaUc().
-                addUnderReplicatedBlock().
-                addInvalidatedBlock().
-                addPendingBlock().
-                addGenerationStamp(LockType.READ);
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(b.getBlockId()).
+            addReplica().
+            addCorrupt().
+            addExcess().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addInvalidatedBlock().
+            addPendingBlock().
+            addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1971,18 +1974,19 @@ public class BlockManager {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block iblk = (Block) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(iblk.getBlockId()).
-                addReplica().
-                addCorrupt().
-                addExcess().
-                addReplicaUc().
-                addUnderReplicatedBlock().
-                addInvalidatedBlock().
-                addPendingBlock().
-                addGenerationStamp(LockType.READ);
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(iblk.getBlockId()).
+            addReplica().
+            addCorrupt().
+            addExcess().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addInvalidatedBlock().
+            addPendingBlock().
+            addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -2174,14 +2178,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rbi.getBlock().getBlockId()).
-                addInvalidatedBlock().
-                addReplica().
-                addExcess().
-                addGenerationStamp(LockType.READ);
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(rbi.getBlock().getBlockId()).
+            addInvalidatedBlock().
+            addReplica().
+            addExcess().
+            addGenerationStamp(LockType.READ);
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -2473,16 +2478,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       invalidateCorruptReplicas(storedBlock);
 
     if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
-//      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
-      if (status.isEncoded() && status.isCorrupt()) {
-        String path = fsNamesystem.getPath(bc.getId());
-        // TODO STEFFEN - This check is needed but crashing becaue of transaction problems
-//        if (fsNamesystem.isFileCorrupt(path) == false) {
-          status.setStatus(EncodingStatus.Status.ENCODED);
-          EntityManager.update(status);
-        }
-//      }
+      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+      if (status.isEncoded() && status.isCorrupt()
+          && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
+        status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
+        EntityManager.update(status);
+      }
     }
 
     return storedBlock;
@@ -2905,9 +2906,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
       if (fsNamesystem.isErasueCodingEnabled()) {
         BlockInfo blockInfo = getStoredBlock(block);
-//        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
-        // TODO STEFFEN - This feels wrong. Need a transaction to prevent crashes although it already is executed in one.
-        EncodingStatus status = fsNamesystem.findEncodingStatus(blockInfo.getInodeId());
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
         if (status.isEncoded() && (status.isCorrupt() == false)) {
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
@@ -3057,15 +3056,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rdbi.getBlock().getBlockId()).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock().
-                addGenerationStamp(LockType.READ);
+            addEncodingStatusLock(LockType.WRITE, inodeID).
+            addINode(TransactionLockTypes.INodeLockType.WRITE).
+            addBlock(rdbi.getBlock().getBlockId()).
+            addReplica().
+            addExcess().
+            addCorrupt().
+            addUnderReplicatedBlock().
+            addGenerationStamp(LockType.READ);
         if (!rdbi.isDeletedBlock()) {
           tla.getLocks().
                   addPendingBlock().

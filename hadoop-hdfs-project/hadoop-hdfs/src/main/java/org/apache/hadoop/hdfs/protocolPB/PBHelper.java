@@ -1449,6 +1449,8 @@ public class PBHelper {
         return EncodingStatus.Status.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return EncodingStatus.Status.REPAIR_FAILED;
+      case POTENTIALLY_FIXED:
+        return EncodingStatus.Status.POTENTIALLY_FIXED;
       default:
         throw new RuntimeException("Trying to convert and unknown status");
     }
@@ -1476,6 +1478,8 @@ public class PBHelper {
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_FAILED;
+      case POTENTIALLY_FIXED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.POTENTIALLY_FIXED;
       default:
         throw new RuntimeException("Trying to convert and unknown status");
     }

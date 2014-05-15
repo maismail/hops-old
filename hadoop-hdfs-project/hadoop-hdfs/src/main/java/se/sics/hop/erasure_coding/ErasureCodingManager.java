@@ -12,8 +12,15 @@ import org.apache.hadoop.util.StringUtils;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -116,6 +123,7 @@ public class ErasureCodingManager extends Configured{
       while (namesystem.isRunning()) {
         try {
           if(namesystem.isLeader()){
+            checkPotentiallyFixedFiles();
             checkActiveEncodings();
             scheduleEncodings();
             checkActiveRepairs();
@@ -128,6 +136,55 @@ public class ErasureCodingManager extends Configured{
           break;
         }
       }
+    }
+  }
+
+  private void checkPotentiallyFixedFiles() {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_POTENTIALLY_FIXED) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findRequestedEncodings(Long.MAX_VALUE);
+      }
+    };
+
+    try {
+      final Collection<EncodingStatus> potentiallyFixed = (Collection<EncodingStatus>) findHandler.handle();
+      for (final EncodingStatus encodingStatus : potentiallyFixed) {
+        final String path = namesystem.getPath(encodingStatus.getInodeId());
+
+        HDFSTransactionalRequestHandler handler =
+            new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+              @Override
+              public TransactionLocks acquireLock() throws PersistanceException, IOException {
+                ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+                tla.getLocks().
+                    addINode(TransactionLockTypes.INodeResolveType.PATH,
+                        TransactionLockTypes.INodeLockType.READ, new String[]{path}).
+                    addBlock().
+                    addReplica().
+                    addExcess().
+                    addCorrupt().
+                    addReplicaUc();
+                tla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, encodingStatus.getInodeId());
+                return tla.acquire();
+              }
+
+              @Override
+              public Object performTask() throws PersistanceException, IOException {
+                if (namesystem.isFileCorrupt(path) == false) {
+                  encodingStatus.setStatus(EncodingStatus.Status.ENCODED);
+                  EntityManager.update(encodingStatus);
+                }
+                return null;
+              }
+            };
+        handler.handle(this);
+      }
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
     }
   }
 
@@ -210,8 +267,7 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
-          // There should no be a need to update this. The Block manager should trigger this already.
-//          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
+          // No need to update the status. Automatically detected if the file was fixed.
           activeRepairs--;
           break;
         case FAILED:

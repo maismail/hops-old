@@ -4,7 +4,6 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.lock.TransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.LinkedList;
@@ -22,12 +21,22 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   @Override
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
     super.acquire();
+    acquireEncodingLock();
+    return getLocks();
+  }
 
+  private void acquireEncodingLock() throws PersistanceException {
     ErasureCodingTransactionLocks locks = getLocks();
     if (locks.getEncodingStatusLock() != null) {
       acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId());
     }
-    return locks;
+  }
+
+  @Override
+  public HDFSTransactionLocks acquireByBlock(Long id, Long pid, String name) throws PersistanceException, UnresolvedPathException {
+    super.acquireByBlock(id, pid, name);
+    acquireEncodingLock();
+    return getLocks();
   }
 
   @Override
