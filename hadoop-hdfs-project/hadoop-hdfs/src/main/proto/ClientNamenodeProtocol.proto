@@ -459,8 +459,13 @@ message EncodingStatusProto {
         NOT_ENCODED = 0;
         ENCODING_REQUESTED = 1;
         ENCODING_ACTIVE = 2;
-        ENCODED = 3;
-        REPAIR_ACTIVE = 4;
+        ENCODING_CANCELED = 3;
+        ENCODING_FAILED = 4;
+        ENCODED = 5;
+        REPAIR_REQUESTED = 6;
+        REPAIR_ACTIVE = 7;
+        REPAIR_CANCELED = 8;
+        REPAIR_FAILED = 9;
     }
 
     required StatusProto status = 1;
@@ -582,7 +587,7 @@ service ClientNamenodeProtocol {
   //START_HOP_CODE
   rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
   rpc ping (PingRequestProto) returns (PingResponseProto);
-  rpc getCodec(GetEncodingStatusRequestProto)
+  rpc getEncodingStatus(GetEncodingStatusRequestProto)
     returns(GetEncodingStatusResponseProto);
   rpc encodeFile(EncodeFileRequestProto)
     returns(EncodeFileResponseProto);

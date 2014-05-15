@@ -902,7 +902,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
-  public ClientNamenodeProtocolProtos.GetEncodingStatusResponseProto getCodec(
+  public ClientNamenodeProtocolProtos.GetEncodingStatusResponseProto getEncodingStatus(
       RpcController controller,
       ClientNamenodeProtocolProtos.GetEncodingStatusRequestProto request) throws ServiceException {
     try {

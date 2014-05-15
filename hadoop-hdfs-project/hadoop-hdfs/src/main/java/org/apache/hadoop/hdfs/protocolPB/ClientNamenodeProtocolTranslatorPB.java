@@ -925,7 +925,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
           ClientNamenodeProtocolProtos.GetEncodingStatusRequestProto.newBuilder()
             .setPath(filePath)
             .build();
-      return PBHelper.convert(rpcProxy.getCodec(null, request).getEncodingStatus());
+      return PBHelper.convert(rpcProxy.getEncodingStatus(null, request).getEncodingStatus());
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }

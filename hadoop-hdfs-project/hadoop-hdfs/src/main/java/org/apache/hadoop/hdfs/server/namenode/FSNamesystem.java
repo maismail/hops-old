@@ -1425,15 +1425,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
 
-  public boolean isFileCorrupt(String filePath) throws IOException {
-    LocatedBlocks blocks =  getBlockLocationsInternal(filePath, 0, Long.MAX_VALUE, true, true, true);
-    Iterator<LocatedBlock> iterator = blocks.getLocatedBlocks().iterator();
-    for (LocatedBlock b : blocks.getLocatedBlocks()) {
-      if (b.isCorrupt() || (b.getLocations().length == 0 && b.getBlockSize() > 0)) {
-        return true;
+  public boolean isFileCorrupt(final String filePath) throws IOException {
+    // TODO STEFFEN - I think it is wrong to use this handler but it doesn't work otherwise
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_INODE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        LocatedBlocks blocks =  getBlockLocationsInternal(filePath, 0, Long.MAX_VALUE, true, true, true);
+        for (LocatedBlock b : blocks.getLocatedBlocks()) {
+          if (b.isCorrupt() || (b.getLocations().length == 0 && b.getBlockSize() > 0)) {
+            return true;
+          }
+        }
+        return false;
       }
-    }
-    return false;
+    };
+    return (Boolean) handler.handle();
   }
 
   private LocatedBlocks getBlockLocationsInt(FSPermissionChecker pc,

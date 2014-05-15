@@ -1435,12 +1435,23 @@ public class PBHelper {
         return EncodingStatus.Status.ENCODING_REQUESTED;
       case ENCODING_ACTIVE:
         return EncodingStatus.Status.ENCODING_ACTIVE;
+      case ENCODING_CANCELED:
+        return EncodingStatus.Status.ENCODING_CANCELED;
+      case ENCODING_FAILED:
+        return EncodingStatus.Status.ENCODING_FAILED;
       case ENCODED:
         return EncodingStatus.Status.ENCODED;
+      case REPAIR_REQUESTED:
+        return EncodingStatus.Status.REPAIR_REQUESTED;
       case REPAIR_ACTIVE:
         return EncodingStatus.Status.REPAIR_ACTIVE;
+      case REPAIR_CANCELED:
+        return EncodingStatus.Status.REPAIR_CANCELED;
+      case REPAIR_FAILED:
+        return EncodingStatus.Status.REPAIR_FAILED;
+      default:
+        throw new RuntimeException("Trying to convert and unknown status");
     }
-    return null;
   }
 
   public static ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto convert(EncodingStatus.Status status) {
@@ -1451,12 +1462,23 @@ public class PBHelper {
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_REQUESTED;
       case ENCODING_ACTIVE:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_ACTIVE;
+      case ENCODING_CANCELED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_CANCELED;
+      case ENCODING_FAILED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODING_FAILED;
       case ENCODED:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.ENCODED;
+      case REPAIR_REQUESTED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_REQUESTED;
       case REPAIR_ACTIVE:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_ACTIVE;
+      case REPAIR_CANCELED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_CANCELED;
+      case REPAIR_FAILED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_FAILED;
+      default:
+        throw new RuntimeException("Trying to convert and unknown status");
     }
-    return null;
   }
 
 //HOP_CODE_END

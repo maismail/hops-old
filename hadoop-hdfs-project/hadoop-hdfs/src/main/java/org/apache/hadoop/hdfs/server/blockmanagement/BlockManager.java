@@ -1111,7 +1111,8 @@ public class BlockManager {
     }
 
     if (numberReplicas.liveReplicas() == 0) {
-      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+//      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
       if (status.getStatus() == EncodingStatus.Status.ENCODED) {
         status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
         EntityManager.update(status);
@@ -2472,13 +2473,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       invalidateCorruptReplicas(storedBlock);
 
     if (numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
-      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+//      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+      EncodingStatus status = fsNamesystem.findEncodingStatus(bc.getId());
       if (status.isEncoded() && status.isCorrupt()) {
         String path = fsNamesystem.getPath(bc.getId());
-        if (fsNamesystem.isFileCorrupt(path) == false) {
-          fsNamesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODED);
+        // TODO STEFFEN - This check is needed but crashing becaue of transaction problems
+//        if (fsNamesystem.isFileCorrupt(path) == false) {
+          status.setStatus(EncodingStatus.Status.ENCODED);
+          EntityManager.update(status);
         }
-      }
+//      }
     }
 
     return storedBlock;
@@ -2901,7 +2905,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
       if (fsNamesystem.isErasueCodingEnabled()) {
         BlockInfo blockInfo = getStoredBlock(block);
-        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
+//        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
+        // TODO STEFFEN - This feels wrong. Need a transaction to prevent crashes although it already is executed in one.
+        EncodingStatus status = fsNamesystem.findEncodingStatus(blockInfo.getInodeId());
         if (status.isEncoded() && (status.isCorrupt() == false)) {
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
