@@ -68,7 +68,7 @@ public class CorruptReplicasMap{
     }
     
     if (!nodes.contains(dn)) {
-      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getSId(), blk.getInodeId(), blk.getPartKey()));
+      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getSId(), blk.getInodeId()));
       NameNode.blockStateChangeLog.info("BLOCK NameSystem.addToCorruptReplicasMap: "+
                                    blk.getBlockName() +
                                    " added as corrupt on " + dn +
@@ -112,7 +112,7 @@ public class CorruptReplicasMap{
     }
 
     if (datanodes.contains(datanode)) {
-      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getSId(),blk.getInodeId(), blk.getPartKey()));
+      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getSId(),blk.getInodeId()));
       return true;
     } else {
       return false;
@@ -239,7 +239,7 @@ public class CorruptReplicasMap{
   }  
   
   private Collection<HopCorruptReplica> getCorruptReplicas(BlockInfo blk) throws PersistanceException {
-    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId(),blk.getInodeId(),blk.getPartKey());
+    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId(),blk.getInodeId());
   }
 
   private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {

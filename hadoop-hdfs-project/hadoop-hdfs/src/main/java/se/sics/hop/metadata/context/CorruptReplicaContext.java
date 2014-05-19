@@ -25,8 +25,6 @@ import se.sics.hop.transaction.lock.TransactionLocks;
  * @author kamal hakimzadeh <kamal@sics.se>
  */
 public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
-
-//  protected Map<CorruptReplica, CorruptReplica> corruptReplicas = new HashMap<CorruptReplica, CorruptReplica>();
   protected Map<Long, Set<HopCorruptReplica>> blockCorruptReplicas = new HashMap<Long, Set<HopCorruptReplica>>();
   protected Map<HopCorruptReplica, HopCorruptReplica> newCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
   protected Map<HopCorruptReplica, HopCorruptReplica> removedCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
@@ -85,30 +83,28 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
       case ByBlockId:
         Long blockId = (Long) params[0];
         Integer inodeId = (Integer) params[1];
-        Integer partKey = (Integer) params[2];
         if (blockCorruptReplicas.containsKey(blockId)) {
-          log("find-corrupts-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId), "part_key", Integer.toString(partKey)});
+          log("find-corrupts-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId)});
           return new ArrayList(blockCorruptReplicas.get(blockId));
         } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/) {
           return null;
         } else {
-          log("find-corrupts-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId), "part_key", Integer.toString(partKey)});
+          log("find-corrupts-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          Set<HopCorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId, inodeId, partKey));
+          Set<HopCorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId, inodeId));
           blockCorruptReplicas.put(blockId, list);
           return new ArrayList(blockCorruptReplicas.get(blockId)); // Shallow copy
         }
         case ByINodeId:;
         inodeId = (Integer) params[0];
-        partKey = (Integer) params[1];
         List<HopCorruptReplica> result = null;
         if(inodesRead.contains(inodeId)){
-          log("find-corrupts-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-corrupts-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getCorruptReplicasForINode(inodeId);
         }else{
-          log("find-corrupts-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-corrupts-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByINodeId(inodeId, partKey);
+          result = dataAccess.findByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);
@@ -243,6 +239,6 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   }
   
   private HopCorruptReplica cloneCorruptReplicaObj(HopCorruptReplica src){
-    return new HopCorruptReplica(src.getBlockId(),src.getStorageId(),src.getInodeId(), src.getPartKey());
+    return new HopCorruptReplica(src.getBlockId(),src.getStorageId(),src.getInodeId());
   }
 }
