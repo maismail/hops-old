@@ -86,7 +86,6 @@ import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolServerSideTr
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicy;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockPlacementPolicyDefault;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.common.IncorrectVersionException;
@@ -129,19 +128,8 @@ import com.google.protobuf.BlockingService;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
-import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.EncodingStatusOperationType;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -511,6 +499,9 @@ class NameNodeRpcServer implements NamenodeProtocols {
       for (Node node:excludedNodes) {
         excludedNodesSet.put(node, node);
       }
+    }
+    if (excludedNodesSet == null && namesystem.isErasureCodingEnabled()) {
+      excludedNodesSet = new HashMap<Node, Node>();
     }
     LocatedBlock locatedBlock = 
       namesystem.getAdditionalBlock(src, clientName, previous, excludedNodesSet);

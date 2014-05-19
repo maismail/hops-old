@@ -30,6 +30,8 @@ import org.json.JSONObject;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * A class with the information of a raid codec.
@@ -251,6 +253,14 @@ public class Codec implements Serializable {
     return prefix;
   }
 
+  public int getStripeLength() {
+    return stripeLength;
+  }
+
+  public int getParityLength() {
+    return parityLength;
+  }
+
   public Path getParityPath(Path sourceFile) {
     return new Path(getParityPrefix() + makeRelative(sourceFile));
   }
@@ -317,5 +327,16 @@ public class Codec implements Serializable {
 
   public String getId() {
     return id;
+  }
+
+  public static boolean isParityFile(String src) {
+    for (Codec codec : getCodecs()) {
+      Pattern pattern = Pattern.compile(codec.getParityPrefix() + ".*");
+      Matcher matcher = pattern.matcher(src);
+      if (matcher.matches()) {
+        return true;
+      }
+    }
+    return false;
   }
 }

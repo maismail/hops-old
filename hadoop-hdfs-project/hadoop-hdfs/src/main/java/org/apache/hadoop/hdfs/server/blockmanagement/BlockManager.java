@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
@@ -45,7 +44,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportIterator;
@@ -69,7 +67,6 @@ import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocat
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
-import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.Time;
@@ -85,15 +82,10 @@ import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.exception.TransactionLockAcquireFailure;
 import se.sics.hop.exception.StorageException;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -1108,13 +1100,13 @@ public class BlockManager {
 
     // TODO STEFFEN - Are other instances of Namesystem being used?
     FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-    if (!fsNamesystem.isErasueCodingEnabled()) {
+    if (!fsNamesystem.isErasureCodingEnabled()) {
       return;
     }
 
     if (numberReplicas.liveReplicas() == 0) {
       EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      if (status.getStatus() == EncodingStatus.Status.ENCODED) {
+      if (status != null && status.getStatus() == EncodingStatus.Status.ENCODED) {
         status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
         EntityManager.update(status);
       }
@@ -1975,6 +1967,13 @@ public class BlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         Block iblk = (Block) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+        if (tla == null) {
+          LOG.error("tla = null");
+          System.exit(-1);
+        } else if (tla.getLocks() == null) {
+          LOG.error("tla.getLocks() = null");
+          System.exit(-1);
+        }
         tla.getLocks().
             addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -2406,7 +2405,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     // TODO STEFFEN - Are other instances of Namesystem being used?
     FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
     NumberReplicas numBeforeAdding = null;
-    if (fsNamesystem.isErasueCodingEnabled()) {
+    if (fsNamesystem.isErasureCodingEnabled()) {
       // TODO STEFFEN - Not so nice to count it twice is liveReplicas - 1 OK?
       numBeforeAdding = countNodes(block);
     }
@@ -2477,13 +2476,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if ((corruptReplicasCount > 0) && (numLiveReplicas >= fileReplication))
       invalidateCorruptReplicas(storedBlock);
 
-    INode iNode = EntityManager.find(INode.Finder.ByINodeID, bc.getId());
-    if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
-      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      if (status.isEncoded() && status.isCorrupt()
-          && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
-        status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
-        EntityManager.update(status);
+    if (fsNamesystem.isErasureCodingEnabled()) {
+      INode iNode = EntityManager.find(INode.Finder.ByINodeID, bc.getId());
+      if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
+        if (status != null && status.isEncoded() && status.isCorrupt()
+            && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
+          status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
+          EntityManager.update(status);
+        }
       }
     }
 
@@ -2905,10 +2906,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       corruptReplicas.removeFromCorruptReplicasMap(block, node);
 
       FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
-      if (fsNamesystem.isErasueCodingEnabled()) {
+      if (fsNamesystem.isErasureCodingEnabled()) {
         BlockInfo blockInfo = getStoredBlock(block);
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
-        if (status.isEncoded() && (status.isCorrupt() == false)) {
+        if (status != null && status.isEncoded() && (status.isCorrupt() == false)) {
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
             status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
