@@ -351,7 +351,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
              for(HopINodeCandidatePK inodeParam : parallelReadParams.getInodeIds()){
                if (!terminateAsyncThread) {
-                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.getInodeId(), inodeParam.getPartKey() );
+                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.getInodeId(), INode.INVALID_PART_KEY);
                }
              }
            }
@@ -624,7 +624,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
         for (INode inode : resolvedINodes) {
           if (inode instanceof INodeFile || inode instanceof INodeFileUnderConstruction) {
-            HopINodeCandidatePK param = new HopINodeCandidatePK(inode.getId(), inode.getPartKey());
+            HopINodeCandidatePK param = new HopINodeCandidatePK(inode.getId());
             inodesParams.add(param);
           //  LOG.debug("Param inode "+param.id+" paratKey "+param.partKey);
           }
@@ -942,7 +942,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
       for (INode inode : resolvedINodes) {
         if (inode instanceof INodeDirectoryWithQuota) {
-          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId(), inode.getPartKey());
+          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
           pks.add(pk);
         }
       }

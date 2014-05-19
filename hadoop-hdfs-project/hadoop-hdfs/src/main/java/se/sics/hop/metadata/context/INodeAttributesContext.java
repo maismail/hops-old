@@ -77,7 +77,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   public void add(INodeAttributes entity) throws PersistanceException {
     //even if it already exists overwite it with modified flag
     AttributeWrapper wrapper = new AttributeWrapper(entity, CacheRowStatus.MODIFIED);
-    HopINodeCandidatePK pk = new HopINodeCandidatePK(entity.getInodeId(), entity.getPartKey());
+    HopINodeCandidatePK pk = new HopINodeCandidatePK(entity.getInodeId());
     cachedRows.put(pk, wrapper);
   }
 
@@ -101,17 +101,16 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
     switch (qfinder) {
       case ByPKey:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = (Integer) params[1];
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(inodeId, partKey);
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(inodeId);
         if (cachedRows.containsKey(pk)) {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId), "partKey", Integer.toString(partKey)});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           return cachedRows.get(pk).getAttributes();
         } else {
-          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId), "partKey", Integer.toString(partKey), "size ", Integer.toString(cachedRows.size())});
+          log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId), "size ", Integer.toString(cachedRows.size())});
           System.out.println("Keys  "+Arrays.toString(cachedRows.keySet().toArray())+" is eq "+pk.toString());
           aboutToAccessStorage(" id = " + inodeId);
           
-          INodeAttributes quota = da.findAttributesByPk(inodeId,partKey);
+          INodeAttributes quota = da.findAttributesByPk(inodeId);
           //dont worry if it is null. 
           AttributeWrapper wrapper = new AttributeWrapper(quota, CacheRowStatus.UN_MODIFIED);
           cachedRows.put(pk, wrapper);
@@ -149,7 +148,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
           for (int i = 0; i < quotaList.size(); i++) {
             INodeAttributes quota = quotaList.get(i);
             AttributeWrapper wrapper = new AttributeWrapper(quota, CacheRowStatus.UN_MODIFIED);
-            HopINodeCandidatePK pk = new HopINodeCandidatePK(quota.getInodeId(), quota.getPartKey());
+            HopINodeCandidatePK pk = new HopINodeCandidatePK(quota.getInodeId());
             cachedRows.put(pk, wrapper);
           }
           return quotaList;
@@ -179,7 +178,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
 
   @Override
   public void remove(INodeAttributes var) throws PersistanceException {
-    HopINodeCandidatePK pk = new HopINodeCandidatePK(var.getInodeId(), var.getPartKey());
+    HopINodeCandidatePK pk = new HopINodeCandidatePK(var.getInodeId());
     if (cachedRows.containsKey(pk)) {
       cachedRows.get(pk).setStatus(CacheRowStatus.DELETED);
       log("removed-attributes", CacheHitState.NA, new String[]{"id", Integer.toString(var.getInodeId())});
@@ -200,7 +199,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
       log("updated-attributes -- IGNORED as id is not set");
     } else {
       AttributeWrapper attrWrapper = new AttributeWrapper(var, CacheRowStatus.MODIFIED);
-      HopINodeCandidatePK pk = new HopINodeCandidatePK(var.getInodeId(), var.getPartKey());
+      HopINodeCandidatePK pk = new HopINodeCandidatePK(var.getInodeId());
       cachedRows.put(pk, attrWrapper);
       log("updated-attributes", CacheHitState.NA, new String[]{"id", Integer.toString(var.getInodeId())});
     }
@@ -238,8 +237,8 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-inode-attributes-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateAttributes(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateAttributes(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -266,15 +265,14 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
           INodeAttributes toBeAdded = cloneINodeAttributeObj(cachedRows.get(key).getAttributes());
           
           cachedRows.get(key).setStatus(CacheRowStatus.DELETED);
-          log("snapshot-maintenance-removed-inode-attribute",CacheHitState.NA, new String[]{"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-inode-attribute",CacheHitState.NA, new String[]{"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           
           //both inode id and partKey has changed
           toBeAdded.setInodeIdNoPersistance(trg_param.getInodeId());
-          toBeAdded.setPartKeyNoPersistance(trg_param.getPartKey());
-          HopINodeCandidatePK newPK = new HopINodeCandidatePK(toBeAdded.getInodeId(), toBeAdded.getPartKey());
+          HopINodeCandidatePK newPK = new HopINodeCandidatePK(toBeAdded.getInodeId());
           toBeAddedList.put(newPK,  new AttributeWrapper(toBeAdded, CacheRowStatus.MODIFIED));
           
-          log("snapshot-maintenance-added-inode-attribute",CacheHitState.NA, new String[]{"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-inode-attribute",CacheHitState.NA, new String[]{"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
       
@@ -285,6 +283,6 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
   
   private INodeAttributes cloneINodeAttributeObj(INodeAttributes src){
-    return new INodeAttributes(src.getInodeId(), src.getPartKey(),src.getNsQuota(),src.getNsCount(),src.getDsQuota(),src.getDiskspace());
+    return new INodeAttributes(src.getInodeId(),src.getNsQuota(),src.getNsCount(),src.getDsQuota(),src.getDiskspace());
   }
 }

@@ -244,8 +244,8 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-pending-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updatePendingReplicas(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updatePendingReplicas(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -269,19 +269,18 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     
     
       for(PendingBlockInfo pending : pendings.values()){
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId(), pending.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           PendingBlockInfo toBeDeleted = clonePendingReplicaObj(pending);
           PendingBlockInfo toBeAdded = clonePendingReplicaObj(pending);
           
           removedPendings.put(toBeDeleted.getBlockId(), toBeDeleted);
-          log("snapshot-maintenance-removed-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newPendings.put(toBeAdded.getBlockId(), toBeAdded);
-          log("snapshot-maintenance-added-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
     

@@ -168,7 +168,7 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
   }
   
   private void createINodeAttributes(Long nsQuota, Long nsCount, Long dsQuota, Long diskspace) throws PersistanceException{
-    INodeAttributes attr = new INodeAttributes(id, part_key, nsQuota, nsCount, dsQuota, diskspace);
+    INodeAttributes attr = new INodeAttributes(id, nsQuota, nsCount, dsQuota, diskspace);
     EntityManager.add(attr);
   }
   

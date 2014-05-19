@@ -38,8 +38,8 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public INodeAttributes findAttributesByPk(Integer inodeId, Integer partKey) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId, partKey));
+  public INodeAttributes findAttributesByPk(Integer inodeId) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findAttributesByPk(inodeId));
   }
 
   @Override
@@ -53,7 +53,6 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
     if (attribute != null) {
       HopINodeAttributes hia = new HopINodeAttributes(
               attribute.getInodeId(),
-              attribute.getPartKey(),
               attribute.getNsQuota(),
               attribute.getNsCount(),
               attribute.getDsQuota(),
@@ -69,7 +68,6 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
     if (hia != null) {
       INodeAttributes iNodeAttributes = new INodeAttributes(
               hia.getInodeId(),
-              hia.getPartKey(),
               hia.getNsQuota(),
               hia.getNsCount(),
               hia.getDsQuota(),

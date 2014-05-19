@@ -311,8 +311,8 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-invblocks-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateIvlidatedReplicas(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateIvlidatedReplicas(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -337,19 +337,18 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
     
       for(HopInvalidatedBlock exr : invBlocks.values()){
         if(exr == null) continue;
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(exr.getInodeId(), exr.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(exr.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopInvalidatedBlock toBeDeleted = cloneInvalidatedReplicaObj(exr);
           HopInvalidatedBlock toBeAdded = cloneInvalidatedReplicaObj(exr);
           
           removedInvBlocks.put(toBeDeleted, toBeDeleted);
-          log("snapshot-maintenance-removed-invblocks",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-invblocks",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newInvBlocks.put(toBeAdded, toBeAdded);
-          log("snapshot-maintenance-added-invblocks",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-invblocks",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
     

@@ -286,8 +286,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-urblock-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateReplicaUCs(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateReplicaUCs(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -311,18 +311,17 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
     
     
       for(HopUnderReplicatedBlock pending : urBlocks.values()){
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId(), pending.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopUnderReplicatedBlock toBeDeleted = cloneURBObj(pending);
           HopUnderReplicatedBlock toBeAdded = cloneURBObj(pending);
           
           removedurBlocks.put(toBeDeleted.getBlockId(), toBeDeleted);
-          log("snapshot-maintenance-removed-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newurBlocks.put(toBeAdded.getBlockId(), toBeAdded);
-          log("snapshot-maintenance-added-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
   }

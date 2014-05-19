@@ -349,7 +349,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       }
     
     for(BlockInfo bInfo: oldBlks){
-      HopINodeCandidatePK pk = new HopINodeCandidatePK(bInfo.getInodeId(), bInfo.getPartKey());
+      HopINodeCandidatePK pk = new HopINodeCandidatePK(bInfo.getInodeId());
       if(deleteINodes.contains(pk)){
         //remove the block
         removedBlocks.put(bInfo.getBlockId(), bInfo);

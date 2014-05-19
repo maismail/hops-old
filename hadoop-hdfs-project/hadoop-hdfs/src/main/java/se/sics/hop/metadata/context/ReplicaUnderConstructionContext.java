@@ -213,8 +213,8 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-replicauc-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateReplicaUCs(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateReplicaUCs(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -238,18 +238,17 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     
     for(List<ReplicaUnderConstruction> replicasUC : blockReplicasUCAll.values()){
       for(ReplicaUnderConstruction replicaUC : replicasUC){
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(replicaUC.getInodeId(), replicaUC.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(replicaUC.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           ReplicaUnderConstruction toBeDeleted = cloneReplicaUCObj(replicaUC);
           ReplicaUnderConstruction toBeAdded = cloneReplicaUCObj(replicaUC);
           
           removedReplicasUc.put(toBeDeleted, toBeDeleted);
-          log("snapshot-maintenance-removed-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newReplicasUc.put(toBeAdded, toBeAdded);
-          log("snapshot-maintenance-added-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
     }

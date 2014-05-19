@@ -202,8 +202,8 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
           log("snapshot-maintenance-corrupt-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateCorruptReplicas(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateCorruptReplicas(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -226,7 +226,7 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   private void updateCorruptReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     for(Set<HopCorruptReplica> set :blockCorruptReplicas.values() ){
       for(HopCorruptReplica corruptReplica : set){
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(corruptReplica.getInodeId(), corruptReplica.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(corruptReplica.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopCorruptReplica toBeDeleted = cloneCorruptReplicaObj(corruptReplica);
           HopCorruptReplica toBeAdded = cloneCorruptReplicaObj(corruptReplica);
@@ -235,7 +235,6 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
           log("snapshot-maintenance-removed-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newCorruptReplicas.put(toBeAdded, toBeAdded);
           log("snapshot-maintenance-added-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
         }

@@ -1023,10 +1023,10 @@ public class FSDirectory implements Closeable {
     
     //HOP_START_CODE
     //params for updating the snapshots
-    HopINodeCandidatePK trg_param = new HopINodeCandidatePK(trgInode.getId(),trgInode.getPartKey());
+    HopINodeCandidatePK trg_param = new HopINodeCandidatePK(trgInode.getId());
     List<HopINodeCandidatePK> srcs_param = new ArrayList<HopINodeCandidatePK>();
     for(int j = 0; j < allSrcInodes.length; j++) {
-      srcs_param.add(new HopINodeCandidatePK(allSrcInodes[j].getId(), allSrcInodes[j].getPartKey()));
+      srcs_param.add(new HopINodeCandidatePK(allSrcInodes[j].getId()));
     }
     //END_HOP_CODE
     // since we are in the same dir - we can use same parent to remove files
@@ -2292,7 +2292,7 @@ public class FSDirectory implements Closeable {
            newINodes.add(newRootINode);
            da.prepare(INode.EMPTY_LIST, newINodes, INode.EMPTY_LIST);
            
-           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),newRootINode.getPartKey(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
+           INodeAttributes inodeAttributes = new INodeAttributes(newRootINode.getId(),Long.MAX_VALUE,1L, FSDirectory.UNKNOWN_DISK_SPACE,0L);
            INodeAttributesDataAccess ida = (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
            List<INodeAttributes> attrList = new ArrayList();
            attrList.add(inodeAttributes);

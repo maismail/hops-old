@@ -220,8 +220,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) {
           log("snapshot-maintenance-replicas-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
           List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId(), inodeBeforeChange.getPartKey()));
-          updateReplicas(new HopINodeCandidatePK(inodeAfterChange.getId(), inodeAfterChange.getPartKey()), deletedINodesPK);
+          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
+          updateReplicas(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
         }
         break;
       case Concat:
@@ -245,7 +245,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     
     for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
       for(HopIndexedReplica replica : replicas){
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(replica.getInodeId(), replica.getPartKey());
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(replica.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);
           HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
@@ -255,7 +255,6 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
           
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
-          toBeAdded.setPartKey(trg_param.getPartKey());
           newReplicas.put(toBeAdded, toBeAdded);
           log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
         }

@@ -558,7 +558,7 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
   public void setPartKeyNoPersistance(int part_key){
-    this.part_key = part_key;
+    this.part_key = INode.INVALID_PART_KEY;
   }
   
   public void setParent(INodeDirectory p) throws PersistanceException {
@@ -660,13 +660,13 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
   public static int getPartitionKey(String strName){
-    if(strName == null || strName.equals("") || strName.isEmpty() ){
-      return 0;
-    }
-    else{
-      return Math.abs(strName.hashCode());
-    }
-//    return 0;
+//    if(strName == null || strName.equals("") || strName.isEmpty() ){
+//      return 0;
+//    }
+//    else{
+//      return Math.abs(strName.hashCode());
+//    }
+    return INode.INVALID_PART_KEY;
   }
   
   public static int getPartitionKey(byte[] name){
