@@ -258,7 +258,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
     
     //............... Excess Replica ...............................................
     List<HopExcessReplica> erlist = new LinkedList<HopExcessReplica>();
-    erlist.add(new HopExcessReplica(1, 1,1,1));
+    erlist.add(new HopExcessReplica(1, 1,1));
 
     //............... Corrupted Replica ...............................................
     List<HopCorruptReplica> crlist = new LinkedList<HopCorruptReplica>();

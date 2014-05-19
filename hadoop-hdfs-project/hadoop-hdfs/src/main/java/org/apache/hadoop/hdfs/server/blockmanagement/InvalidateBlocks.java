@@ -239,7 +239,7 @@ class InvalidateBlocks {
   }
   
   private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId, int partKey) throws PersistanceException {
-    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId, partKey);
+    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId);
   }
   
   private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws PersistanceException {

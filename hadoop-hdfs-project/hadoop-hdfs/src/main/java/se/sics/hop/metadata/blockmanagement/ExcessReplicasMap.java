@@ -59,7 +59,7 @@ public class ExcessReplicasMap {
   public boolean put(String dn, BlockInfo excessBlk) throws PersistanceException {
     HopExcessReplica er = getExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk);
     if (er == null) {
-      addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId(), excessBlk.getInodeId(), excessBlk.getPartKey()));
+      addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId(), excessBlk.getInodeId()));
       return true;
     }
     return false;
@@ -92,7 +92,7 @@ public class ExcessReplicasMap {
     if (ers == null) {
       return false;
     }
-    return ers.contains(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), blk.getBlockId(), blk.getInodeId(), blk.getPartKey()));
+    return ers.contains(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), blk.getBlockId(), blk.getInodeId()));
   }
 
   public void clear() throws IOException {
@@ -125,10 +125,10 @@ public class ExcessReplicasMap {
   }
 
   private Collection<HopExcessReplica> getExcessReplicas(BlockInfo blk) throws PersistanceException {
-    return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId(), blk.getPartKey());
+    return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
 
   private HopExcessReplica getExcessReplica(int dn, BlockInfo block) throws PersistanceException {
-    return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn, block.getInodeId(), block.getPartKey());
+    return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn, block.getInodeId());
   }
 }

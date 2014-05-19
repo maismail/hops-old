@@ -90,8 +90,7 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
         long blockId = (Long) params[0];
         int storageId = (Integer) params[1];
         int inodeId = (Integer) params[2];
-        int partKey = (Integer) params[3];
-        HopExcessReplica searchKey = new HopExcessReplica(storageId, blockId, inodeId, partKey);
+        HopExcessReplica searchKey = new HopExcessReplica(storageId, blockId, inodeId);
         if (blockIdToExReplica.containsKey(blockId) && !blockIdToExReplica.get(blockId).contains(searchKey)) {
           log("find-excess-by-pk-not-exist", CacheHitState.HIT,
                   new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
@@ -117,7 +116,7 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
           log("find-excess-by-pk", CacheHitState.LOSS,
                   new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           aboutToAccessStorage();
-          result = dataAccess.findByPK(blockId, storageId, inodeId, partKey);
+          result = dataAccess.findByPK(blockId, storageId, inodeId);
           if (result == null) {
             this.exReplicas.put(searchKey, null);
             TreeSet<HopExcessReplica> set = blockIdToExReplica.get(searchKey.getBlockId());
@@ -145,7 +144,6 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
       case ByBlockId:
         long bId = (Long) params[0];
         Integer inodeId = (Integer) params[1];
-        Integer partKey = (Integer) params[2];
         if (blockIdToExReplica.containsKey(bId)) {
           log("find-excess-by-blockId", CacheHitState.HIT, new String[]{"bid", String.valueOf(bId)});
         } 
@@ -156,7 +154,7 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
         else {
           log("find-excess-by-blockId", CacheHitState.LOSS, new String[]{"bid", String.valueOf(bId)});
           aboutToAccessStorage();
-          List<HopExcessReplica> list = dataAccess.findExcessReplicaByBlockId(bId, inodeId, partKey);
+          List<HopExcessReplica> list = dataAccess.findExcessReplicaByBlockId(bId, inodeId);
           
           TreeSet<HopExcessReplica> set = blockIdToExReplica.get(bId);
           if(set == null){
@@ -171,14 +169,13 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
         return new ArrayList<HopExcessReplica>(this.blockIdToExReplica.get(bId)); //clone the list reference
        case ByINodeId:;
         inodeId = (Integer) params[0];
-        partKey = (Integer) params[1];
         if(inodesRead.contains(inodeId)){
-          log("find-excess-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-excess-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getExcessReplicasForINode(inodeId);
         }else{
-          log("find-excess-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-excess-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          List<HopExcessReplica> list = dataAccess.findExcessReplicaByINodeId(inodeId, partKey);
+          List<HopExcessReplica> list = dataAccess.findExcessReplicaByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(list != null && !list.isEmpty()){
             syncExcessReplicaInstances(list);
@@ -325,6 +322,6 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
   
   private HopExcessReplica cloneExcessReplicaObj(HopExcessReplica src){
-    return new HopExcessReplica(src.getStorageId(), src.getBlockId(), src.getInodeId(), src.getPartKey());
+    return new HopExcessReplica(src.getStorageId(), src.getBlockId(), src.getInodeId());
   }
 }
