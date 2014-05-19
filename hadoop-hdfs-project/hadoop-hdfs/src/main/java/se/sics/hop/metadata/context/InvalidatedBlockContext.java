@@ -101,8 +101,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         long blockId = (Long) params[0];
         int storageId = (Integer) params[1];
         Integer inodeId = (Integer) params[2];
-        Integer partKey = (Integer) params[3];
-        HopInvalidatedBlock searchInstance = new HopInvalidatedBlock(storageId, blockId, inodeId, partKey);
+        HopInvalidatedBlock searchInstance = new HopInvalidatedBlock(storageId, blockId, inodeId);
         if (blockIdToInvBlocks.containsKey(blockId) && !blockIdToInvBlocks.get(blockId).contains(searchInstance)) {
             log("find-invblock-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
             return null;
@@ -121,7 +120,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         } else {
           log("find-invblock-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           aboutToAccessStorage();
-          HopInvalidatedBlock result = dataAccess.findInvBlockByPkey(blockId, storageId, inodeId, partKey);
+          HopInvalidatedBlock result = dataAccess.findInvBlockByPkey(blockId, storageId, inodeId);
           if (result == null) {
             this.invBlocks.put(searchInstance, null);
             TreeSet<HopInvalidatedBlock> set = blockIdToInvBlocks.get(searchInstance.getBlockId());
@@ -161,7 +160,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         else {
           log("find-invblock-by-blockId", CacheHitState.LOSS, new String[]{"bid", String.valueOf(bId)});
           aboutToAccessStorage();
-          List<HopInvalidatedBlock> list = (List<HopInvalidatedBlock>)dataAccess.findInvalidatedBlocksByBlockId(bId, inodeId, partKey);
+          List<HopInvalidatedBlock> list = (List<HopInvalidatedBlock>)dataAccess.findInvalidatedBlocksByBlockId(bId, inodeId);
           
           TreeSet<HopInvalidatedBlock> set = blockIdToInvBlocks.get(bId);
           if(set == null){
@@ -178,12 +177,12 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         inodeId = (Integer) params[0];
         partKey = (Integer) params[1];
         if(inodesRead.contains(inodeId)){
-          log("find-invblock-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-invblock-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),});
           return getInvBlksForINode(inodeId);
         }else{
-          log("find-invblock-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-invblock-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          List<HopInvalidatedBlock> list = (List<HopInvalidatedBlock>)dataAccess.findInvalidatedBlocksByINodeId(inodeId, partKey);
+          List<HopInvalidatedBlock> list = (List<HopInvalidatedBlock>)dataAccess.findInvalidatedBlocksByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(list != null && !list.isEmpty()){
             syncInstances(list);
@@ -357,6 +356,6 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
   
   private HopInvalidatedBlock cloneInvalidatedReplicaObj(HopInvalidatedBlock src){
-    return new HopInvalidatedBlock(src.getStorageId(), src.getBlockId(),src.getInodeId(),src.getPartKey());
+    return new HopInvalidatedBlock(src.getStorageId(), src.getBlockId(),src.getInodeId());
   }
 }

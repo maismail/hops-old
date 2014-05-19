@@ -84,7 +84,7 @@ class InvalidateBlocks {
    */
   void add(final BlockInfo block, final DatanodeInfo datanode,
       final boolean log) throws PersistanceException {
-    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId(),block.getPartKey());
+    HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId());
     if (add(invBlk)) {
       if (log) {
         NameNode.blockStateChangeLog.info("BLOCK* " + getClass().getSimpleName()
@@ -107,7 +107,7 @@ class InvalidateBlocks {
 
   /** Remove the block from the specified storage. */
   void remove(final String storageID, final BlockInfo block) throws PersistanceException {
-    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId(),block.getPartKey()));
+    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId()));
   }
 
   /** Print the contents to out. */

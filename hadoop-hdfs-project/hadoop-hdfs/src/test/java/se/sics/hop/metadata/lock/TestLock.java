@@ -266,7 +266,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
   
     //............... Invalidated Blocks ...............................................
     List<HopInvalidatedBlock> iblist = new LinkedList<HopInvalidatedBlock>();
-    iblist.add(new HopInvalidatedBlock(1, 1, 1, 1));
+    iblist.add(new HopInvalidatedBlock(1, 1, 1));
     
     
     StorageFactory.getConnector().beginTransaction();    
