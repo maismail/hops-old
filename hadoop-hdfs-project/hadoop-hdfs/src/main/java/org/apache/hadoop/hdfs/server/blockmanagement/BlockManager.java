@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
@@ -43,7 +42,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportIterator;
@@ -70,7 +68,6 @@ import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocat
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
-import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.Time;
@@ -81,20 +78,18 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.exception.TransactionLockAcquireFailure;
 import se.sics.hop.exception.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
+import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -1534,8 +1529,9 @@ public class BlockManager {
    * If there were any replication requests that timed out, reap them
    * and put them back into the neededReplication queue
    */
-  private void processPendingReplications() throws IOException{
-    Block[] timedOutItems = pendingReplications.getTimedOutBlocks();
+  @VisibleForTesting
+   void processPendingReplications() throws IOException{
+    long[] timedOutItems = pendingReplications.getTimedOutBlocks();
     if (timedOutItems != null) {
       namesystem.writeLock();
       try {
@@ -3792,6 +3788,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return retVal;
   }
   
+  //TODO? this is only called in a test, should we remove it? 
   int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws IOException{
     int scheduledWork = 0;
     for (int priority = 0; priority < blocksToReplicate.size(); priority++) {
@@ -3835,7 +3832,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return blocksMap.replaceBlock(completeBlock);
   }
    
-  private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
+  private void processTimedOutPendingBlock(final long timedOutItemId) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
       Long inodeID = null, pID = null;
       String name = null;
@@ -3843,13 +3840,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       public void setUp() throws StorageException {
         name = null; pID = null; inodeID = null;
         INode inode;
-        if (timedOutItem instanceof BlockInfo) {
-          inodeID = ((BlockInfo) timedOutItem).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) timedOutItem).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(timedOutItem.getBlockId());
-        }
+        inode = INodeUtil.findINodeByBlockId(timedOutItemId);
         
         if(inode != null ){
           name = inode.getLocalName();
@@ -3863,7 +3854,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(timedOutItem.getBlockId()).
+                addBlock(timedOutItemId).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3876,7 +3867,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       public Object performTask() throws PersistanceException, IOException {
 //        PendingBlockInfo pendingBlock = EntityManager.find(PendingBlockInfo.Finder.ByPKey, p.getBlockId());
 //        if (pendingBlock != null && PendingReplicationBlocks.isTimedOut(pendingBlock)) {
-//          Block timedOutItem = EntityManager.find(BlockInfo.Finder.ById, p.getBlockId());
+          Block timedOutItem = EntityManager.find(BlockInfo.Finder.ById, timedOutItemId);
           NumberReplicas num = countNodes(timedOutItem);
           if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                                  num.liveReplicas())) {
@@ -3885,6 +3876,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                                    num.decommissionedReplicas(),
                                    getReplication(timedOutItem));
           }
+          pendingReplications.remove(timedOutItem);
 //        }
         return null;
       }
