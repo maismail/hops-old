@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
@@ -75,7 +76,7 @@ class PendingReplicationBlocks {
   void increment(BlockInfo block, int numReplicas) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found == null) {
-      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(),block.getInodeId(),block.getPartKey(), now(), numReplicas));
+      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(),block.getInodeId(),now(), numReplicas));
     } else {
       found.incrementReplicas(numReplicas);
       found.setTimeStamp(now());
@@ -223,7 +224,7 @@ class PendingReplicationBlocks {
   }
 
   private PendingBlockInfo getPendingBlock(BlockInfo block) throws PersistanceException {
-    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId(), block.getPartKey());
+    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId());
   }
 
   private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {
@@ -231,7 +232,7 @@ class PendingReplicationBlocks {
   }
 
   private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws PersistanceException {
-    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId(), pendingBlock.getPartKey());
+    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId() );
   }
 
   private void addPendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
@@ -251,13 +252,13 @@ class PendingReplicationBlocks {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException { 
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId(), pbi.getPartKey());
+        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId(), INode.NON_EXISTING_ID);
         return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId(), pbi.getPartKey());
+        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId());
         if (block == null) {
           //this function is called from getTimedOutBlocks
           //which has already deleted the timeout rows from the table

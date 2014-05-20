@@ -21,20 +21,16 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -562,7 +558,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   private boolean add(BlockInfo block, int priLevel) throws PersistanceException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if (urb == null) {
-      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId(), block.getInodeId(), block.getPartKey()));
+      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId(), block.getInodeId()));
       return true;
     }
     return false;
@@ -590,7 +586,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
   
   private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException{
-     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId(), blk.getPartKey());
+     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
  
   private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
@@ -615,13 +611,13 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock().
-                addBlock(urb.getBlockId(),urb.getInodeId(), urb.getPartKey());
+                addBlock(urb.getBlockId(),urb.getInodeId(), INode.INVALID_PART_KEY);
         return tla.acquire();
       }
       
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), urb.getPartKey());
+        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), INode.INVALID_PART_KEY);
         if(block == null){
          removeUnderReplicatedBlock(urb);
         }

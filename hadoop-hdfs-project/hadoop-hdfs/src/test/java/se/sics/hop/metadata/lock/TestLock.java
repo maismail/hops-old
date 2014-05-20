@@ -240,7 +240,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
     
     //............... Pending Replicas ...............................................
     List<PendingBlockInfo> pendingList = new LinkedList<PendingBlockInfo>();
-    pendingList.add(new PendingBlockInfo(1, 1,1,1, 1));
+    pendingList.add(new PendingBlockInfo(1, 1,1, 1));
 
      //............... lease ...............................................
     List<Lease> leases = new LinkedList<Lease>();

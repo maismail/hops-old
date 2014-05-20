@@ -6,13 +6,10 @@ import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
@@ -50,7 +47,7 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
 
     log("added-urblock", CacheHitState.NA,
             new String[]{"bid", Long.toString(entity.getBlockId()),
-              "level", Integer.toString(entity.getLevel()),"inodeId",Integer.toString(entity.getInodeId()),"partKey",Integer.toString(entity.getPartKey())});
+              "level", Integer.toString(entity.getLevel()),"inodeId",Integer.toString(entity.getInodeId())});
   }
 
   @Override
@@ -123,14 +120,13 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
         }
       case ByINodeId:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = (Integer) params[1];
         if(inodesRead.contains(inodeId)){
-          log("find-urblocks-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-urblocks-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getUnderReplicatedBlocksForINode(inodeId);
         }else{
-          log("find-urblocks-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-urblocks-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByINodeId(inodeId, partKey);
+          result = dataAccess.findByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);
@@ -149,17 +145,16 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
       case ByBlockId:
         long blockId = (Long) params[0];
         Integer inodeId = (Integer) params[1];
-        Integer partKey = (Integer) params[2];
                 
         if (urBlocks.containsKey(blockId)) {
-          log("find-urblock-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-urblock-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           return urBlocks.get(blockId);
         }else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
           return null;
         }else{
-          log("find-urblock-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-urblock-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          HopUnderReplicatedBlock block = dataAccess.findByPk(blockId, inodeId, partKey);
+          HopUnderReplicatedBlock block = dataAccess.findByPk(blockId, inodeId);
           urBlocks.put(blockId, block);
           return block;
         }
@@ -327,6 +322,6 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
   
   private HopUnderReplicatedBlock cloneURBObj(HopUnderReplicatedBlock src){
-    return new HopUnderReplicatedBlock(src.getLevel(),src.getBlockId(),src.getInodeId(),src.getPartKey());
+    return new HopUnderReplicatedBlock(src.getLevel(),src.getBlockId(),src.getInodeId());
   }
 }

@@ -25,14 +25,12 @@ public class PendingBlockInfo {
   }
   private long blockId;
   private int inodeId;
-  private int partKey;
   private long timeStamp;
   private int numReplicasInProgress;
 
-  public PendingBlockInfo(long blockId, int inodeId, int partKey, long timestamp, int numReplicas) {
+  public PendingBlockInfo(long blockId, int inodeId, long timestamp, int numReplicas) {
     this.blockId = blockId;
     this.inodeId = inodeId;
-    this.partKey = partKey;
     this.timeStamp = timestamp;
     this.numReplicasInProgress = numReplicas;
   }
@@ -65,10 +63,6 @@ public class PendingBlockInfo {
     return blockId;
   }
   
-  public int getPartKey(){
-    return partKey;
-  }
-  
   public int getInodeId(){
     return inodeId;
   }
@@ -83,11 +77,6 @@ public class PendingBlockInfo {
   public void setInodeId(int inodeId) {
     this.inodeId = inodeId;
   }
-
-  public void setPartKey(int partKey) {
-    this.partKey = partKey;
-  }
-  
 
   @Override
   public boolean equals(Object obj) {

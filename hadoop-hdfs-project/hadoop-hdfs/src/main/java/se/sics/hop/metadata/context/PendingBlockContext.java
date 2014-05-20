@@ -5,13 +5,10 @@ import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
@@ -92,16 +89,15 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
           }
         }
         return result;
-      case ByInodeId:;
+      case ByInodeId:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = (Integer) params[1];
         if(inodesRead.contains(inodeId)){
-          log("find-pendings-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-pendings-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getPendingReplicasForINode(inodeId);
         }else{
-          log("find-pendings-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-pendings-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByINodeId(inodeId, partKey);
+          result = dataAccess.findByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);
@@ -121,17 +117,16 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
       case ByBlockId:
         long blockId = (Long) params[0];
         Integer inodeId = (Integer) params[1];
-        Integer partKey = (Integer) params[2];
         if (this.pendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           result = this.pendings.get(blockId);
         } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
           return null;
         }
         else if (!this.removedPendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByPKey(blockId,inodeId,partKey);
+          result = dataAccess.findByPKey(blockId,inodeId);
           this.pendings.put(blockId, result);
         } 
         return result;
@@ -287,6 +282,6 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
   
   private PendingBlockInfo clonePendingReplicaObj(PendingBlockInfo src){
-    return new PendingBlockInfo(src.getBlockId(),src.getInodeId(),src.getPartKey(),src.getTimeStamp(),src.getNumReplicas());
+    return new PendingBlockInfo(src.getBlockId(),src.getInodeId(),src.getTimeStamp(),src.getNumReplicas());
   }
 }
