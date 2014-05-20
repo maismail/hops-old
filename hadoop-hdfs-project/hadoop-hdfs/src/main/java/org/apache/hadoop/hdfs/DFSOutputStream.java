@@ -59,7 +59,6 @@ import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status;
 import org.apache.hadoop.hdfs.protocolPB.PBHelper;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.InvalidBlockTokenException;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.namenode.SafeModeException;
 import org.apache.hadoop.io.EnumSetWritable;
@@ -136,10 +135,14 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   private boolean shouldSyncBlock = false; // force blocks to disk upon close
   private boolean singleBlock = false;
 
-  private boolean erasureCodingStream = false;
+  private boolean erasureCodingSourceStream = false;
+  private boolean erasureCodingParityStream = false;
   private HashSet<DatanodeInfo> usedNodes = new HashSet<DatanodeInfo>();
   private int currentBlockIndex = 0;
   private int stripeLength;
+  private int parityLength;
+  private ArrayList<LocatedBlock> sourceBlocks;
+  private List<DatanodeInfo> stripeNodes = new LinkedList<DatanodeInfo>();
   
   private class Packet {
     long    seqno;               // sequencenumber of buffer in block
@@ -1050,17 +1053,37 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
 
         DatanodeInfo[] excluded;
         long startTime = Time.now();
-        if (erasureCodingStream) {
-          if (currentBlockIndex % stripeLength == 0) {
-            usedNodes.clear();
+
+        if ((erasureCodingSourceStream && currentBlockIndex % stripeLength == 0)) {
+          usedNodes.clear();
+        }
+
+        if (erasureCodingParityStream && currentBlockIndex % parityLength == 0) {
+          usedNodes.clear();
+          stripeNodes.clear();
+          int stripe = (int) Math.ceil(currentBlockIndex / (float) parityLength);
+          int index = stripe * stripeLength;
+          LOG.debug("Stripe length " + stripeLength + " parity length " + parityLength);
+          LOG.debug("Parity write block index " + currentBlockIndex + " found index " + index + " end " + (index + stripeLength));
+          for (int j = index; j < sourceBlocks.size() && j < index + stripeLength; j++) {
+            DatanodeInfo[] nodeInfos = sourceBlocks.get(j).getLocations();
+            Collections.addAll(stripeNodes, nodeInfos);
           }
-          excluded = new DatanodeInfo[excludedNodes.size() + usedNodes.size()];
+        }
+
+        if (erasureCodingSourceStream || erasureCodingParityStream) {
+          excluded = new DatanodeInfo[excludedNodes.size() + usedNodes.size() + stripeNodes.size()];
           int i = 0;
           for (DatanodeInfo node : excludedNodes) {
             excluded[i] = node;
             i++;
           }
           for (DatanodeInfo node : usedNodes) {
+            excluded[i] = node;
+            LOG.debug("Block " + currentBlockIndex + " excluding " + node);
+            i++;
+          }
+          for (DatanodeInfo node : stripeNodes) {
             excluded[i] = node;
             LOG.debug("Block " + currentBlockIndex + " excluding " + node);
             i++;
@@ -1095,7 +1118,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         throw new IOException("Unable to create new block.");
       }
 
-      if (erasureCodingStream) {
+      if (erasureCodingSourceStream || erasureCodingParityStream) {
         Collections.addAll(usedNodes, nodes);
       }
 
@@ -1369,8 +1392,7 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
 
     if (policy != null) {
-      erasureCodingStream = true;
-      stripeLength = Codec.getCodec(policy.getCodec()).getStripeLength();
+      enableSourceStream(Codec.getCodec(policy.getCodec()).getStripeLength());
     }
 
     computePacketChunkSize(dfsClient.getConf().writePacketSize,
@@ -1965,4 +1987,30 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     return streamer.getBlockToken();
   }
 
+  public void enableSourceStream(int stripeLength) {
+    this.erasureCodingSourceStream = true;
+    this.stripeLength = stripeLength;
+  }
+
+  public void enableParityStream(int stripeLength, int parityLength, String sourceFile) throws IOException {
+    this.erasureCodingParityStream = true;
+    this.stripeLength = stripeLength;
+    this.parityLength = parityLength;
+    this.sourceBlocks = new ArrayList(dfsClient.getLocatedBlocks(sourceFile, 0, Long.MAX_VALUE).getLocatedBlocks());
+    Collections.sort(sourceBlocks, blockIdComparator);
+  }
+
+  private final static Comparator<LocatedBlock> blockIdComparator = new Comparator<LocatedBlock>() {
+
+    @Override
+    public int compare(LocatedBlock locatedBlock, LocatedBlock locatedBlock2) {
+      if (locatedBlock.getBlock().getBlockId() < locatedBlock2.getBlock().getBlockId()) {
+        return -1;
+      }
+      if (locatedBlock.getBlock().getBlockId() > locatedBlock2.getBlock().getBlockId()) {
+        return 1;
+      }
+      return 0;
+    }
+  };
 }

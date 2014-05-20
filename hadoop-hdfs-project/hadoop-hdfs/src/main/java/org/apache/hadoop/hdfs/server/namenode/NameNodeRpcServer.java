@@ -500,9 +500,6 @@ class NameNodeRpcServer implements NamenodeProtocols {
         excludedNodesSet.put(node, node);
       }
     }
-    if (excludedNodesSet == null && namesystem.isErasureCodingEnabled()) {
-      excludedNodesSet = new HashMap<Node, Node>();
-    }
     LocatedBlock locatedBlock = 
       namesystem.getAdditionalBlock(src, clientName, previous, excludedNodesSet);
     if (locatedBlock != null)
