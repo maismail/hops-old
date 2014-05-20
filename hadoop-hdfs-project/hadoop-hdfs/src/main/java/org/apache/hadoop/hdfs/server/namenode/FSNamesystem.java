@@ -2518,27 +2518,27 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     clientNode = pendingFile.getClientNode() == null ? null : getBlockManager().getDatanodeManager().getDatanode(pendingFile.getClientNode());
                     replication = pendingFile.getBlockReplication();
 
-                    if (isErasureCodingEnabled()) {
-                      EncodingStatus status = findEncodingStatus(pendingFile.getId());
-                      if (!status.getStatus().equals(EncodingStatus.Status.NOT_ENCODED) && previous != null) {
-                        LOG.info("Status " + status.getInodeId() + " " + status.getStatus());
-                        Codec codec = Codec.getCodec(status.getEncodingPolicy().getCodec());
-                        BlockInfo[] blocks = pendingFile.getBlocks();
-                        int index = Arrays.binarySearch(blocks, previous.getLocalBlock());
-                        if (index < 0) {
-                          throw new IOException("Previous block not found");
-                        }
-                        int blockIndex = blocks[index].getBlockIndex() + 1;
-                        LOG.info("Current block index is " + blockIndex + " with stripe length" + codec.getStripeLength());
-                        for (int i = blockIndex - blockIndex % codec.getStripeLength(); i < blocks.length; i++) {
-                          LOG.info("Excluding nodes for block " + blocks[i].getBlockIndex());
-                          DatanodeDescriptor[] nodes = blockManager.getNodes(blocks[i]);
-                          for (DatanodeDescriptor node : nodes) {
-                            LOG.info("Excluding node " + node);
-                            excludedNodes.put(node, node);
-                          }
-                        }
-                      } else if (Codec.isParityFile(src)) {
+//                    if (isErasureCodingEnabled()) {
+//                      EncodingStatus status = findEncodingStatus(pendingFile.getId());
+//                      if (!status.getStatus().equals(EncodingStatus.Status.NOT_ENCODED) && previous != null) {
+//                        LOG.info("Status " + status.getInodeId() + " " + status.getStatus());
+//                        Codec codec = Codec.getCodec(status.getEncodingPolicy().getCodec());
+//                        BlockInfo[] blocks = pendingFile.getBlocks();
+//                        int index = Arrays.binarySearch(blocks, previous.getLocalBlock());
+//                        if (index < 0) {
+//                          throw new IOException("Previous block not found");
+//                        }
+//                        int blockIndex = blocks[index].getBlockIndex() + 1;
+//                        LOG.info("Current block index is " + blockIndex + " with stripe length" + codec.getStripeLength());
+//                        for (int i = blockIndex - blockIndex % codec.getStripeLength(); i < blocks.length; i++) {
+//                          LOG.info("Excluding nodes for block " + blocks[i].getBlockIndex());
+//                          DatanodeDescriptor[] nodes = blockManager.getNodes(blocks[i]);
+//                          for (DatanodeDescriptor node : nodes) {
+//                            LOG.info("Excluding node " + node);
+//                            excludedNodes.put(node, node);
+//                          }
+//                        }
+//                      } else if (Codec.isParityFile(src)) {
                         // TODO STEFFEN - Implement parity placement
 //                        BlockInfo[] blocks = pendingFile.getBlocks();
 //                        int index = Arrays.binarySearch(blocks, previous);
@@ -2547,8 +2547,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //                        }
 //                        int blockIndex = blocks[index].getBlockIndex();
 //                        int stripe = blockIndex
-                      }
-                    }
+//                      }
+//                    }
                 } finally {
                     readUnlock();
                 }

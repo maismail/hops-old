@@ -30,13 +30,11 @@ import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.BufferOverflowException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FSOutputSummer;
@@ -61,6 +59,7 @@ import org.apache.hadoop.hdfs.protocol.proto.DataTransferProtos.Status;
 import org.apache.hadoop.hdfs.protocolPB.PBHelper;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.InvalidBlockTokenException;
+import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.namenode.SafeModeException;
 import org.apache.hadoop.io.EnumSetWritable;
@@ -75,6 +74,7 @@ import org.apache.hadoop.util.Progressable;
 import org.apache.hadoop.util.Time;
 
 import com.google.common.annotations.VisibleForTesting;
+import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 
 
@@ -102,6 +102,8 @@ import se.sics.hop.erasure_coding.EncodingPolicy;
 ****************************************************************/
 @InterfaceAudience.Private
 public class DFSOutputStream extends FSOutputSummer implements Syncable {
+  public static final Log LOG = LogFactory.getLog(DFSOutputStream.class);
+
   private final DFSClient dfsClient;
   private static final int MAX_PACKETS = 80; // each packet 64K, total 5MB
   private Socket s;
@@ -133,6 +135,11 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
   private final short blockReplication; // replication factor of file
   private boolean shouldSyncBlock = false; // force blocks to disk upon close
   private boolean singleBlock = false;
+
+  private boolean erasureCodingStream = false;
+  private HashSet<DatanodeInfo> usedNodes = new HashSet<DatanodeInfo>();
+  private int currentBlockIndex = 0;
+  private int stripeLength;
   
   private class Packet {
     long    seqno;               // sequencenumber of buffer in block
@@ -1041,9 +1048,27 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
         errorIndex = -1;
         success = false;
 
+        DatanodeInfo[] excluded;
         long startTime = Time.now();
-        DatanodeInfo[] excluded = excludedNodes.toArray(
-            new DatanodeInfo[excludedNodes.size()]);
+        if (erasureCodingStream) {
+          if (currentBlockIndex % stripeLength == 0) {
+            usedNodes.clear();
+          }
+          excluded = new DatanodeInfo[excludedNodes.size() + usedNodes.size()];
+          int i = 0;
+          for (DatanodeInfo node : excludedNodes) {
+            excluded[i] = node;
+            i++;
+          }
+          for (DatanodeInfo node : usedNodes) {
+            excluded[i] = node;
+            LOG.debug("Block " + currentBlockIndex + " excluding " + node);
+            i++;
+          }
+          currentBlockIndex++;
+        } else {
+          excluded = excludedNodes.toArray(new DatanodeInfo[excludedNodes.size()]);
+        }
         block = oldBlock;
         lb = locateFollowingBlock(startTime,
             excluded.length > 0 ? excluded : null);
@@ -1069,6 +1094,11 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       if (!success) {
         throw new IOException("Unable to create new block.");
       }
+
+      if (erasureCodingStream) {
+        Collections.addAll(usedNodes, nodes);
+      }
+
       return nodes;
     }
 
@@ -1337,6 +1367,11 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
       DataChecksum checksum, EncodingPolicy policy) throws IOException {
     this(dfsClient, src, blockSize, progress, checksum, replication);
     this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
+
+    if (policy != null) {
+      erasureCodingStream = true;
+      stripeLength = Codec.getCodec(policy.getCodec()).getStripeLength();
+    }
 
     computePacketChunkSize(dfsClient.getConf().writePacketSize,
         checksum.getBytesPerChecksum());
