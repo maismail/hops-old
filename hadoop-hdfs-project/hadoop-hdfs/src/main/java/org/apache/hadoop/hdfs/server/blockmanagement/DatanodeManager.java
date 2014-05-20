@@ -1238,7 +1238,7 @@ public class DatanodeManager {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(),b.getInodeId(), b.getPartKey()).
+                addBlock(b.getBlockId(),b.getInodeId()).
                 addReplica().
                 addReplicaUc();
         return tla.acquireByBlock(inodeIdentifier);

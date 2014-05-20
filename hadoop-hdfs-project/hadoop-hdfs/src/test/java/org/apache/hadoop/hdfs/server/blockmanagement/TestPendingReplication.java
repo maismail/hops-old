@@ -69,7 +69,7 @@ public class TestPendingReplication {
     // Add 10 blocks to pendingReplications.
     //
     for (int i = 0; i < 10; i++) {
-      BlockInfo block = new BlockInfo(new Block(i, i, 0), i, i);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0), i);
       increment(pendingReplications, block, i);
     }
     
@@ -80,7 +80,7 @@ public class TestPendingReplication {
     //
     // remove one item and reinsert it
     //
-    BlockInfo blk = new BlockInfo(new Block(8, 8, 0),8,8);
+    BlockInfo blk = new BlockInfo(new Block(8, 8, 0),8);
     decrement(pendingReplications, blk);             // removes one replica
     assertEquals("pendingReplications.getNumReplicas ",
                  7, getNumReplicas(pendingReplications, blk));
@@ -97,7 +97,7 @@ public class TestPendingReplication {
     // are sane.
     //
     for (int i = 0; i < 10; i++) {
-      BlockInfo block = new BlockInfo(new Block(i, i, 0),i,i);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i);
       int numReplicas = getNumReplicas(pendingReplications, block);
       assertTrue(numReplicas == i);
     }
@@ -116,7 +116,7 @@ public class TestPendingReplication {
     }
 
     for (int i = 10; i < 15; i++) {
-      BlockInfo block = new BlockInfo(new Block(i, i, 0),i,i);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i);
       increment(pendingReplications, block, i);
     }
     assertTrue(pendingReplications.size() == 15);
@@ -229,8 +229,7 @@ public class TestPendingReplication {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addPendingBlock();
         return tla.acquire();
       }
@@ -260,8 +259,7 @@ public class TestPendingReplication {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addPendingBlock();
         return tla.acquire();
       }

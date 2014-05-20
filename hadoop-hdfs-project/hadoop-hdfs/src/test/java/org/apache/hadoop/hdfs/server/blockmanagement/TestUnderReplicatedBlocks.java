@@ -35,7 +35,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -76,8 +75,7 @@ public class TestUnderReplicatedBlocks {
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
                   addBlock(b.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);
@@ -117,8 +115,7 @@ public class TestUnderReplicatedBlocks {
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
                   addBlock(b.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                   addReplica().
                   addInvalidatedBlock();
           return tla.acquireByBlock(inodeIdentifier);

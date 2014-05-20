@@ -361,8 +361,7 @@ public class DFSTestUtil {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(b.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addCorrupt();
         return tla.acquire();
       }

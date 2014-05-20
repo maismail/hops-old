@@ -810,8 +810,7 @@ class NamenodeJspHelper {
             tla.getLocks().
                     addINode(INodeLockType.READ).
                     addBlock(block.getBlockId(),
-                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                    inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY);
+                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
             return tla.acquireByBlock(inodeIdentifier);
           }
 

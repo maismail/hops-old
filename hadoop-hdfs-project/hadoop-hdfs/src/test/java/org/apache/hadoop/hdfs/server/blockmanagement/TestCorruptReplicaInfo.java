@@ -66,7 +66,7 @@ public class TestCorruptReplicaInfo {
   // Return existing block if one with same block id already exists
   private BlockInfo getBlock(Integer block_id) {
     if (!block_map.containsKey(block_id)) {
-      block_map.put(block_id, new BlockInfo(new Block(block_id,0,0),block_id, block_id));
+      block_map.put(block_id, new BlockInfo(new Block(block_id,0,0),block_id));
     }
     
     return block_map.get(block_id);
@@ -152,8 +152,7 @@ public class TestCorruptReplicaInfo {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(blk.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)
                 .addCorrupt();
         return tla.acquire();
                 
@@ -180,8 +179,7 @@ public class TestCorruptReplicaInfo {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(blk.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY)
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)
                 .addCorrupt();
         return tla.acquire();
       }

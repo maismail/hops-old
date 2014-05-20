@@ -21,26 +21,16 @@ package org.apache.hadoop.hdfs.server.namenode;
  */
 public class INodeIdentifier {
   int inodeID;
-  int partKey;
 
-  public INodeIdentifier(int inodeID, int partKey) {
+  public INodeIdentifier(int inodeID) {
     this.inodeID = inodeID;
-    this.partKey = partKey;
   }
 
   public int getInodeId() {
     return inodeID;
   }
 
-  public int getPartKey() {
-    return partKey;
-  }
-
   public void setInode_id(int inodeID) {
     this.inodeID = inodeID;
-  }
-
-  public void setPart_key(int partKey) {
-    this.partKey = partKey;
   }  
 }

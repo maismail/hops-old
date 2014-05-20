@@ -124,19 +124,17 @@ public class BlockInfo extends Block {
   private long timestamp = 1;
   
   protected int inodeId = INode.NON_EXISTING_ID;
-  protected int partKey = INode.INVALID_PART_KEY;
   
-  public BlockInfo(Block blk, int inodeId, int partKey) {
+  public BlockInfo(Block blk, int inodeId) {
     super(blk);
     this.inodeId = inodeId;
-    this.partKey = partKey;
     if (blk instanceof BlockInfo) {
       this.bc = ((BlockInfo) blk).bc;
       this.blockIndex = ((BlockInfo) blk).blockIndex;
       this.timestamp = ((BlockInfo) blk).timestamp;
-      if(partKey != ((BlockInfo)blk).partKey || inodeId != ((BlockInfo) blk).inodeId)
+      if(inodeId != ((BlockInfo) blk).inodeId)
       {
-        throw new IllegalArgumentException("inodeId or partKey does not match");
+        throw new IllegalArgumentException("inodeId does not match");
       }
     }
   }
@@ -155,7 +153,6 @@ public class BlockInfo extends Block {
     this.blockIndex = from.blockIndex;
     this.timestamp = from.timestamp;
     this.inodeId = from.inodeId;
-    this.partKey = from.partKey;
   }
   
   public BlockCollection getBlockCollection() throws PersistanceException {
@@ -164,11 +161,10 @@ public class BlockInfo extends Block {
     //of the block is lying around is some secondary data structure ( not block_info )
     //if we call get block collection op of that copy then it should return null
 
-    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId, partKey);
+    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId);
     this.bc = bc; 
     if(bc == null){
       this.inodeId = INode.NON_EXISTING_ID;
-      this.partKey = 0;
     }
     return bc;
   }
@@ -177,7 +173,6 @@ public class BlockInfo extends Block {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());  
-      setPartKey(bc.getPartKey());
     }
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
@@ -309,7 +304,7 @@ public class BlockInfo extends Block {
   public BlockInfoUnderConstruction convertToBlockUnderConstruction(
           BlockUCState s, DatanodeDescriptor[] targets) throws PersistanceException {
     if (isComplete()) {
-      return new BlockInfoUnderConstruction(this, this.getInodeId(), this.getPartKey(), s, targets);
+      return new BlockInfoUnderConstruction(this, this.getInodeId(), s, targets);
     }
     // the block is already under construction
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) this;
@@ -329,19 +324,6 @@ public class BlockInfo extends Block {
   public void setINodeId(int id) throws PersistanceException {
     setINodeIdNoPersistance(id);
     save();
-  }
-
-  public int getPartKey() {
-    return partKey;
-  }
-
-  private void setPartKey(int partKey) throws PersistanceException {
-    setPartKeyNoPersistance(partKey);
-    save();
-  }
-  
-  public void setPartKeyNoPersistance(int partKey) {
-    this.partKey = partKey;
   }
   
   public int getBlockIndex() {
@@ -453,10 +435,10 @@ public class BlockInfo extends Block {
   
   public static BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
     if(block instanceof BlockInfo){
-      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId(),((BlockInfo)block).getPartKey());
+      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId());
     }
     else if(block instanceof  BlockInfoUnderConstruction){
-      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId(),((BlockInfoUnderConstruction)block).getPartKey());
+      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId());
     }else{
       throw new StorageException("Unable to create a clone of the Block");
     }

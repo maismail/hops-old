@@ -295,7 +295,7 @@ public class INodeUtil {
           if (blu == null) {
             return null;
           }
-          return new INodeIdentifier(blu.getInodeId(), blu.getPartKey());
+          return new INodeIdentifier(blu.getInodeId());
         }
       };      
       try {
@@ -309,7 +309,7 @@ public class INodeUtil {
   
   public static INodeIdentifier resolveINodeFromBlock(final Block b) throws StorageException{
     if (b instanceof BlockInfo || b instanceof BlockInfoUnderConstruction) {
-      return new INodeIdentifier(((BlockInfo) b).getInodeId(), ((BlockInfo) b).getPartKey());
+      return new INodeIdentifier(((BlockInfo) b).getInodeId());
     } else {
       return resolveINodeFromBlockID(b.getBlockId());
     }

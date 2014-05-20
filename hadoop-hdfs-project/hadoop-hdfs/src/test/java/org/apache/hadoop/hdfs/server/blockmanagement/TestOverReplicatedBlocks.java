@@ -126,8 +126,7 @@ public class TestOverReplicatedBlocks {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addBlock(block.getBlockId(),
-                      inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                      inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                      inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                       addReplica().
                       addExcess().
                       addCorrupt();
@@ -256,8 +255,7 @@ public class TestOverReplicatedBlocks {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(block.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                   addReplica().
                   addExcess().
                   addCorrupt();

@@ -252,7 +252,7 @@ class PendingReplicationBlocks {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException { 
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId(), INode.NON_EXISTING_ID);
+        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId());
         return tla.acquire();
       }
 

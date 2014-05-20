@@ -114,7 +114,6 @@ public class TestNDBSizer {
       BlockInfo block = new BlockInfo();
       block.setINodeIdNoPersistance(i);
       block.setBlockIdNoPersistance(i);
-      block.setPartKeyNoPersistance(i);
       newBlocks.add(block);
       if (newBlocks.size() >= BATCH_SIZE) {
         final int j = i;

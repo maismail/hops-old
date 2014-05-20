@@ -1035,8 +1035,7 @@ public class BlockManager {
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(blk.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -1676,8 +1675,7 @@ public class BlockManager {
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess();
@@ -1745,8 +1743,7 @@ public class BlockManager {
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -1799,8 +1796,7 @@ public class BlockManager {
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -1897,8 +1893,7 @@ public class BlockManager {
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(iblk.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -2087,8 +2082,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(rbi.getBlock().getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess().
@@ -2453,8 +2447,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addCorrupt().
@@ -2801,8 +2794,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
                 addBlock(block.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addInvalidatedBlock();
         return tla.acquireByBlock(inodeIdentifier);
@@ -2897,8 +2889,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(rdbi.getBlock().getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3082,8 +3073,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(block.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3145,8 +3135,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(block.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3577,8 +3566,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3611,8 +3599,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3689,8 +3676,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(timedOutItem.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3728,7 +3714,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     BlockInfo binfo = blocksMap.getStoredBlock(b);
     if(binfo == null){
       LOG.error("ERROR: Dangling Block. bid="+b.getBlockId()+" setting inodeId to be "+INode.NON_EXISTING_ID);
-      binfo = new BlockInfo(b,INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
+      binfo = new BlockInfo(b,INode.NON_EXISTING_ID);
     }
     return binfo;
   }

@@ -91,9 +91,9 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ById:
         long id = (Long) params[0];
-        Integer  partKey =  null;
+        Integer  inodeId =  null;
         if(params.length > 1 && params[1] != null){
-          partKey = (Integer) params[1];
+          inodeId = (Integer) params[1];
         }
         result = blocks.get(id);
         if(result == null && removedBlocks.containsKey(id)){
@@ -104,24 +104,24 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
                                                          // duing the acquire lock phase if we see that an id does not
                                                          // exist in the db then we should put null in the cache for that id
 
-          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"inodeId", inodeId!=null?Integer.toString(inodeId):"NULL"});
           aboutToAccessStorage();
-          if(partKey == null){
-            throw new NullPointerException("Part Key is not set");
+          if(inodeId == null){
+            throw new NullPointerException("InodeId is not set");
           }
-          result = dataAccess.findById(id,partKey);
+          result = dataAccess.findById(id,inodeId);
           if (result == null) {
             nullCount++;
           }
           blocks.put(id, result);
         } else {
-          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"inodeId", inodeId!=null?Integer.toString(inodeId):"NULL"});
         }
         return result;
       case MAX_BLK_INDX:
         //returning the block with max index
-        final int inodeID = (Integer) params[0];
-        return findMaxBlk(inodeID);
+        inodeId = (Integer) params[0];
+        return findMaxBlk(inodeId);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -134,14 +134,13 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ByInodeId:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = (Integer) params[1];
         if (inodeBlocks.containsKey(inodeId)) {
-          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
+          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId)});
           return inodeBlocks.get(inodeId);
         } else {
-          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId),"part_key", Integer.toString(partKey)});
+          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByInodeId(inodeId,partKey);
+          result = dataAccess.findByInodeId(inodeId);
           inodeBlocks.put(inodeId, syncBlockInfoInstances(result));
           return result;
         }
@@ -353,7 +352,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       if(deleteINodes.contains(pk)){
         //remove the block
         removedBlocks.put(bInfo.getBlockId(), bInfo);
-        log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId()), "partKey", Integer.toString(bInfo.getPartKey())});
+        log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId())});
       }   
     }
   }
@@ -368,10 +367,9 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           if (bInfo.getInodeId() == inodeBeforeChange.getId()) {
             BlockInfo removedBlk = BlockInfo.cloneBlock(bInfo);
             removedBlocks.put(removedBlk.getBlockId(), removedBlk);
-            log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(removedBlk.getBlockId()),"inodeId", Integer.toString(removedBlk.getInodeId()), "partKey", Integer.toString(removedBlk.getPartKey())});
-            bInfo.setPartKeyNoPersistance(inodeAfterChange.getPartKey());
+            log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(removedBlk.getBlockId()),"inodeId", Integer.toString(removedBlk.getInodeId())});
             modifiedBlocks.put(bInfo.getBlockId(), bInfo);
-            log("snapshot-maintenance-added-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId()), "partKey", Integer.toString(bInfo.getPartKey())});
+            log("snapshot-maintenance-added-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId())});
           }
         }        
       }

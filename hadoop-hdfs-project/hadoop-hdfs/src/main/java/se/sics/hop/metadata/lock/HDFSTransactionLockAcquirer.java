@@ -126,11 +126,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     
     if (inode == null && inodeIdentifer != null) {
       if(!isPartKeySet){
-          setPartitioningKey(inodeIdentifer.getPartKey(),true);
+          setPartitioningKey(inodeIdentifer.getInodeId(),true);
         }
       // dangling block
       // take lock on the indeId basically bring null in the cache
-      inode = iNodePruneScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), inodeIdentifer.getPartKey(), locks);
+      inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
     }
     
 
@@ -139,7 +139,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       resolvedINodeForBlk.add(inode);
       allResolvedINodes.add(resolvedINodeForBlk);
 
-      List<BlockInfo> allBlks =  (List<BlockInfo>)acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId(), inode.getPartKey());
+      List<BlockInfo> allBlks =  (List<BlockInfo>)acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId());
       blockResults.addAll(allBlks);
       
       // if the allBlks does not contain the locks.blocksParam block then
@@ -155,12 +155,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }
 
         if (!found) {
-          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockPartKey());
+          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
           // we need to bring null for the other tables too. so put a dummy obj in the blocksResults list
           BlockInfo blk = new BlockInfo();
           if (inode != null) {
             blk.setINodeIdNoPersistance(inode.getId());
-            blk.setPartKeyNoPersistance(inode.getPartKey());
           }
           blk.setBlockIdNoPersistance(locks.getBlockID());
           
@@ -174,7 +173,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     if (blockResults.isEmpty()) {
-      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(),locks.getBlockPartKey());
+      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(),locks.getBlockInodeId());
       if (block != null) {
         blockResults.add(block);
       }
@@ -359,9 +358,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
              for(BlockPK blkParam : parallelReadParams.getBlockIds()){
                if (!terminateAsyncThread) {
                  if(parallelReadParams.isListBlockFinder){
-                   acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
+                   acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId);
                  }else{
-                   acquireLock(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId, blkParam.partKey);
+                   acquireLock(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId);
                  }
                }
              }
@@ -637,13 +636,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    if( inodesParams.isEmpty() ){
       if (blockResults != null && !blockResults.isEmpty()) {
         for (BlockInfo b : blockResults) {
-          blocksParams.add(new BlockPK(b.getBlockId(), b.getInodeId(), b.getPartKey()));
+          blocksParams.add(new BlockPK(b.getBlockId(), b.getInodeId()));
          // LOG.debug("Param blk "+b.getBlockId()+" paratKey "+b.getPartKey());
         }
       } else // if blockResults is null then we can safely bring null in to cache
       {
         if (locks.getBlockID() != null) {
-          blocksParams.add(new BlockPK(locks.getBlockID(),locks.getBlockInodeId(),locks.getBlockPartKey()));
+          blocksParams.add(new BlockPK(locks.getBlockID(),locks.getBlockInodeId()));
         }
       }      
 //    }
@@ -706,7 +705,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     if (locks.getBlockID() != null) {
 
-      BlockInfo result = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, (Long) locks.getBlockID(), locks.getBlockPartKey());
+      BlockInfo result = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, (Long) locks.getBlockID(), locks.getBlockInodeId());
       if (result != null) {
         blocks.add(result);
       }
@@ -714,7 +713,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
         for (INode inode : resolvedINodes) {
           if (inode instanceof INodeFile) {
-            blocks.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId(), inode.getPartKey()));
+            blocks.addAll(acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId()));
           }
         }
       }
@@ -872,14 +871,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return inode;
   }
 
-  private static INode iNodePruneScanLookUpByID(
+  private static INode iNodeScanLookUpByID(
           INodeLockType lock,
           int id,
-          int partKey,
           HDFSTransactionLocks locks)
           throws PersistanceException {
     lockINode(lock);
-    INode inode = EntityManager.find(INode.Finder.ByINodeID, id, partKey);
+    INode inode = EntityManager.find(INode.Finder.ByINodeID, id, INode.INVALID_PART_KEY);
     locks.addLockedINodes(inode, lock);
     return inode;
   }

@@ -54,16 +54,16 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * Create block and set its state to {@link BlockUCState#UNDER_CONSTRUCTION}.
    */
   //HOP: remove the replication we don't need it anymore
-  public BlockInfoUnderConstruction(Block blk, int inodeId, int partKey) {
-    this(blk, inodeId, partKey, BlockUCState.UNDER_CONSTRUCTION);
+  public BlockInfoUnderConstruction(Block blk, int inodeId) {
+    this(blk, inodeId, BlockUCState.UNDER_CONSTRUCTION);
   }
 
   //HOP:
   /**
    * Create a block that is currently being constructed.
    */
-  private BlockInfoUnderConstruction(Block blk, int inodeId, int partKey, BlockUCState state) {
-    super(blk, inodeId, partKey);
+  private BlockInfoUnderConstruction(Block blk, int inodeId, BlockUCState state) {
+    super(blk, inodeId);
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "BlockInfoUnderConstruction cannot be in COMPLETE state";
     this.blockUCState = state;
@@ -73,9 +73,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   /**
    * Create a block that is currently being constructed.
    */
-  public BlockInfoUnderConstruction(Block blk, int inodeId, int partKey, BlockUCState state,
+  public BlockInfoUnderConstruction(Block blk, int inodeId, BlockUCState state,
           DatanodeDescriptor[] targets) throws PersistanceException {
-    this(blk, inodeId, partKey, state);
+    this(blk, inodeId, state);
     setExpectedLocations(targets);
   }
 

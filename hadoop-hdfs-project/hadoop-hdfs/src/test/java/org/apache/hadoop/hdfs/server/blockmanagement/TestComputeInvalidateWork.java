@@ -97,8 +97,7 @@ public class TestComputeInvalidateWork {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock();
         return tla.acquire();
       }

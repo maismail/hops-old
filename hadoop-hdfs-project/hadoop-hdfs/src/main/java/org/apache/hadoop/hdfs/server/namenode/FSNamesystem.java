@@ -3796,7 +3796,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                    addBlock(lastblock.getBlockId(), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY).
+                    addBlock(lastblock.getBlockId(), INode.NON_EXISTING_ID).
                     addLease(LockType.WRITE).
                     addLeasePath(LockType.WRITE).
                     addReplica().
@@ -5542,8 +5542,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         tla.getLocks().
                 addINode(INodeLockType.READ).
                 addBlock(block.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addGenerationStamp(LockType.WRITE);
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -5605,8 +5604,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             tla.getLocks().
                     addINode(INodeLockType.WRITE).
                     addBlock(oldBlock.getBlockId(),
-                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                    inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                     addReplicaUc().
                     addLease(LockType.READ).
                     addLeasePath(LockType.READ);
@@ -5831,7 +5829,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
                   addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
-                  addBlock(blk.getBlockId(), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY).
+                  addBlock(blk.getBlockId(), INode.NON_EXISTING_ID).
                   addReplica().
                   addCorrupt().
                   addExcess();

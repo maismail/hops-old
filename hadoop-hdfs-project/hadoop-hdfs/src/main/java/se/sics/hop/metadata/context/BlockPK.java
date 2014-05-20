@@ -23,12 +23,10 @@ public class BlockPK {
 
   public long id;
   public int inodeId;
-  public int partKey;
 
-  public BlockPK(long id, int inodeId, int partKey) {
+  public BlockPK(long id, int inodeId) {
     this.id = id;
     this.inodeId = inodeId;
-    this.partKey = partKey;
   }
   
    @Override
@@ -37,7 +35,7 @@ public class BlockPK {
       return false;
     }
     BlockPK other = (BlockPK) obj;
-    if(other.id == id && other.partKey == partKey && other.inodeId == inodeId){
+    if(other.id == id  && other.inodeId == inodeId){
       return true;
     }
     return false;

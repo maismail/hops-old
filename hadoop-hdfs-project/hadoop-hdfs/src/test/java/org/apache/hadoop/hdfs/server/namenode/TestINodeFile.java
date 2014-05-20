@@ -203,7 +203,6 @@ public class TestINodeFile {
       BlockInfo newblock = new BlockInfo();
       newblock.setBlockId(blkid++);
       newblock.setINodeId(iNodes[i].getId());
-      newblock.setPartKeyNoPersistance(iNodes[i].getPartKey());
       iNodes[i].addBlock(newblock);
     }
     

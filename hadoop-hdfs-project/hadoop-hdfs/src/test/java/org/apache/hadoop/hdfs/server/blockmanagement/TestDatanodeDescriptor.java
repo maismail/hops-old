@@ -72,8 +72,8 @@ public class TestDatanodeDescriptor {
     
     DatanodeDescriptor dd = DFSTestUtil.getLocalDatanodeDescriptor();
     assertEquals(0, dd.numBlocks());
-    BlockInfo blk = new BlockInfo(new Block(1L), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
-    BlockInfo blk1 = new BlockInfo(new Block(2L), INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
+    BlockInfo blk = new BlockInfo(new Block(1L), INode.NON_EXISTING_ID);
+    BlockInfo blk1 = new BlockInfo(new Block(2L), INode.NON_EXISTING_ID);
     // add first block
     assertTrue(addBlock(dd, blk));
     assertEquals(1, dd.numBlocks());
@@ -102,8 +102,7 @@ public class TestDatanodeDescriptor {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(blk.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica();
         return tla.acquire();
       }
@@ -128,8 +127,7 @@ public class TestDatanodeDescriptor {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(blk.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica();
         return tla.acquire();
       }

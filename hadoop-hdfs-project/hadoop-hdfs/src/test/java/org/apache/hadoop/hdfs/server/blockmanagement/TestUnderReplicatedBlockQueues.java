@@ -44,10 +44,10 @@ public class TestUnderReplicatedBlockQueues extends Assert {
     StorageFactory.getConnector().formatStorage();
     
     UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
-    BlockInfo block1 = add(new BlockInfo(new Block(1),1,1));
-    BlockInfo block2 = add(new BlockInfo(new Block(2),2,2));
-    BlockInfo block_very_under_replicated = add(new BlockInfo(new Block(3),3,3));
-    BlockInfo block_corrupt = add( new BlockInfo(new Block(4),4,4));
+    BlockInfo block1 = add(new BlockInfo(new Block(1),1));
+    BlockInfo block2 = add(new BlockInfo(new Block(2),2));
+    BlockInfo block_very_under_replicated = add(new BlockInfo(new Block(3),3));
+    BlockInfo block_corrupt = add( new BlockInfo(new Block(4),4));
     
     //add a block with a single entry
     assertAdded(queues, block1, 1, 0, 3);
@@ -139,7 +139,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId(), block.getInodeId(), block.getPartKey()).
+                addBlock(block.getBlockId(), block.getInodeId()).
                 addUnderReplicatedBlock();
         return tla.acquire();
       }

@@ -611,13 +611,13 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock().
-                addBlock(urb.getBlockId(),urb.getInodeId(), INode.INVALID_PART_KEY);
+                addBlock(urb.getBlockId(),urb.getInodeId());
         return tla.acquire();
       }
       
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), INode.INVALID_PART_KEY);
+        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), urb.getInodeId());
         if(block == null){
          removeUnderReplicatedBlock(urb);
         }

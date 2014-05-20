@@ -44,13 +44,13 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public BlockInfo findById(long blockId, int partKey) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findById(blockId, partKey));
+  public BlockInfo findById(long blockId, int inodeId) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findById(blockId, inodeId));
   }
 
   @Override
-  public List<BlockInfo> findByInodeId(int id, int partKey) throws StorageException {
-    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id, partKey));
+  public List<BlockInfo> findByInodeId(int id) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
   }
 
   @Override
@@ -71,7 +71,7 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   @Override
   public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass) throws StorageException {
     if(hdfsClass != null){
-    HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getPartKey(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
+    HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
             hdfsClass.getGenerationStamp(), hdfsClass.getBlockUCState().ordinal(), hdfsClass.getTimestamp());
     if (hdfsClass instanceof BlockInfoUnderConstruction) {
       BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) hdfsClass;
@@ -91,16 +91,15 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     BlockInfo blockInfo = null;
 
     if (dalClass.getBlockUCState() > 0) { //UNDER_CONSTRUCTION, UNDER_RECOVERY, COMMITED
-      blockInfo = new BlockInfoUnderConstruction(b, dalClass.getInodeId(), dalClass.getPartKey());
+      blockInfo = new BlockInfoUnderConstruction(b, dalClass.getInodeId());
       ((BlockInfoUnderConstruction) blockInfo).setBlockUCStateNoPersistance(HdfsServerConstants.BlockUCState.values()[dalClass.getBlockUCState()]);
       ((BlockInfoUnderConstruction) blockInfo).setPrimaryNodeIndexNoPersistance(dalClass.getPrimaryNodeIndex());
       ((BlockInfoUnderConstruction) blockInfo).setBlockRecoveryIdNoPersistance(dalClass.getBlockRecoveryId());
     } else if (dalClass.getBlockUCState() == HdfsServerConstants.BlockUCState.COMPLETE.ordinal()) {
-      blockInfo = new BlockInfo(b, dalClass.getInodeId(), dalClass.getPartKey());
+      blockInfo = new BlockInfo(b, dalClass.getInodeId());
     }
 
     blockInfo.setINodeIdNoPersistance(dalClass.getInodeId());
-    blockInfo.setPartKeyNoPersistance(dalClass.getPartKey());
     blockInfo.setTimestampNoPersistance(dalClass.getTimeStamp());
     blockInfo.setBlockIndexNoPersistance(dalClass.getBlockIndex());
 

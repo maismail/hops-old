@@ -63,12 +63,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
-import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.RequestHandler;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -386,7 +383,6 @@ public class FSDirectory implements Closeable {
         new BlockInfoUnderConstruction(
             block,
             fileINode.getId(),
-            fileINode.getPartKey(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
       getBlockManager().addBlockCollection(blockInfo, fileINode);

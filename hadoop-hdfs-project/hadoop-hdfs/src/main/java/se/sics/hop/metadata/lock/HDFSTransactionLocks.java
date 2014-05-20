@@ -26,7 +26,6 @@ public class HDFSTransactionLocks implements TransactionLocks{
   //block
   private LockType blockLock = null;
   private Long blockID = null; //block id
-  private Integer  blockPartKey = null;
   private Integer  blockInodeId = null;
   // lease
   private LockType leaseLock = null;
@@ -115,16 +114,15 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return addINode(resolveType, lock, true, null);
   }
 
-  public HDFSTransactionLocks addBlock(Long param, Integer blockInodeId, Integer partKey) {
+  public HDFSTransactionLocks addBlock(Long param, Integer blockInodeId) {
     this.blockLock = LockType.READ_COMMITTED;
     this.blockID = param;
     this.blockInodeId = blockInodeId;
-    this.blockPartKey = partKey;
     return this;
   }
 
   public HDFSTransactionLocks addBlock() {
-    addBlock(null,null,null);
+    addBlock(null,null);
     return this;
   }
 
@@ -243,10 +241,6 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public Integer getBlockInodeId() {
     return blockInodeId;
-  }
-  
-  public Integer getBlockPartKey(){
-    return blockPartKey;
   }
 
   public LockType getLeaseLock() {

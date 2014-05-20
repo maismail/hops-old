@@ -114,8 +114,7 @@ public class TestNodeCount {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(block.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                  inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                   addReplica().
                   addExcess();
           return tla.acquire();
@@ -124,7 +123,7 @@ public class TestNodeCount {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           final Iterator<DatanodeDescriptor> iter = bm.blocksMap.nodeIterator(block.getLocalBlock());
-          BlockInfo blkInfo  = new BlockInfo(block.getLocalBlock(), inodeIdentifier.getInodeId(), inodeIdentifier.getPartKey());
+          BlockInfo blkInfo  = new BlockInfo(block.getLocalBlock(), inodeIdentifier.getInodeId());
           Collection<String> excessDns = bm.excessReplicateMap.get(blkInfo);
           DatanodeDescriptor nonExcessDN = null;
           while (iter.hasNext()) {
@@ -213,8 +212,7 @@ public class TestNodeCount {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
            tla.getLocks().
                    addBlock(block.getBlockId(),
-                   inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID,
-                   inodeIdentifier!=null?inodeIdentifier.getPartKey():INode.INVALID_PART_KEY).
+                   inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                    addReplica().
                    addExcess().
                    addCorrupt();

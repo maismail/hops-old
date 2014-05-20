@@ -228,7 +228,6 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
      //............... Blocks ...............................................
     BlockInfo block = new BlockInfo();
     block.setINodeIdNoPersistance(file1.getId());
-    block.setPartKeyNoPersistance(INode.INVALID_PART_KEY);
     List<BlockInfo> newBlocks = new LinkedList<BlockInfo>();
     newBlocks.add(block);
 
