@@ -103,22 +103,22 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         Integer inodeId = (Integer) params[2];
         HopInvalidatedBlock searchInstance = new HopInvalidatedBlock(storageId, blockId, inodeId);
         if (blockIdToInvBlocks.containsKey(blockId) && !blockIdToInvBlocks.get(blockId).contains(searchInstance)) {
-            log("find-invblock-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
+            log("find-invblock-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId), "inodeId", inodeId.toString()});
             return null;
         }
         // otherwise search-key should be the new query or it must be a hit
         if (invBlocks.containsKey(searchInstance)) {
-          log("find-invblock-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
+          log("find-invblock-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId), "inodeId", inodeId.toString()});
           return invBlocks.get(searchInstance);
-        }else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/) {
+        }else if (inodesRead.contains(inodeId) || inodeId == INode.NON_EXISTING_ID) {
            log("find-invblock-by-pk", CacheHitState.HIT,
                   new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
           return null;
         } else if (removedInvBlocks.containsKey(searchInstance)) {
-          log("find-invblock-by-pk-removed", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
+          log("find-invblock-by-pk-removed", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId), "inodeId", inodeId.toString()});
           return null;
         } else {
-          log("find-invblock-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId)});
+          log("find-invblock-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", Integer.toString(storageId), "inodeId", inodeId.toString()});
           aboutToAccessStorage();
           HopInvalidatedBlock result = dataAccess.findInvBlockByPkey(blockId, storageId, inodeId);
           if (result == null) {

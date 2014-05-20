@@ -3727,7 +3727,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   private BlockInfo getBlockInfo(Block b) throws PersistanceException{
     BlockInfo binfo = blocksMap.getStoredBlock(b);
     if(binfo == null){
-      LOG.error("ERROR: Dangling Block. bid="+b.getBlockId());
+      LOG.error("ERROR: Dangling Block. bid="+b.getBlockId()+" setting inodeId to be "+INode.NON_EXISTING_ID);
       binfo = new BlockInfo(b,INode.NON_EXISTING_ID, INode.INVALID_PART_KEY);
     }
     return binfo;
