@@ -137,7 +137,7 @@ public class TestNDBSizer {
     
     final List<HopIndexedReplica> replicas = new LinkedList<HopIndexedReplica>();
     for (int i = 0; i < NUM_REPLICAS; i++) {
-      replicas.add(new HopIndexedReplica(i, i, i, i, i));
+      replicas.add(new HopIndexedReplica(i, i, i, i));
       if (replicas.size() >= BATCH_SIZE) {
         final int j = i;
         new LightWeightRequestHandler(HDFSOperationType.TEST) {

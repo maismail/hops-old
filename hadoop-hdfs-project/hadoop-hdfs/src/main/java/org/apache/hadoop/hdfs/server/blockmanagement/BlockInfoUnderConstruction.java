@@ -244,7 +244,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   }
 
   private List<ReplicaUnderConstruction> getExpectedReplicas() throws PersistanceException {
-    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId(), getPartKey(), getInodeId());
+    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId(), getInodeId());
     if (replicas != null) {
       Collections.sort(replicas, ReplicaUnderConstruction.Order.ByIndex);
     } else {
@@ -258,7 +258,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
       NameNode.blockStateChangeLog.warn("BLOCK* Trying to store multiple blocks of the file on one DataNode. Returning null");
       return null;
     }
-    ReplicaUnderConstruction replica = new ReplicaUnderConstruction(rState, storageId, getBlockId(), getInodeId(), getPartKey(), getExpectedReplicas().size());
+    ReplicaUnderConstruction replica = new ReplicaUnderConstruction(rState, storageId, getBlockId(), getInodeId(), getExpectedReplicas().size());
     add(replica);
     return replica;
   }

@@ -122,31 +122,29 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
       case ByBlockId:
         long blockId = (Long) params[0];
         Integer  inodeId = (Integer) params[1];
-        Integer  partKey = (Integer) params[2];
         if (blocksReplicas.containsKey(blockId)) {
-          log("find-replicas-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicas-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
           result = blocksReplicas.get(blockId);
         } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
           return null;
         }
         else {
-          log("find-replicas-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicas-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicasById(blockId, partKey);
+          result = dataAccess.findReplicasById(blockId, inodeId);
           blocksReplicas.put(blockId, result);
         }
         return new ArrayList<HopIndexedReplica>(result); // Shallow copy
       case ByINodeId:
         inodeId = (Integer) params[0];
-        partKey = (Integer) params[1];
         
         if(inodesRead.contains(inodeId)){
-          log("find-replicas-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicas-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getReplicasForINode(inodeId);
         }else{
-          log("find-replicas-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicas-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicasByINodeId(inodeId, partKey);
+          result = dataAccess.findReplicasByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);
@@ -251,19 +249,19 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
           HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
           
           removedReplicas.put(toBeDeleted, toBeDeleted);
-          log("snapshot-maintenance-removed-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
           newReplicas.put(toBeAdded, toBeAdded);
-          log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
     }
   }
   
   private HopIndexedReplica cloneReplicaObj(HopIndexedReplica src){
-    return new HopIndexedReplica(src.getBlockId(), src.getStorageId(), src.getInodeId(), src.getPartKey(), src.getIndex());
+    return new HopIndexedReplica(src.getBlockId(), src.getStorageId(), src.getInodeId(), src.getIndex());
   }
 }
 

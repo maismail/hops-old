@@ -38,13 +38,13 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
 
   
   @Override
-  public List<ReplicaUnderConstruction> findReplicaUnderConstructionByINodeId(int inodeId, int partKey) throws StorageException {
-    return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByINodeId(inodeId, partKey));
+  public List<ReplicaUnderConstruction> findReplicaUnderConstructionByINodeId(int inodeId) throws StorageException {
+    return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByINodeId(inodeId));
   }
   
   @Override
-  public List<ReplicaUnderConstruction> findReplicaUnderConstructionByBlockId(long blockId, int partKey) throws StorageException {
-    return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByBlockId(blockId, partKey));
+  public List<ReplicaUnderConstruction> findReplicaUnderConstructionByBlockId(long blockId, int inodeId) throws StorageException {
+    return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByBlockId(blockId, inodeId));
   }
 
   @Override
@@ -55,7 +55,7 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
   @Override
   public HopReplicaUnderConstruction convertHDFStoDAL(ReplicaUnderConstruction hdfsClass) throws StorageException {
     if (hdfsClass != null) {
-      return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getPartKey(), hdfsClass.getIndex());
+      return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getIndex());
     } else {
       return null;
     }
@@ -64,7 +64,7 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
   @Override
   public ReplicaUnderConstruction convertDALtoHDFS(HopReplicaUnderConstruction dalClass) throws StorageException {
     if (dalClass != null) {
-      return new ReplicaUnderConstruction(HdfsServerConstants.ReplicaState.values()[dalClass.getState()], dalClass.getStorageId(), dalClass.getBlockId(), dalClass.getInodeId(), dalClass.getPartKey(), dalClass.getIndex());
+      return new ReplicaUnderConstruction(HdfsServerConstants.ReplicaState.values()[dalClass.getState()], dalClass.getStorageId(), dalClass.getBlockId(), dalClass.getInodeId(),  dalClass.getIndex());
     } else {
       return null;
     }

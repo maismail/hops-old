@@ -71,7 +71,7 @@ class InvalidateBlocks {
    * 
    */
   boolean contains(final String storageID, final BlockInfo block) throws PersistanceException {
-    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId(), block.getPartKey());
+    HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId());
     if (blkFound == null) {
       return false;
     }
@@ -209,7 +209,7 @@ class InvalidateBlocks {
   
   
   private boolean add(HopInvalidatedBlock invBlk) throws PersistanceException {
-    HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId(),invBlk.getInodeId(), invBlk.getPartKey());
+    HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId(),invBlk.getInodeId());
     if (found == null) {
       addInvalidatedBlockToDB(invBlk);
       return true;
@@ -238,7 +238,7 @@ class InvalidateBlocks {
     }.handle();
   }
   
-  private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId, int partKey) throws PersistanceException {
+  private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId) throws PersistanceException {
     return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId);
   }
   

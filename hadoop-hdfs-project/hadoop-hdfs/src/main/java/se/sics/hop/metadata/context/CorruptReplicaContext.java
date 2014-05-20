@@ -228,11 +228,11 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
           HopCorruptReplica toBeAdded = cloneCorruptReplicaObj(corruptReplica);
           
           removedCorruptReplicas.put(toBeDeleted, toBeDeleted);
-          log("snapshot-maintenance-removed-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId()), "partKey", Integer.toString(toBeDeleted.getPartKey())});
+          log("snapshot-maintenance-removed-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
           //both inode id and partKey has changed
           toBeAdded.setInodeId(trg_param.getInodeId());
           newCorruptReplicas.put(toBeAdded, toBeAdded);
-          log("snapshot-maintenance-added-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId()), "partKey", Integer.toString(toBeAdded.getPartKey())});
+          log("snapshot-maintenance-added-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
         }
       }
     }

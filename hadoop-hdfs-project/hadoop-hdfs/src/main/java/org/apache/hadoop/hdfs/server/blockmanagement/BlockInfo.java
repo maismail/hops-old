@@ -200,7 +200,7 @@ public class BlockInfo extends Block {
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
   List<HopIndexedReplica> getReplicasNoCheck() throws PersistanceException {
-    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId(), getPartKey());
+    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
     } else {
@@ -222,7 +222,7 @@ public class BlockInfo extends Block {
    * Adds new replica for this block.
    */
   HopIndexedReplica addReplica(DatanodeDescriptor dn, BlockInfo b) throws PersistanceException {
-    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(), b.getInodeId(), b.getPartKey(), getReplicasNoCheck().size());
+    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(), b.getInodeId(), getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }

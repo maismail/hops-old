@@ -79,32 +79,30 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     switch (rFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
-        Integer partKey = (Integer) params[1];
-        Integer inodeId = (Integer) params[2];
+        Integer inodeId = (Integer) params[1];
         if (blockReplicasUCAll.containsKey(blockId)) {
-          log("find-replicaucs-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicaucs-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
           result = blockReplicasUCAll.get(blockId);
         } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
           return null;
         }
         else {
-          log("find-replicaucs-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicaucs-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicaUnderConstructionByBlockId(blockId, partKey);
+          result = dataAccess.findReplicaUnderConstructionByBlockId(blockId, inodeId);
           blockReplicasUCAll.put(blockId, result);
         }
         break;
      case ByINodeId:
         inodeId = (Integer) params[0];
-        partKey = (Integer) params[1];
         
         if(inodesRead.contains(inodeId)){
-          log("find-replicaucs-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicaucs-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getReplicasUnderConstructionForFile(inodeId);
         }else{
-          log("find-replicaucs-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-replicaucs-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicaUnderConstructionByINodeId(inodeId, partKey);
+          result = dataAccess.findReplicaUnderConstructionByINodeId(inodeId);
           inodesRead.add(inodeId);
           if(result != null){
             saveLists(result);
@@ -255,6 +253,6 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
   
   private ReplicaUnderConstruction cloneReplicaUCObj(ReplicaUnderConstruction src){
-    return new ReplicaUnderConstruction(src.getState(),src.getStorageId(),src.getBlockId(),src.getInodeId(),src.getPartKey(),src.getIndex());
+    return new ReplicaUnderConstruction(src.getState(),src.getStorageId(),src.getBlockId(),src.getInodeId(),src.getIndex());
   }
 }
