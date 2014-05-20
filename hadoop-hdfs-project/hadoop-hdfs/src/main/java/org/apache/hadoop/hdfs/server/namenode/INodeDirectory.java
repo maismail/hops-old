@@ -123,7 +123,7 @@ public class INodeDirectory extends INode {
 
   private INode getChildINode(byte[] name) throws PersistanceException {
      INode existingInode = EntityManager.find(INode.Finder.ByPK_NameAndParentId,
-              DFSUtil.bytes2String(name), getId(), INode.getPartitionKey(name));
+              DFSUtil.bytes2String(name), getId());
     if (existingInode != null && existingInode.exists()) {
       return existingInode;
     }

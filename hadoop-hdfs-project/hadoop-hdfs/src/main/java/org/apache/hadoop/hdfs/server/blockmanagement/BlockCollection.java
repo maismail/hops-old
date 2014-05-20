@@ -70,6 +70,4 @@ public interface BlockCollection {
    * Get the Id of associated INode
    */
   public int getId();
-  
-  public int getPartKey();
 }

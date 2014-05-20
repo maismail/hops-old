@@ -149,7 +149,6 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
       case ByBlockId:
         long bId = (Long) params[0];
         Integer inodeId = (Integer) params[1];
-        Integer partKey = (Integer) params[2];
         if (blockIdToInvBlocks.containsKey(bId)) {
           log("find-invblock-by-blockId", CacheHitState.HIT, new String[]{"bid", String.valueOf(bId)});
         } 
@@ -175,7 +174,6 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         return new ArrayList<HopInvalidatedBlock>(this.blockIdToInvBlocks.get(bId)); //clone the list reference
        case ByINodeId:
         inodeId = (Integer) params[0];
-        partKey = (Integer) params[1];
         if(inodesRead.contains(inodeId)){
           log("find-invblock-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId),});
           return getInvBlksForINode(inodeId);

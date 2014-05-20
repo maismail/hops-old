@@ -82,25 +82,18 @@ public class INodeContext extends EntityContext<INode> {
     switch (iFinder) {
       case ByINodeID:
         Integer inodeId = (Integer) params[0];
-        Integer partKey = null;
-        if(params.length >1 && params[1] != null){
-          partKey = (Integer)params[1];
-        }
         if (removedInodes.containsKey(inodeId)) {
-          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           result = null;
         } else if (inodesIdIndex.containsKey(inodeId)) {
-          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           result = inodesIdIndex.get(inodeId);
         } else if (isRemoved(inodeId)) {
           return result;
         } else {
-          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId),"part_key", partKey!=null?Integer.toString(partKey):"NULL"});
+          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          if(partKey == null){
-            throw new NullPointerException("PartKey is not set");
-          }
-          result = dataAccess.pruneIndexScanByInodeId(inodeId,partKey);
+          result = dataAccess.indexScanfindInodeById(inodeId);
           inodesIdIndex.put(inodeId, result);
           if (result != null) {
             inodesNameParentIndex.put(result.nameParentKey(), result);
@@ -110,7 +103,6 @@ public class INodeContext extends EntityContext<INode> {
       case ByPK_NameAndParentId:
         String name       = (String)  params[0];
         Integer parentId  = (Integer) params[1];
-        Integer part_key  = (Integer) params[2];
         String key = parentId + name;
         if (inodesNameParentIndex.containsKey(key)) {
           log("find-inode-by-name-parentid", CacheHitState.HIT,
@@ -123,18 +115,18 @@ public class INodeContext extends EntityContext<INode> {
         } else if (isRemoved(parentId, name)) {
           return result; // return null; the node was remove. 
         } else {
-          aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId+" part_key "+part_key);
-          result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId,part_key);
+          aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId);
+          result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
           if (result != null) {
             if (removedInodes.containsKey(result.getId())) {
               log("find-inode-by-name-parentid-removed", CacheHitState.LOSS,
-                      new String[]{"name", name, "pid", Integer.toString(parentId),"part_key", Integer.toString(part_key)});
+                      new String[]{"name", name, "pid", Integer.toString(parentId)});
               return null;
             }
             inodesIdIndex.put(result.getId(), result);
           }
           inodesNameParentIndex.put(key, result);
-          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Integer.toString(parentId),"part_key", Integer.toString(part_key)});
+          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Integer.toString(parentId)});
         }
         break;
     }
@@ -295,7 +287,7 @@ public class INodeContext extends EntityContext<INode> {
         INode inodeAfterChange  = (INode) params[1];
         removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
         log("snapshot-maintenance-inode-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-        log("snapshot-maintenance-removed-inode",CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(),"inodeId", Integer.toString(inodeBeforeChange.getId()), "partKey", Integer.toString(inodeBeforeChange.getPartKey()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
+        log("snapshot-maintenance-removed-inode",CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(),"inodeId", Integer.toString(inodeBeforeChange.getId()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
         break;
       case Concat:
         // do nothing

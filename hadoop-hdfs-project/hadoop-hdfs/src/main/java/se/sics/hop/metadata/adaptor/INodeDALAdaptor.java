@@ -47,12 +47,7 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     public INodeDALAdaptor(INodeDataAccess<HopINode> dataAccess) {
         this.dataAccess = dataAccess;
     }
-
-    @Override
-    public INode pruneIndexScanByInodeId(int inodeId, int partKey) throws StorageException {
-      return convertDALtoHDFS(dataAccess.pruneIndexScanByInodeId(inodeId, partKey));
-    }
-    
+   
     @Override
     public INode indexScanfindInodeById(int inodeId) throws StorageException {
       return convertDALtoHDFS(dataAccess.indexScanfindInodeById(inodeId));
@@ -66,8 +61,8 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     }
 
     @Override
-    public INode pkLookUpFindInodeByNameAndParentId(String name, int parentId, int partKey) throws StorageException {
-        return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId, partKey));
+    public INode pkLookUpFindInodeByNameAndParentId(String name, int parentId) throws StorageException {
+        return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId));
     }
 
     @Override
@@ -97,7 +92,6 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                 hopINode.setPermission(permissionString.getData());
                 hopINode.setParentId(inode.getParentId());
                 hopINode.setId(inode.getId());
-                hopINode.setPartKey(inode.getPartKey());
 
                 if (inode instanceof INodeDirectory) {
                     hopINode.setIsUnderConstruction(0);
@@ -183,7 +177,6 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                 inode.setIdNoPersistance(hopINode.getId());
                 inode.setLocalNameNoPersistance(hopINode.getName());
                 inode.setParentIdNoPersistance(hopINode.getParentId());
-                inode.setPartKeyNoPersistance(hopINode.getPartKey());
             } catch (IOException e) {
                 throw new HopEnitityInitializationError(e);
             }

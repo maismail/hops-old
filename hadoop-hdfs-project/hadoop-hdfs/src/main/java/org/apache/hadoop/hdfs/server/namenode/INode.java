@@ -101,8 +101,6 @@ public abstract class INode implements Comparable<byte[]> {
   public static final int NON_EXISTING_ID = 0;
   protected int id = NON_EXISTING_ID;
   protected int parentId = NON_EXISTING_ID;
-  public static final int INVALID_PART_KEY = 0;//Integer.MIN_VALUE;
-  protected int part_key = INVALID_PART_KEY;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -316,7 +314,6 @@ public abstract class INode implements Comparable<byte[]> {
    */
   public void setLocalNameNoPersistance(String name) {
     this.name = DFSUtil.string2Bytes(name);
-    this.part_key = getPartitionKey(this.name);
   }
 
   /**
@@ -324,7 +321,6 @@ public abstract class INode implements Comparable<byte[]> {
    */
   public void setLocalNameNoPersistance(byte[] name) {
     this.name = name;
-    this.part_key = getPartitionKey(this.name);
   }
   
   public String getFullPathName() throws PersistanceException{
@@ -553,14 +549,6 @@ public abstract class INode implements Comparable<byte[]> {
     return this.id;
   }
   
-  public int getPartKey(){
-    return part_key;
-  }
-  
-  public void setPartKeyNoPersistance(int part_key){
-    this.part_key = INode.INVALID_PART_KEY;
-  }
-  
   public void setParent(INodeDirectory p) throws PersistanceException {
     setParentNoPersistance(p);
     save();
@@ -657,24 +645,6 @@ public abstract class INode implements Comparable<byte[]> {
     if(node instanceof INodeDirectoryWithQuota){
       ((INodeDirectoryWithQuota)node).removeAttributes();
     }
-  }
-  
-  public static int getPartitionKey(String strName){
-//    if(strName == null || strName.equals("") || strName.isEmpty() ){
-//      return 0;
-//    }
-//    else{
-//      return Math.abs(strName.hashCode());
-//    }
-    return INode.INVALID_PART_KEY;
-  }
-  
-  public static int getPartitionKey(byte[] name){
-    String strName = "";
-    if(name != null){
-      strName = DFSUtil.bytes2String(name);
-    }
-    return getPartitionKey(strName);
   }
   //END_HOP_CODE:
 }
