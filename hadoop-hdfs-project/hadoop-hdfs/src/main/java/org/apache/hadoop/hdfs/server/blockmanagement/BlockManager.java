@@ -2505,6 +2505,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
         if (status != null && status.isEncoded() && status.isCorrupt()
+            && status.getStatus().equals(EncodingStatus.Status.REPAIR_ACTIVE) == false
             && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
           status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
           status.setStatusModificationTime(System.currentTimeMillis());

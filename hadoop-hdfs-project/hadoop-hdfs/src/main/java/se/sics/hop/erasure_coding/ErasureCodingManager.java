@@ -398,10 +398,12 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
-          // No need to update the status. Automatically detected if the file was fixed.
+          // TODO STEFFEN - I think we actually need to check if the file was repaired. A block might have been lost during repair.
           if (isParityFile(report.getFilePath())) {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.HEALTHY);
             activeParityRepairs--;
           } else {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
             activeRepairs--;
           }
           break;
