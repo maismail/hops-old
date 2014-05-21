@@ -39,7 +39,7 @@ public class TestEncodingStatus extends TestCase {
   @Test
   public void testAddAndFindEncodingStatus() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
-    final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1);
+    final EncodingStatus statusToAdd = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -77,7 +77,7 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(statusToAdd.getInodeId(), foundStatus.getInodeId());
     assertEquals(statusToAdd.getStatus(), foundStatus.getStatus());
     assertEquals(statusToAdd.getEncodingPolicy(), foundStatus.getEncodingPolicy());
-    assertEquals(statusToAdd.getModificationTime(), foundStatus.getModificationTime());
+    assertEquals(statusToAdd.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
     TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
@@ -101,7 +101,7 @@ public class TestEncodingStatus extends TestCase {
   @Test
   public void testUpdateEncodingStatus() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
-    final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1);
+    final EncodingStatus statusToAdd = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -118,7 +118,7 @@ public class TestEncodingStatus extends TestCase {
     addReq.handle();
 
     final EncodingPolicy policy1 = new EncodingPolicy("codec2", 2);
-    final EncodingStatus updatedStatus = new EncodingStatus(1, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2);
+    final EncodingStatus updatedStatus = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
 
     TransactionalRequestHandler updateReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.UPDATE) {
@@ -162,7 +162,7 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(updatedStatus.getInodeId(), foundStatus.getInodeId());
     assertEquals(updatedStatus.getStatus(), foundStatus.getStatus());
     assertEquals(updatedStatus.getEncodingPolicy(), foundStatus.getEncodingPolicy());
-    assertEquals(updatedStatus.getModificationTime(), foundStatus.getModificationTime());
+    assertEquals(updatedStatus.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
     TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
@@ -187,11 +187,11 @@ public class TestEncodingStatus extends TestCase {
   public void testCountEncodingRequested() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
-    statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED,policy, 1));
-    statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1));
-    statusToAdd.add(new EncodingStatus(3, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1));
-    statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1));
-    statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1));
+    statusToAdd.add(new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED,policy, 1L));
+    statusToAdd.add(new EncodingStatus(2L, EncodingStatus.Status.ENCODED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(3L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(4L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(5L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -245,11 +245,11 @@ public class TestEncodingStatus extends TestCase {
   public void testFindEncodingRequested() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
-    statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1));
-    statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1));
-    statusToAdd.add(new EncodingStatus(3, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1));
-    statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1));
-    statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1));
+    statusToAdd.add(new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(2L, EncodingStatus.Status.ENCODED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(3L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(4L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(5L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override

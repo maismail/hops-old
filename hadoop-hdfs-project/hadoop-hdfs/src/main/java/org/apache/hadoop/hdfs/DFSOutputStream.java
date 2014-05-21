@@ -1056,6 +1056,8 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
 
         if ((erasureCodingSourceStream && currentBlockIndex % stripeLength == 0)) {
           usedNodes.clear();
+          LOG.info("Stripe length " + stripeLength + " parity length " + parityLength);
+          LOG.info("Source write block index " + currentBlockIndex);
         }
 
         if (erasureCodingParityStream && currentBlockIndex % parityLength == 0) {
@@ -1063,8 +1065,8 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
           stripeNodes.clear();
           int stripe = (int) Math.ceil(currentBlockIndex / (float) parityLength);
           int index = stripe * stripeLength;
-          LOG.debug("Stripe length " + stripeLength + " parity length " + parityLength);
-          LOG.debug("Parity write block index " + currentBlockIndex + " found index " + index + " end " + (index + stripeLength));
+          LOG.info("Stripe length " + stripeLength + " parity length " + parityLength);
+          LOG.info("Parity write block index " + currentBlockIndex + " found index " + index + " end " + (index + stripeLength));
           for (int j = index; j < sourceBlocks.size() && j < index + stripeLength; j++) {
             DatanodeInfo[] nodeInfos = sourceBlocks.get(j).getLocations();
             Collections.addAll(stripeNodes, nodeInfos);
@@ -1080,12 +1082,12 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
           }
           for (DatanodeInfo node : usedNodes) {
             excluded[i] = node;
-            LOG.debug("Block " + currentBlockIndex + " excluding " + node);
+            LOG.info("Block " + currentBlockIndex + " excluding " + node);
             i++;
           }
           for (DatanodeInfo node : stripeNodes) {
             excluded[i] = node;
-            LOG.debug("Block " + currentBlockIndex + " excluding " + node);
+            LOG.info("Block " + currentBlockIndex + " excluding " + node);
             i++;
           }
           currentBlockIndex++;

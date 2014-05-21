@@ -6557,7 +6557,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
-    // TODO STEFFEN - This starts a second transaction. Can it be done in one?
     final long inodeId = findInodeId(filePath);
 
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
@@ -6613,6 +6612,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   public String getPath(long inodeId) throws IOException {
     INode iNode = findInode(inodeId);
+    if (iNode == null) {
+      return null;
+    }
     return getPath(iNode);
   }
 
@@ -6699,12 +6701,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     addEncodingStatusHandler.handle();
   }
 
-  public void updateEncodingStatus(final String sourceFile, final EncodingStatus.Status status) throws IOException {
-    // TODO STEFFEN - This starts a second transaction. Can it be done in one?
-    final EncodingStatus encodingStatus = getEncodingStatus(sourceFile);
-    encodingStatus.setStatus(status);
-    encodingStatus.setModificationTime(System.currentTimeMillis());
+  public void updateEncodingStatus(String sourceFile, long inodeId, EncodingStatus.Status status) throws IOException {
+    updateEncodingStatus(sourceFile, inodeId, status, null);
+  }
 
+  public void updateEncodingStatus(final String sourceFile, final long inodeId,
+        final EncodingStatus.Status status, final String parityFile) throws IOException {
     HDFSTransactionalRequestHandler updateEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
@@ -6713,13 +6715,44 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ,
-                encodingStatus.getInodeId());
+            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
             return lockAcquirer.acquire();
           }
 
           @Override
           public Object performTask() throws PersistanceException, IOException {
+            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+            encodingStatus.setStatus(status);
+            if (parityFile != null) {
+              encodingStatus.setParityFileName(parityFile);
+            }
+            encodingStatus.setStatusModificationTime(System.currentTimeMillis());
+            EntityManager.update(encodingStatus);
+            return null;
+          }
+        };
+    updateEncodingStatusHandler.handle();
+  }
+
+  public void updateEncodingStatus(final String sourceFile, final long inodeId,
+      final EncodingStatus.ParityStatus status) throws IOException {
+    HDFSTransactionalRequestHandler updateEncodingStatusHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourceFile});
+            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+            return lockAcquirer.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+            encodingStatus.setParityStatus(status);
+            encodingStatus.setStatusModificationTime(System.currentTimeMillis());
             EntityManager.update(encodingStatus);
             return null;
           }

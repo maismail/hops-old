@@ -265,6 +265,17 @@ public class Codec implements Serializable {
     return new Path(getParityPrefix() + makeRelative(sourceFile));
   }
 
+  public static String getSourcePath(String parityFile) {
+    for (Codec codec : getCodecs()) {
+      Pattern pattern = Pattern.compile(codec.getParityPrefix() + ".*");
+      Matcher matcher = pattern.matcher(parityFile);
+      if (matcher.matches()) {
+        return parityFile.replace(codec.getParityPrefix(), "/");
+      }
+    }
+    return "";
+  }
+
   private Path makeRelative(Path path) {
     if (!path.isAbsolute()) {
       return path;
@@ -327,16 +338,5 @@ public class Codec implements Serializable {
 
   public String getId() {
     return id;
-  }
-
-  public static boolean isParityFile(String src) {
-    for (Codec codec : getCodecs()) {
-      Pattern pattern = Pattern.compile(codec.getParityPrefix() + ".*");
-      Matcher matcher = pattern.matcher(src);
-      if (matcher.matches()) {
-        return true;
-      }
-    }
-    return false;
   }
 }

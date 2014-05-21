@@ -1401,7 +1401,8 @@ public class PBHelper {
   public static EncodingStatus convert (ClientNamenodeProtocolProtos.EncodingStatusProto encodingStatusProto) {
     EncodingStatus.Status status = convert(encodingStatusProto.getStatus());
     EncodingPolicy policy = encodingStatusProto.hasPolicy()? PBHelper.convert(encodingStatusProto.getPolicy()) : null;
-    return new EncodingStatus(status, policy);
+    String parityFileName = encodingStatusProto.hasParityFileName()? encodingStatusProto.getParityFileName() : null;
+    return new EncodingStatus(status, policy, parityFileName);
   }
 
   public static ClientNamenodeProtocolProtos.EncodingStatusProto convert (EncodingStatus encodingStatus) {
@@ -1411,6 +1412,9 @@ public class PBHelper {
     builder.setStatus(status);
     if (encodingStatus.getEncodingPolicy() != null) {
       builder.setPolicy(PBHelper.convert(encodingStatus.getEncodingPolicy()));
+    }
+    if (encodingStatus.getParityFileName() != null) {
+      builder.setParityFileName(encodingStatus.getParityFileName());
     }
     return builder.build();
   }

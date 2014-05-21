@@ -12,6 +12,6 @@ public abstract class EncodingManager extends Configured implements Cancelable<S
     super(conf);
   }
 
-  public abstract void encodeFile(EncodingPolicy policy, Path sourceFile);
+  public abstract void encodeFile(EncodingPolicy policy, Path sourceFile, Path parityFile);
   public abstract List<Report> computeReports();
 }

@@ -471,6 +471,7 @@ message EncodingStatusProto {
 
     required StatusProto status = 1;
     optional EncodingPolicyProto policy = 2;
+    optional string parityFileName = 3;
 }
 
 message GetEncodingStatusRequestProto {

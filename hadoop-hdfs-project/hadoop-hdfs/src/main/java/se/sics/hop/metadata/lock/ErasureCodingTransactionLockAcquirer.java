@@ -29,6 +29,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     ErasureCodingTransactionLocks locks = getLocks();
     if (locks.getEncodingStatusLock() != null) {
       acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId());
+      acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getInodeId());
     }
   }
 

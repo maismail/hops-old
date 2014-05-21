@@ -26,6 +26,9 @@ import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static org.apache.hadoop.util.ExitUtil.terminate;
 
@@ -34,6 +37,8 @@ public class ErasureCodingManager extends Configured{
   static final Log LOG = LogFactory.getLog(ErasureCodingManager.class);
 
   public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
+  public static final String PARITY_FOLDER = "se.sics.hop.erasure_coding.parity_folder";
+  public static final String DEFAULT_PARITY_FOLDER = "/parity";
   public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
   public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
   public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
@@ -44,30 +49,40 @@ public class ErasureCodingManager extends Configured{
   public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
   public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
   public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
+  public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
+  public static final int DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT = 10;
+  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
+  public static final int DEFAULT_PARITY_REPAIR_DELAY_KEY = 30 * 60 * 1000;
 
   private final FSNamesystem namesystem;
   private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
   private EncodingManager encodingManager;
   private BlockRepairManager blockRepairManager;
+  private String parityFolder;
   private final long recheckInterval;
   private final int activeEncodingLimit;
   private int activeEncodings = 0;
   private final int activeRepairLimit;
+  private final int activeParityRepairLimit;
   private int activeRepairs = 0;
+  private int activeParityRepairs = 0;
   private final int repairDelay;
+  private final int parityRepairDelay;
 
   public ErasureCodingManager(FSNamesystem namesystem, Configuration conf) {
     super(conf);
     this.namesystem = namesystem;
+    this.parityFolder = conf.get(PARITY_FOLDER, DEFAULT_PARITY_FOLDER);
     this.recheckInterval = conf.getInt(RECHECK_INTERVAL_KEY, DEFAULT_RECHECK_INTERVAL);
     this.activeEncodingLimit = conf.getInt(ACTIVE_ENCODING_LIMIT_KEY, DEFAULT_ACTIVE_ENCODING_LIMIT);
     this.activeRepairLimit = conf.getInt(ACTIVE_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_REPAIR_LIMIT);
+    this.activeParityRepairLimit = conf.getInt(ACTIVE_PARITY_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT);
     this.repairDelay = conf.getInt(REPAIR_DELAY_KEY, DEFAULT_REPAIR_DELAY_KEY);
+    this.parityRepairDelay = conf.getInt(PARITY_REPAIR_DELAY_KEY, DEFAULT_PARITY_REPAIR_DELAY_KEY);
   }
 
   private boolean loadRaidNodeClasses() {
     try {
-      // TODO STEFFEN - Use ReflectionUtils
       Class<?> encodingManagerClass = getConf().getClass(ENCODING_MANAGER_CLASSNAME_KEY, null);
       if (encodingManagerClass == null || !EncodingManager.class.isAssignableFrom(encodingManagerClass)) {
         throw new ClassNotFoundException("Not an implementation of " + EncodingManager.class.getCanonicalName());
@@ -123,6 +138,7 @@ public class ErasureCodingManager extends Configured{
       while (namesystem.isRunning()) {
         if(namesystem.isLeader()){
           checkPotentiallyFixedFiles();
+          checkPotentiallyFixedParityFiles();
           checkActiveEncodings();
           scheduleEncodings();
           checkActiveRepairs();
@@ -153,7 +169,11 @@ public class ErasureCodingManager extends Configured{
     try {
       final Collection<EncodingStatus> potentiallyFixed = (Collection<EncodingStatus>) findHandler.handle();
       for (final EncodingStatus encodingStatus : potentiallyFixed) {
+        LOG.info("Checking if source file was fixed for id " + encodingStatus.getInodeId());
         final String path = namesystem.getPath(encodingStatus.getInodeId());
+        if (path == null) {
+          continue;
+        }
 
         HDFSTransactionalRequestHandler handler =
             new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
@@ -175,9 +195,68 @@ public class ErasureCodingManager extends Configured{
               @Override
               public Object performTask() throws PersistanceException, IOException {
                 if (namesystem.isFileCorrupt(path) == false) {
-                  encodingStatus.setStatus(EncodingStatus.Status.ENCODED);
-                  EntityManager.update(encodingStatus);
+                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId,
+                      encodingStatus.getInodeId());
+                  status.setStatus(EncodingStatus.Status.ENCODED);
+                  status.setStatusModificationTime(System.currentTimeMillis());
+                  EntityManager.update(status);
                 }
+                // TODO STEFFEN - Need to detect repair failure! And reset status to repair.
+                return null;
+              }
+            };
+        handler.handle(this);
+      }
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
+    }
+  }
+
+  private void checkPotentiallyFixedParityFiles() {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_POTENTIALLY_FIXED_PARITIES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findPotentiallyFixedParities(Long.MAX_VALUE);
+      }
+    };
+
+    try {
+      final Collection<EncodingStatus> potentiallyFixed = (Collection<EncodingStatus>) findHandler.handle();
+      for (final EncodingStatus encodingStatus : potentiallyFixed) {
+        LOG.info("Checking if parity file was fixed for id " + encodingStatus.getParityInodeId());
+        final String path = parityFolder + "/" + encodingStatus.getParityFileName();
+
+        HDFSTransactionalRequestHandler handler =
+            new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+              @Override
+              public TransactionLocks acquireLock() throws PersistanceException, IOException {
+                ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+                tla.getLocks().
+                    addINode(TransactionLockTypes.INodeResolveType.PATH,
+                        TransactionLockTypes.INodeLockType.READ, new String[]{path}).
+                    addBlock().
+                    addReplica().
+                    addExcess().
+                    addCorrupt().
+                    addReplicaUc();
+                tla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE,
+                    encodingStatus.getParityInodeId());
+                return tla.acquire();
+              }
+
+              @Override
+              public Object performTask() throws PersistanceException, IOException {
+                if (namesystem.isFileCorrupt(path) == false) {
+                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId,
+                      encodingStatus.getParityInodeId());
+                  status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+                  status.setParityStatusModificationTime(System.currentTimeMillis());
+                  EntityManager.update(status);
+                }
+                // TODO STEFFEN - Need to detect repair failure! And reset status to repair.
                 return null;
               }
             };
@@ -195,7 +274,7 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
-          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODED);
+          finalizeEncoding(report.getFilePath());
           activeEncodings--;
           break;
         case FAILED:
@@ -210,9 +289,55 @@ public class ErasureCodingManager extends Configured{
     }
   }
 
+  private void finalizeEncoding(final String path) {
+    try {
+      final EncodingStatus status = namesystem.getEncodingStatus(path);
+      final long parityInodeId = namesystem.findInodeId(parityFolder + "/" + status.getParityFileName());
+
+      HDFSTransactionalRequestHandler handler =
+          new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+            @Override
+            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+              ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+              tla.getLocks().
+                  addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, status.getInodeId()).
+                  addINode(TransactionLockTypes.INodeResolveType.PATH,
+                      TransactionLockTypes.INodeLockType.READ, new String[]{path});
+              return tla.acquire();
+            }
+
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+              // Should be necessary for atomicity
+              EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, status.getInodeId());
+              encodingStatus.setStatus(EncodingStatus.Status.ENCODED);
+              encodingStatus.setStatusModificationTime(System.currentTimeMillis());
+              encodingStatus.setParityInodeId(parityInodeId);
+              encodingStatus.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+              encodingStatus.setParityStatusModificationTime(System.currentTimeMillis());
+              EntityManager.update(encodingStatus);
+              return null;
+            }
+          };
+      handler.handle(this);
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
+    }
+  }
+
   private void updateEncodingStatus(String filePath, EncodingStatus.Status status) {
     try {
-      namesystem.updateEncodingStatus(filePath, status);
+      long id = namesystem.findInodeId(filePath);
+      namesystem.updateEncodingStatus(filePath, id, status);
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
+    }
+  }
+
+  private void updateEncodingStatus(String filePath, EncodingStatus.ParityStatus status) {
+    try {
+      long id = namesystem.findInodeId(filePath);
+      namesystem.updateEncodingStatus(filePath, id, status);
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
     }
@@ -250,9 +375,15 @@ public class ErasureCodingManager extends Configured{
         }
 
         String path = namesystem.getPath(iNode);
+        if (iNode == null) {
+          continue;
+        }
         LOG.info("Schedule encoding for " + path);
-        encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path));
-        namesystem.updateEncodingStatus(path, EncodingStatus.Status.ENCODING_ACTIVE);
+        UUID parityFileName = UUID.randomUUID();
+        encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path),
+            new Path(parityFolder + "/" + parityFileName.toString()));
+        namesystem.updateEncodingStatus(path, encodingStatus.getInodeId(), EncodingStatus.Status.ENCODING_ACTIVE,
+            parityFileName.toString());
         activeEncodings++;
       }
     } catch (IOException e) {
@@ -268,15 +399,29 @@ public class ErasureCodingManager extends Configured{
           break;
         case FINISHED:
           // No need to update the status. Automatically detected if the file was fixed.
-          activeRepairs--;
+          if (isParityFile(report.getFilePath())) {
+            activeParityRepairs--;
+          } else {
+            activeRepairs--;
+          }
           break;
         case FAILED:
-          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_FAILED);
-          activeRepairs--;
+          if (isParityFile(report.getFilePath())) {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.REPAIR_FAILED);
+            activeParityRepairs--;
+          } else {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_FAILED);
+            activeRepairs--;
+          }
           break;
         case CANCELED:
-          updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_CANCELED);
-          activeRepairs--;
+          if (isParityFile(report.getFilePath())) {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.REPAIR_CANCELED);
+            activeParityRepairs--;
+          } else {
+            updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.REPAIR_CANCELED);
+            activeRepairs--;
+          }
           break;
       }
     }
@@ -299,16 +444,24 @@ public class ErasureCodingManager extends Configured{
     };
 
     try {
-      Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
-      for (EncodingStatus encodingStatus : requestedEncodings) {
-        if (System.currentTimeMillis() - encodingStatus.getModificationTime() < repairDelay) {
+      Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
+      for (EncodingStatus encodingStatus : requestedRepairs) {
+        if (System.currentTimeMillis() - encodingStatus.getStatusModificationTime() < repairDelay) {
+          continue;
+        }
+
+        if (encodingStatus.isParityRepairActive()) {
           continue;
         }
 
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
         String path = namesystem.getPath(iNode);
-        blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path));
-        namesystem.updateEncodingStatus(path, EncodingStatus.Status.REPAIR_ACTIVE);
+        if (iNode == null) {
+          continue;
+        }
+        blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
+            new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
+        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.Status.REPAIR_ACTIVE);
         activeRepairs++;
       }
     } catch (IOException e) {
@@ -317,6 +470,54 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleParityRepairs() {
-    // TODO STEFFEN - Implement parity repair
+    final int limit = activeParityRepairLimit - activeParityRepairs;
+    if (limit <= 0) {
+      return;
+    }
+
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_REQUESTED_PARITY_REPAIRS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findRequestedParityRepairs(limit);
+      }
+    };
+
+    try {
+      Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
+      for (EncodingStatus encodingStatus : requestedRepairs) {
+        if (System.currentTimeMillis() - encodingStatus.getParityStatusModificationTime() < parityRepairDelay) {
+          continue;
+        }
+
+        if (encodingStatus.getStatus().equals(EncodingStatus.Status.ENCODED) == false) {
+          // Only repair parity for non-broken source files. Otherwise repair source file first.
+          continue;
+        }
+
+        INode iNode = namesystem.findInode(encodingStatus.getInodeId());
+        String path = namesystem.getPath(iNode);
+        if (iNode == null) {
+          continue;
+        }
+        blockRepairManager.repairParityBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
+            new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
+        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.ParityStatus.REPAIR_ACTIVE);
+        activeRepairs++;
+      }
+    } catch (IOException e) {
+      LOG.error(StringUtils.stringifyException(e));
+    }
+  }
+
+  public boolean isParityFile(String src) {
+    Pattern pattern = Pattern.compile(parityFolder + ".*");
+    Matcher matcher = pattern.matcher(src);
+    if (matcher.matches()) {
+      return true;
+    }
+    return false;
   }
 }

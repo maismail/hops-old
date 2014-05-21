@@ -26,10 +26,14 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
 
     HopEncodingStatus converted = new HopEncodingStatus();
     converted.setInodeId(encodingStatus.getInodeId());
+    converted.setParityInodeId(encodingStatus.getParityInodeId());
     converted.setCodec(encodingStatus.getEncodingPolicy().getCodec());
     converted.setTargetReplication(encodingStatus.getEncodingPolicy().getTargetReplication());
     converted.setStatus(convertStatus(encodingStatus.getStatus()));
-    converted.setModification_time(encodingStatus.getModificationTime());
+    converted.setStatusModificationTime(encodingStatus.getStatusModificationTime());
+    converted.setParityStatus(convertParityStatus(encodingStatus.getParityStatus()));
+    converted.setParityStatusModificationTime(encodingStatus.getParityStatusModificationTime());
+    converted.setParityFileName(encodingStatus.getParityFileName());
     return converted;
   }
 
@@ -41,14 +45,22 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
 
     EncodingStatus converted = new EncodingStatus();
     converted.setInodeId(hopEncodingStatus.getInodeId());
+    converted.setParityInodeId(hopEncodingStatus.getParityInodeId());
     EncodingPolicy policy = new EncodingPolicy(hopEncodingStatus.getCodec(), hopEncodingStatus.getTargetReplication());
     converted.setEncodingPolicy(policy);
     converted.setStatus(convertStatus(hopEncodingStatus.getStatus()));
-    converted.setModificationTime(hopEncodingStatus.getModificationTime());
+    converted.setStatusModificationTime(hopEncodingStatus.getStatusModificationTime());
+    converted.setParityStatus(convertParityStatus(hopEncodingStatus.getParityStatus()));
+    converted.setParityStatusModificationTime(hopEncodingStatus.getParityStatusModificationTime());
+    converted.setParityFileName(hopEncodingStatus.getParityFileName());
     return converted;
   }
 
-  private EncodingStatus.Status convertStatus(int status) {
+  private EncodingStatus.Status convertStatus(Integer status) {
+    if (status == null) {
+      return null;
+    }
+
     switch (status) {
       case HopEncodingStatus.ENCODING_REQUESTED:
         return EncodingStatus.Status.ENCODING_REQUESTED;
@@ -75,7 +87,11 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     }
   }
 
-  private int convertStatus(EncodingStatus.Status status) {
+  private Integer convertStatus(EncodingStatus.Status status) {
+    if (status == null) {
+      return null;
+    }
+
     switch (status) {
       case ENCODING_REQUESTED:
         return HopEncodingStatus.ENCODING_REQUESTED;
@@ -102,6 +118,52 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     }
   }
 
+  private EncodingStatus.ParityStatus convertParityStatus(Integer status) {
+    if (status == null) {
+      return null;
+    }
+
+    switch (status) {
+      case HopEncodingStatus.PARITY_HEALTHY:
+        return EncodingStatus.ParityStatus.HEALTHY;
+      case HopEncodingStatus.PARITY_REPAIR_REQUESTED:
+        return EncodingStatus.ParityStatus.REPAIR_REQUESTED;
+      case HopEncodingStatus.PARITY_REPAIR_ACTIVE:
+        return EncodingStatus.ParityStatus.REPAIR_ACTIVE;
+      case HopEncodingStatus.PARITY_REPAIR_CANCELED:
+        return EncodingStatus.ParityStatus.REPAIR_CANCELED;
+      case HopEncodingStatus.PARITY_REPAIR_FAILED:
+        return EncodingStatus.ParityStatus.REPAIR_FAILED;
+      case HopEncodingStatus.PARITY_POTENTIALLY_FIXED:
+        return EncodingStatus.ParityStatus.POTENTIALLY_FIXED;
+      default:
+        throw new UnsupportedOperationException("Trying to convert an unknown status");
+    }
+  }
+
+  private Integer convertParityStatus(EncodingStatus.ParityStatus status) {
+    if (status == null) {
+      return null;
+    }
+
+    switch (status) {
+      case HEALTHY:
+        return HopEncodingStatus.PARITY_HEALTHY;
+      case REPAIR_REQUESTED:
+        return HopEncodingStatus.PARITY_REPAIR_REQUESTED;
+      case REPAIR_ACTIVE:
+        return HopEncodingStatus.PARITY_REPAIR_ACTIVE;
+      case REPAIR_CANCELED:
+        return HopEncodingStatus.PARITY_REPAIR_CANCELED;
+      case REPAIR_FAILED:
+        return  HopEncodingStatus.PARITY_REPAIR_FAILED;
+      case POTENTIALLY_FIXED:
+        return HopEncodingStatus.PARITY_POTENTIALLY_FIXED;
+      default:
+        throw new UnsupportedOperationException("Trying to convert an unknown status");
+    }
+  }
+
   @Override
   public void add(EncodingStatus status) throws StorageException {
     dataAccess.add(convertHDFStoDAL(status));
@@ -123,6 +185,11 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
+  public EncodingStatus findByParityInodeId(long inodeId) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findByParityInodeId(inodeId));
+  }
+
+  @Override
   public Collection<EncodingStatus> findRequestedEncodings(long limit) throws StorageException {
     return convertDALtoHDFS(dataAccess.findRequestedEncodings(limit));
   }
@@ -130,6 +197,11 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   @Override
   public Collection<EncodingStatus> findRequestedRepairs(long limit) throws StorageException {
     return convertDALtoHDFS(dataAccess.findRequestedRepairs(limit));
+  }
+
+  @Override
+  public int countRequestedRepairs() throws StorageException {
+    return dataAccess.countRequestedRepairs();
   }
 
   @Override
@@ -175,5 +247,35 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   @Override
   public int countPotentiallyFixed() throws StorageException {
     return dataAccess.countPotentiallyFixed();
+  }
+
+  @Override
+  public Collection<EncodingStatus> findRequestedParityRepairs(long limit) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findRequestedParityRepairs(limit));
+  }
+
+  @Override
+  public int countRequestedParityRepairs() throws StorageException {
+    return dataAccess.countRequestedParityRepairs();
+  }
+
+  @Override
+  public Collection<EncodingStatus> findActiveParityRepairs() throws StorageException {
+    return convertDALtoHDFS(dataAccess.findActiveParityRepairs());
+  }
+
+  @Override
+  public int countActiveParityRepairs() throws StorageException {
+    return dataAccess.countActiveParityRepairs();
+  }
+
+  @Override
+  public Collection<EncodingStatus> findPotentiallyFixedParities(long limit) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findPotentiallyFixedParities(limit));
+  }
+
+  @Override
+  public int countPotentiallyFixedParities() throws StorageException {
+    return dataAccess.countPotentiallyFixedParities();
   }
 }

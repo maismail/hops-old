@@ -19,6 +19,15 @@ public class EncodingStatus {
     POTENTIALLY_FIXED
   }
 
+  public static enum ParityStatus {
+    HEALTHY,
+    REPAIR_REQUESTED,
+    REPAIR_ACTIVE,
+    REPAIR_CANCELED,
+    REPAIR_FAILED,
+    POTENTIALLY_FIXED
+  }
+
   public static enum Counter implements CounterType<EncodingStatus> {
     RequestedEncodings,
     ActiveEncodings,
@@ -34,6 +43,7 @@ public class EncodingStatus {
 
   public static enum Finder implements FinderType<EncodingStatus> {
     ByInodeId,
+    ByParityInodeId,
     LimitedByStatusRequestedEncodings,
     ByStatusActiveEncodings,
     ByStatusActiveRepairs,
@@ -47,10 +57,14 @@ public class EncodingStatus {
     }
   }
 
-  private long inodeId;
+  private Long inodeId;
+  private Long parityInodeId;
   private Status status;
+  private ParityStatus parityStatus;
   private EncodingPolicy encodingPolicy;
-  private long modificationTime;
+  private Long statusModificationTime;
+  private Long parityStatusModificationTime;
+  private String parityFileName;
 
   public EncodingStatus() {
 
@@ -60,40 +74,62 @@ public class EncodingStatus {
     this.status = status;
   }
 
-  public EncodingStatus(Status status, EncodingPolicy encodingPolicy) {
+  public EncodingStatus(Status status, EncodingPolicy encodingPolicy, String parityFileName) {
     this.status = status;
     this.encodingPolicy = encodingPolicy;
+    this.parityFileName = parityFileName;
   }
 
-  public EncodingStatus(long inodeId, Status status, EncodingPolicy encodingPolicy, long modificationTime) {
+  public EncodingStatus(Long inodeId, Status status, EncodingPolicy encodingPolicy, Long statusModificationTime) {
     this.inodeId = inodeId;
     this.status = status;
     this.encodingPolicy = encodingPolicy;
-    this.modificationTime = modificationTime;
+    this.statusModificationTime = statusModificationTime;
   }
 
-  public long getInodeId() {
+  public EncodingStatus(Long inodeId, Long parityInodeId, Status status, ParityStatus parityStatus,
+      EncodingPolicy encodingPolicy, Long statusModificationTime, Long parityStatusModificationTime,
+      String parityFileName) {
+    this.inodeId = inodeId;
+    this.parityInodeId = parityInodeId;
+    this.status = status;
+    this.parityStatus = parityStatus;
+    this.encodingPolicy = encodingPolicy;
+    this.statusModificationTime = statusModificationTime;
+    this.parityStatusModificationTime = parityStatusModificationTime;
+    this.parityFileName = parityFileName;
+  }
+
+  public Long getInodeId() {
     return inodeId;
   }
 
-  public void setInodeId(long inodeId) {
+  public void setInodeId(Long inodeId) {
     this.inodeId = inodeId;
   }
 
-  public long getModificationTime() {
-    return modificationTime;
+  public Long getParityInodeId() {
+    return parityInodeId;
   }
 
-  public void setModificationTime(long modificationTime) {
-    this.modificationTime = modificationTime;
+  public void setParityInodeId(Long parityInodeId) {
+    this.parityInodeId = parityInodeId;
+  }
+
+  public Status getStatus() {
+    return status;
   }
 
   public void setStatus(Status status) {
     this.status = status;
   }
 
-  public Status getStatus() {
-    return status;
+  public ParityStatus getParityStatus() {
+    return parityStatus;
+  }
+
+  public void setParityStatus(ParityStatus parityStatus) {
+    this.parityStatus = parityStatus;
   }
 
   public EncodingPolicy getEncodingPolicy() {
@@ -102,6 +138,30 @@ public class EncodingStatus {
 
   public void setEncodingPolicy(EncodingPolicy encodingPolicy) {
     this.encodingPolicy = encodingPolicy;
+  }
+
+  public Long getStatusModificationTime() {
+    return statusModificationTime;
+  }
+
+  public void setStatusModificationTime(Long statusModificationTime) {
+    this.statusModificationTime = statusModificationTime;
+  }
+
+  public Long getParityStatusModificationTime() {
+    return parityStatusModificationTime;
+  }
+
+  public void setParityStatusModificationTime(Long parityStatusModificationTime) {
+    this.parityStatusModificationTime = parityStatusModificationTime;
+  }
+
+  public String getParityFileName() {
+    return parityFileName;
+  }
+
+  public void setParityFileName(String parityFileName) {
+    this.parityFileName = parityFileName;
   }
 
   public boolean isEncoded() {
@@ -130,13 +190,39 @@ public class EncodingStatus {
     }
   }
 
+  public boolean isParityRepairActive() {
+    switch (parityStatus) {
+      case REPAIR_ACTIVE:
+      case POTENTIALLY_FIXED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  public boolean isParityCorrupt() {
+    switch (parityStatus) {
+      case REPAIR_ACTIVE:
+      case REPAIR_REQUESTED:
+      case REPAIR_CANCELED:
+      case REPAIR_FAILED:
+        return true;
+      default:
+        return false;
+    }
+  }
+
   @Override
   public String toString() {
     return "EncodingStatus{" +
         "inodeId=" + inodeId +
+        ", parityInodeId=" + parityInodeId +
         ", status=" + status +
+        ", parityStatus=" + parityStatus +
         ", encodingPolicy=" + encodingPolicy +
-        ", modificationTime=" + modificationTime +
+        ", statusModificationTime=" + statusModificationTime +
+        ", parityStatusModificationTime=" + parityStatusModificationTime +
+        ", parityFileName='" + parityFileName + '\'' +
         '}';
   }
 
@@ -145,23 +231,37 @@ public class EncodingStatus {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
 
-    EncodingStatus that = (EncodingStatus) o;
+    EncodingStatus status1 = (EncodingStatus) o;
 
-    if (inodeId != that.inodeId) return false;
-    if (modificationTime != that.modificationTime) return false;
-    if (encodingPolicy != null ? !encodingPolicy.equals(that.encodingPolicy) : that.encodingPolicy != null)
+    if (encodingPolicy != null ? !encodingPolicy.equals(status1.encodingPolicy) : status1.encodingPolicy != null)
       return false;
-    if (status != that.status) return false;
+    if (inodeId != null ? !inodeId.equals(status1.inodeId) : status1.inodeId != null) return false;
+    if (parityFileName != null ? !parityFileName.equals(status1.parityFileName) : status1.parityFileName != null)
+      return false;
+    if (parityInodeId != null ? !parityInodeId.equals(status1.parityInodeId) : status1.parityInodeId != null)
+      return false;
+    if (parityStatus != status1.parityStatus) return false;
+    if (parityStatusModificationTime != null ? !parityStatusModificationTime.equals(
+        status1.parityStatusModificationTime) : status1.parityStatusModificationTime != null)
+      return false;
+    if (status != status1.status) return false;
+    if (statusModificationTime != null ? !statusModificationTime.equals(
+        status1.statusModificationTime) : status1.statusModificationTime != null)
+      return false;
 
     return true;
   }
 
   @Override
   public int hashCode() {
-    int result = (int) (inodeId ^ (inodeId >>> 32));
+    int result = inodeId != null ? inodeId.hashCode() : 0;
+    result = 31 * result + (parityInodeId != null ? parityInodeId.hashCode() : 0);
     result = 31 * result + (status != null ? status.hashCode() : 0);
+    result = 31 * result + (parityStatus != null ? parityStatus.hashCode() : 0);
     result = 31 * result + (encodingPolicy != null ? encodingPolicy.hashCode() : 0);
-    result = 31 * result + (int) (modificationTime ^ (modificationTime >>> 32));
+    result = 31 * result + (statusModificationTime != null ? statusModificationTime.hashCode() : 0);
+    result = 31 * result + (parityStatusModificationTime != null ? parityStatusModificationTime.hashCode() : 0);
+    result = 31 * result + (parityFileName != null ? parityFileName.hashCode() : 0);
     return result;
   }
 }

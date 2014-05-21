@@ -19,6 +19,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   private EncodingStatusDataAccess<EncodingStatus> dataAccess;
 
   private Map<Long, EncodingStatus> inodeIdToEncodingStatus = new HashMap<Long, EncodingStatus>();
+  private Map<Long, EncodingStatus> parityInodeIdToEncodingStatus = new HashMap<Long, EncodingStatus>();
   private Map<Long, EncodingStatus> inodeIdToEncodingStatusToAdd = new HashMap<Long, EncodingStatus>();
   private Map<Long, EncodingStatus> inodeIdToEncodingStatusToDelete = new HashMap<Long, EncodingStatus>();
   private Map<Long, EncodingStatus> inodeIdToEncodingStatusToUpdate = new HashMap<Long, EncodingStatus>();
@@ -36,6 +37,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   public void clear() {
     storageCallPrevented = false;
     inodeIdToEncodingStatus.clear();
+    parityInodeIdToEncodingStatus.clear();
     inodeIdToEncodingStatusToAdd.clear();
     inodeIdToEncodingStatusToDelete.clear();
     inodeIdToEncodingStatusToUpdate.clear();
@@ -44,6 +46,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   @Override
   public int count(CounterType<EncodingStatus> counter, Object... params) throws PersistanceException {
     EncodingStatus.Counter eCounter = (EncodingStatus.Counter) counter;
+    // TODO STEFFEN - This is not complete but probably unnecessary
     switch (eCounter) {
       case RequestedEncodings:
         return dataAccess.countRequestedEncodings();
@@ -63,9 +66,9 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
     EncodingStatus.Finder eFinder = (EncodingStatus.Finder) finder;
     EncodingStatus result;
 
+    Long inodeId = (Long) params[0];
     switch (eFinder) {
       case ByInodeId:
-        long inodeId = (Long) params[0];
         if (inodeIdToEncodingStatus.containsKey(inodeId)) {
           log("find-encoding-status-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Long.toString(inodeId)});
           return inodeIdToEncodingStatus.get(inodeId);
@@ -74,6 +77,17 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
           aboutToAccessStorage();
           result = dataAccess.findByInodeId(inodeId);
           inodeIdToEncodingStatus.put(inodeId, result);
+          return result;
+        }
+      case ByParityInodeId:
+        if (parityInodeIdToEncodingStatus.containsKey(inodeId)) {
+          log("find-encoding-status-by-parityInodeid", CacheHitState.HIT, new String[]{"inodeid", Long.toString(inodeId)});
+          return parityInodeIdToEncodingStatus.get(inodeId);
+        } else {
+          log("find-encoding-status-by-parityInodeid", CacheHitState.LOSS, new String[]{"inodeid", Long.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findByParityInodeId(inodeId);
+          parityInodeIdToEncodingStatus.put(inodeId, result);
           return result;
         }
       default:

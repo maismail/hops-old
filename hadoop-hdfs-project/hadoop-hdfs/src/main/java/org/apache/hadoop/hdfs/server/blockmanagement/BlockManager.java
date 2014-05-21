@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import org.apache.hadoop.hdfs.server.namenode.*;
+import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.metadata.blockmanagement.ExcessReplicasMap;
 import static org.apache.hadoop.util.ExitUtil.terminate;
@@ -1036,7 +1037,6 @@ public class BlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(blk.getBlockId()).
             addReplica().
@@ -1045,6 +1045,9 @@ public class BlockManager {
             addUnderReplicatedBlock().
             addReplicaUc().
             addInvalidatedBlock();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1106,9 +1109,22 @@ public class BlockManager {
 
     if (numberReplicas.liveReplicas() == 0) {
       EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      if (status != null && status.getStatus() == EncodingStatus.Status.ENCODED) {
+      if (status != null && status.getStatus().equals(EncodingStatus.Status.ENCODED)) {
         status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+        status.setStatusModificationTime(System.currentTimeMillis());
         EntityManager.update(status);
+      }
+      if (status == null) {
+        LOG.info("markBlockAsCorrupt returned null for " + bc.getId());
+      } else {
+        LOG.info("markBlockAsCorrupt found " + bc.getId() + " with status " + status);
+      }
+      status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
+      if (status != null && status.getParityStatus().equals(EncodingStatus.ParityStatus.HEALTHY)) {
+        status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+        status.setParityStatusModificationTime(System.currentTimeMillis());
+        EntityManager.update(status);
+        LOG.info("markBlockAsCorrupt updated parity status to repair requested");
       }
     }
   }
@@ -1788,13 +1804,15 @@ public class BlockManager {
         Block b = (Block) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(b.getBlockId()).
             addReplica().
             addExcess().
             addCorrupt().
             addUnderReplicatedBlock();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1856,7 +1874,6 @@ public class BlockManager {
         Block b = (Block) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(b.getBlockId()).
             addReplica().
@@ -1867,6 +1884,9 @@ public class BlockManager {
             addInvalidatedBlock().
             addPendingBlock().
             addGenerationStamp(LockType.READ);
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -1975,7 +1995,6 @@ public class BlockManager {
           System.exit(-1);
         }
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(iblk.getBlockId()).
             addReplica().
@@ -1986,6 +2005,9 @@ public class BlockManager {
             addInvalidatedBlock().
             addPendingBlock().
             addGenerationStamp(LockType.READ);
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -2179,13 +2201,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(rbi.getBlock().getBlockId()).
             addInvalidatedBlock().
             addReplica().
             addExcess().
             addGenerationStamp(LockType.READ);
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
@@ -2483,7 +2507,20 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         if (status != null && status.isEncoded() && status.isCorrupt()
             && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
           status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
+          status.setStatusModificationTime(System.currentTimeMillis());
           EntityManager.update(status);
+        }
+        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
+        if (status == null) {
+          LOG.info("addStoredBlock returned null for " + bc.getId());
+        } else {
+          LOG.info("addStoredBlock found " + bc.getId() + " with status " + status);
+        }
+        if (status != null && status.isParityCorrupt()) {
+          status.setParityStatus(EncodingStatus.ParityStatus.POTENTIALLY_FIXED);
+          status.setParityStatusModificationTime(System.currentTimeMillis());
+          EntityManager.update(status);
+          LOG.info("addStoredBlock found set status to potentially fixed");
         }
       }
     }
@@ -2913,7 +2950,25 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
             status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+            status.setStatusModificationTime(System.currentTimeMillis());
             EntityManager.update(status);
+          }
+        }
+        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, blockInfo.getInodeId());
+        if (status == null) {
+          LOG.info("removeStoredBlock returned null for " + blockInfo.getInodeId());
+        } else {
+          LOG.info("removeStoredBlock found " + blockInfo.getInodeId() + " with status " + status);
+        }
+        if (status != null && status.getParityStatus().equals(EncodingStatus.ParityStatus.HEALTHY)) {
+          NumberReplicas numberReplicas = countNodes(block);
+          if (numberReplicas.liveReplicas() == 0) {
+            status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+            status.setParityStatusModificationTime(System.currentTimeMillis());
+            EntityManager.update(status);
+            LOG.info("removeStoredBlock updated parity status to repair requested");
+          } else {
+            LOG.info("removeStoredBlock found replicas: " + numberReplicas.liveReplicas());
           }
         }
       }
@@ -3060,7 +3115,6 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
-            addEncodingStatusLock(LockType.WRITE, inodeID).
             addINode(TransactionLockTypes.INodeLockType.WRITE).
             addBlock(rdbi.getBlock().getBlockId()).
             addReplica().
@@ -3068,6 +3122,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             addCorrupt().
             addUnderReplicatedBlock().
             addGenerationStamp(LockType.READ);
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         if (!rdbi.isDeletedBlock()) {
           tla.getLocks().
                   addPendingBlock().

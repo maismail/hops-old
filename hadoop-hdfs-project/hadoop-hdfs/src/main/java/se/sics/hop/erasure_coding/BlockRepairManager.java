@@ -12,7 +12,7 @@ public abstract class BlockRepairManager extends Configured implements Cancelabl
     super(conf);
   }
 
-  public abstract void repairSourceBlocks(String codecId, Path sourceFile);
-  public abstract void repairParityBlocks(String codecId, Path sourceFile);
+  public abstract void repairSourceBlocks(String codecId, Path sourceFile, Path parityFile);
+  public abstract void repairParityBlocks(String codecId, Path sourceFile, Path parityFile);
   public abstract List<Report> computeReports();
 }
