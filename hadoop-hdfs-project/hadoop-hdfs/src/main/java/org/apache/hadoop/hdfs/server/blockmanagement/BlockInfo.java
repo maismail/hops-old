@@ -32,6 +32,7 @@ import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given
@@ -121,15 +122,20 @@ public class BlockInfo extends Block {
   private BlockCollection bc;
   private int blockIndex = -1;  
   private long timestamp = 1;
-  protected long inodeId = INode.NON_EXISTING_ID;
   
-  public BlockInfo(Block blk) {
+  protected int inodeId = INode.NON_EXISTING_ID;
+  
+  public BlockInfo(Block blk, int inodeId) {
     super(blk);
+    this.inodeId = inodeId;
     if (blk instanceof BlockInfo) {
       this.bc = ((BlockInfo) blk).bc;
       this.blockIndex = ((BlockInfo) blk).blockIndex;
       this.timestamp = ((BlockInfo) blk).timestamp;
-      this.inodeId = ((BlockInfo) blk).inodeId;
+      if(inodeId != ((BlockInfo) blk).inodeId)
+      {
+        throw new IllegalArgumentException("inodeId does not match");
+      }
     }
   }
   
@@ -166,7 +172,7 @@ public class BlockInfo extends Block {
   public void setBlockCollection(BlockCollection bc) throws PersistanceException {
     this.bc = bc;
     if (bc != null) {
-      setINodeId(bc.getId());      
+      setINodeId(bc.getId());  
     }
 //  we removed the block removal from inside INodeFile to BlocksMap 
 //    else {
@@ -189,7 +195,7 @@ public class BlockInfo extends Block {
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
   List<HopIndexedReplica> getReplicasNoCheck() throws PersistanceException {
-    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId());
+    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
     } else {
@@ -210,8 +216,8 @@ public class BlockInfo extends Block {
   /**
    * Adds new replica for this block.
    */
-  HopIndexedReplica addReplica(DatanodeDescriptor dn) throws PersistanceException {
-    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(),/*FIXME [M]*/ getReplicasNoCheck().size());
+  HopIndexedReplica addReplica(DatanodeDescriptor dn, BlockInfo b) throws PersistanceException {
+    HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(), b.getInodeId(), getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
@@ -298,7 +304,7 @@ public class BlockInfo extends Block {
   public BlockInfoUnderConstruction convertToBlockUnderConstruction(
           BlockUCState s, DatanodeDescriptor[] targets) throws PersistanceException {
     if (isComplete()) {
-      return new BlockInfoUnderConstruction(this, s, targets);
+      return new BlockInfoUnderConstruction(this, this.getInodeId(), s, targets);
     }
     // the block is already under construction
     BlockInfoUnderConstruction ucBlock = (BlockInfoUnderConstruction) this;
@@ -307,15 +313,15 @@ public class BlockInfo extends Block {
     return ucBlock;
   }
   
-  public long getInodeId() {
+  public int getInodeId() {
     return inodeId;
   }
   
-  public void setINodeIdNoPersistance(long id) {
+  public void setINodeIdNoPersistance(int id) {
     this.inodeId = id;
   }
   
-  public void setINodeId(long id) throws PersistanceException {
+  public void setINodeId(int id) throws PersistanceException {
     setINodeIdNoPersistance(id);
     save();
   }
@@ -387,7 +393,7 @@ public class BlockInfo extends Block {
   
   @Override
   public String toString(){
-   return "ID = "+getBlockId()+"  State = "+getBlockUCState();
+   return "bid= "+getBlockId()+"  State = "+getBlockUCState();
   }
   //START_HOP_CODE
   
@@ -426,6 +432,19 @@ public class BlockInfo extends Block {
   protected void remove(BlockInfo blk) throws PersistanceException {
     EntityManager.remove(blk);
   }
+  
+  public static BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
+    if(block instanceof BlockInfo){
+      return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId());
+    }
+    else if(block instanceof  BlockInfoUnderConstruction){
+      return new BlockInfoUnderConstruction((BlockInfoUnderConstruction)block, ((BlockInfoUnderConstruction)block).getInodeId());
+    }else{
+      throw new StorageException("Unable to create a clone of the Block");
+    }
+  }
+
+  
   //END_HOP_CODE
 
 

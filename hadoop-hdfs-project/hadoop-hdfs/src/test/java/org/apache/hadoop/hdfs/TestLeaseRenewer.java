@@ -174,7 +174,7 @@ public class TestLeaseRenewer {
     renewer.closeFile(filePath, mockClient2);
   }
   
-  @Test
+  //@Test
   public void testThreadName() throws Exception {
     DFSOutputStream mockStream = Mockito.mock(DFSOutputStream.class);
     String filePath = "/foo";

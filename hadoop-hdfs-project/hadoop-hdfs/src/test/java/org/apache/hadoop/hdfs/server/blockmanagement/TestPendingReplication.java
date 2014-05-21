@@ -33,6 +33,8 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -43,6 +45,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 /**
  * This class tests the internals of PendingReplicationBlocks.java,
@@ -66,7 +69,7 @@ public class TestPendingReplication {
     // Add 10 blocks to pendingReplications.
     //
     for (int i = 0; i < 10; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0), i);
       increment(pendingReplications, block, i);
     }
     
@@ -77,7 +80,7 @@ public class TestPendingReplication {
     //
     // remove one item and reinsert it
     //
-    Block blk = new Block(8, 8, 0);
+    BlockInfo blk = new BlockInfo(new Block(8, 8, 0),8);
     decrement(pendingReplications, blk);             // removes one replica
     assertEquals("pendingReplications.getNumReplicas ",
                  7, getNumReplicas(pendingReplications, blk));
@@ -94,7 +97,7 @@ public class TestPendingReplication {
     // are sane.
     //
     for (int i = 0; i < 10; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i);
       int numReplicas = getNumReplicas(pendingReplications, block);
       assertTrue(numReplicas == i);
     }
@@ -113,7 +116,7 @@ public class TestPendingReplication {
     }
 
     for (int i = 10; i < 15; i++) {
-      Block block = new Block(i, i, 0);
+      BlockInfo block = new BlockInfo(new Block(i, i, 0),i);
       increment(pendingReplications, block, i);
     }
     assertTrue(pendingReplications.size() == 15);
@@ -191,8 +194,7 @@ public class TestPendingReplication {
       BlockManagerTestUtil.computeAllPendingWork(bm);
       BlockManagerTestUtil.updateState(bm);
       assertEquals(bm.getPendingReplicationBlocksCount(), 1L);
-      assertEquals(getNumReplicas(bm.pendingReplications, block.getBlock()
-          .getLocalBlock()), 2);
+      assertEquals(getNumReplicas(bm.pendingReplications, (BlockInfo)block.getBlock().getLocalBlock()), 2);
       
       // 4. delete the file
       fs.delete(filePath, true);
@@ -212,21 +214,22 @@ public class TestPendingReplication {
   }
   
   
-  private void increment(final PendingReplicationBlocks pendingReplications, final Block block, final int numReplicas) throws IOException {
+  private void increment(final PendingReplicationBlocks pendingReplications, final BlockInfo block, final int numReplicas) throws IOException {
     incrementOrDecrementPendingReplications(pendingReplications, block, true, numReplicas);
   }
 
-  private void decrement(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
+  private void decrement(final PendingReplicationBlocks pendingReplications, final BlockInfo block) throws IOException {
     incrementOrDecrementPendingReplications(pendingReplications, block, false, -1);
   }
 
-  private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final Block block, final boolean inc, final int numReplicas) throws IOException {
+  private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final BlockInfo block, final boolean inc, final int numReplicas) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addPendingBlock();
         return tla.acquire();
       }
@@ -240,16 +243,23 @@ public class TestPendingReplication {
         }
         return null;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+        }   
     }.handle();
   }
 
-  private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
+  private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final BlockInfo block) throws IOException {
     return (Integer) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addPendingBlock();
         return tla.acquire();
       }
@@ -258,6 +268,12 @@ public class TestPendingReplication {
       public Object performTask() throws PersistanceException, IOException {
         return pendingReplications.getNumReplicas(block);
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+        }   
     }.handle();
   }
 }

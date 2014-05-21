@@ -798,9 +798,7 @@ class NamenodeJspHelper {
       } else {
         this.block = new Block(blockId);
         this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-          Long inodeID = null, pID = null;
-          String name = null;
-
+          INodeIdentifier inodeIdentifier;
           @Override
           public Object performTask() throws PersistanceException, IOException {
             return blockManager.getBlockCollection(block);
@@ -811,27 +809,14 @@ class NamenodeJspHelper {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.READ).
-                    addBlock(block.getBlockId());
-            return tla.acquireByBlock(inodeID,pID,name);
+                    addBlock(block.getBlockId(),
+                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
+            return tla.acquireByBlock(inodeIdentifier);
           }
 
           @Override
           public void setUp() throws StorageException {
-            name = null; pID = null; inodeID = null;
-            INode inode;
-            if (block instanceof BlockInfo) {
-              inodeID = ((BlockInfo) block).getInodeId();
-              inode = INodeUtil.indexINodeScanById(((BlockInfo) block).getInodeId());
-
-            } else {
-              inode = INodeUtil.findINodeByBlockId(block.getBlockId());
-            }
-
-            if (inode != null) {
-              name = inode.getLocalName();
-              pID = inode.getParentId();
-              inodeID = inode.getId();
-            }
+            inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
           }
         }.handle();
       }

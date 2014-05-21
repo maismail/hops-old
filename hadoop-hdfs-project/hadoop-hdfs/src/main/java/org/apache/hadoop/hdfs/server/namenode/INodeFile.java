@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
@@ -132,13 +133,17 @@ public class INodeFile extends INode implements BlockCollection {
   /**
    * append array of blocks to this.blocks
    */
-  void appendBlocks(INodeFile[] inodes, int totalAddedBlocks /*HOP not used*/) throws PersistanceException {
+  List<BlockInfo> appendBlocks(INodeFile[] inodes, int totalAddedBlocks /*HOP not used*/) throws PersistanceException {
+    List<BlockInfo> oldBlks = new ArrayList<BlockInfo>();
     for (INodeFile srcInode : inodes) {
       for (BlockInfo block : srcInode.getBlocks()) {
+        BlockInfo copy = BlockInfo.cloneBlock(block);
+        oldBlks.add(copy);
         addBlock(block);
         block.setBlockCollection(this);
       }
     }
+    return oldBlks;
   }
   
   /**

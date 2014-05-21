@@ -38,12 +38,13 @@ public class Variables {
     return (Long) getVariable(HopVariable.Finder.BlockID).getValue();
   }
 
-  public static void setInodeId(long inodeId) throws PersistanceException {
-    updateVariable(new HopLongVariable(HopVariable.Finder.INodeID, inodeId));
+  public static void setInodeId(int inodeId) throws PersistanceException {
+    updateVariable(new HopIntVariable(HopVariable.Finder.INodeID, inodeId));
   }
 
-  public static long getInodeId() throws PersistanceException {
-    return (Long) getVariable(HopVariable.Finder.INodeID).getValue();
+  public static int getInodeId() throws PersistanceException {
+    return (Integer) getVariable(HopVariable.Finder.INodeID).getValue();
+    
   }
 
   public static void setGenerationStamp(long stamp) throws PersistanceException {
@@ -176,7 +177,7 @@ public class Variables {
   public static void registerDefaultValues() {
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.GenerationStamp, new HopLongVariable(GenerationStamp.FIRST_VALID_STAMP).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.BlockID, new HopLongVariable(0).getBytes());
-    HopVariable.registerVariableDefaultValue(HopVariable.Finder.INodeID, new HopLongVariable(2).getBytes()); // 1 is taken by the root and zero is parent of the root
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.INodeID, new HopIntVariable(2).getBytes()); // 1 is taken by the root and zero is parent of the root
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.SIdCounter, new HopIntVariable(0).getBytes());
   }

@@ -82,6 +82,7 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -496,7 +497,7 @@ public class BlockManager {
               " e: " + numReplicas.excessReplicas() + ") "); 
 
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(block);
+                                  corruptReplicas.getNodes(getBlockInfo(block));
     
     for (Iterator<DatanodeDescriptor> jt = blocksMap.nodeIterator(block);
          jt.hasNext();) {
@@ -703,7 +704,7 @@ public class BlockManager {
   /**
    * Get all valid locations of the block
    */
-  private List<String> getValidLocations(Block block) throws PersistanceException {
+  private List<String> getValidLocations(BlockInfo block) throws PersistanceException {
     ArrayList<String> machineSet =
       new ArrayList<String>(blocksMap.numNodes(block));
     for(Iterator<DatanodeDescriptor> it =
@@ -987,7 +988,8 @@ public class BlockManager {
    * datanode and log the operation
    */
   void addToInvalidates(final Block block, final DatanodeInfo datanode) throws PersistanceException {
-    invalidateBlocks.add(block, datanode, true);
+    BlockInfo temp = getBlockInfo(block);
+    invalidateBlocks.add(temp, datanode, true);
   }
 
   /**
@@ -999,7 +1001,8 @@ public class BlockManager {
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(b); it
         .hasNext();) {
       DatanodeDescriptor node = it.next();
-      invalidateBlocks.add(b, node, false);
+      BlockInfo temp = getBlockInfo(b);
+      invalidateBlocks.add(temp, node, false);
       datanodes.append(node).append(" ");
     }
     if (datanodes.length() != 0) {
@@ -1019,26 +1022,11 @@ public class BlockManager {
   public void findAndMarkBlockAsCorrupt(final ExtendedBlock blk,
           final DatanodeInfo dn, final String reason) throws IOException {
     HDFSTransactionalRequestHandler findAndMarkBlockAsCorruptHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.FIND_AND_MARK_BLOCKS_AS_CORRUPT) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = blk.getLocalBlock();
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -1046,14 +1034,15 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(blk.getBlockId()).
+                addBlock(blk.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc().
                 addInvalidatedBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -1236,7 +1225,7 @@ public class BlockManager {
             bc = blocksMap.getBlockCollection(blk);
             // abandoned block or block reopened for append
             if(bc == null || bc instanceof MutableBlockCollection) {
-              neededReplications.remove(blk, priority1); // remove from neededReplications
+              neededReplications.remove(getBlockInfo(blk), priority1); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority1);
               return scheduledWork;
             }
@@ -1258,12 +1247,12 @@ public class BlockManager {
             assert liveReplicaNodes.size() == numReplicas.liveReplicas();
             // do not schedule more if enough replicas is already pending
             numEffectiveReplicas = numReplicas.liveReplicas() +
-                                    pendingReplications.getNumReplicas(blk);
+                                    pendingReplications.getNumReplicas(getBlockInfo(blk));
       
             if (numEffectiveReplicas >= requiredReplication) {
-              if ( (pendingReplications.getNumReplicas(blk) > 0) ||
+              if ( (pendingReplications.getNumReplicas(getBlockInfo(blk)) > 0) ||
                    (blockHasEnoughRacks(blk)) ) {
-                neededReplications.remove(blk, priority1); // remove from neededReplications
+                neededReplications.remove(getBlockInfo(blk), priority1); // remove from neededReplications
                 neededReplications.decrementReplicationIndex(priority1);
                 blockLog.info("BLOCK* Removing " + blk
                     + " from neededReplications as it has enough replicas");
@@ -1322,7 +1311,7 @@ public class BlockManager {
           bc = blocksMap.getBlockCollection(block);
           // abandoned block or block reopened for append
           if(bc == null || bc instanceof MutableBlockCollection) {
-            neededReplications.remove(block, priority); // remove from neededReplications
+            neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
             rw.targets = null;
             neededReplications.decrementReplicationIndex(priority);
             continue;
@@ -1332,12 +1321,12 @@ public class BlockManager {
           // do not schedule more if enough replicas is already pending
           NumberReplicas numReplicas = countNodes(block);
           numEffectiveReplicas = numReplicas.liveReplicas() +
-            pendingReplications.getNumReplicas(block);
+            pendingReplications.getNumReplicas(getBlockInfo(block));
 
           if (numEffectiveReplicas >= requiredReplication) {
-            if ( (pendingReplications.getNumReplicas(block) > 0) ||
+            if ( (pendingReplications.getNumReplicas(getBlockInfo(block)) > 0) ||
                  (blockHasEnoughRacks(block)) ) {
-              neededReplications.remove(block, priority); // remove from neededReplications
+              neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
               neededReplications.decrementReplicationIndex(priority);
               rw.targets = null;
               blockLog.info("BLOCK* Removing " + block
@@ -1365,7 +1354,7 @@ public class BlockManager {
           // Move the block-replication into a "pending" state.
           // The reason we use 'pending' is so we can retry
           // replications that fail after an appropriate amount of time.
-          pendingReplications.increment(block, targets.length);
+          pendingReplications.increment(getBlockInfo(block), targets.length);
           if(blockLog.isDebugEnabled()) {
             blockLog.debug(
                 "BLOCK* block " + block
@@ -1374,7 +1363,7 @@ public class BlockManager {
 
           // remove from neededReplications
           if(numEffectiveReplicas + targets.length >= requiredReplication) {
-            neededReplications.remove(block, priority); // remove from neededReplications
+            neededReplications.remove(getBlockInfo(block), priority); // remove from neededReplications
             neededReplications.decrementReplicationIndex(priority);
           }
         }
@@ -1479,14 +1468,14 @@ public class BlockManager {
     int corrupt = 0;
     int excess = 0;
     Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(block);
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(getBlockInfo(block));
     while(it.hasNext()) {
       DatanodeDescriptor node = it.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node)))
         corrupt++;
       else if (node.isDecommissionInProgress() || node.isDecommissioned())
         decommissioned++;
-      else if (excessReplicateMap.contains(node.getStorageID(), block)) {
+      else if (excessReplicateMap.contains(node.getStorageID(), getBlockInfo(block))) {
         excess++;
       } else {
         nodesContainingLiveReplicas.add(node);
@@ -1507,8 +1496,8 @@ public class BlockManager {
         continue;
       }
       // the block must not be scheduled for removal on srcNode
-      if(excessReplicateMap.contains(node.getStorageID(), block))
-        continue;
+      if(excessReplicateMap.contains(node.getStorageID(), getBlockInfo(block))) 
+       continue;
       // never use already decommissioned nodes
       if(node.isDecommissioned())
         continue;
@@ -1672,26 +1661,11 @@ public class BlockManager {
 
 
     HDFSTransactionalRequestHandler rescanPostponedMisreplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RESCAN_MISREPLICATED_BLOCKS) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -1700,11 +1674,12 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -1754,26 +1729,11 @@ public class BlockManager {
     reportDiff(node, report, allMachineBlocks);
 
     HDFSTransactionalRequestHandler afterReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -1782,12 +1742,13 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -1821,26 +1782,11 @@ public class BlockManager {
           final BlockListAsLongs report) throws IOException {
 
     HDFSTransactionalRequestHandler processFirstBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_FIRST_BLOCK_REPORT) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -1849,7 +1795,8 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -1858,7 +1805,7 @@ public class BlockManager {
                 addInvalidatedBlock().
                 addPendingBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -1932,26 +1879,11 @@ public class BlockManager {
       final List<BlockInfo> allMachineBlocks) throws IOException  {
     
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -1960,7 +1892,8 @@ public class BlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(iblk.getBlockId()).
+                addBlock(iblk.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addCorrupt().
                 addExcess().
@@ -1969,7 +1902,7 @@ public class BlockManager {
                 addInvalidatedBlock().
                 addPendingBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -2064,7 +1997,7 @@ public class BlockManager {
     }
 
     // Ignore replicas already scheduled to be removed from the DN
-    if(invalidateBlocks.contains(dn.getStorageID(), block)) {
+    if(invalidateBlocks.contains(dn.getStorageID(), getBlockInfo(block))) {
 /*  TODO: following assertion is incorrect, see HDFS-2668
 assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         + " in recentInvalidatesSet should not appear in DN " + dn; */
@@ -2134,27 +2067,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
       throws IOException {
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_QUEUED_REPORT) {
-     Long inodeID = null, pID = null;
-      String name = null;
+     INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
         Block b = rbi.getBlock();
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -2163,12 +2081,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rbi.getBlock().getBlockId()).
+                addBlock(rbi.getBlock().getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addExcess().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -2514,26 +2433,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
 
     HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -2542,13 +2446,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addInvalidatedBlock().
                 addReplica().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addExcess();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -2682,7 +2587,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     Collection<DatanodeDescriptor> nonExcess = new ArrayList<DatanodeDescriptor>();
     Collection<DatanodeDescriptor> corruptNodes = corruptReplicas
-        .getNodes(block);
+        .getNodes(getBlockInfo(block));
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(block);
          it.hasNext();) {
       DatanodeDescriptor cur = it.next();
@@ -2694,7 +2599,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         postponeBlock(block);
         return;
       }
-      if (!excessReplicateMap.contains(cur.getStorageID(), block)) {
+      if (!excessReplicateMap.contains(cur.getStorageID(), getBlockInfo(block))) {
         if (!cur.isDecommissionInProgress() && !cur.isDecommissioned()) {
           // exclude corrupt replicas
           if (corruptNodes == null || !corruptNodes.contains(cur)) {
@@ -2810,7 +2715,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
   private void addToExcessReplicate(DatanodeInfo dn, Block block) throws PersistanceException {
     assert namesystem.hasWriteLock();
-    if (excessReplicateMap.put(dn.getStorageID(), block)) {
+    if (excessReplicateMap.put(dn.getStorageID(), getBlockInfo(block))) {
       excessBlocksCount.incrementAndGet();
       if(blockLog.isDebugEnabled()) {
         blockLog.debug("BLOCK* addToExcessReplicate:"
@@ -2855,7 +2760,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       // We've removed a block from a node, so it's definitely no longer
       // in "excess" there.
       //
-      if (excessReplicateMap.remove(node.getStorageID(), block)) {
+      if (excessReplicateMap.remove(node.getStorageID(), getBlockInfo(block))) {
         excessBlocksCount.decrementAndGet();
         if (blockLog.isDebugEnabled()) {
           blockLog.debug("BLOCK* removeStoredBlock: "
@@ -2864,7 +2769,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       // Remove the replica from corruptReplicas
-      corruptReplicas.removeFromCorruptReplicasMap(block, node);
+      corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block), node);
     }
   }
 
@@ -2877,25 +2782,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final List<String> machineSet = new ArrayList<String>();
     
     new HDFSTransactionalRequestHandler(HDFSOperationType.GET_VALID_BLK_LOCS) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        INode inode;
-        if (block instanceof BlockInfo) {
-          inodeID = ((BlockInfo) block).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) block).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(block.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
       @Override
@@ -2903,14 +2793,16 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addInvalidatedBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        final List<String> ms = getValidLocations(block);
+        BlockInfo temp = getBlockInfo(block);
+        final List<String> ms = getValidLocations(temp);
         machineSet.addAll(ms);
         return null;
       }
@@ -2943,11 +2835,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             + " is expected to be removed from an unrecorded node " + delHint);
       }
     }
-
+    
     //
     // Modify the blocks->datanode map and node's map.
     //
-    pendingReplications.decrement(block);
+    pendingReplications.decrement(getBlockInfo(block));
     processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
         delHintNode);
   }
@@ -2973,27 +2865,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final DatanodeDescriptor node = datanodeManager.getDatanode(nodeID);
     
     HDFSTransactionalRequestHandler processIncrementalBlockReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
+        ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];        
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(rdbi.getBlock());
         LOG.debug("reported block id="+rdbi.getBlock().getBlockId());
-        INode inode;
-        if (rdbi.getBlock() instanceof BlockInfo) {
-          inodeID = ((BlockInfo) rdbi.getBlock()).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) rdbi.getBlock()).getInodeId());
-        }else{
-          inode = INodeUtil.findINodeByBlockId(rdbi.getBlock().getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
-        else {
+        if(inodeIdentifier == null)
+        {
           LOG.error("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
           //throw new TransactionLockAcquireFailure("Invalid State. deleted blk is not recognized. bid=" + rdbi.getBlock().getBlockId());
           // dont throw the exception. the cached is changed in a way that
@@ -3009,7 +2888,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rdbi.getBlock().getBlockId()).
+                addBlock(rdbi.getBlock().getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -3021,7 +2901,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                   addReplicaUc().
                   addInvalidatedBlock();
         }
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3100,7 +2980,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     int stale = 0;
     Iterator<DatanodeDescriptor> nodeIter = blocksMap.nodeIterator(b);
     
-    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(b);
+    Collection<DatanodeDescriptor> nodesCorrupt = corruptReplicas.getNodes(getBlockInfo(b));
     while (nodeIter.hasNext()) {
       DatanodeDescriptor node = nodeIter.next();
       if ((nodesCorrupt != null) && (nodesCorrupt.contains(node))) {
@@ -3108,7 +2988,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       } else if (node.isDecommissionInProgress() || node.isDecommissioned()) {
         decommissioned++;
       } else {
-        if (excessReplicateMap.contains(node.getStorageID(), b)) {
+        if (excessReplicateMap.contains(node.getStorageID(), getBlockInfo(b))) {
           excess++;
         } else {
           live++;
@@ -3179,26 +3059,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final int[] numOverReplicated = {0};
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
     HDFSTransactionalRequestHandler processBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_OVER_REPLICATED_BLOCKS_ON_RECOMMISSION) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -3207,14 +3072,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock().
                 addInvalidatedBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3254,26 +3120,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     final Iterator<? extends Block> it = srcNode.getBlockIterator();
 
     HDFSTransactionalRequestHandler checkReplicationHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CHECK_REPLICATION_IN_PROGRESS) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
         Block b = (Block) getParams()[0];
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
         
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
       }
 
       @Override
@@ -3282,13 +3134,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addPendingBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3315,14 +3168,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 underReplicatedInOpenFiles[0]++;
               }
             }
-            if (!neededReplications.contains(block)
-                    && pendingReplications.getNumReplicas(block) == 0) {
+            if (!neededReplications.contains(getBlockInfo(block))
+                    && pendingReplications.getNumReplicas(getBlockInfo(block)) == 0) {
               //
               // These blocks have been reported from the datanode
               // after the startDecommission method has been executed. These
               // blocks were in flight when the decommissioning was started.
               //
-              neededReplications.add(block,
+              neededReplications.add(getBlockInfo(block),
                       curReplicas,
                       num.decommissionedReplicas(),
                       curExpectedReplicas);
@@ -3367,10 +3220,11 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     // file already removes them from the block map below.
     block.setNumBytesNoPersistance(BlockCommand.NO_ACK);
     addToInvalidates(block);
-    corruptReplicas.removeFromCorruptReplicasMap(block);
+    corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block));
+    BlockInfo storedBlock = getBlockInfo(block);
     blocksMap.removeBlock(block);
     // Remove the block from pendingReplications
-    pendingReplications.remove(block);
+    pendingReplications.remove(storedBlock);
     if (postponedMisreplicatedBlocks.remove(block)) {
       postponedMisreplicatedBlocksCount.decrementAndGet();
     }
@@ -3391,13 +3245,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       NumberReplicas repl = countNodes(block);
       int curExpectedReplicas = getReplication(block);
       if (isNeededReplication(block, curExpectedReplicas, repl.liveReplicas())) {
-        neededReplications.update(block, repl.liveReplicas(), repl
+        neededReplications.update(getBlockInfo(block), repl.liveReplicas(), repl
             .decommissionedReplicas(), curExpectedReplicas, curReplicasDelta,
             expectedReplicasDelta);
       } else {
         int oldReplicas = repl.liveReplicas()-curReplicasDelta;
         int oldExpectedReplicas = curExpectedReplicas-expectedReplicasDelta;
-        neededReplications.remove(block, oldReplicas, repl.decommissionedReplicas(),
+        neededReplications.remove(getBlockInfo(block), oldReplicas, repl.decommissionedReplicas(),
                                   oldExpectedReplicas);
       }
     } finally {
@@ -3416,7 +3270,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     for (Block block : bc.getBlocks()) {
       final NumberReplicas n = countNodes(block);
       if (isNeededReplication(block, expected, n.liveReplicas())) { 
-        neededReplications.add(block, n.liveReplicas(),
+        neededReplications.add(getBlockInfo(block), n.liveReplicas(),
             n.decommissionedReplicas(), expected);
       } else if (n.liveReplicas() > expected) {
         processOverReplicatedBlock(block, expected, null, null);
@@ -3462,7 +3316,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     }
     boolean enoughRacks = false;;
     Collection<DatanodeDescriptor> corruptNodes = 
-                                  corruptReplicas.getNodes(b);
+                                  corruptReplicas.getNodes(getBlockInfo(b));
     int numExpectedReplicas = getReplication(b);
     String rackName = null;
     for (Iterator<DatanodeDescriptor> it = blocksMap.nodeIterator(b); 
@@ -3516,13 +3370,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   public int numCorruptReplicas(Block block) throws PersistanceException {
-    return corruptReplicas.numCorruptReplicas(block);
+    return corruptReplicas.numCorruptReplicas(getBlockInfo(block));
   }
 
   public void removeBlockFromMap(Block block) throws PersistanceException {
-    blocksMap.removeBlock(block);
     // If block is removed from blocksMap remove it from corruptReplicasMap
-    corruptReplicas.removeFromCorruptReplicasMap(block);
+    corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block));
+    blocksMap.removeBlock(block);
   }
 
   public int getCapacity() {
@@ -3700,25 +3554,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   //START_HOP_CODE
   private void removeStoredBlockTx(final Block b, final DatanodeDescriptor node) throws IOException {
     HDFSTransactionalRequestHandler removeBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_STORED_BLOCK) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -3726,13 +3565,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3747,24 +3587,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   @VisibleForTesting
   int computeReplicationWorkForBlock(final Block b, final int priority) throws IOException {
     HDFSTransactionalRequestHandler computeReplicationWorkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPUTE_REPLICATION_WORK_FOR_BLOCK) {      
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        INode inode;
-        if (b instanceof BlockInfo) {
-          inodeID = ((BlockInfo) b).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) b).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(b.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 
       @Override
@@ -3772,14 +3598,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId()).
+                addBlock(b.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3837,25 +3664,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    
   private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        INode inode;
-        if (timedOutItem instanceof BlockInfo) {
-          inodeID = ((BlockInfo) timedOutItem).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) timedOutItem).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(timedOutItem.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(timedOutItem);
       }
 
       @Override
@@ -3863,13 +3675,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(timedOutItem.getBlockId()).
+                addBlock(timedOutItem.getBlockId(), 
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeID,pID,name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -3880,7 +3693,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           NumberReplicas num = countNodes(timedOutItem);
           if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                                  num.liveReplicas())) {
-            neededReplications.add(timedOutItem,
+            neededReplications.add(getBlockInfo(timedOutItem),
                                    num.liveReplicas(),
                                    num.decommissionedReplicas(),
                                    getReplication(timedOutItem));
@@ -3895,6 +3708,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if(isBlockTokenEnabled()){
       blockTokenSecretManager.updateLeaderState(isLeader);
     }
+  }
+  
+  private BlockInfo getBlockInfo(Block b) throws PersistanceException{
+    BlockInfo binfo = blocksMap.getStoredBlock(b);
+    if(binfo == null){
+      LOG.error("ERROR: Dangling Block. bid="+b.getBlockId()+" setting inodeId to be "+INode.NON_EXISTING_ID);
+      binfo = new BlockInfo(b,INode.NON_EXISTING_ID);
+    }
+    return binfo;
   }
   //END_HOP_CODE
 }

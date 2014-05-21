@@ -236,7 +236,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
   public boolean addBlock(BlockInfo b) throws PersistanceException {
     if(b.hasReplicaIn(this))
       return false;
-    b.addReplica(this);
+    b.addReplica(this, b);
     numBlocks++;
     return true;
   }

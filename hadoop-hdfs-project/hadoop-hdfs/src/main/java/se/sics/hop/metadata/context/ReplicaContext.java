@@ -3,8 +3,12 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
@@ -12,8 +16,10 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.exception.StorageException;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -28,7 +34,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   private Map<HopIndexedReplica, HopIndexedReplica> removedReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
   private Map<HopIndexedReplica, HopIndexedReplica> newReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
   private Map<HopIndexedReplica, HopIndexedReplica> modifiedReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
-  private Map<Long, List<HopIndexedReplica>> blockReplicas = new HashMap<Long, List<HopIndexedReplica>>();
+  private Map<Long, List<HopIndexedReplica>> blocksReplicas = new HashMap<Long, List<HopIndexedReplica>>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   private ReplicaDataAccess dataAccess;
 
   public ReplicaContext(ReplicaDataAccess dataAccess) {
@@ -42,7 +49,13 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
 
     newReplicas.put(replica, replica);
-    blockReplicas.get(replica.getBlockId()).add(replica);
+    
+    List<HopIndexedReplica> list = blocksReplicas.get(replica.getBlockId());
+    if(list == null){
+      list = new ArrayList<HopIndexedReplica>();
+    }list.add(replica);
+    blocksReplicas.put(replica.getBlockId(), list);
+    
     log("added-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
       "sid", Integer.toString(replica.getStorageId()), "index", Integer.toString(replica.getIndex())});
@@ -54,7 +67,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     newReplicas.clear();
     modifiedReplicas.clear();
     removedReplicas.clear();
-    blockReplicas.clear();
+    blocksReplicas.clear();
+    inodesRead.clear();
   }
 
   @Override
@@ -75,13 +89,15 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 //                && hlks.getReplicaLock() != TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade replica locks");
 //        }
+      
+      log("prepare-replica", CacheHitState.NA, new String[]{"removed size",Integer.toString(removedReplicas.size()),"new Size", Integer.toString(newReplicas.size()), "modified size", Integer.toString(modifiedReplicas.size())});
         dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
     }
 
   @Override
   public void remove(HopIndexedReplica replica) throws PersistanceException {
     modifiedReplicas.remove(replica);
-    blockReplicas.get(replica.getBlockId()).remove(replica);
+    blocksReplicas.get(replica.getBlockId()).remove(replica);
     if (newReplicas.containsKey(replica)) {
       newReplicas.remove(replica);
     } else {
@@ -101,25 +117,69 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   public List<HopIndexedReplica> findList(FinderType<HopIndexedReplica> finder, Object... params) throws PersistanceException {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
     List<HopIndexedReplica> result = null;
-
+    
     switch (iFinder) {
       case ByBlockId:
-        long id = (Long) params[0];
-        if (blockReplicas.containsKey(id)) {
-          log("find-replicas-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id)});
-          result = blockReplicas.get(id);
-        } else {
-          log("find-replicas-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id)});
+        long blockId = (Long) params[0];
+        Integer  inodeId = (Integer) params[1];
+        if (blocksReplicas.containsKey(blockId)) {
+          log("find-replicas-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+          result = blocksReplicas.get(blockId);
+        } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
+          return null;
+        }
+        else {
+          log("find-replicas-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicasById(id);
-          blockReplicas.put(id, result);
+          result = dataAccess.findReplicasById(blockId, inodeId);
+          blocksReplicas.put(blockId, result);
         }
         return new ArrayList<HopIndexedReplica>(result); // Shallow copy
+      case ByINodeId:
+        inodeId = (Integer) params[0];
+        
+        if(inodesRead.contains(inodeId)){
+          log("find-replicas-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
+          return getReplicasForINode(inodeId);
+        }else{
+          log("find-replicas-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findReplicasByINodeId(inodeId);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+        }       
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
+  private List<HopIndexedReplica> getReplicasForINode(int inodeId){
+    List<HopIndexedReplica> tmp = new ArrayList<HopIndexedReplica>();
+    for(Long blockId : blocksReplicas.keySet()){
+      List<HopIndexedReplica> blockReplicas = blocksReplicas.get(blockId);
+      for(HopIndexedReplica replica : blockReplicas){
+        if(replica.getInodeId() == inodeId){
+          tmp.add(replica);
+        }
+      }
+    }
+    return tmp;
+  } 
+  
+  private void saveLists(List<HopIndexedReplica> list){
+    for(HopIndexedReplica replica : list){
+      List<HopIndexedReplica> blockReplicas = blocksReplicas.get(replica.getBlockId());
+      if(blockReplicas == null){
+        blockReplicas = new ArrayList<HopIndexedReplica>();
+      }
+      blockReplicas.add(replica);
+      blocksReplicas.put(replica.getBlockId(), blockReplicas);
+    }
+  }
+  
   @Override
   public void removeAll() throws PersistanceException {
     throw new UnsupportedOperationException("Not supported yet.");
@@ -132,7 +192,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
 
     modifiedReplicas.put(replica, replica);
-    List<HopIndexedReplica> list = blockReplicas.get(replica.getBlockId());
+    List<HopIndexedReplica> list = blocksReplicas.get(replica.getBlockId());
     list.remove(replica);
     list.add(replica);
     log("updated-replica", CacheHitState.NA,
@@ -148,6 +208,54 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateReplicas(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newReplicas.size() != 0 || modifiedReplicas.size() != 0) // during the tx no replica should have been changed
+        {// renaming to existing file will put replicas in the deleted list
+          throw new IllegalStateException("No replica should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
+    for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
+      for(HopIndexedReplica replica : replicas){
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(replica.getInodeId());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);
+          HopIndexedReplica toBeAdded = cloneReplicaObj(replica);
+          
+          removedReplicas.put(toBeDeleted, toBeDeleted);
+          log("snapshot-maintenance-removed-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
+          
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.getInodeId());
+          newReplicas.put(toBeAdded, toBeAdded);
+          log("snapshot-maintenance-added-replica",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        }
+      }
+    }
+  }
+  
+  private HopIndexedReplica cloneReplicaObj(HopIndexedReplica src){
+    return new HopIndexedReplica(src.getBlockId(), src.getStorageId(), src.getInodeId(), src.getIndex());
   }
 }
+

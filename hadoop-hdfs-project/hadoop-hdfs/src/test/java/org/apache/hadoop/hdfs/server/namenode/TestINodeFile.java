@@ -185,10 +185,12 @@ public class TestINodeFile {
    * @param nCount Number of INodes to create
    * @return Array of INode files
    */
+  static int blkid = 0;
   private INodeFile[] createINodeFiles(int nCount, String fileNamePrefix) throws PersistanceException {
+    
     if(nCount <= 0)
       return new INodeFile[1];
-
+    
     replication = 3;
     preferredBlockSize = 128 * 1024 * 1024;
     INodeFile[] iNodes = new INodeFile[nCount];
@@ -199,6 +201,8 @@ public class TestINodeFile {
           preferredBlockSize);
       iNodes[i].setLocalNameNoPersistance(fileNamePrefix +  Integer.toString(i));
       BlockInfo newblock = new BlockInfo();
+      newblock.setBlockId(blkid++);
+      newblock.setINodeId(iNodes[i].getId());
       iNodes[i].addBlock(newblock);
     }
     

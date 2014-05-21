@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Apache Software Foundation.
+ * Copyright 2014 Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.sics.hop.common;
-
-import se.sics.hop.metadata.Variables;
-import se.sics.hop.exception.PersistanceException;
+package org.apache.hadoop.hdfs.server.namenode;
 
 /**
  *
- * @author Mahmoud Ismail <maism@sics.se>
+ * @author salman
  */
-public class HopINodeIdGen {
-  
-  public static int getUniqueINodeID() throws PersistanceException{
-    int lastInodeId =  Variables.getInodeId();
-    lastInodeId++;
-    Variables.setInodeId(lastInodeId);
-    return lastInodeId;
+public class INodeIdentifier {
+  int inodeID;
+
+  public INodeIdentifier(int inodeID) {
+    this.inodeID = inodeID;
   }
+
+  public int getInodeId() {
+    return inodeID;
+  }
+
+  public void setInode_id(int inodeID) {
+    this.inodeID = inodeID;
+  }  
 }

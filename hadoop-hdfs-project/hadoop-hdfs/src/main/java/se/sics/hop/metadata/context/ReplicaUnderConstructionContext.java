@@ -4,9 +4,13 @@ import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -14,6 +18,7 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -28,6 +33,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> newReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
   private Map<ReplicaUnderConstruction, ReplicaUnderConstruction> removedReplicasUc = new HashMap<ReplicaUnderConstruction, ReplicaUnderConstruction>();
   private Map<Long, List<ReplicaUnderConstruction>> blockReplicasUCAll = new HashMap<Long, List<ReplicaUnderConstruction>>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   private ReplicaUnderConstructionDataAccess<ReplicaUnderConstruction> dataAccess;
 
   public ReplicaUnderConstructionContext(ReplicaUnderConstructionDataAccess<ReplicaUnderConstruction> dataAccess) {
@@ -41,9 +47,6 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     }
 
     newReplicasUc.put(replica, replica);
-    if (replica.getBlockId() == -1) {
-      throw new IllegalArgumentException("Block Id is -1");
-    }
     if (blockReplicasUCAll.get(replica.getBlockId()) == null) {
       blockReplicasUCAll.put(replica.getBlockId(), new ArrayList<ReplicaUnderConstruction>());
     }
@@ -60,6 +63,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     newReplicasUc.clear();
     removedReplicasUc.clear();
     blockReplicasUCAll.clear();
+    inodesRead.clear();
   }
 
   @Override
@@ -75,25 +79,65 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     switch (rFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
+        Integer inodeId = (Integer) params[1];
         if (blockReplicasUCAll.containsKey(blockId)) {
           log("find-replicaucs-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
           result = blockReplicasUCAll.get(blockId);
-        } else {
-          if (isTxRunning()) // if Tx is running and we dont have the data in the cache then it means it was null 
-          {
-            return result;
-          }
+        } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
+          return null;
+        }
+        else {
           log("find-replicaucs-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicaUnderConstructionByBlockId(blockId);
+          result = dataAccess.findReplicaUnderConstructionByBlockId(blockId, inodeId);
           blockReplicasUCAll.put(blockId, result);
         }
         break;
+     case ByINodeId:
+        inodeId = (Integer) params[0];
+        
+        if(inodesRead.contains(inodeId)){
+          log("find-replicaucs-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
+          return getReplicasUnderConstructionForFile(inodeId);
+        }else{
+          log("find-replicaucs-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findReplicaUnderConstructionByINodeId(inodeId);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+        }       
     }
 
     return result;
   }
 
+  private List<ReplicaUnderConstruction> getReplicasUnderConstructionForFile(int inodeId){
+    List<ReplicaUnderConstruction> tmp = new ArrayList<ReplicaUnderConstruction>();
+    for(Long blockId : blockReplicasUCAll.keySet()){
+      List<ReplicaUnderConstruction> blockReplicas = blockReplicasUCAll.get(blockId);
+      for(ReplicaUnderConstruction replica : blockReplicas){
+        if(replica.getInodeId() == inodeId){
+          tmp.add(replica);
+        }
+      }
+    }
+    return tmp;
+  } 
+  
+  private void saveLists(List<ReplicaUnderConstruction> list){
+    for(ReplicaUnderConstruction replica : list){
+      List<ReplicaUnderConstruction> blockReplicas = blockReplicasUCAll.get(replica.getBlockId());
+      if(blockReplicas == null){
+        blockReplicas = new ArrayList<ReplicaUnderConstruction>();
+      }
+      blockReplicas.add(replica);
+      blockReplicasUCAll.put(replica.getBlockId(), blockReplicas);
+    }
+  }
+  
   @Override
   public ReplicaUnderConstruction find(FinderType<ReplicaUnderConstruction> finder, Object... params) throws PersistanceException {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
@@ -155,8 +199,54 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     return stat;
   }
 
-  @Override
+   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateReplicaUCs(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newReplicasUc.size() != 0 || removedReplicasUc.size() != 0 ) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No replica under construction row should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicaUCs(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
+    for(List<ReplicaUnderConstruction> replicasUC : blockReplicasUCAll.values()){
+      for(ReplicaUnderConstruction replicaUC : replicasUC){
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(replicaUC.getInodeId());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          ReplicaUnderConstruction toBeDeleted = cloneReplicaUCObj(replicaUC);
+          ReplicaUnderConstruction toBeAdded = cloneReplicaUCObj(replicaUC);
+          
+          removedReplicasUc.put(toBeDeleted, toBeDeleted);
+          log("snapshot-maintenance-removed-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.getInodeId());
+          newReplicasUc.put(toBeAdded, toBeAdded);
+          log("snapshot-maintenance-added-replicauc",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        }
+      }
+    }
+  }
+  
+  private ReplicaUnderConstruction cloneReplicaUCObj(ReplicaUnderConstruction src){
+    return new ReplicaUnderConstruction(src.getState(),src.getStorageId(),src.getBlockId(),src.getInodeId(),src.getIndex());
   }
 }
