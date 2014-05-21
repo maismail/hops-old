@@ -369,7 +369,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            else if (parallelReadParams.getDefaultFinder()!=null && !terminateAsyncThread) {
                acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getDefaultFinder());
            }else{
-              LOG.fatal(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
+              LOG.warn(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getInodeFinder()!= null?parallelReadParams.getInodeFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getDefaultFinder()!= null?parallelReadParams.getDefaultFinder().getClass().getName():""));
            }

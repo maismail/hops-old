@@ -5,15 +5,11 @@ import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
@@ -195,12 +191,6 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
         checkForSnapshotChange();        
         INode inodeBeforeChange = (INode) params[0];
         INode inodeAfterChange  = (INode) params[1];
-        if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
-          log("snapshot-maintenance-corrupt-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-          List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
-          updateCorruptReplicas(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
-        }
         break;
       case Concat:
         checkForSnapshotChange();

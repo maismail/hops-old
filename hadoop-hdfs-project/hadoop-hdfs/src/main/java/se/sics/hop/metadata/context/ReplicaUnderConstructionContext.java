@@ -208,12 +208,6 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
         checkForSnapshotChange();        
         INode inodeBeforeChange = (INode) params[0];
         INode inodeAfterChange  = (INode) params[1];
-        if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false){
-          log("snapshot-maintenance-replicauc-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-          List<HopINodeCandidatePK> deletedINodesPK = new ArrayList<HopINodeCandidatePK>();
-          deletedINodesPK.add(new HopINodeCandidatePK(inodeBeforeChange.getId()));
-          updateReplicaUCs(new HopINodeCandidatePK(inodeAfterChange.getId()), deletedINodesPK);
-        }
         break;
       case Concat:
         checkForSnapshotChange();

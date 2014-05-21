@@ -254,7 +254,6 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     if (blockList != null) {
       if (blockList.contains(newBlock)) {
         BlockInfo oldBlock = blockList.remove(blockList.indexOf(newBlock));
-//        LOG.debug("xxxxxxxxx  blk_id "+newBlock.getBlockId()+" old state "+oldBlock.getBlockUCState()+" new state "+newBlock.getBlockUCState()+" inode id "+newBlock.getInodeId()+" blocks are "+(blockList.size()+1));
         blockList.add(newBlock);
       }      
     }
@@ -318,7 +317,6 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         //delete the previous row from db
         INode inodeBeforeChange  = (INode) params[0];
         INode inodeAfterChange   = (INode) params[1];
-        updateBlocks(inodeBeforeChange, inodeAfterChange);
         break;
       case Concat:
         //checkForSnapshotChange();
@@ -355,25 +353,5 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId())});
       }   
     }
-  }
-  
-  private void updateBlocks(INode inodeBeforeChange, INode inodeAfterChange) throws PersistanceException {
-    checkForSnapshotChange();
-    
-    if (inodeBeforeChange instanceof INodeFile) { // with the current partitioning mechanism the blocks are only changed if only a file is renamed. 
-      if (inodeBeforeChange.getLocalName().equals(inodeAfterChange.getLocalName()) ==  false) { //file name was changed. partKey has to be changed in the blocks of the src file
-        log("snapshot-maintenance-blockinfo-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-        for (BlockInfo bInfo : blocks.values()) {
-          if (bInfo.getInodeId() == inodeBeforeChange.getId()) {
-            BlockInfo removedBlk = BlockInfo.cloneBlock(bInfo);
-            removedBlocks.put(removedBlk.getBlockId(), removedBlk);
-            log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(removedBlk.getBlockId()),"inodeId", Integer.toString(removedBlk.getInodeId())});
-            modifiedBlocks.put(bInfo.getBlockId(), bInfo);
-            log("snapshot-maintenance-added-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId())});
-          }
-        }        
-      }
-    }
-  }
-  
+  } 
 }
