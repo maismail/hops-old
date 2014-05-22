@@ -259,13 +259,24 @@ public class DistributedFileSystem extends FileSystem {
     return create(f, true, policy);
   }
 
-  public HdfsDataOutputStream create(Path f, boolean overwrite, EncodingPolicy policy)
+  public HdfsDataOutputStream create(Path f, short replication, EncodingPolicy policy) throws IOException {
+    return create(f, true, replication, policy);
+  }
+
+  public HdfsDataOutputStream create(Path f, boolean overwrite, short replication, EncodingPolicy policy)
       throws IOException {
     return create(f, overwrite,
         getConf().getInt("io.file.buffer.size", 4096),
-        getDefaultReplication(f),
+        replication,
         getDefaultBlockSize(f),
         null,
+        policy);
+  }
+
+  public HdfsDataOutputStream create(Path f, boolean overwrite, EncodingPolicy policy)
+      throws IOException {
+    return create(f, overwrite,
+        getDefaultReplication(f),
         policy);
   }
 

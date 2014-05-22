@@ -2,44 +2,11 @@
 <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
 
 <configuration>
-    <property>
-        <name>raid.config.file</name>
-        <value>conf/raid.xml</value>
-        <description>This is needed by the RaidNode </description>
-    </property>
 
     <property>
         <name>fs.hdfs.impl</name>
         <value>org.apache.hadoop.hdfs.DistributedFileSystem</value>
         <description>The FileSystem for hdfs: uris.</description>
-    </property>
-
-    <property>
-        <name>hdfs.raid.block.move.min.replication</name>
-        <value>1</value>
-        <description>Minimum replication when the PlacementMonitor moves blocks.</description>
-    </property>
-
-    <property>
-        <name>mapred.raid.http.address</name>
-        <value>cloud5:55091</value>
-        <description>RaidNode control web server.</description>
-    </property>
-
-    <property>
-        <name>hdfs.raid.block.move.simulate</name>
-        <value>true</value>
-        <description>Activate block placement fixing</description>
-    </property>
-
-    <property>
-        <name>raid.policy.rescan.interval</name>
-        <value>30000</value>
-        <description>
-            Specify the periodicity in milliseconds after which
-            all source paths are rescanned and parity blocks recomputed if
-            necessary. By default, this value is 1 hour.
-        </description>
     </property>
 
     <property>
@@ -82,16 +49,4 @@
         <description>JSon string that contains all Raid codecs</description>
     </property>
 
-    <property>
-        <name>raid.classname</name>
-        <value>se.sics.hop.erasure_coding.LocalEncodingManagerImpl</value>
-        <description>Specify which implementation of EncodingManager to
-            use(class name).</description>
-    </property>
-
-    <property>
-        <name>raid.blockfix.classname</name>
-        <value>org.apache.hadoop.raid.DistBlockIntegrityMonitor</value>
-        <description>Specify the BlockFixer implementation to use. The default is org.apache.hadoop.raid.DistBlockFixer.</description>
-    </property>
 </configuration>
