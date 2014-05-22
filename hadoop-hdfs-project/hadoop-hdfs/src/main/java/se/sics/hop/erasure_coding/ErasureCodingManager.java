@@ -49,9 +49,9 @@ public class ErasureCodingManager extends Configured{
   public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
   public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
   public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
-  public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
+  public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_parity_repair_limit";
   public static final int DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT = 10;
-  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
+  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_parity_repair_delay";
   public static final int DEFAULT_PARITY_REPAIR_DELAY_KEY = 30 * 60 * 1000;
 
   private final FSNamesystem namesystem;
