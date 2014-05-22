@@ -3834,7 +3834,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.getBlockId()).
@@ -3843,6 +3843,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
+        }
         return tla.acquireByBlock(inodeID, pID, name);
       }
 
