@@ -2,6 +2,8 @@ package se.sics.hop.metadata.context;
 
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,7 +36,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   private Map<HopIndexedReplica, HopIndexedReplica> removedReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
   private Map<HopIndexedReplica, HopIndexedReplica> newReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
   private Map<HopIndexedReplica, HopIndexedReplica> modifiedReplicas = new HashMap<HopIndexedReplica, HopIndexedReplica>();
-  private Map<Long, List<HopIndexedReplica>> blocksReplicas = new HashMap<Long, List<HopIndexedReplica>>();
+  private Map<Long, Map<Integer, HopIndexedReplica>> blocksReplicas = new HashMap<Long, Map<Integer, HopIndexedReplica>>();
   private Set<Integer> inodesRead = new HashSet<Integer>();
   private ReplicaDataAccess dataAccess;
 
@@ -50,11 +52,12 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
     newReplicas.put(replica, replica);
     
-    List<HopIndexedReplica> list = blocksReplicas.get(replica.getBlockId());
-    if(list == null){
-      list = new ArrayList<HopIndexedReplica>();
-    }list.add(replica);
-    blocksReplicas.put(replica.getBlockId(), list);
+    Map<Integer, HopIndexedReplica> map = blocksReplicas.get(replica.getBlockId());
+    if(map == null){
+      map = new HashMap<Integer, HopIndexedReplica>();
+    }
+    map.put(replica.getStorageId(), replica);
+    blocksReplicas.put(replica.getBlockId(), map);
     
     log("added-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
@@ -97,7 +100,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   @Override
   public void remove(HopIndexedReplica replica) throws PersistanceException {
     modifiedReplicas.remove(replica);
-    blocksReplicas.get(replica.getBlockId()).remove(replica);
+    blocksReplicas.get(replica.getBlockId()).remove(replica.getStorageId());
     if (newReplicas.containsKey(replica)) {
       newReplicas.remove(replica);
     } else {
@@ -110,13 +113,25 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
   @Override
   public HopIndexedReplica find(FinderType<HopIndexedReplica> finder, Object... params) throws PersistanceException {
-    throw new UnsupportedOperationException("Not supported yet.");
+    HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
+    switch (iFinder) {
+      case ByPK:
+        long id = (Long) params[0];
+        int sid = (Integer) params[1];
+        if (blocksReplicas.containsKey(id)) {
+          if (blocksReplicas.get(id).containsKey(sid)) {
+            return blocksReplicas.get(id).get(sid);
+          }
+        }
+        //block doesn't have any replicas at this sid or at all
+        return null;
+    }
+    throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
   @Override
   public List<HopIndexedReplica> findList(FinderType<HopIndexedReplica> finder, Object... params) throws PersistanceException {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
-    List<HopIndexedReplica> result = null;
     
     switch (iFinder) {
       case ByBlockId:
@@ -124,42 +139,91 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         Integer  inodeId = (Integer) params[1];
         if (blocksReplicas.containsKey(blockId)) {
           log("find-replicas-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
-          result = blocksReplicas.get(blockId);
+          return new ArrayList<HopIndexedReplica>(blocksReplicas.get(blockId).values());
         } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
           return null;
         }
         else {
           log("find-replicas-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicasById(blockId, inodeId);
-          blocksReplicas.put(blockId, result);
+          return syncInstances(dataAccess.findReplicasById(blockId, inodeId), blockId);
         }
-        return new ArrayList<HopIndexedReplica>(result); // Shallow copy
       case ByINodeId:
-        inodeId = (Integer) params[0];
-        
+        inodeId = (Integer) params[0];   
         if(inodesRead.contains(inodeId)){
           log("find-replicas-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
           return getReplicasForINode(inodeId);
         }else{
           log("find-replicas-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findReplicasByINodeId(inodeId);
-          inodesRead.add(inodeId);
-          if(result != null){
-            saveLists(result);
-          }
-          return result;
-        }       
+          return syncInstances(dataAccess.findReplicasByINodeId(inodeId), inodeId);
+        }
+      case ByPKS:
+        long[] blockIds = (long[]) params[0];
+        int[] inodeIds = (int[]) params[1];
+        int sid = (Integer) params[2];
+        int[] sids = new int[blockIds.length];
+        Arrays.fill(sids, sid);
+        log("find-replicas-by-pks", CacheHitState.NA, new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
+        return syncInstances(dataAccess.findReplicasByPKS(blockIds, inodeIds, sids), blockIds, sid);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
+  private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, long blockId) {
+    for (HopIndexedReplica r : list) {
+      addReplica(blockId, r.getStorageId(), r);
+    }
+    if (list.isEmpty()) {
+      addReplica(blockId, null, null);
+    }
+    return new ArrayList<HopIndexedReplica>(list);
+  }
+  
+  private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, int inodeId) {
+    for (HopIndexedReplica r : list) {
+      addReplica(r.getBlockId(), r.getStorageId(), r);
+    }
+    inodesRead.add(inodeId);
+    return new ArrayList<HopIndexedReplica>(list);
+  }
+
+  private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, long[] blockIds, int sid) {
+    List<Long> nullBlks = new ArrayList<Long>();
+    for (long id : blockIds) {
+      nullBlks.add(id);
+    }
+    for (HopIndexedReplica replica : list) {
+      long blkId = replica.getBlockId();
+      if (nullBlks.contains(blkId)) {
+        nullBlks.remove(blkId);
+      }
+      addReplica(blkId, sid, replica);
+    }
+
+    for (long blkId : nullBlks) {
+      addReplica(blkId, sid, null);
+    }
+
+    return new ArrayList<HopIndexedReplica>(list);
+  }
+
+  private void addReplica(Long blkId, Integer sid, HopIndexedReplica replica) {
+    Map<Integer, HopIndexedReplica> cMap = blocksReplicas.get(blkId);
+    if (cMap == null) {
+      cMap = new HashMap<Integer, HopIndexedReplica>();
+      blocksReplicas.put(blkId, cMap);
+    }
+    if (sid != null) {
+      cMap.put(sid, replica);
+    }
+  }
+  
   private List<HopIndexedReplica> getReplicasForINode(int inodeId){
     List<HopIndexedReplica> tmp = new ArrayList<HopIndexedReplica>();
     for(Long blockId : blocksReplicas.keySet()){
-      List<HopIndexedReplica> blockReplicas = blocksReplicas.get(blockId);
+      Collection<HopIndexedReplica> blockReplicas = blocksReplicas.get(blockId).values();
       for(HopIndexedReplica replica : blockReplicas){
         if(replica.getInodeId() == inodeId){
           tmp.add(replica);
@@ -168,17 +232,6 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
     return tmp;
   } 
-  
-  private void saveLists(List<HopIndexedReplica> list){
-    for(HopIndexedReplica replica : list){
-      List<HopIndexedReplica> blockReplicas = blocksReplicas.get(replica.getBlockId());
-      if(blockReplicas == null){
-        blockReplicas = new ArrayList<HopIndexedReplica>();
-      }
-      blockReplicas.add(replica);
-      blocksReplicas.put(replica.getBlockId(), blockReplicas);
-    }
-  }
   
   @Override
   public void removeAll() throws PersistanceException {
@@ -192,9 +245,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
 
     modifiedReplicas.put(replica, replica);
-    List<HopIndexedReplica> list = blocksReplicas.get(replica.getBlockId());
-    list.remove(replica);
-    list.add(replica);
+    blocksReplicas.get(replica.getBlockId()).put(replica.getStorageId(), replica);
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),
       "sid", Integer.toString(replica.getStorageId()), "index", Integer.toString(replica.getIndex())});
@@ -235,8 +286,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   
   private void updateReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
-    for(List<HopIndexedReplica> replicas : blocksReplicas.values()){
-      for(HopIndexedReplica replica : replicas){
+    for(Map<Integer, HopIndexedReplica> replicas : blocksReplicas.values()){
+      for(HopIndexedReplica replica : replicas.values()){
         HopINodeCandidatePK pk = new HopINodeCandidatePK(replica.getInodeId());
         if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
           HopIndexedReplica toBeDeleted = cloneReplicaObj(replica);

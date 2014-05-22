@@ -63,6 +63,10 @@ public class HDFSTransactionLocks implements TransactionLocks{
   //sidcounter
   private LockType sidCounterLock = null;
   
+  private long[] blocksParam = null;
+  private Integer invdatanode = null;
+  private Integer repldatanode = null;
+  
   HDFSTransactionLocks() {
   }
 
@@ -337,5 +341,35 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public boolean isPreTxPathFullyResolved() {
     return preTxPathFullyResolved;
+  }
+  
+  public HDFSTransactionLocks addBlocks(long[] blocks) {
+    this.blockLock = LockType.READ_COMMITTED;
+    this.blocksParam = blocks;
+    return this;
+  }
+
+  public long[] getBlocksParam() {
+    return blocksParam;
+  }
+
+  public HDFSTransactionLocks addInvalidatedBlocks(int datanode) {
+    this.invLocks = LockType.READ_COMMITTED;
+    this.invdatanode = datanode;
+    return this;
+  }
+
+  public HDFSTransactionLocks addReplicas(int datanode) {
+    this.replicaLock = LockType.READ_COMMITTED;
+    this.repldatanode = datanode;
+    return this;
+  }
+
+  public Integer getInvalidatedBlocksDatanode() {
+    return invdatanode;
+  }
+
+  public Integer getReplicasDatanode() {
+    return repldatanode;
   }
 }

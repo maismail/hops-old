@@ -57,7 +57,7 @@ public class BlockInfo extends Block {
   
   public static enum Finder implements FinderType<BlockInfo> {
     
-    ById, ByInodeId, All, ByStorageId, MAX_BLK_INDX;
+    ById, ByInodeId, All, ByStorageId, MAX_BLK_INDX, ByIds;
     
     @Override
     public Class getType() {
@@ -258,22 +258,15 @@ public class BlockInfo extends Block {
   }
   
   int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
-    List<HopIndexedReplica> replicas = getReplicasNoCheck();
-    for (int i = 0; i < replicas.size(); i++) {
-      if (replicas.get(i).getStorageId() == dn.getSId()) {
-        return i;
-      }
+    HopIndexedReplica replica = EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId());
+    if (replica == null) {
+      return -1;
     }
-    return -1;
+    return replica.getIndex();
   }
 
   boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
-    for (HopIndexedReplica replica : getReplicasNoCheck()) {
-      if (replica.getStorageId() == dn.getSId()) {
-        return true;
-      }
-    }
-    return false;
+    return EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId()) != null;
   }
 
   /**

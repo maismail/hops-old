@@ -314,4 +314,20 @@ public class INodeUtil {
       return resolveINodeFromBlockID(b.getBlockId());
     }
   }
+  
+  public static int[] resolveINodesFromBlockIds(final long[] blockIds) throws StorageException {
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockLookUpDataAccess.class);
+        return da.findINodeIdsByBlockIds(blockIds);
+      }
+    };
+    try {
+      return (int[]) handler.handle();
+    } catch (IOException ex) {
+      throw new StorageException(ex.getMessage());
+    }
+  }
+
 }

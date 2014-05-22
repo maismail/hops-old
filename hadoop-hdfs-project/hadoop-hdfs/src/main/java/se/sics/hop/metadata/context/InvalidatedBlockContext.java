@@ -14,6 +14,7 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.metadata.hdfs.entity.hop.HopBlockLookUp;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -203,6 +204,14 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
           }
         }
         return resultList;
+      case ByPKS:
+        long[] blockIds = (long[]) params[0];
+        int[] inodeIds = (int[]) params[1];
+        int sid = (Integer) params[2];
+        log("find-invblocks-by-pks", CacheHitState.NA, new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
+        int[] sids = new int[blockIds.length];
+        Arrays.fill(sids, sid);
+        return syncInstances(dataAccess.findInvalidatedBlocksbyPKS(blockIds, inodeIds, sids), blockIds, inodeIds, sid);
         }   
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -265,6 +274,25 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
   
 
+   private List<HopInvalidatedBlock> syncInstances(List<HopInvalidatedBlock> list, long[] blockIds, int[] inodeIds, int sid) {
+    List<HopBlockLookUp> nullBlks = new ArrayList<HopBlockLookUp>();
+    for (int i=0;i<blockIds.length;i++) {
+      nullBlks.add(new HopBlockLookUp(blockIds[i], inodeIds[i]));
+    }
+    for (HopInvalidatedBlock ib : list) {
+      HopBlockLookUp blk = new HopBlockLookUp(ib.getBlockId(), ib.getInodeId());
+      if (nullBlks.contains(blk)) {
+        nullBlks.remove(blk);
+      }
+    }
+
+    for (HopBlockLookUp blk : nullBlks) {
+      invBlocks.put(new HopInvalidatedBlock(sid, blk.getBlockId(), blk.getInodeId()), null);
+    }
+    syncInstances(list);
+    return list;
+  }
+   
   /**
    *
    * @param list returns only the data fetched from the storage not those cached

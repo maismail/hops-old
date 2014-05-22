@@ -289,6 +289,22 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return locks;
   }
 
+  public TransactionLocks acquireBatch() throws PersistanceException {
+    int[] inodeIds = null;
+    if (locks.getBlockLock() != null && locks.getBlocksParam() != null) {
+      inodeIds = INodeUtil.resolveINodesFromBlockIds(locks.getBlocksParam());
+      acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByIds, locks.getBlocksParam(), inodeIds);
+    }
+    if (locks.getInvLocks() != null && locks.getBlocksParam() != null && locks.getInvalidatedBlocksDatanode() != null && inodeIds != null) {
+      acquireLockList(locks.getInvLocks(), HopInvalidatedBlock.Finder.ByPKS, locks.getBlocksParam(), inodeIds, locks.getInvalidatedBlocksDatanode());
+    }
+
+    if (locks.getReplicaLock() != null && locks.getBlocksParam() != null && locks.getReplicasDatanode() != null && inodeIds != null) {
+      acquireLockList(locks.getReplicaLock(), HopIndexedReplica.Finder.ByPKS, locks.getBlocksParam(), inodeIds, locks.getReplicasDatanode());
+    }
+    return locks;
+  }
+
   private LinkedList<Lease> acquireLeaseLock() throws PersistanceException {
 
     checkStringParam(locks.getLeaseParam());

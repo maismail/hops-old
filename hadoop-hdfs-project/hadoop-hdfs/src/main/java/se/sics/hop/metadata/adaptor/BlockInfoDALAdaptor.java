@@ -64,6 +64,16 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
+  public List<BlockInfo> findByIds(long[] blockIds, int[] inodeIds) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByIds(blockIds, inodeIds));
+  }
+
+  @Override
+  public List<Long> findByStorageIdOnlyIds(int storageId) throws StorageException {
+    return dataAccess.findByStorageIdOnlyIds(storageId);
+  }
+  
+  @Override
   public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {
     dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));
   }

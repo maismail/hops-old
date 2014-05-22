@@ -96,6 +96,7 @@ import se.sics.hop.exception.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
+import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -966,7 +967,7 @@ public class BlockManager {
    
   /** Remove the blocks associated to the given datanode. */
   void removeBlocksAssociatedTo(final DatanodeDescriptor node) throws IOException {
-    final Iterator<? extends Block> it = node.getBlockIterator();
+    final Iterator<Long> it = node.getAllMachineBlocks().iterator();
     while (it.hasNext()) {
       removeStoredBlockTx(it.next(), node);
     }
@@ -1723,48 +1724,34 @@ public class BlockManager {
     // Modify the (block-->datanode) map, according to the difference
     // between the old and new block report.
     //
-    
-    List<BlockInfo> allMachineBlocks = node.getAllMachineBlocks();
+    Collection<BlockInfo> toAdd = new LinkedList<BlockInfo>();
+    Collection<Long> toRemove = new LinkedList<Long>();
+    Collection<Block> toInvalidate = new LinkedList<Block>();
+    Collection<BlockToMarkCorrupt> toCorrupt = new LinkedList<BlockToMarkCorrupt>();
+    Collection<StatefulBlockInfo> toUC = new LinkedList<StatefulBlockInfo>();
 
-    reportDiff(node, report, allMachineBlocks);
+    reportDiff(node, report, toAdd, toRemove, toInvalidate, toCorrupt, toUC);
 
-    HDFSTransactionalRequestHandler afterReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT) {
-      INodeIdentifier inodeIdentifier;
-      @Override
-      public void setUp() throws StorageException {
-        Block b = (Block) getParams()[0];
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
-      }
-
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        Block b = (Block) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks()
-                .addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeIdentifier);
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Block b = (Block) getParams()[0];
-        removeStoredBlock(b, node);
-        return null;
-      }
-    };
-
-    // collect blocks that have not been reported
-    for (Block b : allMachineBlocks) {
-      afterReportHandler.setParams(b);
-      afterReportHandler.handle(namesystem);
+    // Process the blocks on each queue
+    for (StatefulBlockInfo b : toUC) {
+      addStoredBlockUnderConstructionTx(b.storedBlock, node, b.reportedState);
     }
+    for (Long b : toRemove) {
+      removeStoredBlockTx(b, node);
+    }
+    for (BlockInfo b : toAdd) {
+      addStoredBlockTx(b, node, null, true);
+    }
+    for (Block b : toInvalidate) {
+      blockLog.info("BLOCK* processReport: "
+              + b + " on " + node + " size " + b.getNumBytes()
+              + " does not belong to any file");
+    }
+    addToInvalidates(toInvalidate, node);
 
+    for (BlockToMarkCorrupt b : toCorrupt) {
+      markBlockAsCorruptTx(b, node);
+    }
   }
 
   /**
@@ -1875,59 +1862,50 @@ public class BlockManager {
   }
 
   private void reportDiff(final DatanodeDescriptor dn, 
-      BlockListAsLongs newReport, 
-      final List<BlockInfo> allMachineBlocks) throws IOException  {
+      final BlockListAsLongs newReport, 
+      final Collection<BlockInfo> toAdd,              // add to DatanodeDescriptor
+      final Collection<Long> toRemove,           // remove from DatanodeDescriptor
+      final Collection<Block> toInvalidate,       // should be removed from DN
+      final Collection<BlockToMarkCorrupt> toCorrupt, // add to corrupt replicas list
+      final Collection<StatefulBlockInfo> toUC) throws IOException{ // add to under-construction list
     
-    HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-      INodeIdentifier inodeIdentifier;
-      @Override
-      public void setUp() throws StorageException {
-        Block b = (Block) getParams()[0];
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
-      }
+     final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
 
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        Block iblk = (Block) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(iblk.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addReplica().
-                addCorrupt().
-                addExcess().
-                addReplicaUc().
-                addUnderReplicatedBlock().
-                addInvalidatedBlock().
-                addPendingBlock().
-                addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeIdentifier);
-      }
+     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
+       @Override
+       public TransactionLocks acquireLock() throws PersistanceException, IOException {
+         if(newReport == null)
+           return null;
+         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+         tla.getLocks()
+                 .addBlocks(newReport.getBlockListAsLongs())
+                 .addInvalidatedBlocks(dn.getSId())
+                 .addReplicas(dn.getSId());
+         return tla.acquireBatch();
+       }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Block iblk = (Block) getParams()[0];
-        ReplicaState iState = (ReplicaState) getParams()[1];
-        BlockInfo storedBlock = processReportedBlock(dn, iblk, iState, null);
-        // move block to the head of the list
-        if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
-          allMachineBlocks.remove(storedBlock);
-        }
-        
-        return null;
-      }
-    };
-    
-    if (newReport == null)
-      newReport = new BlockListAsLongs();
-    // scan the report and process newly reported blocks
-    BlockReportIterator itBR = newReport.getBlockReportIterator();
-    while(itBR.hasNext()) {
-      Block iblk = itBR.next();
-      ReplicaState iState = itBR.getCurrentReplicaState();
-      processReportHandler.setParams(iblk, iState).handle(namesystem);
-    }
+       @Override
+       public Object performTask() throws PersistanceException, IOException {
+         if (newReport == null) {
+           return null;
+         }
+         // scan the report and process newly reported blocks
+         BlockReportIterator itBR = newReport.getBlockReportIterator();
+         while (itBR.hasNext()) {
+           Block iblk = itBR.next();
+           ReplicaState iState = itBR.getCurrentReplicaState();
+           BlockInfo storedBlock = processReportedBlock(dn, getBlockInfo(iblk), iState,
+                   toAdd, toInvalidate, toCorrupt, toUC);
+           if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
+             allMachineBlocks.remove(storedBlock.getBlockId());
+           }
+         }
+         toRemove.addAll(allMachineBlocks);
+         return null;
+       }
+     };
+
+     processReportHandler.handle();
   }
 
   /**
@@ -1961,9 +1939,12 @@ public class BlockManager {
    * @return the up-to-date stored block, if it should be kept.
    *         Otherwise, null.
    */
-  private BlockInfo processReportedBlock(final DatanodeDescriptor dn, 
-      final Block block, final ReplicaState reportedState, DatanodeDescriptor delHintNode) 
-          throws PersistanceException, IOException {
+ private BlockInfo processReportedBlock(final DatanodeDescriptor dn, 
+      final BlockInfo block, final ReplicaState reportedState, 
+      final Collection<BlockInfo> toAdd, 
+      final Collection<Block> toInvalidate, 
+      final Collection<BlockToMarkCorrupt> toCorrupt,
+      final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
     
     if(LOG.isDebugEnabled()) {
       LOG.debug("Reported block " + block
@@ -1986,7 +1967,7 @@ public class BlockManager {
        blockLog.info("BLOCK* processReport: "
           + block + " on " + dn + " size " + block.getNumBytes()
           + " does not belong to any file");
-      addToInvalidates(new Block(block), dn);
+      toInvalidate.add(new Block(block));
       return null;
     }
     BlockUCState ucState = storedBlock.getBlockUCState();
@@ -1997,7 +1978,7 @@ public class BlockManager {
     }
 
     // Ignore replicas already scheduled to be removed from the DN
-    if(invalidateBlocks.contains(dn.getStorageID(), getBlockInfo(block))) {
+    if(invalidateBlocks.contains(dn.getStorageID(), block)) {
 /*  TODO: following assertion is incorrect, see HDFS-2668
 assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         + " in recentInvalidatesSet should not appear in DN " + dn; */
@@ -2014,20 +1995,21 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         queueReportedBlock(dn, storedBlock, reportedState,
             QUEUE_REASON_CORRUPT_STATE);
       } else {
-        markBlockAsCorrupt(c, dn);
+        toCorrupt.add(c);
       }
       return storedBlock;
     }
 
     if (isBlockUnderConstruction(storedBlock, ucState, reportedState)) {
-      addStoredBlockUnderConstruction((BlockInfoUnderConstruction)storedBlock, dn, reportedState);
+       toUC.add(new StatefulBlockInfo(
+          (BlockInfoUnderConstruction)storedBlock, reportedState));
       return storedBlock;
     }
 
     //add replica if appropriate
     if (reportedState == ReplicaState.FINALIZED
         && storedBlock.findDatanode(dn) < 0) {
-      addStoredBlock(storedBlock, dn, delHintNode, true);
+      toAdd.add(storedBlock);
     }
     return storedBlock;
   }
@@ -2094,7 +2076,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       public Object performTask() throws PersistanceException, IOException {
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
         processAndHandleReportedBlock(
-                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+                rbi.getNode(), getBlockInfo(rbi.getBlock()), rbi.getReportedState(), null);
 
         return null;
       }
@@ -2839,15 +2821,41 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     //
     // Modify the blocks->datanode map and node's map.
     //
-    pendingReplications.decrement(getBlockInfo(block));
-    processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
+    BlockInfo b = getBlockInfo(block);
+    pendingReplications.decrement(b);
+    processAndHandleReportedBlock(node, b, ReplicaState.FINALIZED,
         delHintNode);
   }
   
-  private void processAndHandleReportedBlock(DatanodeDescriptor node, Block block,
+  private void processAndHandleReportedBlock(DatanodeDescriptor node, BlockInfo block,
       ReplicaState reportedState, DatanodeDescriptor delHintNode)
       throws IOException, PersistanceException {
-    processReportedBlock(node, block, reportedState, delHintNode);
+        // blockReceived reports a finalized block
+    Collection<BlockInfo> toAdd = new LinkedList<BlockInfo>();
+    Collection<Block> toInvalidate = new LinkedList<Block>();
+    Collection<BlockToMarkCorrupt> toCorrupt = new LinkedList<BlockToMarkCorrupt>();
+    Collection<StatefulBlockInfo> toUC = new LinkedList<StatefulBlockInfo>();
+    processReportedBlock(node, block, reportedState,
+            toAdd, toInvalidate, toCorrupt, toUC);
+    // the block is only in one of the to-do lists
+    // if it is in none then data-node already has it
+    assert toUC.size() + toAdd.size() + toInvalidate.size() + toCorrupt.size() <= 1 : "The block should be only in one of the lists.";
+
+    for (StatefulBlockInfo b : toUC) {
+      addStoredBlockUnderConstruction(b.storedBlock, node, b.reportedState);
+    }
+    for (BlockInfo b : toAdd) {
+      addStoredBlock(b, node, delHintNode, true);
+    }
+    for (Block b : toInvalidate) {
+      blockLog.info("BLOCK* addBlock: block "
+              + b + " on " + node + " size " + b.getNumBytes()
+              + " does not belong to any file");
+      addToInvalidates(b, node);
+    }
+    for (BlockToMarkCorrupt b : toCorrupt) {
+      markBlockAsCorrupt(b, node);
+    }
   }
 
   /**
@@ -2918,7 +2926,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           received[0]++;
           break;
         case RECEIVING_BLOCK:
-          processAndHandleReportedBlock(node, rdbi.getBlock(),
+          processAndHandleReportedBlock(node, getBlockInfo(rdbi.getBlock()),
               ReplicaState.RBW, null);
           received[0]++;
           break;
@@ -3552,12 +3560,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
   }
 
   //START_HOP_CODE
-  private void removeStoredBlockTx(final Block b, final DatanodeDescriptor node) throws IOException {
+  private void removeStoredBlockTx(final Long b, final DatanodeDescriptor node) throws IOException {
     HDFSTransactionalRequestHandler removeBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_STORED_BLOCK) {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
+        inodeIdentifier = INodeUtil.resolveINodeFromBlockID(b);
       }
 
       @Override
@@ -3565,7 +3573,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), 
+                addBlock(b, 
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
@@ -3577,7 +3585,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        removeStoredBlock(b, node);
+        BlockInfo block = EntityManager.find(BlockInfo.Finder.ById, b);
+        removeStoredBlock(block, node);
         return null;
       }
     };
@@ -3717,6 +3726,110 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       binfo = new BlockInfo(b,INode.NON_EXISTING_ID);
     }
     return binfo;
+  }
+  
+  private Block addStoredBlockTx(final BlockInfo block,
+          final DatanodeDescriptor node,
+          final DatanodeDescriptor delNodeHint,
+          final boolean logEveryBlock) throws IOException {
+    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT_ADD_BLK) {
+      INodeIdentifier inodeIdentifier;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+      }
+
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
+                addBlock(block.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock();
+        return tla.acquireByBlock(inodeIdentifier);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return addStoredBlock(block, node, delNodeHint, logEveryBlock);
+      }
+    }.handle();
+  }
+
+  private void addStoredBlockUnderConstructionTx(final BlockInfoUnderConstruction block,
+          final DatanodeDescriptor node,
+          final ReplicaState reportedState) throws IOException {
+
+    new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT_ADD_UC_BLK) {
+      INodeIdentifier inodeIdentifier;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+      }
+
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+                .addINode(TransactionLockTypes.INodeLockType.WRITE).
+                addBlock(block.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
+                addReplica().
+                addReplicaUc().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock();
+        return tla.acquireByBlock(inodeIdentifier);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        addStoredBlockUnderConstruction(block, node, reportedState);
+        return null;
+      }
+    }.handle();
+  }
+
+  private void addToInvalidates(final Collection<Block> blocks,
+          final DatanodeDescriptor node) throws IOException {
+    invalidateBlocks.add(blocks, node);
+  }
+
+  public void markBlockAsCorruptTx(final BlockToMarkCorrupt b,
+          final DatanodeInfo dn) throws IOException {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.AFTER_PROCESS_REPORT_ADD_CORRUPT_BLK) {
+      INodeIdentifier inodeIdentifier;
+
+      @Override
+      public void setUp() throws StorageException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b.corrupted);
+      }
+
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+                addINode(TransactionLockTypes.INodeLockType.WRITE).
+                addBlock(b.corrupted.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
+                addReplica().
+                addExcess().
+                addCorrupt().
+                addUnderReplicatedBlock().
+                addReplicaUc().
+                addInvalidatedBlock();
+        return tla.acquireByBlock(inodeIdentifier);
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        markBlockAsCorrupt(b, dn);
+        return null;
+      }
+    }.handle();
   }
   //END_HOP_CODE
 }

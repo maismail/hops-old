@@ -21,6 +21,8 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
@@ -207,7 +210,21 @@ class InvalidateBlocks {
   }
   
   
-  
+  void add(final Collection<Block> blocks, final DatanodeDescriptor dn) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.ADD_INV_BLOCKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
+        List<HopInvalidatedBlock> invblks = new ArrayList<HopInvalidatedBlock>();
+        for (Block blk : blocks) {
+          invblks.add(new HopInvalidatedBlock(dn.getSId(), blk.getBlockId(), blk.getGenerationStamp(), blk.getNumBytes(), INode.NON_EXISTING_ID));
+        }
+        da.prepare(Collections.EMPTY_LIST, invblks, Collections.EMPTY_LIST);
+        return null;
+      }
+    }.handle();
+  }
+
   private boolean add(HopInvalidatedBlock invBlk) throws PersistanceException {
     HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId(),invBlk.getInodeId());
     if (found == null) {

@@ -167,6 +167,13 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           allBlocksRead = true;
           return syncBlockInfoInstances(result);
         }
+      case ByIds:
+        long[] blockIds = (long[]) params[0];
+        int[] inodeIds = (int[]) params[1];
+        log("find-blocks-by-ids", CacheHitState.NA, new String[]{"BlockIds", "" + blockIds, "InodeIds", "" + inodeIds});
+        aboutToAccessStorage();
+        result = dataAccess.findByIds(blockIds, inodeIds);
+        return syncBlockInfoInstances(result, blockIds);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -229,6 +236,17 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
   }
 
+  private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks, long[] blockIds) {
+    List<BlockInfo> result = syncBlockInfoInstances(newBlocks);
+    for (long blockId : blockIds) {
+      if (!blocks.containsKey(blockId)) {
+        blocks.put(blockId, null);
+        nullCount++;
+      }
+    }
+    return result;
+  }
+    
   private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks) {
     List<BlockInfo> finalList = new ArrayList<BlockInfo>();
 

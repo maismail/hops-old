@@ -364,23 +364,32 @@ public class DatanodeDescriptor extends DatanodeInfo {
 //    }
 //  }
 //
-  public Iterator<BlockInfo> getBlockIterator() throws IOException  {
-    return getAllMachineBlocks().iterator();
+  public Iterator<BlockInfo> getBlockIterator() throws IOException {
+    return getAllMachineBlockInfos().iterator();
   }
-  
-  public List<BlockInfo> getAllMachineBlocks() throws IOException {
+
+  private List<BlockInfo> getAllMachineBlockInfos() throws IOException {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        long startTime = System.currentTimeMillis();
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        List<BlockInfo>  list  = da.findByStorageId(getSId());
-        long endTime = System.currentTimeMillis();
-        log.debug("GET_ALL_MACHINE_BLOCKS took "+(endTime - startTime) +" ms" );
+        List<BlockInfo> list = da.findByStorageId(getSId());
         return list;
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();
+  }
+
+  public List<Long> getAllMachineBlocks() throws IOException {
+    LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS_IDS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        List<Long> list = da.findByStorageIdOnlyIds(getSId());
+        return list;
+      }
+    };
+    return (List<Long>) findBlocksHandler.handle();
   }
   
   /**
