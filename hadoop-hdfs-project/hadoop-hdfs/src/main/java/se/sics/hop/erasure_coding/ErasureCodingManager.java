@@ -85,7 +85,7 @@ public class ErasureCodingManager extends Configured{
     try {
       Class<?> encodingManagerClass = getConf().getClass(ENCODING_MANAGER_CLASSNAME_KEY, null);
       if (encodingManagerClass == null || !EncodingManager.class.isAssignableFrom(encodingManagerClass)) {
-        throw new ClassNotFoundException("Not an implementation of " + EncodingManager.class.getCanonicalName());
+        throw new ClassNotFoundException(encodingManagerClass + " is not an implementation of " + EncodingManager.class.getCanonicalName());
       }
       Constructor<?> encodingManagerConstructor = encodingManagerClass.getConstructor(
           new Class[] {Configuration.class} );
@@ -93,7 +93,7 @@ public class ErasureCodingManager extends Configured{
 
       Class<?> blockRepairManagerClass = getConf().getClass(BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
       if (blockRepairManagerClass == null || !BlockRepairManager.class.isAssignableFrom(blockRepairManagerClass)) {
-        throw new ClassNotFoundException("Not an implementation of " + BlockRepairManager.class.getCanonicalName());
+        throw new ClassNotFoundException(blockRepairManagerClass + " is not an implementation of " + BlockRepairManager.class.getCanonicalName());
       }
       Constructor<?> blockRepairManagerConstructor = blockRepairManagerClass.getConstructor(
           new Class[] {Configuration.class} );
