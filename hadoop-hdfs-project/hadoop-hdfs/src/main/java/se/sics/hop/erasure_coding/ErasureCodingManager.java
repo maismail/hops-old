@@ -136,6 +136,13 @@ public class ErasureCodingManager extends Configured{
     @Override
     public void run() {
       while (namesystem.isRunning()) {
+        try {
+          if (namesystem.isInSafeMode()) {
+            continue;
+          }
+        } catch (IOException e) {
+          LOG.info("In safe mode skipping this round");
+        }
         if(namesystem.isLeader()){
           checkPotentiallyFixedFiles();
           checkPotentiallyFixedParityFiles();
