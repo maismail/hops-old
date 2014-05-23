@@ -291,14 +291,17 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
+          LOG.info("Encoding finished for " + report.getFilePath());
           finalizeEncoding(report.getFilePath());
           activeEncodings--;
           break;
         case FAILED:
+          LOG.info("Encoding failed for " + report.getFilePath());
           updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODING_FAILED);
           activeEncodings--;
           break;
         case CANCELED:
+          LOG.info("Encoding canceled for " + report.getFilePath());
           updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODING_CANCELED);
           activeEncodings--;
           break;

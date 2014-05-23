@@ -57,14 +57,14 @@ public class EncodingStatus {
     }
   }
 
-  private Long inodeId = null;
-  private Long parityInodeId = null;
-  private Status status = null;
-  private ParityStatus parityStatus = null;
-  private EncodingPolicy encodingPolicy = null;
-  private Long statusModificationTime = null;
-  private Long parityStatusModificationTime = null;
-  private String parityFileName = null;
+  private Long inodeId;
+  private Long parityInodeId;
+  private Status status;
+  private ParityStatus parityStatus;
+  private EncodingPolicy encodingPolicy;
+  private Long statusModificationTime;
+  private Long parityStatusModificationTime;
+  private String parityFileName;
 
   public EncodingStatus() {
 
