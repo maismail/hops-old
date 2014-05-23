@@ -1894,7 +1894,7 @@ public class BlockManager {
          while (itBR.hasNext()) {
            Block iblk = itBR.next();
            ReplicaState iState = itBR.getCurrentReplicaState();
-           BlockInfo storedBlock = processReportedBlock(dn, getBlockInfo(iblk), iState,
+           BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
                    toAdd, toInvalidate, toCorrupt, toUC);
            if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
              allMachineBlocks.remove(storedBlock.getBlockId());
@@ -1940,7 +1940,7 @@ public class BlockManager {
    *         Otherwise, null.
    */
  private BlockInfo processReportedBlock(final DatanodeDescriptor dn, 
-      final BlockInfo block, final ReplicaState reportedState, 
+      final Block block, final ReplicaState reportedState, 
       final Collection<BlockInfo> toAdd, 
       final Collection<Block> toInvalidate, 
       final Collection<BlockToMarkCorrupt> toCorrupt,
@@ -1978,7 +1978,7 @@ public class BlockManager {
     }
 
     // Ignore replicas already scheduled to be removed from the DN
-    if(invalidateBlocks.contains(dn.getStorageID(), block)) {
+    if(invalidateBlocks.contains(dn.getStorageID(), getBlockInfo(block))) {
 /*  TODO: following assertion is incorrect, see HDFS-2668
 assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         + " in recentInvalidatesSet should not appear in DN " + dn; */
@@ -2076,7 +2076,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       public Object performTask() throws PersistanceException, IOException {
         ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
         processAndHandleReportedBlock(
-                rbi.getNode(), getBlockInfo(rbi.getBlock()), rbi.getReportedState(), null);
+                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
 
         return null;
       }
@@ -2821,13 +2821,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     //
     // Modify the blocks->datanode map and node's map.
     //
-    BlockInfo b = getBlockInfo(block);
-    pendingReplications.decrement(b);
-    processAndHandleReportedBlock(node, b, ReplicaState.FINALIZED,
+    pendingReplications.decrement(getBlockInfo(block));
+    processAndHandleReportedBlock(node, block, ReplicaState.FINALIZED,
         delHintNode);
   }
   
-  private void processAndHandleReportedBlock(DatanodeDescriptor node, BlockInfo block,
+  private void processAndHandleReportedBlock(DatanodeDescriptor node, Block block,
       ReplicaState reportedState, DatanodeDescriptor delHintNode)
       throws IOException, PersistanceException {
         // blockReceived reports a finalized block
@@ -2926,7 +2925,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           received[0]++;
           break;
         case RECEIVING_BLOCK:
-          processAndHandleReportedBlock(node, getBlockInfo(rdbi.getBlock()),
+          processAndHandleReportedBlock(node, rdbi.getBlock(),
               ReplicaState.RBW, null);
           received[0]++;
           break;
