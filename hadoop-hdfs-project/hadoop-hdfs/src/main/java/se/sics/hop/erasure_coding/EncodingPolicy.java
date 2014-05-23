@@ -5,11 +5,14 @@ public class EncodingPolicy {
   private int targetReplication;
 
   public EncodingPolicy(String codec, int targetReplication) {
-    this.codec = codec;
-    this.targetReplication = targetReplication;
+    setCodec(codec);
+    setTargetReplication(targetReplication);
   }
 
   public void setCodec(String codec) {
+    if (codec.length() > 8) {
+      throw new IllegalArgumentException("Codec cannot have more than 8 characters");
+    }
     this.codec = codec;
   }
 

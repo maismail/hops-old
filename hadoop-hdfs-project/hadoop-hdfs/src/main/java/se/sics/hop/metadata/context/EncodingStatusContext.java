@@ -67,6 +67,10 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
     EncodingStatus result;
 
     Long inodeId = (Long) params[0];
+    if (inodeId == null) {
+      return null;
+    }
+
     switch (eFinder) {
       case ByInodeId:
         if (inodeIdToEncodingStatus.containsKey(inodeId)) {

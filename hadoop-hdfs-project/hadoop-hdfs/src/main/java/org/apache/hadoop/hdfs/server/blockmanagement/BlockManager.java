@@ -1045,7 +1045,7 @@ public class BlockManager {
             addUnderReplicatedBlock().
             addReplicaUc().
             addInvalidatedBlock();
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
@@ -1810,7 +1810,7 @@ public class BlockManager {
             addExcess().
             addCorrupt().
             addUnderReplicatedBlock();
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
@@ -1884,7 +1884,7 @@ public class BlockManager {
             addInvalidatedBlock().
             addPendingBlock().
             addGenerationStamp(LockType.READ);
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
@@ -2005,7 +2005,7 @@ public class BlockManager {
             addInvalidatedBlock().
             addPendingBlock().
             addGenerationStamp(LockType.READ);
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
@@ -2207,7 +2207,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             addReplica().
             addExcess().
             addGenerationStamp(LockType.READ);
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
@@ -3123,7 +3123,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             addCorrupt().
             addUnderReplicatedBlock().
             addGenerationStamp(LockType.READ);
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         if (!rdbi.isDeletedBlock()) {
@@ -3843,7 +3843,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addReplicaUc();
-        if (((FSNamesystem) namesystem).isErasureCodingEnabled()) {
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeID != null) {
           tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeID);
         }
         return tla.acquireByBlock(inodeID, pID, name);
