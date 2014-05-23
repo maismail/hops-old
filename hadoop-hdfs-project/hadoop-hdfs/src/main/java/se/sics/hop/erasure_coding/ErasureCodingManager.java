@@ -207,8 +207,13 @@ public class ErasureCodingManager extends Configured{
                   status.setStatus(EncodingStatus.Status.ENCODED);
                   status.setStatusModificationTime(System.currentTimeMillis());
                   EntityManager.update(status);
+                } else {
+                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId,
+                      encodingStatus.getInodeId());
+                  status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+                  status.setStatusModificationTime(System.currentTimeMillis());
+                  EntityManager.update(status);
                 }
-                // TODO STEFFEN - Need to detect repair failure! And reset status to repair.
                 return null;
               }
             };
@@ -262,8 +267,13 @@ public class ErasureCodingManager extends Configured{
                   status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
                   status.setParityStatusModificationTime(System.currentTimeMillis());
                   EntityManager.update(status);
+                } else {
+                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId,
+                      encodingStatus.getParityInodeId());
+                  status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+                  status.setParityStatusModificationTime(System.currentTimeMillis());
+                  EntityManager.update(status);
                 }
-                // TODO STEFFEN - Need to detect repair failure! And reset status to repair.
                 return null;
               }
             };
