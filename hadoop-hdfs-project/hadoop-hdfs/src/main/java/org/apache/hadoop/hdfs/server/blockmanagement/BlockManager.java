@@ -1524,8 +1524,8 @@ public class BlockManager {
    * If there were any replication requests that timed out, reap them
    * and put them back into the neededReplication queue
    */
-  private void processPendingReplications() throws IOException{
-    Block[] timedOutItems = pendingReplications.getTimedOutBlocks();
+  void processPendingReplications() throws IOException{
+    long[] timedOutItems = pendingReplications.getTimedOutBlocks();
     if (timedOutItems != null) {
       namesystem.writeLock();
       try {
@@ -3670,12 +3670,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return blocksMap.replaceBlock(completeBlock);
   }
    
-  private void processTimedOutPendingBlock(final Block timedOutItem) throws IOException {
+  private void processTimedOutPendingBlock(final long timedOutItemId) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_TIMEDOUT_PENDING_BLOCK) {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(timedOutItem);
+        inodeIdentifier = INodeUtil.resolveINodeFromBlockID(timedOutItemId);
       }
 
       @Override
@@ -3683,7 +3683,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(timedOutItem.getBlockId(), 
+                addBlock(timedOutItemId, 
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
@@ -3697,7 +3697,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       public Object performTask() throws PersistanceException, IOException {
 //        PendingBlockInfo pendingBlock = EntityManager.find(PendingBlockInfo.Finder.ByPKey, p.getBlockId());
 //        if (pendingBlock != null && PendingReplicationBlocks.isTimedOut(pendingBlock)) {
-//          Block timedOutItem = EntityManager.find(BlockInfo.Finder.ById, p.getBlockId());
+          BlockInfo timedOutItem = EntityManager.find(BlockInfo.Finder.ById, timedOutItemId);
           NumberReplicas num = countNodes(timedOutItem);
           if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                                  num.liveReplicas())) {
@@ -3706,6 +3706,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                                    num.decommissionedReplicas(),
                                    getReplication(timedOutItem));
           }
+          pendingReplications.remove(timedOutItem);
 //        }
         return null;
       }

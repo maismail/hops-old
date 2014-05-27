@@ -17,12 +17,15 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import java.io.IOException;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.PrintWriter;
 import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -156,7 +159,7 @@ class PendingReplicationBlocks {
    * replication requests. Returns null if no blocks have
    * timed out.
    */
-  Block[] getTimedOutBlocks() throws IOException {
+  long[] getTimedOutBlocks() throws IOException {
     List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(HDFSOperationType.GET_TIMED_OUT_PENDING_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -166,23 +169,28 @@ class PendingReplicationBlocks {
         if (timedoutPendings == null || timedoutPendings.size() <= 0) {
           return null;
         }
-        List<PendingBlockInfo> EMPTY = Collections.unmodifiableList(new ArrayList<PendingBlockInfo>());
-        da.prepare(timedoutPendings, EMPTY, EMPTY); // remove
         return timedoutPendings;
       }
     }.handle();
     if (timedOutItems == null) {
       return null;
     }
-    List<Block> blockList = new ArrayList<Block>();
-    for (int i = 0; i < timedOutItems.size(); i++) {
-      Block blk = getBlock(timedOutItems.get(i));
-      if(blk != null){
-        blockList.add(blk);
+    Collection<PendingBlockInfo> filterd = Collections2.filter(timedOutItems, new Predicate<PendingBlockInfo>() {
+
+      @Override
+      public boolean apply(PendingBlockInfo t) {
+        return t != null;
       }
+    });
+
+    long[] blockIdArr = new long[filterd.size()];
+    int i = 0;
+    for (PendingBlockInfo p : filterd) {
+      blockIdArr[i] = p.getBlockId();
+      i++;
     }
-    Block[] blockArr = new Block[blockList.size()];
-    return blockList.toArray(blockArr);
+
+    return blockIdArr;
   }
   /*
    * Shuts down the pending replication monitor thread.
