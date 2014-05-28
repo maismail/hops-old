@@ -137,26 +137,31 @@ public class ErasureCodingManager extends Configured{
     public void run() {
       while (namesystem.isRunning()) {
         try {
-          if (namesystem.isInSafeMode()) {
-            continue;
+          try {
+            if (namesystem.isInSafeMode()) {
+              continue;
+            }
+          } catch (IOException e) {
+            LOG.info("In safe mode skipping this round");
           }
-        } catch (IOException e) {
-          LOG.info("In safe mode skipping this round");
-        }
-        if(namesystem.isLeader()){
-          checkPotentiallyFixedFiles();
-          checkPotentiallyFixedParityFiles();
-          checkActiveEncodings();
-          scheduleEncodings();
-          checkActiveRepairs();
-          scheduleSourceRepairs();
-          scheduleParityRepairs();
-        }
-        try {
-          Thread.sleep(recheckInterval);
-        } catch (InterruptedException ie) {
-          LOG.warn("ErasureCodingMonitor thread received InterruptedException.", ie);
-          break;
+          if(namesystem.isLeader()){
+            checkPotentiallyFixedFiles();
+            checkPotentiallyFixedParityFiles();
+            checkActiveEncodings();
+            scheduleEncodings();
+            checkActiveRepairs();
+            scheduleSourceRepairs();
+            scheduleParityRepairs();
+          }
+          try {
+            Thread.sleep(recheckInterval);
+          } catch (InterruptedException ie) {
+            LOG.warn("ErasureCodingMonitor thread received InterruptedException.", ie);
+            break;
+          }
+        } catch (Throwable e) {
+          LOG.error(e);
+          System.exit(-1);
         }
       }
     }
@@ -398,6 +403,11 @@ public class ErasureCodingManager extends Configured{
         if (iNode == null) {
           continue;
         }
+        if (path.equals("")) {
+          LOG.error("Empty path for inode " + iNode.getId());
+          continue;
+        }
+
         LOG.info("Schedule encoding for " + path);
         UUID parityFileName = UUID.randomUUID();
         encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path),
