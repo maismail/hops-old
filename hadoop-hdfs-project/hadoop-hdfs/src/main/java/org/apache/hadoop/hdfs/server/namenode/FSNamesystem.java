@@ -6682,7 +6682,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourcePath});
+                INodeLockType.WRITE, new String[]{sourcePath});
             return tla.acquire();
           }
 
@@ -6714,8 +6714,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
+            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, inodeId);
             return lockAcquirer.acquire();
           }
 
@@ -6743,8 +6743,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
+            lockAcquirer.getLocks().addEncodingStatusLock(LockType.WRITE, inodeId);
             return lockAcquirer.acquire();
           }
 

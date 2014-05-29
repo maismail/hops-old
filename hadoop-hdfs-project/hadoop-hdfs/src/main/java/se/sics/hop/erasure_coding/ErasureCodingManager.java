@@ -195,7 +195,7 @@ public class ErasureCodingManager extends Configured{
                 ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
                 tla.getLocks().
                     addINode(TransactionLockTypes.INodeResolveType.PATH,
-                        TransactionLockTypes.INodeLockType.READ, new String[]{path}).
+                        TransactionLockTypes.INodeLockType.WRITE, new String[]{path}).
                     addBlock().
                     addReplica().
                     addExcess().
@@ -254,7 +254,7 @@ public class ErasureCodingManager extends Configured{
                 ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
                 tla.getLocks().
                     addINode(TransactionLockTypes.INodeResolveType.PATH,
-                        TransactionLockTypes.INodeLockType.READ, new String[]{path}).
+                        TransactionLockTypes.INodeLockType.WRITE, new String[]{path}).
                     addBlock().
                     addReplica().
                     addExcess().
@@ -328,7 +328,7 @@ public class ErasureCodingManager extends Configured{
               tla.getLocks().
                   addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, status.getInodeId()).
                   addINode(TransactionLockTypes.INodeResolveType.PATH,
-                      TransactionLockTypes.INodeLockType.READ, new String[]{path});
+                      TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
               return tla.acquire();
             }
 
