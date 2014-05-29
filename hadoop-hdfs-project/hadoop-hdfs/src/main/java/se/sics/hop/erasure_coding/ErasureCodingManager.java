@@ -161,6 +161,7 @@ public class ErasureCodingManager extends Configured{
           }
         } catch (Throwable e) {
           LOG.error(e);
+          // TODO STEFFEN - This is for debbugin purposes only!
           System.exit(-1);
         }
       }
@@ -401,10 +402,6 @@ public class ErasureCodingManager extends Configured{
 
         String path = namesystem.getPath(iNode);
         if (iNode == null) {
-          continue;
-        }
-        if (path.equals("")) {
-          LOG.error("Empty path for inode " + iNode.getId());
           continue;
         }
 

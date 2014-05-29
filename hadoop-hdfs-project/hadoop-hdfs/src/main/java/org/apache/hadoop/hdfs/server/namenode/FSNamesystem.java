@@ -6630,7 +6630,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     StringBuilder builder = new StringBuilder();
     for (INode node : resolvedInodes) {
       if (node.isDirectory()) {
-        builder.append("/");
+        builder.append(node.getLocalName() + "/");
       } else {
         builder.append(node.getLocalName());
       }
