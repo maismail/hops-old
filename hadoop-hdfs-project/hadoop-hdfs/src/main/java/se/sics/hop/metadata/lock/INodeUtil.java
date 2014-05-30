@@ -131,6 +131,8 @@ public class INodeUtil {
           boolean[] isPathFullyResolved
           )
           throws UnresolvedPathException, PersistanceException {
+    preTxResolvedINodes.clear();
+    isPathFullyResolved[0]  = false;
 
     if (path == null) {
       isPathFullyResolved[0] = false;
