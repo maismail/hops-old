@@ -17,17 +17,21 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Collections2;
 import java.io.IOException;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.PrintWriter;
 import java.sql.Time;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.logging.Log;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
@@ -72,10 +76,10 @@ class PendingReplicationBlocks {
   /**
    * Add a block to the list of pending Replications
    */
-  void increment(Block block, int numReplicas) throws PersistanceException {
+  void increment(BlockInfo block, int numReplicas) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found == null) {
-      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(), now(), numReplicas));
+      addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(),block.getInodeId(),now(), numReplicas));
     } else {
       found.incrementReplicas(numReplicas);
       found.setTimeStamp(now());
@@ -88,7 +92,7 @@ class PendingReplicationBlocks {
    * Decrement the number of pending replication requests
    * for this block.
    */
-  void decrement(Block block) throws PersistanceException {
+  void decrement(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       if (LOG.isDebugEnabled()) {
@@ -108,7 +112,7 @@ class PendingReplicationBlocks {
    * @param block The given block whose pending replication requests need to be
    *              removed
    */
-  void remove(Block block) throws PersistanceException {
+  void remove(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null) {
       removePendingBlockInfo(found);
@@ -142,7 +146,7 @@ class PendingReplicationBlocks {
   /**
    * How many copies of this block is pending replication?
    */
-  int getNumReplicas(Block block) throws PersistanceException {
+  int getNumReplicas(BlockInfo block) throws PersistanceException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       return found.getNumReplicas();
@@ -155,7 +159,7 @@ class PendingReplicationBlocks {
    * replication requests. Returns null if no blocks have
    * timed out.
    */
-  Block[] getTimedOutBlocks() throws IOException {
+  long[] getTimedOutBlocks() throws IOException {
     List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(HDFSOperationType.GET_TIMED_OUT_PENDING_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -165,23 +169,28 @@ class PendingReplicationBlocks {
         if (timedoutPendings == null || timedoutPendings.size() <= 0) {
           return null;
         }
-        List<PendingBlockInfo> EMPTY = Collections.unmodifiableList(new ArrayList<PendingBlockInfo>());
-        da.prepare(timedoutPendings, EMPTY, EMPTY); // remove
         return timedoutPendings;
       }
     }.handle();
     if (timedOutItems == null) {
       return null;
     }
-    List<Block> blockList = new ArrayList<Block>();
-    for (int i = 0; i < timedOutItems.size(); i++) {
-      Block blk = getBlock(timedOutItems.get(i));
-      if(blk != null){
-        blockList.add(blk);
+    Collection<PendingBlockInfo> filterd = Collections2.filter(timedOutItems, new Predicate<PendingBlockInfo>() {
+
+      @Override
+      public boolean apply(PendingBlockInfo t) {
+        return t != null;
       }
+    });
+
+    long[] blockIdArr = new long[filterd.size()];
+    int i = 0;
+    for (PendingBlockInfo p : filterd) {
+      blockIdArr[i] = p.getBlockId();
+      i++;
     }
-    Block[] blockArr = new Block[blockList.size()];
-    return blockList.toArray(blockArr);
+
+    return blockIdArr;
   }
   /*
    * Shuts down the pending replication monitor thread.
@@ -222,8 +231,8 @@ class PendingReplicationBlocks {
     return now() - timeout;
   }
 
-  private PendingBlockInfo getPendingBlock(Block block) throws PersistanceException {
-    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId());
+  private PendingBlockInfo getPendingBlock(BlockInfo block) throws PersistanceException {
+    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId());
   }
 
   private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {
@@ -231,7 +240,7 @@ class PendingReplicationBlocks {
   }
 
   private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws PersistanceException {
-    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId());
+    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId() );
   }
 
   private void addPendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
@@ -251,7 +260,7 @@ class PendingReplicationBlocks {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException { 
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(pbi.getBlockId());
+        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId());
         return tla.acquire();
       }
 

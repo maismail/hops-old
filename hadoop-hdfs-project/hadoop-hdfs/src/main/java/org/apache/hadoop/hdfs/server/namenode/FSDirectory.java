@@ -63,16 +63,14 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
-import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.RequestHandler;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /*************************************************
@@ -384,6 +382,7 @@ public class FSDirectory implements Closeable {
       BlockInfoUnderConstruction blockInfo =
         new BlockInfoUnderConstruction(
             block,
+            fileINode.getId(),
             BlockUCState.UNDER_CONSTRUCTION,
             targets);
       getBlockManager().addBlockCollection(blockInfo, fileINode);
@@ -630,7 +629,8 @@ public class FSDirectory implements Closeable {
         // update moved leases with new filename
         getFSNamesystem().unprotectedChangeLease(src, dst);        
         //HOP_START_CODE
-        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
         //HOP_END_CODE
         return true;
       }
@@ -804,7 +804,7 @@ public class FSDirectory implements Closeable {
           getFSNamesystem().removePathAndBlocks(src, collectedBlocks);
         }
         //HOP_START_CODE
-        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone);
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
         //HOP_END_CODE
         return filesDeleted >0;
       }
@@ -1014,8 +1014,17 @@ public class FSDirectory implements Closeable {
       allSrcInodes[i++] = srcInode;
       totalBlocks += srcInode.numBlocks();  
     }
-    trgInode.appendBlocks(allSrcInodes, totalBlocks); // copy the blocks
+    List<BlockInfo> oldBlks = trgInode.appendBlocks(allSrcInodes, totalBlocks); // copy the blocks
+    //HOP now the blocks are added to the targed file. copy of the old block infos is returned for snapshot maintenance
     
+    //HOP_START_CODE
+    //params for updating the snapshots
+    HopINodeCandidatePK trg_param = new HopINodeCandidatePK(trgInode.getId());
+    List<HopINodeCandidatePK> srcs_param = new ArrayList<HopINodeCandidatePK>();
+    for(int j = 0; j < allSrcInodes.length; j++) {
+      srcs_param.add(new HopINodeCandidatePK(allSrcInodes[j].getId()));
+    }
+    //END_HOP_CODE
     // since we are in the same dir - we can use same parent to remove files
     int count = 0;
     for(INodeFile nodeToRemove: allSrcInodes) {
@@ -1030,6 +1039,10 @@ public class FSDirectory implements Closeable {
     trgParent.setModificationTime(timestamp);
     // update quota on the parent directory ('count' files removed, 0 space)
     unprotectedUpdateCount(trgINodes, trgINodes.length-1, - count, 0);
+    
+    //HOP_START_CODE
+    EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.Concat, trg_param, srcs_param, oldBlks);
+    //HOP_END_CODE
   }
 
   /**
@@ -2302,8 +2315,8 @@ public class FSDirectory implements Closeable {
         clone.setParentIdNoPersistance(inode.getParentId());
         clone.setUser(inode.getUserName());
       }else if(inode instanceof INodeFileUnderConstruction){
-        long id = ((INodeFileUnderConstruction)inode).getId();
-        long pid = ((INodeFileUnderConstruction)inode).getParentId();
+        int id = ((INodeFileUnderConstruction)inode).getId();
+        int pid = ((INodeFileUnderConstruction)inode).getParentId();
         byte[] name = ((INodeFileUnderConstruction)inode).getLocalNameBytes();
         short replication = ((INodeFileUnderConstruction)inode).getBlockReplication();
         long modificationTime = ((INodeFileUnderConstruction)inode).getModificationTime();

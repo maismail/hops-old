@@ -69,7 +69,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 1; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 2; //min value is 0. Better set it >= 1
   
   public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
   public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;

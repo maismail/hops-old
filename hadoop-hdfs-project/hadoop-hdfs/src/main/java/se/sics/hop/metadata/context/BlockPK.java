@@ -1,5 +1,5 @@
 /*
- * Copyright 2013 Apache Software Foundation.
+ * Copyright 2014 Apache Software Foundation.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,21 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.sics.hop.common;
-
-import se.sics.hop.metadata.Variables;
-import se.sics.hop.exception.PersistanceException;
+package se.sics.hop.metadata.context;
 
 /**
  *
- * @author Mahmoud Ismail <maism@sics.se>
+ * @author salman
  */
-public class HopINodeIdGen {
+public class BlockPK {
+
+  public long id;
+  public int inodeId;
+
+  public BlockPK(long id, int inodeId) {
+    this.id = id;
+    this.inodeId = inodeId;
+  }
   
-  public static int getUniqueINodeID() throws PersistanceException{
-    int lastInodeId =  Variables.getInodeId();
-    lastInodeId++;
-    Variables.setInodeId(lastInodeId);
-    return lastInodeId;
+   @Override
+  public boolean equals(Object obj) {
+    if(!(obj  instanceof BlockPK)) {
+      return false;
+    }
+    BlockPK other = (BlockPK) obj;
+    if(other.id == id  && other.inodeId == inodeId){
+      return true;
+    }
+    return false;
   }
 }

@@ -2,6 +2,7 @@ package se.sics.hop.metadata.lock;
 
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -34,8 +35,8 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   }
 
   @Override
-  public HDFSTransactionLocks acquireByBlock(Long id, Long pid, String name) throws PersistanceException, UnresolvedPathException {
-    super.acquireByBlock(id, pid, name);
+  public HDFSTransactionLocks acquireByBlock(INodeIdentifier iNodeIdentifier) throws PersistanceException, UnresolvedPathException {
+    super.acquireByBlock(iNodeIdentifier);
     acquireEncodingLock();
     return getLocks();
   }

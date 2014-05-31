@@ -75,14 +75,18 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageIdMap;
+import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -1222,15 +1226,22 @@ public class DatanodeManager {
   DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
     final DatanodeManager datanodeManager = this;
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
+      INodeIdentifier inodeIdentifier;
+      @Override
+      public void setUp() throws StorageException {
+        Block b = (Block) getParams()[0];
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
+      }
+      
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addBlock(b.getBlockId()).
+        tla.getLocks().addINode(TransactionLockTypes.INodeLockType.WRITE).
+                addBlock(b.getBlockId(),b.getInodeId()).
                 addReplica().
                 addReplicaUc();
-        return tla.acquire();
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override

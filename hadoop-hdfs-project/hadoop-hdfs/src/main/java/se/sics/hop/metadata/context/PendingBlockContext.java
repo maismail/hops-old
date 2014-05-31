@@ -2,18 +2,18 @@ package se.sics.hop.metadata.context;
 
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -26,6 +26,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   private Map<Long, PendingBlockInfo> newPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> modifiedPendings = new HashMap<Long, PendingBlockInfo>();
   private Map<Long, PendingBlockInfo> removedPendings = new HashMap<Long, PendingBlockInfo>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   private boolean allPendingRead = false;
   private PendingBlockDataAccess<PendingBlockInfo> dataAccess;
 
@@ -53,6 +54,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     newPendings.clear();
     modifiedPendings.clear();
     removedPendings.clear();
+    inodesRead.clear();
     allPendingRead = false;
   }
 
@@ -87,6 +89,21 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
           }
         }
         return result;
+      case ByInodeId:
+        Integer inodeId = (Integer) params[0];
+        if(inodesRead.contains(inodeId)){
+          log("find-pendings-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
+          return getPendingReplicasForINode(inodeId);
+        }else{
+          log("find-pendings-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findByINodeId(inodeId);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+        }       
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -99,22 +116,39 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     switch (pFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
+        Integer inodeId = (Integer) params[1];
         if (this.pendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+          log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           result = this.pendings.get(blockId);
-        } else if (!this.removedPendings.containsKey(blockId)) {
-          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
+        } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
+          return null;
+        }
+        else if (!this.removedPendings.containsKey(blockId)) {
+          log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           aboutToAccessStorage();
-          result = dataAccess.findByPKey(blockId);
+          result = dataAccess.findByPKey(blockId,inodeId);
           this.pendings.put(blockId, result);
         } 
-        //else {
-        //  throw new IllegalStateException("Illegal Cache State");
-        //}
         return result;
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
+  }
+  
+  private List<PendingBlockInfo> getPendingReplicasForINode(int inodeId){
+    List<PendingBlockInfo>  list = new ArrayList<PendingBlockInfo>();
+    for(PendingBlockInfo pbi: pendings.values()){
+      if(pbi.getInodeId() == inodeId){
+        list.add(pbi);
+      }
+    }
+    return list;
+  }
+  
+   private void saveLists(List<PendingBlockInfo> list){
+     for(PendingBlockInfo pbi : list){
+       pendings.put(pbi.getBlockId(), pbi);
+     }
   }
 
     @Override
@@ -195,6 +229,53 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updatePendingReplicas(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (!newPendings.isEmpty() || !removedPendings.isEmpty() || !modifiedPendings.isEmpty()) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No pending replicas row should have been changed during the Tx");
+        }
+  }
+  
+  private void updatePendingReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
+    
+      for(PendingBlockInfo pending : pendings.values()){
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          PendingBlockInfo toBeDeleted = clonePendingReplicaObj(pending);
+          PendingBlockInfo toBeAdded = clonePendingReplicaObj(pending);
+          
+          removedPendings.put(toBeDeleted.getBlockId(), toBeDeleted);
+          log("snapshot-maintenance-removed-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
+          
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.getInodeId());
+          newPendings.put(toBeAdded.getBlockId(), toBeAdded);
+          log("snapshot-maintenance-added-pending",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        }
+      }
+    
+  }
+  
+  private PendingBlockInfo clonePendingReplicaObj(PendingBlockInfo src){
+    return new PendingBlockInfo(src.getBlockId(),src.getInodeId(),src.getTimeStamp(),src.getNumReplicas());
   }
 }

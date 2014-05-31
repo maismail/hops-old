@@ -20,5 +20,5 @@ import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
  * @author salman
  */
 public enum HOPTransactionContextMaintenanceCmds implements TransactionContextMaintenanceCmds {
-    INodePKChanged;   //remove the old inode row and reinsert the row
+    INodePKChanged, Concat;   //remove the old inode row and reinsert the row
 }

@@ -3,6 +3,9 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -11,8 +14,11 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.Logger;
+import static se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds.INodePKChanged;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -26,7 +32,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   protected Map<Long, BlockInfo> newBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, BlockInfo> modifiedBlocks = new HashMap<Long, BlockInfo>();
   protected Map<Long, BlockInfo> removedBlocks = new HashMap<Long, BlockInfo>();
-  protected Map<Long, List<BlockInfo>> inodeBlocks = new HashMap<Long, List<BlockInfo>>();
+  protected Map<Integer, List<BlockInfo>> inodeBlocks = new HashMap<Integer, List<BlockInfo>>();
   protected boolean allBlocksRead = false;
   BlockInfoDataAccess<BlockInfo> dataAccess;
   private int nullCount = 0;
@@ -85,27 +91,37 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     switch (bFinder) {
       case ById:
         long id = (Long) params[0];
+        Integer  inodeId =  null;
+        if(params.length > 1 && params[1] != null){
+          inodeId = (Integer) params[1];
+        }
         result = blocks.get(id);
-        if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
+        if(result == null && removedBlocks.containsKey(id)){
+          return null;
+        }
+        else if (result == null && !blocks.containsKey(id)) { // a key may have null object associated with it
                                                          // some test intentionally look for blocks that are not in the DB
                                                          // duing the acquire lock phase if we see that an id does not
                                                          // exist in the db then we should put null in the cache for that id
 
-          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id)});
+          log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(id),"inodeId", inodeId!=null?Integer.toString(inodeId):"NULL"});
           aboutToAccessStorage();
-          result = dataAccess.findById(id);
+          if(inodeId == null){
+            throw new NullPointerException("InodeId is not set");
+          }
+          result = dataAccess.findById(id,inodeId);
           if (result == null) {
             nullCount++;
           }
           blocks.put(id, result);
         } else {
-          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id)});
+          log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(id),"inodeId", inodeId!=null?Integer.toString(inodeId):"NULL"});
         }
         return result;
       case MAX_BLK_INDX:
         //returning the block with max index
-        final long inodeID = (Long) params[0];
-        return findMaxBlk(inodeID);
+        inodeId = (Integer) params[0];
+        return findMaxBlk(inodeId);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -117,23 +133,23 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     List<BlockInfo> result = null;
     switch (bFinder) {
       case ByInodeId:
-        long inodeId = (Long) params[0];
+        Integer inodeId = (Integer) params[0];
         if (inodeBlocks.containsKey(inodeId)) {
-          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Long.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.HIT, new String[]{"inodeid", Integer.toString(inodeId)});
           return inodeBlocks.get(inodeId);
         } else {
-          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Long.toString(inodeId)});
+          log("find-blocks-by-inodeid", CacheHitState.LOSS, new String[]{"inodeid", Integer.toString(inodeId)});
           aboutToAccessStorage();
           result = dataAccess.findByInodeId(inodeId);
           inodeBlocks.put(inodeId, syncBlockInfoInstances(result));
           return result;
         }
-      case ByStorageId:
-        int storageId = (Integer) params[0];
-        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", Integer.toString(storageId)});
-        aboutToAccessStorage();
-        result = dataAccess.findByStorageId(storageId);
-        return syncBlockInfoInstances(result);
+//      case ByStorageId:
+//        int storageId = (Integer) params[0];
+//        log("find-blocks-by-storageid", CacheHitState.NA, new String[]{"storageid", Integer.toString(storageId)});
+//        aboutToAccessStorage();
+//        result = dataAccess.findByStorageId(storageId);
+//        return syncBlockInfoInstances(result);
       case All:
         if (allBlocksRead) {
           log("find-all-blocks", CacheHitState.HIT);
@@ -151,6 +167,13 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
           allBlocksRead = true;
           return syncBlockInfoInstances(result);
         }
+      case ByIds:
+        long[] blockIds = (long[]) params[0];
+        int[] inodeIds = (int[]) params[1];
+        log("find-blocks-by-ids", CacheHitState.NA, new String[]{"BlockIds", "" + blockIds, "InodeIds", "" + inodeIds});
+        aboutToAccessStorage();
+        result = dataAccess.findByIds(blockIds, inodeIds);
+        return syncBlockInfoInstances(result, blockIds);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -206,8 +229,24 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     modifiedBlocks.put(block.getBlockId(), block);
     updateInodeBlocks(block);
     log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId()), "inodeId", Long.toString(block.getInodeId()), "blk index", Integer.toString(block.getBlockIndex())});
+    if(block.getBlockId() == Long.MIN_VALUE){
+      for(int i = 0; i < Thread.currentThread().getStackTrace().length;i++){
+        System.out.println("Error BC "+Thread.currentThread().getStackTrace()[i]);
+      }
+    }
   }
 
+  private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks, long[] blockIds) {
+    List<BlockInfo> result = syncBlockInfoInstances(newBlocks);
+    for (long blockId : blockIds) {
+      if (!blocks.containsKey(blockId)) {
+        blocks.put(blockId, null);
+        nullCount++;
+      }
+    }
+    return result;
+  }
+    
   private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks) {
     List<BlockInfo> finalList = new ArrayList<BlockInfo>();
 
@@ -233,7 +272,6 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     if (blockList != null) {
       if (blockList.contains(newBlock)) {
         BlockInfo oldBlock = blockList.remove(blockList.indexOf(newBlock));
-//        LOG.debug("xxxxxxxxx  blk_id "+newBlock.getBlockId()+" old state "+oldBlock.getBlockUCState()+" new state "+newBlock.getBlockUCState()+" inode id "+newBlock.getInodeId()+" blocks are "+(blockList.size()+1));
         blockList.add(newBlock);
       }      
     }
@@ -250,7 +288,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
   }
   
-  private BlockInfo findMaxBlk(final long inodeID) {
+  private BlockInfo findMaxBlk(final int inodeID) {
     // find the max block in the following lists
     // inodeBlocks
     // modified list
@@ -291,6 +329,47 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
-
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+        //delete the previous row from db
+        INode inodeBeforeChange  = (INode) params[0];
+        INode inodeAfterChange   = (INode) params[1];
+        break;
+      case Concat:
+        //checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1]; // these are the merged inodes    
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        deleteBlocksForConcat(trg_param,srcs_param,oldBlks);
+        //new blocks have been added by the concat function
+        //we just have to delete the blocks rows that dont make sence 
+        
+        break;
+    }
   }
+  
+  private void checkForSnapshotChange(){
+    // when you overwrite a file the dst file blocks are removed
+    // removedBlocks list may not be empty
+    if (!newBlocks.isEmpty() || !modifiedBlocks.isEmpty()) {//incase of move and rename the blocks should not have been modified in any way
+        throw new IllegalStateException("Renaming a file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
+      }
+  }
+  
+  private void deleteBlocksForConcat(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> deleteINodes, List<BlockInfo> oldBlks /* blks with old pk*/){
+    
+    if (!removedBlocks.isEmpty()) {//in case of concat new block_infos rows are added by the concat fn
+        throw new IllegalStateException("Concat file(s) whose blocks are changed. During rename and move no block blocks should have been changed.");
+      }
+    
+    for(BlockInfo bInfo: oldBlks){
+      HopINodeCandidatePK pk = new HopINodeCandidatePK(bInfo.getInodeId());
+      if(deleteINodes.contains(pk)){
+        //remove the block
+        removedBlocks.put(bInfo.getBlockId(), bInfo);
+        log("snapshot-maintenance-removed-blockinfo",CacheHitState.NA, new String[]{"bid", Long.toString(bInfo.getBlockId()),"inodeId", Integer.toString(bInfo.getInodeId())});
+      }   
+    }
+  } 
 }

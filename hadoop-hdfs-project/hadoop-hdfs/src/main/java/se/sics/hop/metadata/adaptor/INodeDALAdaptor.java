@@ -47,21 +47,21 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
     public INodeDALAdaptor(INodeDataAccess<HopINode> dataAccess) {
         this.dataAccess = dataAccess;
     }
-
+   
     @Override
-    public INode indexScanfindInodeById(long inodeId) throws StorageException {
-        return convertDALtoHDFS(dataAccess.indexScanfindInodeById(inodeId));
+    public INode indexScanfindInodeById(int inodeId) throws StorageException {
+      return convertDALtoHDFS(dataAccess.indexScanfindInodeById(inodeId));
     }
 
     @Override
-    public List<INode> indexScanFindInodesByParentId(long parentId) throws StorageException {
+    public List<INode> indexScanFindInodesByParentId(int parentId) throws StorageException {
         List<INode> list = (List) convertDALtoHDFS(dataAccess.indexScanFindInodesByParentId(parentId));
         Collections.sort(list, INode.Order.ByName);
         return list;
     }
 
     @Override
-    public INode pkLookUpFindInodeByNameAndParentId(String name, long parentId) throws StorageException {
+    public INode pkLookUpFindInodeByNameAndParentId(String name, int parentId) throws StorageException {
         return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId));
     }
 
@@ -183,4 +183,6 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
         }
         return inode;
     }
+
+  
 }

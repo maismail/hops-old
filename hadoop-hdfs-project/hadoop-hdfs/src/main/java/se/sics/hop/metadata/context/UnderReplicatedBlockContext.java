@@ -3,17 +3,17 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import java.util.*;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -27,6 +27,7 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   private Map<Long, HopUnderReplicatedBlock> newurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
   private Map<Long, HopUnderReplicatedBlock> modifiedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
   private Map<Long, HopUnderReplicatedBlock> removedurBlocks = new HashMap<Long, HopUnderReplicatedBlock>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   private boolean allUrBlocksRead = false;
   private UnderReplicatedBlockDataAccess<HopUnderReplicatedBlock> dataAccess;
 
@@ -46,7 +47,7 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
 
     log("added-urblock", CacheHitState.NA,
             new String[]{"bid", Long.toString(entity.getBlockId()),
-              "level", Integer.toString(entity.getLevel())});
+              "level", Integer.toString(entity.getLevel()),"inodeId",Integer.toString(entity.getInodeId())});
   }
 
   @Override
@@ -57,6 +58,7 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
     modifiedurBlocks.clear();
     removedurBlocks.clear();
     levelToReplicas.clear();
+    inodesRead.clear();
     allUrBlocksRead = false;
   }
 
@@ -116,6 +118,21 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
         } else {
           return new ArrayList<HopUnderReplicatedBlock>();
         }
+      case ByINodeId:
+        Integer inodeId = (Integer) params[0];
+        if(inodesRead.contains(inodeId)){
+          log("find-urblocks-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
+          return getUnderReplicatedBlocksForINode(inodeId);
+        }else{
+          log("find-urblocks-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findByINodeId(inodeId);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+      }
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -127,20 +144,41 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
     switch (urFinder) {
       case ByBlockId:
         long blockId = (Long) params[0];
+        Integer inodeId = (Integer) params[1];
+                
         if (urBlocks.containsKey(blockId)) {
-          log("find-urblock-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+          log("find-urblock-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
           return urBlocks.get(blockId);
+        }else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/){
+          return null;
+        }else{
+          log("find-urblock-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          HopUnderReplicatedBlock block = dataAccess.findByPk(blockId, inodeId);
+          urBlocks.put(blockId, block);
+          return block;
         }
-        log("find-urblock-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
-        aboutToAccessStorage();
-        HopUnderReplicatedBlock block = dataAccess.findByBlockId(blockId);
-        urBlocks.put(blockId, block);
-        return block;
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
+   private List<HopUnderReplicatedBlock> getUnderReplicatedBlocksForINode(int inodeId){
+    List<HopUnderReplicatedBlock>  list = new ArrayList<HopUnderReplicatedBlock>();
+    for(HopUnderReplicatedBlock pbi: urBlocks.values()){
+      if(pbi.getInodeId() == inodeId){
+        list.add(pbi);
+      }
+    }
+    return list;
+  }
+  
+   private void saveLists(List<HopUnderReplicatedBlock> list){
+     for(HopUnderReplicatedBlock pbi : list){
+       urBlocks.put(pbi.getBlockId(), pbi);
+     }
+  }
+   
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
@@ -233,6 +271,51 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateReplicaUCs(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newurBlocks.size() != 0 || removedurBlocks.size() != 0 || modifiedurBlocks.size() != 0) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No under replicated blocks row should have been changed during the Tx");
+        }
+  }
+  
+  private void updateReplicaUCs(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
     
+    
+      for(HopUnderReplicatedBlock pending : urBlocks.values()){
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(pending.getInodeId());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          HopUnderReplicatedBlock toBeDeleted = cloneURBObj(pending);
+          HopUnderReplicatedBlock toBeAdded = cloneURBObj(pending);
+          
+          removedurBlocks.put(toBeDeleted.getBlockId(), toBeDeleted);
+          log("snapshot-maintenance-removed-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.getInodeId());
+          newurBlocks.put(toBeAdded.getBlockId(), toBeAdded);
+          log("snapshot-maintenance-added-urblock",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        }
+      }
+  }
+  
+  private HopUnderReplicatedBlock cloneURBObj(HopUnderReplicatedBlock src){
+    return new HopUnderReplicatedBlock(src.getLevel(),src.getBlockId(),src.getInodeId());
   }
 }

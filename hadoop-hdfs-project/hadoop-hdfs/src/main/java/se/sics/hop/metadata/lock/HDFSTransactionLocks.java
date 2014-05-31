@@ -26,7 +26,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private boolean preTxPathFullyResolved;
   //block
   private LockType blockLock = null;
-  private Long blockParam = null;
+  private Long blockID = null; //block id
+  private Integer  blockInodeId = null;
   // lease
   private LockType leaseLock = null;
   private String leaseParam = null;
@@ -62,6 +63,10 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType inodeIDCounterLock = null;
   //sidcounter
   private LockType sidCounterLock = null;
+  
+  private long[] blocksParam = null;
+  private Integer invdatanode = null;
+  private Integer repldatanode = null;
   
   HDFSTransactionLocks() {
   }
@@ -114,14 +119,15 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return addINode(resolveType, lock, true, null);
   }
 
-  public HDFSTransactionLocks addBlock(Long param) {
+  public HDFSTransactionLocks addBlock(Long param, Integer blockInodeId) {
     this.blockLock = LockType.READ_COMMITTED;
-    this.blockParam = param;
+    this.blockID = param;
+    this.blockInodeId = blockInodeId;
     return this;
   }
 
   public HDFSTransactionLocks addBlock() {
-    addBlock(null);
+    addBlock(null,null);
     return this;
   }
 
@@ -234,8 +240,12 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return blockLock;
   }
 
-  public Long getBlockParam() {
-    return blockParam;
+  public Long getBlockID() {
+    return blockID;
+  }
+
+  public Integer getBlockInodeId() {
+    return blockInodeId;
   }
 
   public LockType getLeaseLock() {
@@ -332,5 +342,35 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public boolean isPreTxPathFullyResolved() {
     return preTxPathFullyResolved;
+  }
+  
+  public HDFSTransactionLocks addBlocks(long[] blocks) {
+    this.blockLock = LockType.READ_COMMITTED;
+    this.blocksParam = blocks;
+    return this;
+  }
+
+  public long[] getBlocksParam() {
+    return blocksParam;
+  }
+
+  public HDFSTransactionLocks addInvalidatedBlocks(int datanode) {
+    this.invLocks = LockType.READ_COMMITTED;
+    this.invdatanode = datanode;
+    return this;
+  }
+
+  public HDFSTransactionLocks addReplicas(int datanode) {
+    this.replicaLock = LockType.READ_COMMITTED;
+    this.repldatanode = datanode;
+    return this;
+  }
+
+  public Integer getInvalidatedBlocksDatanode() {
+    return invdatanode;
+  }
+
+  public Integer getReplicasDatanode() {
+    return repldatanode;
   }
 }

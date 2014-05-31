@@ -14,6 +14,7 @@ import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
 import se.sics.hop.Common;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -27,12 +28,12 @@ public class INodeContext extends EntityContext<INode> {
   /**
    * Mappings
    */
-  protected Map<Long, INode> inodesIdIndex = new HashMap<Long, INode>();
+  protected Map<Integer, INode> inodesIdIndex = new HashMap<Integer, INode>();
   protected Map<String, INode> inodesNameParentIndex = new HashMap<String, INode>();
-  protected Map<Long, List<INode>> inodesParentIndex = new HashMap<Long, List<INode>>();
-  protected Map<Long, INode> newInodes = new HashMap<Long, INode>();
-  protected Map<Long, INode> modifiedInodes = new HashMap<Long, INode>();
-  protected Map<Long, INode> removedInodes = new HashMap<Long, INode>();
+  protected Map<Integer, List<INode>> inodesParentIndex = new HashMap<Integer, List<INode>>();
+  protected Map<Integer, INode> newInodes = new HashMap<Integer, INode>();
+  protected Map<Integer, INode> modifiedInodes = new HashMap<Integer, INode>();
+  protected Map<Integer, INode> removedInodes = new HashMap<Integer, INode>();
   protected INodeDataAccess<INode> dataAccess;
 
   public INodeContext(INodeDataAccess<INode>  dataAccess) {
@@ -43,8 +44,8 @@ public class INodeContext extends EntityContext<INode> {
   public void add(INode inode) throws PersistanceException {
     if (removedInodes.containsKey(inode.getId())) {
       log("added-removed-inode", CacheHitState.NA,
-              new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName(),
-        "pid", Long.toString(inode.getParentId())});
+              new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(),
+        "pid", Integer.toString(inode.getParentId())});
       removedInodes.remove(inode.getId());
       update(inode);
     } else {
@@ -52,8 +53,8 @@ public class INodeContext extends EntityContext<INode> {
       inodesNameParentIndex.put(inode.nameParentKey(), inode);
       newInodes.put(inode.getId(), inode);
       log("added-inode", CacheHitState.NA,
-              new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName(),
-        "pid", Long.toString(inode.getParentId())});
+              new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(),
+        "pid", Integer.toString(inode.getParentId())});
     }
   }
 
@@ -80,17 +81,17 @@ public class INodeContext extends EntityContext<INode> {
     INode result = null;
     switch (iFinder) {
       case ByINodeID:
-        long inodeId = (Long) params[0];
+        Integer inodeId = (Integer) params[0];
         if (removedInodes.containsKey(inodeId)) {
-          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Long.toString(inodeId)});
+          log("find-inode-by-pk-removed", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           result = null;
         } else if (inodesIdIndex.containsKey(inodeId)) {
-          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Long.toString(inodeId)});
+          log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           result = inodesIdIndex.get(inodeId);
         } else if (isRemoved(inodeId)) {
           return result;
         } else {
-          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Long.toString(inodeId)});
+          log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
           aboutToAccessStorage();
           result = dataAccess.indexScanfindInodeById(inodeId);
           inodesIdIndex.put(inodeId, result);
@@ -100,16 +101,16 @@ public class INodeContext extends EntityContext<INode> {
         }
         break;
       case ByPK_NameAndParentId:
-        String name   = (String)  params[0];
-        long parentId = (Long)    params[1];
+        String name       = (String)  params[0];
+        Integer parentId  = (Integer) params[1];
         String key = parentId + name;
         if (inodesNameParentIndex.containsKey(key)) {
           log("find-inode-by-name-parentid", CacheHitState.HIT,
-                  new String[]{"name", name, "pid", Long.toString(parentId)});
+                  new String[]{"name", name, "pid", Integer.toString(parentId)});
           result = inodesNameParentIndex.get(key);
         } else if (newInodes.containsKey(parentId)) {
           log("find-inode-by-name-new-parentid", CacheHitState.HIT,
-                  new String[]{"name", name, "pid", Long.toString(parentId)});
+                  new String[]{"name", name, "pid", Integer.toString(parentId)});
           result = null;
         } else if (isRemoved(parentId, name)) {
           return result; // return null; the node was remove. 
@@ -119,13 +120,13 @@ public class INodeContext extends EntityContext<INode> {
           if (result != null) {
             if (removedInodes.containsKey(result.getId())) {
               log("find-inode-by-name-parentid-removed", CacheHitState.LOSS,
-                      new String[]{"name", name, "pid", Long.toString(parentId)});
+                      new String[]{"name", name, "pid", Integer.toString(parentId)});
               return null;
             }
             inodesIdIndex.put(result.getId(), result);
           }
           inodesNameParentIndex.put(key, result);
-          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Long.toString(parentId)});
+          log("find-inode-by-name-parentid", CacheHitState.LOSS, new String[]{"name", name, "pid", Integer.toString(parentId)});
         }
         break;
     }
@@ -139,12 +140,12 @@ public class INodeContext extends EntityContext<INode> {
     List<INode> result = null;
     switch (iFinder) {
       case ParentId:
-        long parentId = (Long) params[0];
+        Integer parentId = (Integer) params[0];
         if (inodesParentIndex.containsKey(parentId)) {
-          log("find-inodes-by-parentid", CacheHitState.HIT, new String[]{"pid", Long.toString(parentId)});
+          log("find-inodes-by-parentid", CacheHitState.HIT, new String[]{"pid", Integer.toString(parentId)});
           result = inodesParentIndex.get(parentId);
         } else {
-          log("find-inodes-by-parentid", CacheHitState.LOSS, new String[]{"pid", Long.toString(parentId)});
+          log("find-inodes-by-parentid", CacheHitState.LOSS, new String[]{"pid", Integer.toString(parentId)});
           aboutToAccessStorage();
           result = syncInodeInstances(dataAccess.indexScanFindInodesByParentId(parentId));
           Collections.sort(result, INode.Order.ByName);
@@ -152,7 +153,6 @@ public class INodeContext extends EntityContext<INode> {
         }
         break;
     }
-
     return result;
   }
 
@@ -191,7 +191,7 @@ public class INodeContext extends EntityContext<INode> {
     newInodes.remove(inode.getId());
     modifiedInodes.remove(inode.getId());
     removedInodes.put(inode.getId(), inode);
-    log("removed-inode", CacheHitState.NA, new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName()});
+    log("removed-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName()});
   }
 
   @Override
@@ -208,8 +208,15 @@ public class INodeContext extends EntityContext<INode> {
 
     inodesIdIndex.put(inode.getId(), inode);
     inodesNameParentIndex.put(inode.nameParentKey(), inode);
-    modifiedInodes.put(inode.getId(), inode);
-    log("updated-inode", CacheHitState.NA, new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName()});
+    //if in new list then update in the new list
+    if(newInodes.containsKey(inode.getId()))
+    {
+      newInodes.put(inode.getId(), inode);
+    }else{
+      modifiedInodes.put(inode.getId(), inode);
+    }
+    
+    log("updated-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName()});
   }
 
   private List<INode> syncInodeInstances(List<INode> newInodes) {
@@ -243,7 +250,7 @@ public class INodeContext extends EntityContext<INode> {
     return finalList;
   }
 
-  private boolean isRemoved(final long parent_id, final String name) {
+  private boolean isRemoved(final Integer parent_id, final String name) {
     for (INode inode : removedInodes.values()) {
       if (inode.getParentId() == parent_id
               && inode.getLocalName().equals(name)) {
@@ -254,7 +261,7 @@ public class INodeContext extends EntityContext<INode> {
     return false;
   }
 
-  private boolean isRemoved(final long id) {
+  private boolean isRemoved(final Integer id) {
     for (INode inode : removedInodes.values()) {
       if (inode.getId() == id) {
         return true;
@@ -276,9 +283,17 @@ public class INodeContext extends EntityContext<INode> {
     switch (hopCmds){
       case INodePKChanged:
         //delete the previous row from db
-        INode inode = (INode) params[0];
-        removedInodes.put(inode.getId(),inode);
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"id", Long.toString(inode.getId()), "name", inode.getLocalName(), "pid", Long.toString(inode.getParentId()) });
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
+        log("snapshot-maintenance-inode-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
+        log("snapshot-maintenance-removed-inode",CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(),"inodeId", Integer.toString(inodeBeforeChange.getId()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
+        break;
+      case Concat:
+        // do nothing
+        // why? files y and z are merged into file x. 
+        // all the blocks will be added to file x and the inodes y and z will be deleted.
+        // Inode deletion is handled by the concat function
         break;
     }
   }
