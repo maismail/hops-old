@@ -6531,7 +6531,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
-    final long inodeId = findInodeId(filePath);
+    final int inodeId = findInodeId(filePath);
 
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
@@ -6540,7 +6540,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             TransactionLockTypes.INodeLockType.READ_COMMITED, new String[]{filePath});
-        lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, inodeId);
+        lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
         return lockAcquirer.acquire();
       }
 
@@ -6556,19 +6556,18 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (EncodingStatus) result;
   }
 
-  public INode findInode(final long id) throws IOException {
+  public INode findInode(final int id) throws IOException {
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-        // TODO STEFFEN - This cast is only a workaround. Check why it is int now.
-        return dataAccess.indexScanfindInodeById((int) id);
+        return dataAccess.indexScanfindInodeById(id);
       }
     };
     return (INode) findHandler.handle();
   }
 
-  public EncodingStatus findEncodingStatus(final long inodeId) throws IOException {
+  public EncodingStatus findEncodingStatus(final int inodeId) throws IOException {
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
@@ -6585,7 +6584,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (EncodingStatus) result;
   }
 
-  public String getPath(long inodeId) throws IOException {
+  public String getPath(int inodeId) throws IOException {
     INode iNode = findInode(inodeId);
     if (iNode == null) {
       return null;
@@ -6613,7 +6612,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return builder.toString();
   }
 
-  public long findInodeId (final String filePath) throws IOException {
+  public int findInodeId (final String filePath) throws IOException {
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
@@ -6632,7 +6631,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         return inode.getId();
       }
     };
-    return (Long) findReq.handle();
+    return (Integer) findReq.handle();
   }
 
   public LocatedBlocks getMissingBlockLocations(final String clientMachine, final String filePath) throws AccessControlException,
@@ -6663,7 +6662,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public Object performTask() throws PersistanceException, IOException {
-            long inodeId = dir.getINode(sourcePath).getId();
+            int inodeId = dir.getINode(sourcePath).getId();
             EncodingStatus encodingStatus = new EncodingStatus(
                 inodeId,
                 EncodingStatus.Status.ENCODING_REQUESTED,
@@ -6676,11 +6675,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     addEncodingStatusHandler.handle();
   }
 
-  public void updateEncodingStatus(String sourceFile, long inodeId, EncodingStatus.Status status) throws IOException {
+  public void updateEncodingStatus(String sourceFile, int inodeId, EncodingStatus.Status status) throws IOException {
     updateEncodingStatus(sourceFile, inodeId, status, null);
   }
 
-  public void updateEncodingStatus(final String sourceFile, final long inodeId,
+  public void updateEncodingStatus(final String sourceFile, final int inodeId,
         final EncodingStatus.Status status, final String parityFile) throws IOException {
     HDFSTransactionalRequestHandler updateEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
@@ -6690,7 +6689,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, inodeId);
+            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
             return lockAcquirer.acquire();
           }
 
@@ -6709,7 +6708,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     updateEncodingStatusHandler.handle();
   }
 
-  public void updateEncodingStatus(final String sourceFile, final long inodeId,
+  public void updateEncodingStatus(final String sourceFile, final int inodeId,
       final EncodingStatus.ParityStatus status) throws IOException {
     HDFSTransactionalRequestHandler updateEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
@@ -6719,7 +6718,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(LockType.WRITE, inodeId);
+            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
             return lockAcquirer.acquire();
           }
 

@@ -1149,7 +1149,10 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override
   public EncodingStatus getEncodingStatus(String filePath) throws IOException {
-    return namesystem.getEncodingStatus(filePath);
+    EncodingStatus status = namesystem.getEncodingStatus(filePath);
+    // Workaround. See ErasureCodingManager
+    status.setParityFileName(status.getParityFileName() + "/" + status.getParityFileName());
+    return status;
   }
 
   @Override

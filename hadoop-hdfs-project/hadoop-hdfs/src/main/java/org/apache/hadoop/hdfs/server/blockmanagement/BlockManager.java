@@ -1041,7 +1041,7 @@ public class BlockManager {
                 addReplicaUc().
                 addInvalidatedBlock();
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
-          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId());
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
         }
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -1821,7 +1821,7 @@ public class BlockManager {
                 addPendingBlock().
                 addGenerationStamp(LockType.READ);
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
-          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId());
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
         }
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -2100,7 +2100,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess().
                 addGenerationStamp(LockType.READ);
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
-          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId());
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
         }
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -2977,7 +2977,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                   addInvalidatedBlock();
         }
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
-          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId());
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
         }
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -3651,7 +3651,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addUnderReplicatedBlock().
                 addReplicaUc();
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
-          tla.getLocks().addEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId());
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
         }
         return tla.acquireByBlock(inodeIdentifier);
       }

@@ -201,7 +201,7 @@ public class ErasureCodingManager extends Configured{
                     addExcess().
                     addCorrupt().
                     addReplicaUc();
-                tla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, encodingStatus.getInodeId());
+                tla.getLocks().addEncodingStatusLock(encodingStatus.getInodeId());
                 return tla.acquire();
               }
 
@@ -260,8 +260,7 @@ public class ErasureCodingManager extends Configured{
                     addExcess().
                     addCorrupt().
                     addReplicaUc();
-                tla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.WRITE,
-                    encodingStatus.getParityInodeId());
+                tla.getLocks().addEncodingStatusLock(encodingStatus.getParityInodeId());
                 return tla.acquire();
               }
 
@@ -318,7 +317,7 @@ public class ErasureCodingManager extends Configured{
   private void finalizeEncoding(final String path) {
     try {
       final EncodingStatus status = namesystem.getEncodingStatus(path);
-      final long parityInodeId = namesystem.findInodeId(parityFolder + "/" + status.getParityFileName());
+      final int parityInodeId = namesystem.findInodeId(parityFolder + "/" + status.getParityFileName());
 
       HDFSTransactionalRequestHandler handler =
           new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
@@ -326,7 +325,7 @@ public class ErasureCodingManager extends Configured{
             public TransactionLocks acquireLock() throws PersistanceException, IOException {
               ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
               tla.getLocks().
-                  addEncodingStatusLock(TransactionLockTypes.LockType.WRITE, status.getInodeId()).
+                  addEncodingStatusLock(status.getInodeId()).
                   addINode(TransactionLockTypes.INodeResolveType.PATH,
                       TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
               return tla.acquire();
@@ -353,7 +352,7 @@ public class ErasureCodingManager extends Configured{
 
   private void updateEncodingStatus(String filePath, EncodingStatus.Status status) {
     try {
-      long id = namesystem.findInodeId(filePath);
+      int id = namesystem.findInodeId(filePath);
       namesystem.updateEncodingStatus(filePath, id, status);
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
@@ -362,7 +361,7 @@ public class ErasureCodingManager extends Configured{
 
   private void updateEncodingStatus(String filePath, EncodingStatus.ParityStatus status) {
     try {
-      long id = namesystem.findInodeId(filePath);
+      int id = namesystem.findInodeId(filePath);
       namesystem.updateEncodingStatus(filePath, id, status);
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
@@ -407,8 +406,9 @@ public class ErasureCodingManager extends Configured{
 
         LOG.info("Schedule encoding for " + path);
         UUID parityFileName = UUID.randomUUID();
+        // Putting the file in a folder with the same name is a workaround for poor lookup performance
         encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path),
-            new Path(parityFolder + "/" + parityFileName.toString()));
+            new Path(parityFolder + "/" + parityFileName.toString() + "/" + parityFileName.toString()));
         namesystem.updateEncodingStatus(path, encodingStatus.getInodeId(), EncodingStatus.Status.ENCODING_ACTIVE,
             parityFileName.toString());
         activeEncodings++;

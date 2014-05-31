@@ -9,7 +9,7 @@ import java.util.LinkedList;
 public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
 
   private TransactionLockTypes.LockType encodingStatusLock;
-  private long inodeId;
+  private int inodeId;
 
   public ErasureCodingTransactionLocks() {
 
@@ -19,8 +19,8 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
     super(resolvedInodes, preTxPathFullyResolved);
   }
 
-  public ErasureCodingTransactionLocks addEncodingStatusLock(TransactionLockTypes.LockType lock, long inodeId) {
-    this.encodingStatusLock = lock;
+  public ErasureCodingTransactionLocks addEncodingStatusLock(int inodeId) {
+    this.encodingStatusLock = TransactionLockTypes.LockType.READ_COMMITTED;;
     this.inodeId = inodeId;
 
     return this;
@@ -30,7 +30,7 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
     return encodingStatusLock;
   }
 
-  public long getInodeId() {
+  public int getInodeId() {
     return inodeId;
   }
 }

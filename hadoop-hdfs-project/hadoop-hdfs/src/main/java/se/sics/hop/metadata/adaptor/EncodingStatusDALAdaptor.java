@@ -180,12 +180,12 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
-  public EncodingStatus findByInodeId(long inodeId) throws StorageException {
+  public EncodingStatus findByInodeId(int inodeId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByInodeId(inodeId));
   }
 
   @Override
-  public EncodingStatus findByParityInodeId(long inodeId) throws StorageException {
+  public EncodingStatus findByParityInodeId(int inodeId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findByParityInodeId(inodeId));
   }
 

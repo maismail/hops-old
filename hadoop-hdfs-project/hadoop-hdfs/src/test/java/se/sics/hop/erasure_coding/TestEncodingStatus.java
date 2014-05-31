@@ -39,7 +39,7 @@ public class TestEncodingStatus extends TestCase {
   @Test
   public void testAddAndFindEncodingStatus() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
-    final EncodingStatus statusToAdd = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
+    final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -59,15 +59,15 @@ public class TestEncodingStatus extends TestCase {
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, id);
+        ctla.getLocks().addEncodingStatusLock(id);
         return ctla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         return EntityManager.find(EncodingStatus.Finder.ByInodeId, id);
       }
     };
@@ -101,7 +101,7 @@ public class TestEncodingStatus extends TestCase {
   @Test
   public void testUpdateEncodingStatus() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
-    final EncodingStatus statusToAdd = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
+    final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -118,21 +118,21 @@ public class TestEncodingStatus extends TestCase {
     addReq.handle();
 
     final EncodingPolicy policy1 = new EncodingPolicy("codec2", 2);
-    final EncodingStatus updatedStatus = new EncodingStatus(1L, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
+    final EncodingStatus updatedStatus = new EncodingStatus(1, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
 
     TransactionalRequestHandler updateReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.UPDATE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, id);
+        ctla.getLocks().addEncodingStatusLock(id);
         return ctla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         EntityManager.update(updatedStatus);
         return null;
       }
@@ -144,15 +144,15 @@ public class TestEncodingStatus extends TestCase {
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, id);
+        ctla.getLocks().addEncodingStatusLock(id);
         return ctla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         return EntityManager.find(EncodingStatus.Finder.ByInodeId, id);
       }
     };
@@ -187,11 +187,11 @@ public class TestEncodingStatus extends TestCase {
   public void testCountEncodingRequested() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
-    statusToAdd.add(new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED,policy, 1L));
-    statusToAdd.add(new EncodingStatus(2L, EncodingStatus.Status.ENCODED, policy, 1L));
-    statusToAdd.add(new EncodingStatus(3L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
-    statusToAdd.add(new EncodingStatus(4L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
-    statusToAdd.add(new EncodingStatus(5L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED,policy, 1L));
+    statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(3, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -245,11 +245,11 @@ public class TestEncodingStatus extends TestCase {
   public void testFindEncodingRequested() throws IOException {
     final EncodingPolicy policy = new EncodingPolicy("codec", 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
-    statusToAdd.add(new EncodingStatus(1L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
-    statusToAdd.add(new EncodingStatus(2L, EncodingStatus.Status.ENCODED, policy, 1L));
-    statusToAdd.add(new EncodingStatus(3L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
-    statusToAdd.add(new EncodingStatus(4L, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
-    statusToAdd.add(new EncodingStatus(5L, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1L));
+    statusToAdd.add(new EncodingStatus(3, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
+    statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
@@ -271,19 +271,19 @@ public class TestEncodingStatus extends TestCase {
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        long id = (Long) getParams()[0];
+        Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(TransactionLockTypes.LockType.READ, id);
+        ctla.getLocks().addEncodingStatusLock(id);
         return ctla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Long limit = (Long) getParams()[0];
+        Integer limit = (Integer) getParams()[0];
         return EntityManager.findList(EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
       }
     };
-    findReq.setParams(Long.MAX_VALUE);
+    findReq.setParams(Integer.MAX_VALUE);
     Collection<EncodingStatus> foundStatus = (Collection<EncodingStatus>) findReq.handle();
     assertEquals(count(statusToAdd, EncodingStatus.Status.ENCODING_REQUESTED),
         count(foundStatus, EncodingStatus.Status.ENCODING_REQUESTED));

@@ -57,8 +57,8 @@ public class EncodingStatus {
     }
   }
 
-  private Long inodeId;
-  private Long parityInodeId;
+  private Integer inodeId;
+  private Integer parityInodeId;
   private Status status;
   private ParityStatus parityStatus;
   private EncodingPolicy encodingPolicy;
@@ -80,14 +80,14 @@ public class EncodingStatus {
     this.parityFileName = parityFileName;
   }
 
-  public EncodingStatus(Long inodeId, Status status, EncodingPolicy encodingPolicy, Long statusModificationTime) {
+  public EncodingStatus(Integer inodeId, Status status, EncodingPolicy encodingPolicy, Long statusModificationTime) {
     this.inodeId = inodeId;
     this.status = status;
     this.encodingPolicy = encodingPolicy;
     this.statusModificationTime = statusModificationTime;
   }
 
-  public EncodingStatus(Long inodeId, Long parityInodeId, Status status, ParityStatus parityStatus,
+  public EncodingStatus(Integer inodeId, Integer parityInodeId, Status status, ParityStatus parityStatus,
       EncodingPolicy encodingPolicy, Long statusModificationTime, Long parityStatusModificationTime,
       String parityFileName) {
     this.inodeId = inodeId;
@@ -100,19 +100,19 @@ public class EncodingStatus {
     this.parityFileName = parityFileName;
   }
 
-  public Long getInodeId() {
+  public Integer getInodeId() {
     return inodeId;
   }
 
-  public void setInodeId(Long inodeId) {
+  public void setInodeId(Integer inodeId) {
     this.inodeId = inodeId;
   }
 
-  public Long getParityInodeId() {
+  public Integer getParityInodeId() {
     return parityInodeId;
   }
 
-  public void setParityInodeId(Long parityInodeId) {
+  public void setParityInodeId(Integer parityInodeId) {
     this.parityInodeId = parityInodeId;
   }
 
