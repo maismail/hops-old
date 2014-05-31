@@ -160,7 +160,7 @@ public class ErasureCodingManager extends Configured{
             break;
           }
         } catch (Throwable e) {
-          LOG.error(e);
+          LOG.error("DEBUG_DEATH caused by", e);
           // TODO STEFFEN - This is for debbugin purposes only!
           System.exit(-1);
         }
