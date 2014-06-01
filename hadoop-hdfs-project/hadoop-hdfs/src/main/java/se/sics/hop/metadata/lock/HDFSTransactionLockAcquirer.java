@@ -131,7 +131,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }
       // dangling block
       // take lock on the indeId basically bring null in the cache
-      inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
+          inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
+      }else if(inodeIdentifer.getInodeId() != null ){
+          inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      }else {
+          throw new StorageException("INodeIdentifier objec is not properly initialized ");
+      }
     }
     
 

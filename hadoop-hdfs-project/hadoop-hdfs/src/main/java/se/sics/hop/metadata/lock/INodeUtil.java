@@ -30,8 +30,10 @@ import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.adaptor.INodeDALAdaptor;
 import se.sics.hop.metadata.hdfs.dal.BlockLookUpDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopBlockLookUp;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
@@ -297,7 +299,14 @@ public class INodeUtil {
           if (blu == null) {
             return null;
           }
-          return new INodeIdentifier(blu.getInodeId());
+          INodeIdentifier inodeIdent = new INodeIdentifier(blu.getInodeId());
+          INodeDALAdaptor ida = (INodeDALAdaptor) StorageFactory.getDataAccess(INodeDataAccess.class);
+          INode inode = ida.indexScanfindInodeById(blu.getInodeId());
+          if(inode != null){
+              inodeIdent.setName(inode.getLocalName());
+              inodeIdent.setPid(inode.getParentId());
+          }
+          return inodeIdent;
         }
       };      
       try {
@@ -311,7 +320,14 @@ public class INodeUtil {
   
   public static INodeIdentifier resolveINodeFromBlock(final Block b) throws StorageException{
     if (b instanceof BlockInfo || b instanceof BlockInfoUnderConstruction) {
-      return new INodeIdentifier(((BlockInfo) b).getInodeId());
+        INodeIdentifier inodeIden = new INodeIdentifier(((BlockInfo) b).getInodeId());
+          INodeDALAdaptor ida = (INodeDALAdaptor) StorageFactory.getDataAccess(INodeDataAccess.class);
+          INode inode = ida.indexScanfindInodeById(((BlockInfo) b).getInodeId());
+          if(inode != null){
+              inodeIden.setName(inode.getLocalName());
+              inodeIden.setPid(inode.getParentId());
+          }
+          return inodeIden;
     } else {
       return resolveINodeFromBlockID(b.getBlockId());
     }
