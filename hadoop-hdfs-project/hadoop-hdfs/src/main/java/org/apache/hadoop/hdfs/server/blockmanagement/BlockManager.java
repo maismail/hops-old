@@ -2820,6 +2820,37 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       // Remove the replica from corruptReplicas
       corruptReplicas.removeFromCorruptReplicasMap(getBlockInfo(block), node);
+
+      FSNamesystem fsNamesystem = (FSNamesystem) namesystem;
+      if (fsNamesystem.isErasureCodingEnabled()) {
+        BlockInfo blockInfo = getStoredBlock(block);
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
+        if (status != null && status.isEncoded() && (status.isCorrupt() == false)) {
+          NumberReplicas numberReplicas = countNodes(block);
+          if (numberReplicas.liveReplicas() == 0) {
+            status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+            status.setStatusModificationTime(System.currentTimeMillis());
+            EntityManager.update(status);
+          }
+        }
+        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, blockInfo.getInodeId());
+        if (status == null) {
+          LOG.info("removeStoredBlock returned null for " + blockInfo.getInodeId());
+        } else {
+          LOG.info("removeStoredBlock found " + blockInfo.getInodeId() + " with status " + status);
+        }
+        if (status != null && status.getParityStatus().equals(EncodingStatus.ParityStatus.HEALTHY)) {
+          NumberReplicas numberReplicas = countNodes(block);
+          if (numberReplicas.liveReplicas() == 0) {
+            status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+            status.setParityStatusModificationTime(System.currentTimeMillis());
+            EntityManager.update(status);
+            LOG.info("removeStoredBlock updated parity status to repair requested");
+          } else {
+            LOG.info("removeStoredBlock found replicas: " + numberReplicas.liveReplicas());
+          }
+        }
+      }
     }
   }
 
