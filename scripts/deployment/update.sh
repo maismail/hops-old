@@ -1,0 +1,19 @@
+#!/bin/bash
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud1:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud2:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud3:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud4:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud5:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud6:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud7:/home/steffeng/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud8:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud9:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud10:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud11:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud12:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud13:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud14:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud15:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud16:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud17:/opt/hop/hadoop-2.0.4-alpha/share
+rsync --delete -avze ssh ramdisk/hop/hop/hadoop-dist/target/hadoop-2.0.4-alpha/share/ cloud18:/opt/hop/hadoop-2.0.4-alpha/share
