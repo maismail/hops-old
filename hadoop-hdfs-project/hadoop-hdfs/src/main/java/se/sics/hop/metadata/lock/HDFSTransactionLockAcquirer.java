@@ -39,9 +39,11 @@ import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.context.BlockPK;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITED;
@@ -131,7 +133,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }
       // dangling block
       // take lock on the indeId basically bring null in the cache
-      inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
+          inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
+      }else if(inodeIdentifer.getInodeId() != null ){
+          inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      }else {
+          throw new StorageException("INodeIdentifier objec is not properly initialized ");
+      }
     }
     
 
@@ -466,6 +474,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
   public HDFSTransactionLocks acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
+      setPartitioningKeyForLeader();
       acquireLockList(locks.getLeaderLock(), HopLeader.Finder.All);
     }
     return locks;
@@ -992,5 +1001,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
         LOG.debug("Setting Partitioning Key to be "+ inodeId);
     }
+  }
+  
+    private void setPartitioningKeyForLeader(){
+      //set partitioning key
+      Object[] key = new Object[2];
+      key[0] = LeaderElection.LEADER_INITIALIZATION_ID; //pid
+      key[1] = HopLeader.DEFAULT_PARTITION_VALUE;
+      EntityManager.setPartitionKey(LeaderDataAccess.class, key);
+      //LOG.debug("Setting Partitioning for Leader Election ");
   }
 }
