@@ -3855,6 +3855,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess().
                 addCorrupt().
                 addPendingBlock().
+                addInvalidatedBlock().
                 addUnderReplicatedBlock();
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
           tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
