@@ -35,7 +35,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   }
 
   @Override
-  public HDFSTransactionLocks acquireByBlock(INodeIdentifier iNodeIdentifier) throws PersistanceException, UnresolvedPathException {
+  public ErasureCodingTransactionLocks acquireByBlock(INodeIdentifier iNodeIdentifier) throws PersistanceException, UnresolvedPathException {
     super.acquireByBlock(iNodeIdentifier);
     acquireEncodingLock();
     return getLocks();

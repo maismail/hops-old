@@ -3847,7 +3847,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(block.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
@@ -3855,6 +3855,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
+        }
         return tla.acquireByBlock(inodeIdentifier);
       }
 
@@ -3879,7 +3882,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(block.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
@@ -3888,6 +3891,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
+        }
         return tla.acquireByBlock(inodeIdentifier);
       }
 
@@ -3916,7 +3922,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
                 addBlock(b.corrupted.getBlockId(), inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID).
@@ -3926,6 +3932,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addUnderReplicatedBlock().
                 addReplicaUc().
                 addInvalidatedBlock();
+        if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
+          tla.getLocks().addEncodingStatusLock(inodeIdentifier.getInodeId());
+        }
         return tla.acquireByBlock(inodeIdentifier);
       }
 
