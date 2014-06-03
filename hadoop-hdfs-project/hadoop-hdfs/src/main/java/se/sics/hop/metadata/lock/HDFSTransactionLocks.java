@@ -372,4 +372,38 @@ public class HDFSTransactionLocks implements TransactionLocks{
   public Integer getReplicasDatanode() {
     return repldatanode;
   }
+  
+  public void clean(){
+    inodeLock = null;
+    inodeResolveType = null;
+    inodeParam = null;
+    INode[] inodeResult = null;
+    preTxResolvedInodes = null; // For the operations requires to have inodes before starting transactions.
+    allLockedInodesInTx = null;
+    blockLock = null;
+    blockID = null; //block id
+    blockInodeId = null;
+    leaseLock = null;
+    leaseParam = null;
+    nnLeaseLock = null; // acquire lease for Name-node
+    lpLock = null;
+    replicaLock = null;
+    crLock = null;
+    erLock = null;
+    rucLock = null;
+    urbLock = null;
+    urbLockFindAll = false;
+    pbLock = null;
+    invLocks = null;
+    leaderLock = null;
+    blockKeyLock = null;
+    generationStampLock = null;
+    blockIdCounterLock = null;
+    storageInfoLock = null;
+    inodeIDCounterLock = null;
+    sidCounterLock = null;
+    blocksParam = null;
+    invdatanode = null;
+    repldatanode = null;
+  }
 }
