@@ -500,6 +500,7 @@ public class DirectoryScanner implements Runnable {
     /** Compile list {@link ScanInfo} for the blocks in the directory <dir> */
     private LinkedList<ScanInfo> compileReport(FsVolumeSpi vol, File dir,
         LinkedList<ScanInfo> report) {
+      LOG.info("Scanning local blocks");
       File[] files;
       try {
         files = FileUtil.listFiles(dir);

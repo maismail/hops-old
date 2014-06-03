@@ -406,9 +406,8 @@ public class ErasureCodingManager extends Configured{
 
         LOG.info("Schedule encoding for " + path);
         UUID parityFileName = UUID.randomUUID();
-        // Putting the file in a folder with the same name is a workaround for poor lookup performance
         encodingManager.encodeFile(encodingStatus.getEncodingPolicy(), new Path(path),
-            new Path(parityFolder + "/" + parityFileName.toString() + "/" + parityFileName.toString()));
+            new Path(parityFolder + "/" + parityFileName.toString()));
         namesystem.updateEncodingStatus(path, encodingStatus.getInodeId(), EncodingStatus.Status.ENCODING_ACTIVE,
             parityFileName.toString());
         activeEncodings++;
