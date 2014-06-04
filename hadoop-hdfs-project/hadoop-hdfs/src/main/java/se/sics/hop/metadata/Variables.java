@@ -117,6 +117,14 @@ public class Variables {
     updateVariable(new HopIntVariable(HopVariable.Finder.SIdCounter, sid));
   }
     
+  public static long getMaxNNID() throws PersistanceException {
+      return (Long) getVariable(HopVariable.Finder.MaxNNID).getValue();
+  }
+  
+  public static void setMaxNNID(long val) throws PersistanceException {
+      updateVariable(new HopLongVariable(HopVariable.Finder.MaxNNID, val));
+  }
+  
   private static Map<Integer, BlockKey> getAllBlockTokenKeys(boolean useKeyId, boolean leightWeight) throws IOException {
     List<HopVariable> vars = (List<HopVariable>) (leightWeight ? getVariableLightWeight(HopVariable.Finder.BlockTokenKeys).getValue() 
             : getVariable(HopVariable.Finder.BlockTokenKeys).getValue());
@@ -179,5 +187,6 @@ public class Variables {
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.INodeID, new HopLongVariable(2).getBytes()); // 1 is taken by the root and zero is parent of the root
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.SIdCounter, new HopIntVariable(0).getBytes());
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.MaxNNID, new HopLongVariable(0).getBytes());
   }
 }
