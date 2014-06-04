@@ -62,6 +62,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
   //sidcounter
   private LockType sidCounterLock = null;
   
+  private LockType leaderTocken = null;
+  
   HDFSTransactionLocks() {
   }
 
@@ -221,6 +223,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
+    public HDFSTransactionLocks addLeaderTocken(LockType lock) {
+    this.leaderTocken = lock;
+    return this;
+  }
+    
   public INodeLockType getInodeLock() {
     return inodeLock;
   }
@@ -299,6 +306,10 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public LockType getSIdCounter(){
     return sidCounterLock;
+  }
+  
+  public LockType getMaxNNID(){
+    return leaderTocken;
   }
   
   public INode[] getInodeResult() {
