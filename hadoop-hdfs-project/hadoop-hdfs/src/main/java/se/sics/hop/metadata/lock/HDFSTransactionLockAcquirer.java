@@ -100,7 +100,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireLocksOnVariablesTable();
     readINodeAttributes();
     acquireBlockRelatedInfoASync();
-    clean();
     return locks;
   }
 
@@ -192,7 +191,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireLocksOnVariablesTable();
     readINodeAttributes();
     acquireBlockRelatedInfoASync();
-    clean();
     return locks;
   }
 
@@ -224,7 +222,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireLocksOnVariablesTable();
     readINodeAttributes();
     acquireBlockRelatedInfoASync();
-    clean();
     return locks;
   }
 
@@ -239,7 +236,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     if (lp != null) {
       acquireLock(leaseLock, Lease.Finder.ByHolderId, lp.getHolderId());
     }
-    clean();
     return locks;
   }
 
@@ -297,7 +293,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireLocksOnVariablesTable();
     readINodeAttributes();
     acquireBlockRelatedInfoASync();
-    clean();
     return locks;
   }
 
@@ -367,13 +362,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    private ParallelReadThread acquireBlockRelatedTableLocksASync(final ParallelReadParams parallelReadParams) throws PersistanceException {
     final String threadName = getTransactionName();
     ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId(), parallelReadParams) {     
-
-      @Override
-      protected void finalize() throws Throwable {
-        super.finalize(); //To change body of generated methods, choose Tools | Templates.
-        System.out.println("TestX async thread is finished");
-      }
-
       @Override
        public void run() {
          super.run(); //To change body of generated methods, choose Tools | Templates.
@@ -416,7 +404,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            exceptionList.add(ex); //after join all exceptions will be thrown
          }
          NDC.pop();
-         System.out.println("TestX Thread Ended");
+         NDC.remove();
        }
      };
     pThread.start();
@@ -597,7 +585,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       }
     }
     threads.clear();
-    System.out.println("TestX All thread ended");
     if(intrException != null){
       throw new AcquireLockInterruptedException(intrException);
     }
@@ -993,12 +980,4 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       EntityManager.setPartitionKey(LeaderDataAccess.class, key);
       //LOG.debug("Setting Partitioning for Leader Election ");
   }
-  
-  private void clean() {
-    allResolvedINodes.clear();
-    leaseResults.clear();
-    blockResults.clear();
-  }
-    
-  
 }

@@ -62,11 +62,11 @@ class ParallelReadParams{
     }
     
     public void clear(){
-      if(blockIds != null) blockIds.clear();
-      if(inodeIds != null) inodeIds.clear();
-      blockFinder = null;
-      isListBlockFinder  = false;
-      inodeFinder = null;
-      defaultFinder = null;
+//      if(blockIds != null) blockIds.clear();
+//      if(inodeIds != null) inodeIds.clear();
+//      blockFinder = null;
+//      isListBlockFinder  = false;
+//      inodeFinder = null;
+//      defaultFinder = null;
     }
   }
