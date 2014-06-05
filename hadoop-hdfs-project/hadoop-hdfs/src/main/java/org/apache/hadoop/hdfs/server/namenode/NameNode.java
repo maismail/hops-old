@@ -656,7 +656,7 @@ public class NameNode {
         roleSince = System.currentTimeMillis();
         leaderWindow = (long) (conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)
                 * (conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT) 
-                - 0.5));
+                + 0.5));
         String nsId = getNameServiceId(conf);
         String namenodeId = HAUtil.getNameNodeId(conf, nsId);
 //    this.haEnabled = HAUtil.isHAEnabled(conf, nsId); // HOP disable it

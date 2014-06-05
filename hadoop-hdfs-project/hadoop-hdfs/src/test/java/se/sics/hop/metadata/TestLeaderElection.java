@@ -55,10 +55,11 @@ public class TestLeaderElection {
     private static final Log LOG = LogFactory.getLog(TestLeaderElection.class);
     HdfsConfiguration conf = null;
     List<NameNode> nnList;
+    int leaderCheckInterval = 11 * 1000;
+    int leaderMissedHB = 1;
 
     @Before
     public void init() throws StorageInitializtionException, StorageException, IOException {
-//        forbidSystemExitCall();
         conf = new HdfsConfiguration();
         nnList = new ArrayList<NameNode>();
         StorageFactory.setConfiguration(conf);
@@ -83,10 +84,9 @@ public class TestLeaderElection {
         conf.setBoolean(
                 DFSConfigKeys.DFS_NAMENODE_AVOID_STALE_DATANODE_FOR_WRITE_KEY, true);
 
-        //Gautier conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 10);
         conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 10);
-        conf.setInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, 11 * 1000);
-        conf.setInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, 2);
+        conf.setInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, leaderCheckInterval);
+        conf.setInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, leaderMissedHB);
 
         DFSTestUtil.formatNameNode(conf);
     }
@@ -96,6 +96,9 @@ public class TestLeaderElection {
         //stop all NN
         LOG.debug("tearDown");
         for (NameNode nn : nnList) {
+            if (nn.getLeaderElectionInstance().ispaused()) {
+                nn.getLeaderElectionInstance().pause();
+            }
             nn.stop();
         }
     }
@@ -109,7 +112,6 @@ public class TestLeaderElection {
         List<InetSocketAddress> isaList = new ArrayList<InetSocketAddress>();
         //create 10 NN
         for (int i = 0; i < 10; i++) {
-//            conf.set(FS_DEFAULT_NAME_KEY, "localhost:5861" + i);
             conf.set(FS_DEFAULT_NAME_KEY, "localhost:0");
             conf.set(DFS_NAMENODE_HTTP_ADDRESS_KEY, "localhost:0");
             NameNode nn = new NameNode(conf);
@@ -134,7 +136,7 @@ public class TestLeaderElection {
         //stop the leader
         nnList.get(leaderId).stop();
 
-        Thread.sleep(40000);
+        Thread.sleep(leaderCheckInterval * (leaderMissedHB + 2));
 
         //verify that there is one and only one leader.
         int newLeaderId = 0;
@@ -158,14 +160,16 @@ public class TestLeaderElection {
 
         //stop NN last alive NN
         int tokill = nnList.size() - 1;
-        if (leaderId == tokill) {
+        while (leaderId == tokill || newLeaderId == tokill) {
             tokill--;
         }
+        LOG.debug("stopping node: " + nnList.get(tokill).getId());
         nnList.get(tokill).stop();
-        Thread.sleep(40000);
+        Thread.sleep(leaderCheckInterval * (leaderMissedHB + 2));
 
         //verify that the killed NN is not in the active NN list anymore
-        activesNNs = getActiveNN(nnList.get(1).getLeaderElectionInstance());
+        activesNNs = getActiveNN(nnList.get(newLeaderId).getLeaderElectionInstance());
+        assertTrue("wrong nb of active nn " + activesNNs.size(), activesNNs.size() == 8);
         for (ActiveNamenode ann : activesNNs) {
             assertFalse("killed nn is stil in active nn", ann.getInetSocketAddress().equals(isaList.get(tokill)));
         }
@@ -186,7 +190,7 @@ public class TestLeaderElection {
             nnList.add(nn);
         }
         //verify that the number of active nn is equal to the number of started NN
-        List<ActiveNamenode> activesNNs = getActiveNN(nnList.get(0).getLeaderElectionInstance());
+        List<ActiveNamenode> activesNNs = getActiveNN(nnList.get(9).getLeaderElectionInstance());
         assertTrue("wrong number of actives NN " + activesNNs.size(), activesNNs.size() == nnList.size());
         //verify that there is one and only one leader.
         int leaderId = 0;
@@ -203,7 +207,7 @@ public class TestLeaderElection {
         //slowdown leader NN by suspending its thread during 10s 
         nnList.get(leaderId).getLeaderElectionInstance().pause();
 
-        Thread.sleep(40000);
+        Thread.sleep(leaderCheckInterval * (leaderMissedHB + 2));
 
         nnList.get(leaderId).getLeaderElectionInstance().pause();
 
@@ -220,21 +224,22 @@ public class TestLeaderElection {
 
     }
 
-    private static void forbidSystemExitCall() {
-        final SecurityManager securityManager = new SecurityManager() {
-            @Override
-            public void checkPermission(Permission permission) {
-                if (permission.getName().startsWith("exitVM")) {
-                    throw new RuntimeException("Something called exit ");
-                }
-            }
-        };
-        System.setSecurityManager(securityManager);
-    }
-
-    //TODO churn
+//    private static void forbidSystemExitCall() {
+//        final SecurityManager securityManager = new SecurityManager() {
+//            @Override
+//            public void checkPermission(Permission permission) {
+//                if (permission.getName().startsWith("exitVM")) {
+//                    throw new RuntimeException("Something called exit ");
+//                }
+//            }
+//        };
+//        System.setSecurityManager(securityManager);
+//    }
     /**
-     *
+     * Test leader election behavior under churn: start 10 NN then randomly
+     * stop, restart existing NN and start new ones. Check that there is always
+     * at most 1 leader and that the time without leader is never higher than
+     * expected.
      */
     @Test
     public void testChurn() throws IOException, InterruptedException {
@@ -252,7 +257,6 @@ public class TestLeaderElection {
             nnList.add(nn);
             activNNList.add(nn);
         }
-        Thread.sleep(5000);
         //verify that there is one and only one leader.
         int nbLeaders = 0;
         for (NameNode nn : nnList) {
@@ -264,21 +268,22 @@ public class TestLeaderElection {
         assertTrue("there is more than one leader", nbLeaders == 1);
 
         long startingTime = System.currentTimeMillis();
+        String s = "";
         while (System.currentTimeMillis() - startingTime < 10 * 60 * 1000) {
             //stop random number of random NN
             int nbStop = rand.nextInt(activNNList.size() - 1);
             for (int i = 0; i < nbStop; i++) {
                 int nnId = rand.nextInt(activNNList.size());
-//                LOG.debug("suspend node with id " + activNNList.get(nnId).getId());
+                s = s + activNNList.get(nnId).getId() + "; ";
                 activNNList.get(nnId).getLeaderElectionInstance().pause();
                 stopedNNList.add(activNNList.get(nnId));
                 activNNList.remove(nnId);
             }
-//            LOG.debug("suspended " + nbStop + " nodes");
+            LOG.debug("suspended " + nbStop + " with ids: " + s);
 
             //start random number of new NN
             int nbStart = rand.nextInt(10);
-            if (nbStartedNodes + nbStart > 1000) {
+            if (nbStartedNodes + nbStart > 100) {
                 nbStart = 100 - nbStartedNodes;
             }
             for (int i = 0; i < nbStart; i++) {
@@ -291,35 +296,40 @@ public class TestLeaderElection {
             }
             //restart a random number of stoped NN
             int nbRestart = rand.nextInt(stopedNNList.size());
+            s = "";
             for (int i = 0; i < nbRestart; i++) {
                 int nnId = rand.nextInt(stopedNNList.size());
-//                LOG.debug("resum node with id " + stopedNNList.get(nnId).getId());
+                s = s + stopedNNList.get(nnId).getId() + "; ";
                 stopedNNList.get(nnId).getLeaderElectionInstance().pause();
                 activNNList.add(stopedNNList.get(nnId));
                 stopedNNList.remove(nnId);
             }
-
+            LOG.debug("restarted nodes with ids: " + s);
             //verify that there is at most one leader.
-            nbLeaders = 0;
-
-            for (NameNode nn : nnList) {
-                if (nn.isLeader()) {
-                    nbLeaders++;
+            //check that the time without leader is not too long
+            long startWaitingForLeader = System.currentTimeMillis();
+            do {
+                nbLeaders = 0;
+                ArrayList<Long> leadersID = new ArrayList<Long>();
+                for (NameNode nn : nnList) {
+                    if (nn.isLeader()) {
+                        nbLeaders++;
+                        leadersID.add(nn.getId());
+                    }
                 }
-            }
 
-            if (nbLeaders > 1) {
-                assertTrue("there is more than one leader " + nbLeaders, nbLeaders <= 1);
-            }
-            //TODO verify that the time without leader is bound 
+                if (nbLeaders > 1) {
+                    s = " ";
+                    for (long id : leadersID) {
+                        s = s + id + " ";
+                    }
+                    assertTrue("there is more than one leader " + nbLeaders + "leaders: " + s, nbLeaders <= 1);
+                }
+                long timeWithoutLeader = System.currentTimeMillis() - startWaitingForLeader;
+                assertTrue("the time without leader is too long " + timeWithoutLeader,
+                        System.currentTimeMillis() - startWaitingForLeader < leaderCheckInterval * (leaderMissedHB + 2));
+            } while (nbLeaders == 0);
         }
-
-        //restart all NN in order to stop them properly 
-        for (NameNode nn : stopedNNList) {
-//            LOG.debug("resum node with id " + nn.getId());
-            nn.getLeaderElectionInstance().pause();
-        }
-
     }
 
     private List<ActiveNamenode> getActiveNN(final LeaderElection leaderElector) throws IOException {
@@ -335,44 +345,10 @@ public class TestLeaderElection {
 
             @Override
             public Object performTask() throws IOException {
-                return leaderElector.getActiveNamenodes().getActiveNamenodes();
+                List<ActiveNamenode> ann = leaderElector.getActiveNamenodes().getActiveNamenodes();
+                return ann;
             }
         }.handle();
     }
 
-    private Long getMaxCounter(final LeaderElection leaderElector) throws IOException {
-        return (Long) new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
-
-            @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
-                HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-                tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
-                tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-                return tla.acquireLeaderLock();
-            }
-
-            @Override
-            public Object performTask() throws IOException {
-                return leaderElector.getMaxNamenodeCounter();
-            }
-        }.handle();
-    }
-
-    private List<HopLeader> getAllNN(final LeaderElection leaderElector) throws IOException {
-        return (List<HopLeader>) new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
-
-            @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
-                HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-                tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
-                tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-                return tla.acquireLeaderLock();
-            }
-
-            @Override
-            public Object performTask() throws IOException {
-                return leaderElector.getAllNameNodes();
-            }
-        }.handle();
-    }
 }
