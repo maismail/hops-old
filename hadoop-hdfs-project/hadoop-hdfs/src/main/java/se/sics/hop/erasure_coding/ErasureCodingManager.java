@@ -302,7 +302,9 @@ public class ErasureCodingManager extends Configured{
           break;
         case FAILED:
           LOG.info("Encoding failed for " + report.getFilePath());
+          // This would be a problem with multiple name nodes as it is not atomic. Only one thread here.
           updateEncodingStatus(report.getFilePath(), EncodingStatus.Status.ENCODING_FAILED);
+          updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.REPAIR_FAILED);
           activeEncodings--;
           break;
         case CANCELED:
