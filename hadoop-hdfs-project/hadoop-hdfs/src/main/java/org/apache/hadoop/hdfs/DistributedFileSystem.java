@@ -1016,7 +1016,7 @@ public class DistributedFileSystem extends FileSystem {
       out = create(tmpFile, status.getReplication(), policy);
       FSDataInputStream in = open(path);
       byte[] b = new byte[getConf().getInt("io.file.buffer.size", 4096)];
-      while (in.read(b) != 0) {
+      while (in.read(b) > 0) {
         out.write(b);
       }
       delete(path);
