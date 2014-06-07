@@ -852,7 +852,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return inode;
   }
 
-  private  INode iNodeScanLookUpByID(
+  protected  INode iNodeScanLookUpByID(
           INodeLockType lock,
           int id,
           HDFSTransactionLocks locks)
