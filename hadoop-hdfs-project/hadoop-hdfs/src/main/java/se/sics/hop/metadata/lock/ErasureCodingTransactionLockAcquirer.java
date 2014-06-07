@@ -52,8 +52,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
         // The inode was not locked as the locked inode is form the parity file. Lock the proper one.
         iNodeScanLookUpByID(TransactionLockTypes.INodeLockType.WRITE, status.getInodeId(), getLocks());
         // We didn't have a lock on it when reading it. So read it again.
-        status = acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId,
-            locks.getInodeId());
+        acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getInodeId());
       }
     }
   }
