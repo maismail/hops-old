@@ -364,9 +364,11 @@ public class ErasureCodingManager extends Configured{
         if (iNode == null) {
           continue;
         }
+        // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.
+        // If starting repair fails somehow then this should be detected by a timeout later.
+        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.Status.REPAIR_ACTIVE);
         blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
             new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
-        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.Status.REPAIR_ACTIVE);
         activeRepairs++;
       }
     } catch (IOException e) {
@@ -407,9 +409,11 @@ public class ErasureCodingManager extends Configured{
         if (iNode == null) {
           continue;
         }
+        // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.
+        // If starting repair fails somehow then this should be detected by a timeout later.
+        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.ParityStatus.REPAIR_ACTIVE);
         blockRepairManager.repairParityBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
             new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
-        namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.ParityStatus.REPAIR_ACTIVE);
         activeRepairs++;
       }
     } catch (IOException e) {
