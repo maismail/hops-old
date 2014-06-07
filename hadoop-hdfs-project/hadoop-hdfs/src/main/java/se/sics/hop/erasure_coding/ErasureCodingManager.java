@@ -13,7 +13,6 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -47,12 +46,14 @@ public class ErasureCodingManager extends Configured{
   public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
   public static final String ACTIVE_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
   public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
-  public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_repair_delay";
+  public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.repair_delay";
   public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
   public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_parity_repair_limit";
   public static final int DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT = 10;
-  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding_parity_repair_delay";
-  public static final int DEFAULT_PARITY_REPAIR_DELAY_KEY = 30 * 60 * 1000;
+  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.parity_repair_delay";
+  public static final int DEFAULT_PARITY_REPAIR_DELAY = 30 * 60 * 1000;
+  public static final String DELETION_LIMIT_KEY = "se.sics.hop.erasure_coding.deletion_limit";
+  public static final int DEFAULT_DELETION_LIMIT = 100;
 
   private final FSNamesystem namesystem;
   private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
@@ -68,6 +69,9 @@ public class ErasureCodingManager extends Configured{
   private int activeParityRepairs = 0;
   private final int repairDelay;
   private final int parityRepairDelay;
+  private final int deletionLimit;
+
+  private static boolean enabled = false;
 
   public ErasureCodingManager(FSNamesystem namesystem, Configuration conf) {
     super(conf);
@@ -78,7 +82,9 @@ public class ErasureCodingManager extends Configured{
     this.activeRepairLimit = conf.getInt(ACTIVE_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_REPAIR_LIMIT);
     this.activeParityRepairLimit = conf.getInt(ACTIVE_PARITY_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT);
     this.repairDelay = conf.getInt(REPAIR_DELAY_KEY, DEFAULT_REPAIR_DELAY_KEY);
-    this.parityRepairDelay = conf.getInt(PARITY_REPAIR_DELAY_KEY, DEFAULT_PARITY_REPAIR_DELAY_KEY);
+    this.parityRepairDelay = conf.getInt(PARITY_REPAIR_DELAY_KEY, DEFAULT_PARITY_REPAIR_DELAY);
+    this.deletionLimit = conf.getInt(DELETION_LIMIT_KEY, DEFAULT_DELETION_LIMIT);
+    enabled = conf.getBoolean(ERASURE_CODING_ENABLED_KEY, false);
   }
 
   private boolean loadRaidNodeClasses() {
@@ -150,6 +156,7 @@ public class ErasureCodingManager extends Configured{
             checkActiveRepairs();
             scheduleSourceRepairs();
             scheduleParityRepairs();
+            garbageCollect();
           }
           try {
             Thread.sleep(recheckInterval);
@@ -419,6 +426,27 @@ public class ErasureCodingManager extends Configured{
     }
   }
 
+  private void garbageCollect() throws IOException {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_DELETED) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findDeleted(deletionLimit);
+      }
+    };
+    Collection<EncodingStatus> markedAsDeleted = (Collection<EncodingStatus>) findHandler.handle();
+    for (EncodingStatus status : markedAsDeleted) {
+      try {
+        namesystem.deleteWithTransaction(parityFolder + "/" + status.getParityFileName(), false);
+        namesystem.removeEncodingStatus(status);
+      } catch (IOException e) {
+        LOG.error(e);
+      }
+    }
+  }
+
   public boolean isParityFile(String path) {
     Pattern pattern = Pattern.compile(parityFolder + ".*");
     Matcher matcher = pattern.matcher(path);
@@ -426,5 +454,9 @@ public class ErasureCodingManager extends Configured{
       return true;
     }
     return false;
+  }
+
+  public static boolean isEnabled() {
+    return enabled;
   }
 }

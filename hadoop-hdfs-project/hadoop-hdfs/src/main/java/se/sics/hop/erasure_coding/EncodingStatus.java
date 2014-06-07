@@ -16,6 +16,7 @@ public class EncodingStatus {
     REPAIR_ACTIVE,
     REPAIR_CANCELED,
     REPAIR_FAILED,
+    DELETED
   }
 
   public static enum ParityStatus {

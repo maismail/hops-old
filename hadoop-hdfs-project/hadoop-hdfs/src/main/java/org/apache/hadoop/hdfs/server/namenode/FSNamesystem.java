@@ -3180,9 +3180,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * description of exceptions
    */
   
-    boolean deleteWithTransaction(final String src, final boolean recursive)
+    public boolean deleteWithTransaction(final String src, final boolean recursive)
             throws AccessControlException, SafeModeException,
             UnresolvedLinkException, IOException {
+
         HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE) {
             @Override
             public Object performTask() throws PersistanceException, IOException {
@@ -3191,7 +3192,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
             @Override
             public TransactionLocks acquireLock() throws PersistanceException, IOException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+              ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
               tla.getLocks().
                       addINode(
                       INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3205,7 +3206,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addUnderReplicatedBlock().
                       addPendingBlock().
                       addInvalidatedBlock();
-              return tla.acquire();
+              return tla.acquireForDelete(erasureCodingEnabled);
             }
         };
         return (Boolean) deleteHandler.handle(this);
@@ -6673,6 +6674,19 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
         };
     addEncodingStatusHandler.handle();
+  }
+
+  public void removeEncodingStatus(final EncodingStatus encodingStatus) throws IOException {
+    // All referring inodes are already deleted. No more lock necessary.
+    LightWeightRequestHandler removeHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EntityManager.remove(encodingStatus);
+        return null;
+      }
+    };
+    removeHandler.handle();
   }
 
   public void updateEncodingStatus(String sourceFile, int inodeId, EncodingStatus.Status status) throws IOException {

@@ -61,7 +61,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
   private final  Log LOG = LogFactory.getLog(HDFSTransactionLockAcquirer.class);
   private final HDFSTransactionLocks locks;
-  private LinkedList<LinkedList<INode>> allResolvedINodes = new LinkedList<LinkedList<INode>>(); //linked lists are important. we need to perserv insertion order
+  protected LinkedList<LinkedList<INode>> allResolvedINodes = new LinkedList<LinkedList<INode>>(); //linked lists are important. we need to perserv insertion order
   private LinkedList<Lease> leaseResults = new LinkedList<Lease>();
   private LinkedList<BlockInfo> blockResults = new LinkedList<BlockInfo>();
   private boolean terminateAsyncThread = false;

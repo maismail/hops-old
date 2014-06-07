@@ -84,6 +84,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return EncodingStatus.Status.REPAIR_CANCELED;
       case HopEncodingStatus.REPAIR_FAILED:
         return EncodingStatus.Status.REPAIR_FAILED;
+      case HopEncodingStatus.DELETED:
+        return EncodingStatus.Status.DELETED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -113,6 +115,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return HopEncodingStatus.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return  HopEncodingStatus.REPAIR_FAILED;
+      case DELETED:
+        return HopEncodingStatus.DELETED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -273,5 +277,10 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   @Override
   public int getLostParityBlockCount() {
     return dataAccess.getLostParityBlockCount();
+  }
+
+  @Override
+  public Collection<EncodingStatus> findDeleted(long limit) throws StorageException {
+    return convertDALtoHDFS(dataAccess.findDeleted(limit));
   }
 }

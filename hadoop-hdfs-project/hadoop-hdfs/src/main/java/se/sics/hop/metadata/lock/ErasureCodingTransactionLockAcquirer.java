@@ -5,9 +5,11 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.LinkedList;
+import java.util.List;
 
 public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcquirer {
 
@@ -19,9 +21,22 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     super(new ErasureCodingTransactionLocks(resolvedInodes, preTxPathFullyResolved));
   }
 
+  public TransactionLocks acquireForDelete(boolean isErasureCodingEnabled)
+        throws PersistanceException, UnresolvedPathException {
+    super.acquire();
+    if (isErasureCodingEnabled) {
+      for (List<INode> list : allResolvedINodes) {
+        for (INode iNode : list) {
+          acquireLock(TransactionLockTypes.LockType.READ_COMMITTED, EncodingStatus.Finder.ByInodeId, iNode.getId());
+        }
+      }
+    }
+    return getLocks();
+  }
+
   @Override
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
-    super.acquire();
+
     acquireEncodingLock();
     return getLocks();
   }

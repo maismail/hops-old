@@ -36,9 +36,13 @@ import java.util.Comparator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.Common;
+import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.erasure_coding.ErasureCodingManager;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
+
+import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.
@@ -644,6 +648,18 @@ public abstract class INode implements Comparable<byte[]> {
     //if This inode is of type INodeDirectoryWithQuota then also delete the INode Attribute table
     if(node instanceof INodeDirectoryWithQuota){
       ((INodeDirectoryWithQuota)node).removeAttributes();
+    }
+    cleanParity(node);
+  }
+
+  private void cleanParity(INode node) throws PersistanceException {
+    if (ErasureCodingManager.isEnabled()) {
+      EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, node.getId());
+      if (status != null) {
+        status.setStatus(EncodingStatus.Status.DELETED);
+        EntityManager.update(status);
+        return;
+      }
     }
   }
   //END_HOP_CODE:

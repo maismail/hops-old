@@ -1155,6 +1155,11 @@ class NameNodeRpcServer implements NamenodeProtocols {
   @Override
   public EncodingStatus getEncodingStatus(String filePath) throws IOException {
     EncodingStatus status = namesystem.getEncodingStatus(filePath);
+
+    if (status.getStatus() == EncodingStatus.Status.DELETED) {
+      throw new IOException("Trying to read encoding status of deleted file");
+    }
+
     return status;
   }
 
