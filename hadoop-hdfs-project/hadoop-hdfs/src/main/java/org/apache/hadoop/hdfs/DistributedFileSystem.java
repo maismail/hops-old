@@ -1015,7 +1015,7 @@ public class DistributedFileSystem extends FileSystem {
       Path tmpFile = new Path("/tmp" + filePath);
       out = create(tmpFile, status.getReplication(), policy);
       FSDataInputStream in = open(path);
-      byte[] b = new byte[(int) status.getBlockSize()];
+      byte[] b = new byte[getConf().getInt("io.file.buffer.size", 4096)];
       while (in.read(b) != 0) {
         out.write(b);
       }
