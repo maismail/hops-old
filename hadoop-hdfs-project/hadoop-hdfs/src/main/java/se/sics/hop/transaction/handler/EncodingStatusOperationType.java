@@ -17,5 +17,6 @@ public enum EncodingStatusOperationType implements RequestHandler.OperationType 
   FIND_POTENTIALLY_FIXED,
   FIND_REQUESTED_PARITY_REPAIRS,
   FIND_POTENTIALLY_FIXED_PARITIES,
-  FIND_DELETED
+  FIND_DELETED,
+  FIND_REVOKED
 }

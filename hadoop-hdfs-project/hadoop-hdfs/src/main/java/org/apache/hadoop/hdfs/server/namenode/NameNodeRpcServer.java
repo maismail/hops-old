@@ -1172,8 +1172,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override
   public void revokeEncoding(String filePath, int replication) throws IOException {
-    throw new NotImplementedException();
-    // TODO Implement revokeEncoding
+    // TODO STEFFEN - Dont't cast to short
+    namesystem.revokeEncoding(filePath, (short) replication);
   }
 
   @Override // ClientProtocol

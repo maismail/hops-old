@@ -16,7 +16,7 @@ public class EncodingStatus {
     REPAIR_ACTIVE,
     REPAIR_CANCELED,
     REPAIR_FAILED,
-    DELETED
+    DELETED,
   }
 
   public static enum ParityStatus {
@@ -64,6 +64,7 @@ public class EncodingStatus {
   private String parityFileName;
   private Integer lostBlocks;
   private Integer lostParityBlocks;
+  private Boolean revoked;
 
   public EncodingStatus() {
 
@@ -88,7 +89,7 @@ public class EncodingStatus {
 
   public EncodingStatus(Integer inodeId, Integer parityInodeId, Status status, ParityStatus parityStatus,
       EncodingPolicy encodingPolicy, Long statusModificationTime, Long parityStatusModificationTime,
-      String parityFileName, Integer lostBlocks, Integer lostParityBlocks) {
+      String parityFileName, Integer lostBlocks, Integer lostParityBlocks, Boolean revoked) {
     this.inodeId = inodeId;
     this.parityInodeId = parityInodeId;
     this.status = status;
@@ -99,6 +100,7 @@ public class EncodingStatus {
     this.parityFileName = parityFileName;
     this.lostBlocks = lostBlocks;
     this.lostParityBlocks = lostParityBlocks;
+    this.revoked = revoked;
   }
 
   public Integer getInodeId() {
@@ -181,6 +183,14 @@ public class EncodingStatus {
     this.lostParityBlocks = lostParityBlocks;
   }
 
+  public Boolean getRevoked() {
+    return revoked;
+  }
+
+  public void setRevoked(Boolean revoked) {
+    this.revoked = revoked;
+  }
+
   public boolean isEncoded() {
     switch (status) {
       case ENCODED:
@@ -240,6 +250,7 @@ public class EncodingStatus {
         ", parityFileName='" + parityFileName + '\'' +
         ", lostBlocks=" + lostBlocks +
         ", lostParityBlocks=" + lostParityBlocks +
+        ", revoked=" + revoked +
         '}';
   }
 
@@ -254,17 +265,21 @@ public class EncodingStatus {
       return false;
     if (inodeId != null ? !inodeId.equals(status1.inodeId) : status1.inodeId != null) return false;
     if (lostBlocks != null ? !lostBlocks.equals(status1.lostBlocks) : status1.lostBlocks != null) return false;
-    if (lostParityBlocks != null ? !lostParityBlocks.equals(status1.lostParityBlocks) : status1.lostParityBlocks != null)
+    if (lostParityBlocks != null ? !lostParityBlocks.equals(
+        status1.lostParityBlocks) : status1.lostParityBlocks != null)
       return false;
     if (parityFileName != null ? !parityFileName.equals(status1.parityFileName) : status1.parityFileName != null)
       return false;
     if (parityInodeId != null ? !parityInodeId.equals(status1.parityInodeId) : status1.parityInodeId != null)
       return false;
     if (parityStatus != status1.parityStatus) return false;
-    if (parityStatusModificationTime != null ? !parityStatusModificationTime.equals(status1.parityStatusModificationTime) : status1.parityStatusModificationTime != null)
+    if (parityStatusModificationTime != null ? !parityStatusModificationTime.equals(
+        status1.parityStatusModificationTime) : status1.parityStatusModificationTime != null)
       return false;
+    if (revoked != null ? !revoked.equals(status1.revoked) : status1.revoked != null) return false;
     if (status != status1.status) return false;
-    if (statusModificationTime != null ? !statusModificationTime.equals(status1.statusModificationTime) : status1.statusModificationTime != null)
+    if (statusModificationTime != null ? !statusModificationTime.equals(
+        status1.statusModificationTime) : status1.statusModificationTime != null)
       return false;
 
     return true;
@@ -282,6 +297,7 @@ public class EncodingStatus {
     result = 31 * result + (parityFileName != null ? parityFileName.hashCode() : 0);
     result = 31 * result + (lostBlocks != null ? lostBlocks.hashCode() : 0);
     result = 31 * result + (lostParityBlocks != null ? lostParityBlocks.hashCode() : 0);
+    result = 31 * result + (revoked != null ? revoked.hashCode() : 0);
     return result;
   }
 }

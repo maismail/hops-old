@@ -1383,7 +1383,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#getBlockLocations(String, long, long)
    * @throws FileNotFoundException, UnresolvedLinkException, IOException
    */
-  LocatedBlocks getBlockLocations(final String src, final long offset, final long length,
+  public LocatedBlocks getBlockLocations(final String src, final long offset, final long length,
       final boolean doAccessTime, final boolean needBlockToken, final boolean checkSafeMode)
       throws FileNotFoundException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_LOCATIONS) {
@@ -3370,7 +3370,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    *         or null if file not found
    * @throws StandbyException 
    */
-  HdfsFileStatus getFileInfo(final String src, final boolean resolveLink) 
+  public HdfsFileStatus getFileInfo(final String src, final boolean resolveLink)
     throws AccessControlException, UnresolvedLinkException,
            StandbyException, IOException {
     HDFSTransactionalRequestHandler getFileInfoHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_FILE_INFO) {
@@ -6689,6 +6689,54 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     };
     removeHandler.handle();
+  }
+
+  public void removeEncodingStatus(final String path, final EncodingStatus encodingStatus) throws IOException {
+    HDFSTransactionalRequestHandler removeHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
+            lockAcquirer.getLocks().addEncodingStatusLock(encodingStatus.getInodeId());
+            return lockAcquirer.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            EntityManager.remove(encodingStatus);
+            return null;
+          }
+        };
+    removeHandler.handle();
+  }
+
+  public void revokeEncoding(final String filePath, short replication) throws IOException {
+    setReplication(filePath, replication);
+    final int inodeId = findInodeId(filePath);
+    HDFSTransactionalRequestHandler updateEncodingStatusHandler =
+        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{filePath});
+            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
+            return lockAcquirer.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+            encodingStatus.setRevoked(true);
+            EntityManager.update(encodingStatus);
+            return null;
+          }
+        };
+    updateEncodingStatusHandler.handle();
   }
 
   public void updateEncodingStatus(String sourceFile, int inodeId, EncodingStatus.Status status) throws IOException {

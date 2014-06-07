@@ -466,7 +466,7 @@ message EncodingStatusProto {
         REPAIR_ACTIVE = 7;
         REPAIR_CANCELED = 8;
         REPAIR_FAILED = 9;
-        POTENTIALLY_FIXED = 10;
+        DELETED = 10;
     }
 
     required StatusProto status = 1;

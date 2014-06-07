@@ -36,6 +36,7 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     converted.setParityFileName(encodingStatus.getParityFileName());
     converted.setLostBlocks(encodingStatus.getLostBlocks());
     converted.setLostParityBlocks(encodingStatus.getLostParityBlocks());
+    converted.setRevoked(encodingStatus.getRevoked());
     return converted;
   }
 
@@ -57,6 +58,7 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     converted.setParityFileName(hopEncodingStatus.getParityFileName());
     converted.setLostBlocks(hopEncodingStatus.getLostBlocks());
     converted.setLostParityBlocks(hopEncodingStatus.getLostParityBlocks());
+    converted.setRevoked(hopEncodingStatus.getRevoked());
     return converted;
   }
 
@@ -282,5 +284,10 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   @Override
   public Collection<EncodingStatus> findDeleted(long limit) throws StorageException {
     return convertDALtoHDFS(dataAccess.findDeleted(limit));
+  }
+
+  @Override
+  public Collection<EncodingStatus> findRevoked() throws StorageException {
+    return convertDALtoHDFS(dataAccess.findRevoked());
   }
 }

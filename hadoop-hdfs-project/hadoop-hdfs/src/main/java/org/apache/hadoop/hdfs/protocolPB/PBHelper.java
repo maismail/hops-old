@@ -1453,6 +1453,8 @@ public class PBHelper {
         return EncodingStatus.Status.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return EncodingStatus.Status.REPAIR_FAILED;
+      case DELETED:
+        return EncodingStatus.Status.DELETED;
       default:
         throw new RuntimeException("Trying to convert and unknown status");
     }
@@ -1480,6 +1482,8 @@ public class PBHelper {
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.REPAIR_FAILED;
+      case DELETED:
+        return ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto.DELETED;
       default:
         throw new RuntimeException("Trying to convert and unknown status");
     }

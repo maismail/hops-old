@@ -29,6 +29,7 @@ public abstract class BasicClusterTestCase extends TestCase {
     conf.setLong(DFS_BLOCK_SIZE_KEY, DFS_TEST_BLOCK_SIZE);
     conf.setInt(DFS_REPLICATION_KEY, DFS_REPLICATION_DEFAULT);
     conf.setBoolean(ErasureCodingManager.ERASURE_CODING_ENABLED_KEY, true);
+    conf.setInt(ErasureCodingManager.RECHECK_INTERVAL_KEY, 10000);
   }
 
   protected BasicClusterTestCase(Configuration conf) {

@@ -213,6 +213,7 @@ CREATE TABLE `encoding_status` (
   `parity_file_name` char(36) DEFAULT NULL,
   `lost_blocks` int(11) DEFAULT 0,
   `lost_parity_blocks` int(11) DEFAULT 0,
+  `revoked` bit(1) DEFAULT 0,
   PRIMARY KEY (`inode_id`),
   UNIQUE KEY `parity_inode_id` (`parity_inode_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1;

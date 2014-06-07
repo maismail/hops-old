@@ -5,6 +5,9 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
+import org.apache.hadoop.hdfs.protocol.LocatedBlock;
+import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.util.Daemon;
@@ -157,6 +160,7 @@ public class ErasureCodingManager extends Configured{
             scheduleSourceRepairs();
             scheduleParityRepairs();
             garbageCollect();
+            checkRevoked();
           }
           try {
             Thread.sleep(recheckInterval);
@@ -445,6 +449,37 @@ public class ErasureCodingManager extends Configured{
         LOG.error(e);
       }
     }
+  }
+
+  private void checkRevoked() throws IOException {
+    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
+        EncodingStatusOperationType.FIND_REVOKED) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        return dataAccess.findRevoked();
+      }
+    };
+    Collection<EncodingStatus> markedAsRevoked = (Collection<EncodingStatus>) findHandler.handle();
+    for (EncodingStatus status : markedAsRevoked) {
+      String path = namesystem.getPath(status.getInodeId());
+      int replication = namesystem.getFileInfo(path, true).getReplication();
+      LocatedBlocks blocks = namesystem.getBlockLocations(path, 0, Long.MAX_VALUE, false, true, true);
+      if (checkReplication(blocks, replication)) {
+        namesystem.deleteWithTransaction(parityFolder + "/" + status.getParityFileName(), false);
+        namesystem.removeEncodingStatus(path, status);
+      }
+    }
+  }
+
+  private boolean checkReplication(LocatedBlocks blocks, int replication) {
+    for (LocatedBlock locatedBlock : blocks.getLocatedBlocks()) {
+      if (locatedBlock.getLocations().length != replication) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public boolean isParityFile(String path) {
