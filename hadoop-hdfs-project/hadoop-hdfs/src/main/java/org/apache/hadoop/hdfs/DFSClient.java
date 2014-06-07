@@ -2916,21 +2916,21 @@ public class DFSClient implements java.io.Closeable {
     doClientActionWithRetry(handler, "revokeEncoding");
   }
 
-  public LocatedBlock getRepairedBlockLocations(final String path, final LocatedBlock block)
-      throws IOException {
+  public LocatedBlock getRepairedBlockLocations(final String sourcePath, final String parityPath,
+      final LocatedBlock block, final boolean isParity) throws IOException {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-        return callGetRepairedBlockLocations(namenode, path, block);
+        return callGetRepairedBlockLocations(namenode, sourcePath, parityPath, block, isParity);
       }
     };
     return (LocatedBlock) doClientActionWithRetry(handler, "getMissingLocatedBlocks");
   }
 
-  static LocatedBlock callGetRepairedBlockLocations(ClientProtocol namenode, String filePath, LocatedBlock block)
-      throws IOException {
+  static LocatedBlock callGetRepairedBlockLocations(ClientProtocol namenode, String sourcePath, String parityPath,
+      LocatedBlock block, boolean isParity) throws IOException {
     try {
-      return namenode.getRepairedBlockLocations(filePath, block);
+      return namenode.getRepairedBlockLocations(sourcePath, parityPath, block, isParity);
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
           FileNotFoundException.class,

@@ -419,9 +419,9 @@ public class ErasureCodingManager extends Configured{
     }
   }
 
-  public boolean isParityFile(String src) {
+  public boolean isParityFile(String path) {
     Pattern pattern = Pattern.compile(parityFolder + ".*");
-    Matcher matcher = pattern.matcher(src);
+    Matcher matcher = pattern.matcher(path);
     if (matcher.matches()) {
       return true;
     }

@@ -1999,20 +1999,6 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     this.stripeLength = stripeLength;
     this.parityLength = parityLength;
     this.sourceBlocks = new ArrayList(dfsClient.getLocatedBlocks(sourceFile, 0, Long.MAX_VALUE).getLocatedBlocks());
-    Collections.sort(sourceBlocks, blockIdComparator);
+    Collections.sort(sourceBlocks, LocatedBlock.blockIdComparator);
   }
-
-  private final static Comparator<LocatedBlock> blockIdComparator = new Comparator<LocatedBlock>() {
-
-    @Override
-    public int compare(LocatedBlock locatedBlock, LocatedBlock locatedBlock2) {
-      if (locatedBlock.getBlock().getBlockId() < locatedBlock2.getBlock().getBlockId()) {
-        return -1;
-      }
-      if (locatedBlock.getBlock().getBlockId() > locatedBlock2.getBlock().getBlockId()) {
-        return 1;
-      }
-      return 0;
-    }
-  };
 }

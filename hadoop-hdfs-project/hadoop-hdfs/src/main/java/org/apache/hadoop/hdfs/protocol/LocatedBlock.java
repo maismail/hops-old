@@ -22,6 +22,8 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.security.token.Token;
 
+import java.util.Comparator;
+
 /**
  * Associates a block with the Datanodes that contain its replicas
  * and other block metadata (E.g. the file offset associated with this
@@ -105,4 +107,18 @@ public class LocatedBlock {
         + "; locs=" + java.util.Arrays.asList(locs)
         + "}";
   }
+
+  public final static Comparator<LocatedBlock> blockIdComparator = new Comparator<LocatedBlock>() {
+
+    @Override
+    public int compare(LocatedBlock locatedBlock, LocatedBlock locatedBlock2) {
+      if (locatedBlock.getBlock().getBlockId() < locatedBlock2.getBlock().getBlockId()) {
+        return -1;
+      }
+      if (locatedBlock.getBlock().getBlockId() > locatedBlock2.getBlock().getBlockId()) {
+        return 1;
+      }
+      return 0;
+    }
+  };
 }

@@ -501,8 +501,10 @@ message RevokeEncodingResponseProto { // void response
 }
 
 message GetRepairedBlockLocationsRequsestProto {
-    required string path = 1;
-    required LocatedBlockProto block = 2;
+    required string sourcePath = 1;
+    required string parityPath = 2;
+    required LocatedBlockProto block = 3;
+    required bool isParity = 4;
 }
 
 message GetRepairedBlockLocationsResponseProto {

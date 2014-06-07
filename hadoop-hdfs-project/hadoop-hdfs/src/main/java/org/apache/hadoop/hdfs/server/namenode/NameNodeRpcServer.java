@@ -26,9 +26,7 @@ import static org.apache.hadoop.hdfs.protocol.HdfsConstants.MAX_PATH_LENGTH;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
+import java.util.*;
 
 import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.logging.Log;
@@ -128,8 +126,10 @@ import com.google.protobuf.BlockingService;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.erasure_coding.ErasureCodingManager;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -158,12 +158,17 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   private final String minimumDataNodeVersion;
 
+  private String parityFolder;
+
   public NameNodeRpcServer(Configuration conf, NameNode nn)
       throws IOException {
     this.nn = nn;
     this.namesystem = nn.getNamesystem();
     this.metrics = NameNode.getNameNodeMetrics();
-    
+
+    parityFolder = conf.get(ErasureCodingManager.PARITY_FOLDER,
+        ErasureCodingManager.DEFAULT_PARITY_FOLDER);
+
     int handlerCount = 
       conf.getInt(DFS_NAMENODE_HANDLER_COUNT_KEY, 
                   DFS_NAMENODE_HANDLER_COUNT_DEFAULT);
@@ -1173,12 +1178,58 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
 
   @Override
-  public LocatedBlock getRepairedBlockLocations(String path, LocatedBlock block) throws IOException {
-    // TODO STEFFEN - Consider block placement and replication factor. Random node for now and only one.
+  public LocatedBlock getRepairedBlockLocations(String sourcePath, String parityPath, LocatedBlock block,
+      boolean isParity) throws IOException {
+    EncodingStatus status = namesystem.getEncodingStatus(sourcePath);
+    Codec codec = Codec.getCodec(status.getEncodingPolicy().getCodec());
+
+    ArrayList<LocatedBlock> sourceLocations = new ArrayList(namesystem.getBlockLocations(
+        getClientMachine(), sourcePath, 0, Long.MAX_VALUE).getLocatedBlocks());
+    Collections.sort(sourceLocations, LocatedBlock.blockIdComparator);
+    ArrayList<LocatedBlock> parityLocations = new ArrayList(namesystem.getBlockLocations(
+        getClientMachine(), parityPath, 0, Long.MAX_VALUE).getLocatedBlocks());
+    Collections.sort(parityLocations, LocatedBlock.blockIdComparator);
+
+    HashMap<Node, Node> excluded = new HashMap<Node, Node>();
+    int stripe = isParity? getStripe(block, parityLocations, codec.getParityLength()) :
+        getStripe(block, sourceLocations, codec.getStripeLength());
+
+    // Exclude all nodes from the related source stripe
+    int index = stripe * codec.getStripeLength();
+    for (int i = index; i < sourceLocations.size() && i < index + codec.getStripeLength(); i++) {
+      DatanodeInfo[] nodes = sourceLocations.get(i).getLocations();
+      for (DatanodeInfo node : nodes) {
+        excluded.put(node, node);
+      }
+    }
+
+    // Exclude all nodes from the related parity blocks
+    index = stripe * codec.getParityLength();
+    for (int i = index; i < parityLocations.size() && i < index + codec.getParityLength(); i++) {
+      DatanodeInfo[] nodes = parityLocations.get(i).getLocations();
+      for (DatanodeInfo node : nodes) {
+        excluded.put(node, node);
+      }
+    }
+
     BlockPlacementPolicyDefault placementPolicy = (BlockPlacementPolicyDefault)
         namesystem.getBlockManager().getBlockPlacementPolicy();
-    DatanodeDescriptor[] descriptors = new DatanodeDescriptor[]{placementPolicy.getRandomNode()};
+    List<DatanodeDescriptor> chosenNodes = new LinkedList<DatanodeDescriptor>();
+    DatanodeDescriptor[] descriptors = placementPolicy.chooseTarget(isParity? parityPath : sourcePath,
+        isParity? 1 : status.getEncodingPolicy().getTargetReplication(), null, chosenNodes, false, excluded,
+        block.getBlockSize());
     return new LocatedBlock(block.getBlock(), descriptors);
+  }
+
+  private int getStripe(LocatedBlock block, ArrayList<LocatedBlock> locatedBlocks, int length) {
+    int i = 0;
+    for (LocatedBlock b : locatedBlocks) {
+      if (block.getBlock().getBlockId() == b.getBlock().getBlockId()) {
+        break;
+      }
+      i++;
+    }
+    return i / length;
   }
   //HOP_CODE_END
 }
