@@ -145,8 +145,6 @@ public class ErasureCodingManager extends Configured{
             LOG.info("In safe mode skipping this round");
           }
           if(namesystem.isLeader()){
-            checkPotentiallyFixedFiles();
-            checkPotentiallyFixedParityFiles();
             checkActiveEncodings();
             scheduleEncodings();
             checkActiveRepairs();
@@ -160,132 +158,9 @@ public class ErasureCodingManager extends Configured{
             break;
           }
         } catch (Throwable e) {
-          LOG.error("DEBUG_DEATH caused by", e);
-          // TODO STEFFEN - This is for debbugin purposes only!
-          System.exit(-1);
+          LOG.error(e);
         }
       }
-    }
-  }
-
-  private void checkPotentiallyFixedFiles() {
-    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
-        EncodingStatusOperationType.FIND_POTENTIALLY_FIXED) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
-            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
-        return dataAccess.findPotentiallyFixed(Long.MAX_VALUE);
-      }
-    };
-
-    try {
-      final Collection<EncodingStatus> potentiallyFixed = (Collection<EncodingStatus>) findHandler.handle();
-      for (final EncodingStatus encodingStatus : potentiallyFixed) {
-        LOG.info("Checking if source file was fixed for id " + encodingStatus.getInodeId());
-        final String path = namesystem.getPath(encodingStatus.getInodeId());
-        if (path == null) {
-          continue;
-        }
-
-        HDFSTransactionalRequestHandler handler =
-            new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-              @Override
-              public TransactionLocks acquireLock() throws PersistanceException, IOException {
-                ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-                tla.getLocks().
-                    addINode(TransactionLockTypes.INodeResolveType.PATH,
-                        TransactionLockTypes.INodeLockType.WRITE, new String[]{path}).
-                    addBlock().
-                    addReplica().
-                    addExcess().
-                    addCorrupt().
-                    addReplicaUc();
-                tla.getLocks().addEncodingStatusLock(encodingStatus.getInodeId());
-                return tla.acquire();
-              }
-
-              @Override
-              public Object performTask() throws PersistanceException, IOException {
-                if (namesystem.isFileCorrupt(path) == false) {
-                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId,
-                      encodingStatus.getInodeId());
-                  status.setStatus(EncodingStatus.Status.ENCODED);
-                  status.setStatusModificationTime(System.currentTimeMillis());
-                  EntityManager.update(status);
-                } else {
-                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId,
-                      encodingStatus.getInodeId());
-                  status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
-                  status.setStatusModificationTime(System.currentTimeMillis());
-                  EntityManager.update(status);
-                }
-                return null;
-              }
-            };
-        handler.handle(this);
-      }
-    } catch (IOException e) {
-      LOG.error(StringUtils.stringifyException(e));
-    }
-  }
-
-  private void checkPotentiallyFixedParityFiles() {
-    LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
-        EncodingStatusOperationType.FIND_POTENTIALLY_FIXED_PARITIES) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
-            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
-        return dataAccess.findPotentiallyFixedParities(Long.MAX_VALUE);
-      }
-    };
-
-    try {
-      final Collection<EncodingStatus> potentiallyFixed = (Collection<EncodingStatus>) findHandler.handle();
-      for (final EncodingStatus encodingStatus : potentiallyFixed) {
-        LOG.info("Checking if parity file was fixed for id " + encodingStatus.getParityInodeId());
-        final String path = parityFolder + "/" + encodingStatus.getParityFileName();
-
-        HDFSTransactionalRequestHandler handler =
-            new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-              @Override
-              public TransactionLocks acquireLock() throws PersistanceException, IOException {
-                ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-                tla.getLocks().
-                    addINode(TransactionLockTypes.INodeResolveType.PATH,
-                        TransactionLockTypes.INodeLockType.WRITE, new String[]{path}).
-                    addBlock().
-                    addReplica().
-                    addExcess().
-                    addCorrupt().
-                    addReplicaUc();
-                tla.getLocks().addEncodingStatusLock(encodingStatus.getParityInodeId());
-                return tla.acquire();
-              }
-
-              @Override
-              public Object performTask() throws PersistanceException, IOException {
-                if (namesystem.isFileCorrupt(path) == false) {
-                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId,
-                      encodingStatus.getParityInodeId());
-                  status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
-                  status.setParityStatusModificationTime(System.currentTimeMillis());
-                  EntityManager.update(status);
-                } else {
-                  EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId,
-                      encodingStatus.getParityInodeId());
-                  status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
-                  status.setParityStatusModificationTime(System.currentTimeMillis());
-                  EntityManager.update(status);
-                }
-                return null;
-              }
-            };
-        handler.handle(this);
-      }
-    } catch (IOException e) {
-      LOG.error(StringUtils.stringifyException(e));
     }
   }
 

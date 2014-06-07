@@ -80,8 +80,6 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return EncodingStatus.Status.REPAIR_CANCELED;
       case HopEncodingStatus.REPAIR_FAILED:
         return EncodingStatus.Status.REPAIR_FAILED;
-      case HopEncodingStatus.POTENTIALLY_FIXED:
-        return EncodingStatus.Status.POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -111,8 +109,6 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return HopEncodingStatus.REPAIR_CANCELED;
       case REPAIR_FAILED:
         return  HopEncodingStatus.REPAIR_FAILED;
-      case POTENTIALLY_FIXED:
-        return HopEncodingStatus.POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -134,8 +130,6 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return EncodingStatus.ParityStatus.REPAIR_CANCELED;
       case HopEncodingStatus.PARITY_REPAIR_FAILED:
         return EncodingStatus.ParityStatus.REPAIR_FAILED;
-      case HopEncodingStatus.PARITY_POTENTIALLY_FIXED:
-        return EncodingStatus.ParityStatus.POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -157,8 +151,6 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
         return HopEncodingStatus.PARITY_REPAIR_CANCELED;
       case REPAIR_FAILED:
         return  HopEncodingStatus.PARITY_REPAIR_FAILED;
-      case POTENTIALLY_FIXED:
-        return HopEncodingStatus.PARITY_POTENTIALLY_FIXED;
       default:
         throw new UnsupportedOperationException("Trying to convert an unknown status");
     }
@@ -240,16 +232,6 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
-  public Collection<EncodingStatus> findPotentiallyFixed(long limit) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findPotentiallyFixed(limit));
-  }
-
-  @Override
-  public int countPotentiallyFixed() throws StorageException {
-    return dataAccess.countPotentiallyFixed();
-  }
-
-  @Override
   public Collection<EncodingStatus> findRequestedParityRepairs(long limit) throws StorageException {
     return convertDALtoHDFS(dataAccess.findRequestedParityRepairs(limit));
   }
@@ -270,12 +252,22 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
-  public Collection<EncodingStatus> findPotentiallyFixedParities(long limit) throws StorageException {
-    return convertDALtoHDFS(dataAccess.findPotentiallyFixedParities(limit));
+  public void setLostBlockCount(int n) {
+    dataAccess.setLostBlockCount(n);
   }
 
   @Override
-  public int countPotentiallyFixedParities() throws StorageException {
-    return dataAccess.countPotentiallyFixedParities();
+  public int getLostBlockCount() {
+    return dataAccess.getLostBlockCount();
+  }
+
+  @Override
+  public void setLostParityBlockCount(int n) {
+    dataAccess.setLostParityBlockCount(n);
+  }
+
+  @Override
+  public int getLostParityBlockCount() {
+    return dataAccess.getLostParityBlockCount();
   }
 }

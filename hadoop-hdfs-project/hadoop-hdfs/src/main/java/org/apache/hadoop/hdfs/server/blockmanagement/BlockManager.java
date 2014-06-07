@@ -1104,9 +1104,12 @@ public class BlockManager {
 
     if (numberReplicas.liveReplicas() == 0) {
       EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-      if (status != null && status.getStatus().equals(EncodingStatus.Status.ENCODED)) {
-        status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
-        status.setStatusModificationTime(System.currentTimeMillis());
+      if (status != null) {
+        if (status.isCorrupt() == false) {
+          status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+          status.setStatusModificationTime(System.currentTimeMillis());
+        }
+        status.setLostBlocks(status.getLostBlocks() + 1);
         EntityManager.update(status);
       }
       if (status == null) {
@@ -1115,9 +1118,12 @@ public class BlockManager {
         LOG.info("markBlockAsCorrupt found " + bc.getId() + " with status " + status);
       }
       status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
-      if (status != null && status.getParityStatus().equals(EncodingStatus.ParityStatus.HEALTHY)) {
-        status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
-        status.setParityStatusModificationTime(System.currentTimeMillis());
+      if (status != null) {
+        if (status.isParityCorrupt() == false) {
+          status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+          status.setParityStatusModificationTime(System.currentTimeMillis());
+        }
+        status.setLostParityBlocks(status.getLostParityBlocks() + 1);
         EntityManager.update(status);
         LOG.info("markBlockAsCorrupt updated parity status to repair requested");
       }
@@ -2396,11 +2402,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       INode iNode = EntityManager.find(INode.Finder.ByINodeID, bc.getId());
       if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
-        if (status != null && status.isEncoded() && status.isCorrupt()
-            && status.getStatus().equals(EncodingStatus.Status.REPAIR_ACTIVE) == false
-            && status.getStatus().equals(EncodingStatus.Status.POTENTIALLY_FIXED) == false) {
-          status.setStatus(EncodingStatus.Status.POTENTIALLY_FIXED);
-          status.setStatusModificationTime(System.currentTimeMillis());
+        if (status != null && status.isCorrupt()) {
+          int lostBlockCount = status.getLostBlocks() - 1;
+          status.setLostBlocks(lostBlockCount);
+          if (lostBlockCount == 0) {
+            status.setStatus(EncodingStatus.Status.ENCODED);
+            status.setStatusModificationTime(System.currentTimeMillis());
+          }
           EntityManager.update(status);
         }
         status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
@@ -2410,8 +2418,12 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
           LOG.info("addStoredBlock found " + bc.getId() + " with status " + status);
         }
         if (status != null && status.isParityCorrupt()) {
-          status.setParityStatus(EncodingStatus.ParityStatus.POTENTIALLY_FIXED);
-          status.setParityStatusModificationTime(System.currentTimeMillis());
+          int lostParityBlockCount = status.getLostParityBlocks() - 1;
+          status.setLostParityBlocks(lostParityBlockCount);
+          if (lostParityBlockCount == 0) {
+            status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+            status.setParityStatusModificationTime(System.currentTimeMillis());
+          }
           EntityManager.update(status);
           LOG.info("addStoredBlock found set status to potentially fixed");
         }
@@ -2825,11 +2837,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       if (fsNamesystem.isErasureCodingEnabled()) {
         BlockInfo blockInfo = getStoredBlock(block);
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, blockInfo.getInodeId());
-        if (status != null && status.isEncoded() && (status.isCorrupt() == false)) {
+        if (status != null) {
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
-            status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
-            status.setStatusModificationTime(System.currentTimeMillis());
+            if (status.isCorrupt() == false) {
+              status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+              status.setStatusModificationTime(System.currentTimeMillis());
+            }
+            status.setLostBlocks(status.getLostBlocks() + 1);
             EntityManager.update(status);
           }
         }
@@ -2839,11 +2854,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         } else {
           LOG.info("removeStoredBlock found " + blockInfo.getInodeId() + " with status " + status);
         }
-        if (status != null && status.getParityStatus().equals(EncodingStatus.ParityStatus.HEALTHY)) {
+        if (status != null) {
           NumberReplicas numberReplicas = countNodes(block);
           if (numberReplicas.liveReplicas() == 0) {
-            status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
-            status.setParityStatusModificationTime(System.currentTimeMillis());
+            if (status.isParityCorrupt() == false) {
+              status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+              status.setParityStatusModificationTime(System.currentTimeMillis());
+            }
+            status.setLostParityBlocks(status.getLostParityBlocks() + 1);
             EntityManager.update(status);
             LOG.info("removeStoredBlock updated parity status to repair requested");
           } else {
