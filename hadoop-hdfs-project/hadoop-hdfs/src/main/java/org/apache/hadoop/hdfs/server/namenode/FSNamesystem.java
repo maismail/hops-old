@@ -6679,10 +6679,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public void removeEncodingStatus(final EncodingStatus encodingStatus) throws IOException {
     // All referring inodes are already deleted. No more lock necessary.
     LightWeightRequestHandler removeHandler = new LightWeightRequestHandler(
-        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+        EncodingStatusOperationType.DELETE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EntityManager.remove(encodingStatus);
+        EncodingStatusDataAccess dataAccess = (EncodingStatusDataAccess)
+            StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
+        dataAccess.delete(encodingStatus);
         return null;
       }
     };

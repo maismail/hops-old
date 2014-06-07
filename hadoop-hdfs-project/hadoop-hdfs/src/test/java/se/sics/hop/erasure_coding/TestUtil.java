@@ -10,8 +10,8 @@ import java.util.Random;
 public class TestUtil {
 
   public static void createRandomFile(DistributedFileSystem dfs, Path path, long seed, int blockCount,
-                                      int blockSize) throws IOException {
-    FSDataOutputStream out = dfs.create(path);
+        int blockSize) throws IOException {
+    FSDataOutputStream out = dfs.create(path, new EncodingPolicy("src", 1));
     byte[] buffer = randomBytes(seed, blockCount, blockSize);
     out.write(buffer, 0, buffer.length);
     out.close();
