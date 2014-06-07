@@ -34,6 +34,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     converted.setParityStatus(convertParityStatus(encodingStatus.getParityStatus()));
     converted.setParityStatusModificationTime(encodingStatus.getParityStatusModificationTime());
     converted.setParityFileName(encodingStatus.getParityFileName());
+    converted.setLostBlocks(encodingStatus.getLostBlocks());
+    converted.setLostParityBlocks(encodingStatus.getLostParityBlocks());
     return converted;
   }
 
@@ -53,6 +55,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
     converted.setParityStatus(convertParityStatus(hopEncodingStatus.getParityStatus()));
     converted.setParityStatusModificationTime(hopEncodingStatus.getParityStatusModificationTime());
     converted.setParityFileName(hopEncodingStatus.getParityFileName());
+    converted.setLostBlocks(hopEncodingStatus.getLostBlocks());
+    converted.setLostParityBlocks(hopEncodingStatus.getLostParityBlocks());
     return converted;
   }
 
