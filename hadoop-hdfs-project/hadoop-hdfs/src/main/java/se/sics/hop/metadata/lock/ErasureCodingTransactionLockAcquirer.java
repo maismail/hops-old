@@ -46,14 +46,19 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     if (locks.getEncodingStatusLock() != null) {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
-      if (acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId()) == null) {
-        EncodingStatus status = acquireLock(TransactionLockTypes.LockType.READ, EncodingStatus.Finder.ByParityInodeId,
-            locks.getInodeId());
-        // The inode was not locked as the locked inode is form the parity file. Lock the proper one.
-        iNodeScanLookUpByID(TransactionLockTypes.INodeLockType.WRITE, status.getInodeId(), getLocks());
-        // We didn't have a lock on it when reading it. So read it again.
-        acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getInodeId());
+      if (acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId()) != null) {
+        // Cannot be both
+        return;
       }
+      EncodingStatus status = acquireLock(TransactionLockTypes.LockType.READ, EncodingStatus.Finder.ByParityInodeId,
+          locks.getInodeId());
+      if (status == null) {
+        return;
+      }
+      // The inode was not locked as the locked inode is form the parity file. Lock the proper one.
+      iNodeScanLookUpByID(TransactionLockTypes.INodeLockType.WRITE, status.getInodeId(), getLocks());
+      // We didn't have a lock on it when reading it. So read it again.
+      acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getInodeId());
     }
   }
 
