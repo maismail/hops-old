@@ -26,26 +26,12 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
+import org.apache.commons.io.FileSystemUtils;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.BlockLocation;
-import org.apache.hadoop.fs.ContentSummary;
-import org.apache.hadoop.fs.CreateFlag;
-import org.apache.hadoop.fs.BlockStorageLocation;
-import org.apache.hadoop.fs.VolumeId;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FileStatus;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FsServerDefaults;
-import org.apache.hadoop.fs.FsStatus;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.MD5MD5CRC32FileChecksum;
-import org.apache.hadoop.fs.Options;
+import org.apache.hadoop.fs.*;
 import org.apache.hadoop.fs.Options.ChecksumOpt;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.PathFilter;
-import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.client.HdfsDataInputStream;
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
@@ -1018,7 +1004,32 @@ public class DistributedFileSystem extends FileSystem {
   }
 
   public void encodeFile(final String filePath, final EncodingPolicy policy) throws IOException {
-    dfs.encodeFile(filePath, policy);
+    // TODO STEFFEN - This is a quick and dirty solution to enforce block placement but it is really slow and expensive.
+    // Instead we should ensure the block placement by namenode mechanisums and only
+    // decrease the replication factor after successfully encoding
+    //dfs.encodeFile(filePath, policy);
+    Path path = new Path(filePath);
+    FileStatus status = getFileStatus(path);
+    FSDataOutputStream out = null;
+    try {
+      Path tmpFile = new Path("/tmp" + filePath);
+      out = create(tmpFile, status.getReplication(), policy);
+      FSDataInputStream in = open(path);
+      byte[] b = new byte[(int) status.getBlockSize()];
+      while (in.read(b) != 0) {
+        out.write(b);
+      }
+      delete(path);
+      rename(tmpFile, path);
+    } finally {
+      if (out != null) {
+        try {
+          out.close();
+        } catch (IOException e) {
+
+        }
+      }
+    }
   }
 
   public void revokeEncoding(final String filePath, final int replication) throws IOException {

@@ -1156,6 +1156,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   @Override
   public void encodeFile(String filePath, EncodingPolicy policy) throws IOException {
     // TODO STEFFEN - Throw error if already encoded
+    // TODO STEFFEN - We need to ensure block placement somehow in this case
     namesystem.addEncodingStatus(filePath, policy);
   }
 
