@@ -307,7 +307,7 @@ public class ErasureCodingManager extends Configured{
     }
   }
 
-  private void checkActiveRepairs() {
+  private void checkActiveRepairs() throws IOException {
     LOG.info("Checking active repairs.");
     List<Report> reports = blockRepairManager.computeReports();
     for (Report report : reports) {
