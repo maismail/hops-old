@@ -16,11 +16,9 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.EncodingStatusOperationType;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.handler.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -317,11 +315,12 @@ public class ErasureCodingManager extends Configured{
         case ACTIVE:
           break;
         case FINISHED:
-          // Status will be automatically updated in BlockManager when the blocks are recovered
           LOG.info("Repair finished for " + report.getFilePath());
           if (isParityFile(report.getFilePath())) {
+            checkFixedParity(report.getFilePath());
             activeParityRepairs--;
           } else {
+            checkFixedSource(report.getFilePath());
             activeRepairs--;
           }
           break;
@@ -347,6 +346,66 @@ public class ErasureCodingManager extends Configured{
           break;
       }
     }
+  }
+
+  private void checkFixedSource(final String path) throws IOException {
+    final int inodeId = namesystem.findInodeId(path);
+
+    TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+        lockAcquirer.getLocks()
+            .addEncodingStatusLock(inodeId)
+            .addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+        if (status.getLostBlocks() == 0) {
+          status.setStatus(EncodingStatus.Status.ENCODED);
+        } else {
+          status.setStatus(EncodingStatus.Status.REPAIR_REQUESTED);
+        }
+        status.setStatusModificationTime(System.currentTimeMillis());
+        EntityManager.update(status);
+        return null;
+      }
+    };
+    checkFixedHandler.handle();
+  }
+
+  private void checkFixedParity(final String path) throws IOException {
+    final int inodeId = namesystem.findInodeId(path);
+
+    TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
+        lockAcquirer.getLocks()
+            .addEncodingStatusLock(inodeId)
+            .addINode(TransactionLockTypes.INodeResolveType.PATH,
+                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
+        return lockAcquirer.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, inodeId);
+        if (status.getLostParityBlocks() == 0) {
+          status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+        } else {
+          status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+        }
+        status.setParityStatusModificationTime(System.currentTimeMillis());
+        EntityManager.update(status);
+        return null;
+      }
+    };
+    checkFixedHandler.handle();
   }
 
   private void scheduleSourceRepairs() {
