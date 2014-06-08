@@ -369,7 +369,7 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedRepairs) {
-        LOG.info("Scheduling repair  for " + encodingStatus);
+        LOG.info("Scheduling source repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getStatusModificationTime() < repairDelay) {
           continue;
         }
@@ -386,12 +386,14 @@ public class ErasureCodingManager extends Configured{
         // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.
         // If starting repair fails somehow then this should be detected by a timeout later.
         namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.Status.REPAIR_ACTIVE);
+        LOG.info("Status set to repair active " + encodingStatus);
         blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
             new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
+        LOG.info("Scheulded job for source repair " + encodingStatus);
         activeRepairs++;
       }
     } catch (IOException e) {
-      LOG.error(StringUtils.stringifyException(e));
+      LOG.error(e);
     }
   }
 
@@ -415,7 +417,7 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedRepairs) {
-        LOG.info("Scheduling repair  for " + encodingStatus);
+        LOG.info("Scheduling parity repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getParityStatusModificationTime() < parityRepairDelay) {
           continue;
         }
@@ -433,12 +435,14 @@ public class ErasureCodingManager extends Configured{
         // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.
         // If starting repair fails somehow then this should be detected by a timeout later.
         namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.ParityStatus.REPAIR_ACTIVE);
+        LOG.info("Status set to parity repair active " + encodingStatus);
         blockRepairManager.repairParityBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
             new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
+        LOG.info("Scheulded job for parity repair " + encodingStatus);
         activeRepairs++;
       }
     } catch (IOException e) {
-      LOG.error(StringUtils.stringifyException(e));
+      LOG.error(e);
     }
   }
 
