@@ -371,22 +371,25 @@ public class ErasureCodingManager extends Configured{
       for (EncodingStatus encodingStatus : requestedRepairs) {
         LOG.info("Scheduling source repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getStatusModificationTime() < repairDelay) {
+          LOG.info("Skipping source repair. Delay not reached: " + repairDelay);
           continue;
         }
 
         if (encodingStatus.isParityRepairActive()) {
+          LOG.info("Skipping source repair. Parity repair is active");
           continue;
         }
 
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
         String path = namesystem.getPath(iNode);
         if (iNode == null) {
+          LOG.info("Skipping source repair. Path could not be found.");
           continue;
         }
         // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.
         // If starting repair fails somehow then this should be detected by a timeout later.
         namesystem.updateEncodingStatus(path, iNode.getId(), EncodingStatus.Status.REPAIR_ACTIVE);
-        LOG.info("Status set to repair active " + encodingStatus);
+        LOG.info("Status set to source repair active " + encodingStatus);
         blockRepairManager.repairSourceBlocks(encodingStatus.getEncodingPolicy().getCodec(), new Path(path),
             new Path(parityFolder + "/" + encodingStatus.getParityFileName()));
         LOG.info("Scheulded job for source repair " + encodingStatus);
@@ -419,17 +422,20 @@ public class ErasureCodingManager extends Configured{
       for (EncodingStatus encodingStatus : requestedRepairs) {
         LOG.info("Scheduling parity repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getParityStatusModificationTime() < parityRepairDelay) {
+          LOG.info("Skipping  parity repair. Delay not reached: " + parityRepairDelay);
           continue;
         }
 
         if (encodingStatus.getStatus().equals(EncodingStatus.Status.ENCODED) == false) {
           // Only repair parity for non-broken source files. Otherwise repair source file first.
+          LOG.info("Skipping parity repair. Source file not healthy.");
           continue;
         }
 
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
         String path = namesystem.getPath(iNode);
         if (iNode == null) {
+          LOG.info("Skipping parity repair. Path could not be found.");
           continue;
         }
         // Set status before doing something. In case the file is recovered inbetween we don't have an invalid status.

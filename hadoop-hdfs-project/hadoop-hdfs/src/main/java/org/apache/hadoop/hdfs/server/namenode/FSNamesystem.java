@@ -6599,7 +6599,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     INodeUtil.findPathINodesById(iNode.getId(), resolvedInodes, resovled);
 
     if (resovled[0] == false) {
-      throw new IOException("Path could not be resolved");
+      throw new IOException("Path could not be resolved for " + iNode);
     }
 
     StringBuilder builder = new StringBuilder();
