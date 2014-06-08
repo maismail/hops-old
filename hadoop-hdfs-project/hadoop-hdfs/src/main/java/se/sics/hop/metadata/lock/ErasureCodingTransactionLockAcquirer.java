@@ -46,7 +46,10 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     if (locks.getEncodingStatusLock() != null) {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
-      acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId());
+      if (acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId()) != null) {
+        // Cannot be both
+        return;
+      }
       EncodingStatus status = acquireLock(TransactionLockTypes.LockType.READ, EncodingStatus.Finder.ByParityInodeId,
           locks.getInodeId());
       if (status == null) {
