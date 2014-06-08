@@ -176,6 +176,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkActiveEncodings() {
+    LOG.info("Checking active encoding.");
     List<Report> reports = encodingManager.computeReports();
     for (Report report : reports) {
       switch (report.getStatus()) {
@@ -203,6 +204,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void finalizeEncoding(final String path) {
+    LOG.info("Finilizing encoding for " + path);
     try {
       final EncodingStatus status = namesystem.getEncodingStatus(path);
       final int parityInodeId = namesystem.findInodeId(parityFolder + "/" + status.getParityFileName());
@@ -257,6 +259,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleEncodings() {
+    LOG.info("Scheuling encodings.");
     final int limit = activeEncodingLimit - activeEncodings;
     if (limit <= 0) {
       return;
@@ -276,6 +279,7 @@ public class ErasureCodingManager extends Configured{
       Collection<EncodingStatus> requestedEncodings = (Collection<EncodingStatus>) findHandler.handle();
 
       for (EncodingStatus encodingStatus : requestedEncodings) {
+        LOG.info("Trying to schedule encoding for " + encodingStatus);
         INode iNode = namesystem.findInode(encodingStatus.getInodeId());
         if (iNode == null) {
           LOG.error("findInode returned null for id " + encodingStatus.getInodeId());
@@ -306,6 +310,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkActiveRepairs() {
+    LOG.info("Checking active repairs.");
     List<Report> reports = blockRepairManager.computeReports();
     for (Report report : reports) {
       switch (report.getStatus()) {
@@ -313,6 +318,7 @@ public class ErasureCodingManager extends Configured{
           break;
         case FINISHED:
           // Status will be automatically updated in BlockManager when the blocks are recovered
+          LOG.info("Repair finished for " + report.getFilePath());
           if (isParityFile(report.getFilePath())) {
             activeParityRepairs--;
           } else {
@@ -320,6 +326,7 @@ public class ErasureCodingManager extends Configured{
           }
           break;
         case FAILED:
+          LOG.info("Repair failed for " + report.getFilePath());
           if (isParityFile(report.getFilePath())) {
             updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.REPAIR_FAILED);
             activeParityRepairs--;
@@ -329,6 +336,7 @@ public class ErasureCodingManager extends Configured{
           }
           break;
         case CANCELED:
+          LOG.info("Repair canceled for " + report.getFilePath());
           if (isParityFile(report.getFilePath())) {
             updateEncodingStatus(report.getFilePath(), EncodingStatus.ParityStatus.REPAIR_CANCELED);
             activeParityRepairs--;
@@ -342,6 +350,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleSourceRepairs() {
+    LOG.info("Scheduling repairs");
     final int limit = activeRepairLimit - activeRepairs;
     if (limit <= 0) {
       return;
@@ -360,6 +369,7 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedRepairs) {
+        LOG.info("Scheduling repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getStatusModificationTime() < repairDelay) {
           continue;
         }
@@ -386,6 +396,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void scheduleParityRepairs() {
+    LOG.info("Scheduling parity repairs");
     final int limit = activeParityRepairLimit - activeParityRepairs;
     if (limit <= 0) {
       return;
@@ -404,6 +415,7 @@ public class ErasureCodingManager extends Configured{
     try {
       Collection<EncodingStatus> requestedRepairs = (Collection<EncodingStatus>) findHandler.handle();
       for (EncodingStatus encodingStatus : requestedRepairs) {
+        LOG.info("Scheduling repair  for " + encodingStatus);
         if (System.currentTimeMillis() - encodingStatus.getParityStatusModificationTime() < parityRepairDelay) {
           continue;
         }
@@ -431,6 +443,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void garbageCollect() throws IOException {
+    LOG.info("Starting garbage collection");
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_DELETED) {
       @Override
@@ -442,6 +455,7 @@ public class ErasureCodingManager extends Configured{
     };
     Collection<EncodingStatus> markedAsDeleted = (Collection<EncodingStatus>) findHandler.handle();
     for (EncodingStatus status : markedAsDeleted) {
+      LOG.info("Trying to collect " + status);
       try {
         namesystem.deleteWithTransaction(parityFolder + "/" + status.getParityFileName(), false);
         namesystem.removeEncodingStatus(status);
@@ -452,6 +466,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkRevoked() throws IOException {
+    LOG.info("Checking replication for revocations");
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_REVOKED) {
       @Override
@@ -463,10 +478,12 @@ public class ErasureCodingManager extends Configured{
     };
     Collection<EncodingStatus> markedAsRevoked = (Collection<EncodingStatus>) findHandler.handle();
     for (EncodingStatus status : markedAsRevoked) {
+      LOG.info("Checking replication for revoked status: " + status);
       String path = namesystem.getPath(status.getInodeId());
       int replication = namesystem.getFileInfo(path, true).getReplication();
       LocatedBlocks blocks = namesystem.getBlockLocations(path, 0, Long.MAX_VALUE, false, true, true);
       if (checkReplication(blocks, replication)) {
+        LOG.info("Revocation successful for " + status);
         namesystem.deleteWithTransaction(parityFolder + "/" + status.getParityFileName(), false);
         namesystem.removeEncodingStatus(path, status);
       }
