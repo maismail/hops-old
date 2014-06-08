@@ -1111,21 +1111,17 @@ public class BlockManager {
         }
         status.setLostBlocks(status.getLostBlocks() + 1);
         EntityManager.update(status);
-      }
-      if (status == null) {
-        LOG.info("markBlockAsCorrupt returned null for " + bc.getId());
       } else {
-        LOG.info("markBlockAsCorrupt found " + bc.getId() + " with status " + status);
-      }
-      status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
-      if (status != null) {
-        if (status.isParityCorrupt() == false) {
-          status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
-          status.setParityStatusModificationTime(System.currentTimeMillis());
+        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
+        if (status != null) {
+          if (status.isParityCorrupt() == false) {
+            status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+            status.setParityStatusModificationTime(System.currentTimeMillis());
+          }
+          status.setLostParityBlocks(status.getLostParityBlocks() + 1);
+          EntityManager.update(status);
+          LOG.info("markBlockAsCorrupt updated parity status to repair requested");
         }
-        status.setLostParityBlocks(status.getLostParityBlocks() + 1);
-        EntityManager.update(status);
-        LOG.info("markBlockAsCorrupt updated parity status to repair requested");
       }
     }
   }
@@ -2410,22 +2406,23 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             status.setStatusModificationTime(System.currentTimeMillis());
           }
           EntityManager.update(status);
-        }
-        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
-        if (status == null) {
-          LOG.info("addStoredBlock returned null for " + bc.getId());
         } else {
-          LOG.info("addStoredBlock found " + bc.getId() + " with status " + status);
-        }
-        if (status != null && status.isParityCorrupt()) {
-          int lostParityBlockCount = status.getLostParityBlocks() - 1;
-          status.setLostParityBlocks(lostParityBlockCount);
-          if (lostParityBlockCount == 0) {
-            status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
-            status.setParityStatusModificationTime(System.currentTimeMillis());
+          status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, bc.getId());
+          if (status == null) {
+            LOG.info("addStoredBlock returned null for " + bc.getId());
+          } else {
+            LOG.info("addStoredBlock found " + bc.getId() + " with status " + status);
           }
-          EntityManager.update(status);
-          LOG.info("addStoredBlock found set status to potentially fixed");
+          if (status != null && status.isParityCorrupt()) {
+            int lostParityBlockCount = status.getLostParityBlocks() - 1;
+            status.setLostParityBlocks(lostParityBlockCount);
+            if (lostParityBlockCount == 0) {
+              status.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+              status.setParityStatusModificationTime(System.currentTimeMillis());
+            }
+            EntityManager.update(status);
+            LOG.info("addStoredBlock found set status to potentially fixed");
+          }
         }
       }
     }
@@ -2847,25 +2844,26 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
             status.setLostBlocks(status.getLostBlocks() + 1);
             EntityManager.update(status);
           }
-        }
-        status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, blockInfo.getInodeId());
-        if (status == null) {
-          LOG.info("removeStoredBlock returned null for " + blockInfo.getInodeId());
         } else {
-          LOG.info("removeStoredBlock found " + blockInfo.getInodeId() + " with status " + status);
-        }
-        if (status != null) {
-          NumberReplicas numberReplicas = countNodes(block);
-          if (numberReplicas.liveReplicas() == 0) {
-            if (status.isParityCorrupt() == false) {
-              status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
-              status.setParityStatusModificationTime(System.currentTimeMillis());
-            }
-            status.setLostParityBlocks(status.getLostParityBlocks() + 1);
-            EntityManager.update(status);
-            LOG.info("removeStoredBlock updated parity status to repair requested");
+          status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, blockInfo.getInodeId());
+          if (status == null) {
+            LOG.info("removeStoredBlock returned null for " + blockInfo.getInodeId());
           } else {
-            LOG.info("removeStoredBlock found replicas: " + numberReplicas.liveReplicas());
+            LOG.info("removeStoredBlock found " + blockInfo.getInodeId() + " with status " + status);
+          }
+          if (status != null) {
+            NumberReplicas numberReplicas = countNodes(block);
+            if (numberReplicas.liveReplicas() == 0) {
+              if (status.isParityCorrupt() == false) {
+                status.setParityStatus(EncodingStatus.ParityStatus.REPAIR_REQUESTED);
+                status.setParityStatusModificationTime(System.currentTimeMillis());
+              }
+              status.setLostParityBlocks(status.getLostParityBlocks() + 1);
+              EntityManager.update(status);
+              LOG.info("removeStoredBlock updated parity status to repair requested");
+            } else {
+              LOG.info("removeStoredBlock found replicas: " + numberReplicas.liveReplicas());
+            }
           }
         }
       }

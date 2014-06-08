@@ -6627,7 +6627,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public Object performTask() throws PersistanceException, IOException {
         INode inode = dir.getINode(filePath);
         if (inode == null) {
-          throw new IOException("File not found.");
+          throw new IOException("File not found for " + filePath);
         }
         return inode.getId();
       }
