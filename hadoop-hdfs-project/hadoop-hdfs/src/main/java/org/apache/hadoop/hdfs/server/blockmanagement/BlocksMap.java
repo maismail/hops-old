@@ -80,6 +80,10 @@ class BlocksMap {
   
   /** Returns the block object it it exists in the map. */
   BlockInfo getStoredBlock(Block b) throws PersistanceException {
+    // TODO STEFFEN - This is a workaround to prevent NullPointerExceptions for me. Not sure how to actually fix the bug.
+    if (b == null) {
+      return null;
+    }
     if (!(b instanceof BlockInfo)) {
       return EntityManager.find(BlockInfo.Finder.ById, b.getBlockId());
     }
