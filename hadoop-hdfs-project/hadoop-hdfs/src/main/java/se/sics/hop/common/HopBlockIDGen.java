@@ -25,12 +25,32 @@ import se.sics.hop.metadata.Variables;
  * this function was previously in FSImage.java.
  *
  */
-public class HopBlockIDGen{
+public class HopBlockIDGen {
+
+  private static int BATCH_SIZE;
+  private static long endId;
+  private static long currentId;
+
+  public static void setBatchSize(int batchSize) {
+    BATCH_SIZE = batchSize;
+    currentId = endId = 0;
+  }
 
   public static long getUniqueBlockId() throws PersistanceException {
-    long lastBlockId = Variables.getBlockId();
-    lastBlockId++;
-    Variables.setBlockId(lastBlockId);
-    return lastBlockId;
+    if (needMoreIds()) {
+      getMoreIds();
+    }
+    return ++currentId;
+  }
+
+  public static boolean needMoreIds() {
+    return currentId == endId;
+  }
+
+  private static void getMoreIds() throws PersistanceException {
+    long startId = Variables.getBlockId();
+    endId = startId + BATCH_SIZE;
+    Variables.setBlockId(endId);
+    currentId = startId;
   }
 }
