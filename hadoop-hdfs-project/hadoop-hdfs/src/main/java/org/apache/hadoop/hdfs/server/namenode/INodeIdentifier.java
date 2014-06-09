@@ -49,4 +49,10 @@ public class INodeIdentifier {
     public void setName(String name) {
         this.name = name;
     }
+
+  @Override
+  public String toString() {
+    return "INodeIdentifier{" + "inodeID=" + inodeID + ", pid=" + pid + ", name=" + name + '}';
+  }
+    
 }
