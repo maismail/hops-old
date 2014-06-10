@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+
+
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://NN_MACHINE_NAME:29211</value>
+  <description></description>
+</property>
+
+<property>
+<name>dfs.namenode.http-address</name>
+<value>NN_MACHINE_NAME:5555</value>
+  <description> </description>
+</property>
+
+<!--property>
+  <name>dfs.namenodes.rpc.address</name>
+  <value>hdfs://cloud1.sics.se:29211,hdfs://cloud2.sics.se:29211</value>
+  <description></description>
+</property-->
+
+<!--property>
+  <name>ipc.client.connect.max.retries</name>
+  <value>0</value>
+  <description></description>
+</property-->
+
+
+<property>
+<name>dfs.datanode.address</name>
+<value>DN_MACHINE_NAME:40101</value>
+  <description> </description>
+</property>
+
+<property>
+<name>dfs.datanode.http.address</name>
+<value>DN_MACHINE_NAME:40102</value>
+  <description> </description>
+</property>
+
+<property>
+<name>dfs.datanode.ipc.address</name>
+<value>DN_MACHINE_NAME:40103</value>
+  <description>  </description>
+</property>
+
+<property>
+<name>dfs.datanode.https.address</name>
+<value>DN_MACHINE_NAME:40104</value>
+  <description> </description>
+</property>
+ 
+
+</configuration>

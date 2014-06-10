@@ -1,0 +1,9 @@
+#!/bin/bash
+
+username=$1
+
+filename=$2
+
+perl -pi -e 's/MACHINE_NAME/'$3'/g' $filename
+
+exit 0
