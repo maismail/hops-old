@@ -21,4 +21,8 @@ source ./internals/build_distro.sh
 #upload the distribution
 source ./internals/upload_distro.sh
 
+
 exit 0
+
+
+
