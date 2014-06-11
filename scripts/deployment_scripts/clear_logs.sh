@@ -1,6 +1,5 @@
 #!/bin/bash
-# Author: Salman Niazi 2013, 2014
-# Author: Jim Dowling 2012, Wasif Riaz Malik 2011
+# Author: Salman Niazi 2014
 # This script broadcasts all files required for running a HOP instance.
 # A password-less sign-on should be setup prior to calling this script
 

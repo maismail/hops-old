@@ -1,3 +1,8 @@
+#!/bin/bash
+# Author: Salman Niazi 2014
+
+
+
 source deployment.properties
 
     #Build DAL	

@@ -1,3 +1,8 @@
+#!/bin/bash
+# Author: Salman Niazi 2014, Jim 2013
+# This script broadcasts all files required for running a HOP instance.
+# A password-less sign-on should be setup prior to calling this script
+
 source deployment.properties
 
 #All Unique Hosts
@@ -24,13 +29,14 @@ done
 
 # copy data to the remote directories
 echo "***   Copying the Distro   ***"
-cp       $LIB_NDB_CLIENT_BIN                                        $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/lib/native 
-cp -rf   $HOP_Src_Folder/scripts/deployment_scripts/hop_conf        $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/
+cp       $LIB_NDB_CLIENT_BIN                                                     $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/lib/native 
+cp -rf   $HOP_Src_Folder/scripts/deployment_scripts/hop_conf                     $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/
+cp       $HOP_Src_Folder/scripts/deployment_scripts/deployment.properties        $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/hop_conf/
 parallel-rsync -arz -H "${All_Unique_Hosts[*]}" --user $HOP_User    $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/        $HOP_Dist_Folder
 
 
 # deploy the Experiments
-source upload_experiments.sh
+source ./internals/upload_experiments.sh
 
 
 # fix scripts on remote NN hosts
@@ -41,8 +47,6 @@ do
 	# running some scripts and commands on the server
 	ssh $connectStr 'chmod +x       '$HOP_Dist_Folder'/hop_conf/scripts/*.sh'
 	ssh $connectStr                 ''$HOP_Dist_Folder'/hop_conf/scripts/rename.sh  '$HOP_User'     '$HOP_Dist_Folder/hop_conf/hdfs_configs/hdfs-site.xml'    'NN_MACHINE_NAME'     '$i' '
-	ssh $connectStr                 ''$HOP_Dist_Folder'/hop_conf/scripts/rename.sh  '$HOP_User'     '$HOP_Dist_Folder/hop_conf/hdfs_configs/hdfs-site.xml'    'DN_MACHINE_NAME'     '$i' '
-
 done
 
 # fix scripts on remote DN hosts
@@ -52,8 +56,7 @@ do
 	connectStr="$HOP_User@$i"
 	# running some scripts and commands on the server
 	ssh $connectStr 'chmod +x       '$HOP_Dist_Folder'/hop_conf/scripts/*.sh'
-	ssh $connectStr                 ''$HOP_Dist_Folder'/hop_conf/scripts/rename.sh  '$HOP_User'     '$HOP_Dist_Folder/hop_conf/hdfs_configs/hdfs-site.xml'    'NN_MACHINE_NAME'     '${HOP_Default_NN[0]}' '
-	ssh $connectStr                 ''$HOP_Dist_Folder'/hop_conf/scripts/rename.sh  '$HOP_User'     '$HOP_Dist_Folder/hop_conf/hdfs_configs/hdfs-site.xml'    'DN_MACHINE_NAME'     '$i' '
+	ssh $connectStr                 ''$HOP_Dist_Folder'/hop_conf/scripts/rename.sh   '$HOP_Dist_Folder/hop_conf/deployment.properties'    '${HOP_Default_NN[0]}' '
 done
 
 # move config files and scripts to appropriate folders

@@ -32,7 +32,7 @@
 
 <property>
   <name>dfs.namenode.logging.level</name>
-  <value>info</value>
+  <value>Dfs_Namenode_Logging_Level_Config_Param</value>
   <description>
     The logging level for dfs namenode. Other values are "dir" (trace
     namespace mutations), "block" (trace block under/over replications
@@ -42,7 +42,7 @@
 
 <property>
   <name>dfs.namenode.http-address</name>
-  <value>NN_MACHINE_NAME:70000</value>
+  <value>NN_MACHINE_NAME:Dfs_Namenode_Http_Address_Config_Param</value>
   <description>
     The address and the base port where the dfs namenode web ui will listen on.
   </description>
@@ -50,7 +50,7 @@
 
 <property>
   <name>dfs.namenode.rpc-address</name>
-  <value>NN_MACHINE_NAME:70001</value>
+  <value>NN_MACHINE_NAME:Dfs_Namenode_Rpc_Address_Config_Param</value>
   <description>
     RPC address that handles all clients requests. In the case of HA/Federation where multiple namenodes exist,
     the name service id is added to the name e.g. dfs.namenode.rpc-address.ns1
@@ -61,7 +61,7 @@
 
 <property>
   <name>dfs.namenode.servicerpc-address</name>
-  <value>NN_MACHINE_NAME:70002</value>
+  <value>NN_MACHINE_NAME:Dfs_Namenode_Servicerpc_Address_Config_Param</value>
   <description>
     RPC address for HDFS Services communication. BackupNode, Datanodes and all other services should be
     connecting to this address if it is configured. In the case of HA/Federation where multiple namenodes exist,
@@ -74,7 +74,7 @@
 
 <property>
   <name>dfs.datanode.address</name>
-  <value>0.0.0.0:70003</value>
+  <value>0.0.0.0:Dfs_Datanode_Address_Config_Param</value>
   <description>
     The datanode server address and port for data transfer.
   </description>
@@ -82,7 +82,7 @@
 
 <property>
   <name>dfs.datanode.http.address</name>
-  <value>0.0.0.0:70004</value>
+  <value>0.0.0.0:Dfs_Datanode_Http_Address_Config_Param</value>
   <description>
     The datanode http server address and port.
   </description>
@@ -90,7 +90,7 @@
 
 <property>
   <name>dfs.datanode.ipc.address</name>
-  <value>0.0.0.0:70005</value>
+  <value>0.0.0.0:Dfs_Datanode_Ipc_Address_Config_Param</value>
   <description>
     The datanode ipc server address and port.
   </description>
@@ -185,16 +185,16 @@
   </description>
 </property-->
 
-<!--property>
+<property>
   <name>dfs.datanode.data.dir</name>
-  <value>file:///home/steffeng/hop/hadoop-2.0.4-alpha/hdfs/datanode/</value>
+  <value>Dfs_Datanode_Data_Dir_Config_Param</value>
   <description>Determines where on the local filesystem an DFS data node
   should store its blocks.  If this is a comma-delimited
   list of directories, then data will be stored in all named
   directories, typically on different devices.
   Directories that do not exist are ignored.
   </description>
-</property-->
+</property>
 
 <property>
   <name>dfs.namenode.name.dir.restore</name>
@@ -292,7 +292,7 @@
 
 <property>
   <name>dfs.blocksize</name>
-  <value>64m</value>
+  <value>Dfs_BlockSize_Config_Param</value>
   <description>
       The default block size for new files, in bytes.
       You can use the following suffix (case insensitive):
