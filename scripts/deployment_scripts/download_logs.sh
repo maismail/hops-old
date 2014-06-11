@@ -28,12 +28,12 @@ do
 	ssh $connectStr 'tar -cf ' $HOP_Dist_Folder/$i.tar   $HOP_Dist_Folder/logs
 	ssh $connectStr 'bzip2  '  $HOP_Dist_Folder/$i.tar
 	
-    folder=$1/$i 
-    mkdir -p $folder
+        folder=$1/$i 
+        mkdir -p $folder
 	scp $connectStr:$HOP_Dist_Folder/$i.tar.bz2 $folder
-    ssh $connectStr 'rm  '  $HOP_Dist_Folder/$i.tar.bz2 
-    bzip2 -d $1/$i/$i.tar.bz2 
-    tar -xf  $1/$i/$i.tar
+        ssh $connectStr 'rm  '  $HOP_Dist_Folder/$i.tar.bz2 
+        bzip2 -d $1/$i/$i.tar.bz2
+        tar -xf  $1/$i/$i.tar  -C $1/$i/ 
 done
 
 
