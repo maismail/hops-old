@@ -35,6 +35,8 @@ import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.log4j.NDC;
+import se.sics.hop.common.HopBlockIDGen;
+import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
@@ -133,6 +135,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       // take lock on the indeId basically bring null in the cache
       if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
           inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
+          if(inode == null){
+            //there's no inode for this specific name,parentid which means this file is deleted
+            //so fallback to the scan to update the inodecontext cache
+            throw new StorageException("Inconsistent state: INode doesn't exists for " + inodeIdentifer);
+          }
       }else if(inodeIdentifer.getInodeId() != null ){
           inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
       }else {
@@ -501,11 +508,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       acquireLock(locks.getGenerationStampLock(), HopVariable.Finder.GenerationStamp);
     }
 
-    if (locks.getBlockIdCounterLock() != null) {
+    if (locks.getBlockIdCounterLock() != null && HopBlockIDGen.needMoreIds()) {
       acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
     }
     
-    if(locks.getInodeIDCounterLock() != null){
+    if(locks.getInodeIDCounterLock() != null && HopINodeIdGen.needMoreIds(locks.getExpectedMaxNumberOfINodeIds())){
       acquireLock(locks.getInodeIDCounterLock(), HopVariable.Finder.INodeID);
     }
     

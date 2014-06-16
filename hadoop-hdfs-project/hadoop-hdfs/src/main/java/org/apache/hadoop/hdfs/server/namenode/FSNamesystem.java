@@ -2451,7 +2451,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
                       addBlock().
                       addReplica().
-                      addLease(LockType.READ).
+                      addLease(LockType.READ, clientName).
                       addCorrupt().
                       addExcess().
                       addReplicaUc().
@@ -3392,7 +3392,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedINodes, preTxPathFullyResolved[0]);
         tla.getLocks(). addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src})
-                .addInodeIDCounterLock(LockType.WRITE);
+                .addInodeIDCounterLock(LockType.WRITE, INode.getPathNames(src).length - 1);
         return tla.acquire();
       }
 

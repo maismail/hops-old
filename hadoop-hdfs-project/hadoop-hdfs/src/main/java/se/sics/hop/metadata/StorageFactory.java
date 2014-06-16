@@ -21,6 +21,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
+import se.sics.hop.common.HopBlockIDGen;
+import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.metadata.adaptor.LeaseDALAdaptor;
 import se.sics.hop.metadata.context.BlockInfoContext;
 import se.sics.hop.metadata.context.CorruptReplicaContext;
@@ -75,7 +77,7 @@ import se.sics.hop.transaction.EntityManager;
  */
 public class StorageFactory {
 
-  private static boolean isInitialized = false;
+  private static boolean isDALInitialized = false;
   private static DALStorageFactory dStorageFactory;
   private static Map<Class, EntityDataAccess> dataAccessAdaptors = new HashMap<Class, EntityDataAccess>();
   
@@ -84,16 +86,17 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    if (isInitialized) {
-      return;
+    HopINodeIdGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT));
+    HopBlockIDGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT));
+    if (!isDALInitialized) {
+      Variables.registerDefaultValues();
+      addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
+      dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
+      dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+      initDataAccessWrappers();
+      EntityManager.setContextInitializer(getContextInitializer());
+      isDALInitialized = true;
     }
-    Variables.registerDefaultValues();
-    addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
-    dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
-    dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
-    initDataAccessWrappers();
-    EntityManager.setContextInitializer(getContextInitializer());
-    isInitialized = true;
   }
 
   //[M]: just for testing purposes

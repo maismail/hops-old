@@ -3749,6 +3749,8 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica().
                 addExcess().
                 addCorrupt().
+                addPendingBlock().
+                addInvalidatedBlock().
                 addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeIdentifier);
       }
@@ -3782,6 +3784,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplicaUc().
                 addExcess().
                 addCorrupt().
+                addPendingBlock().
                 addUnderReplicatedBlock();
         return tla.acquireByBlock(inodeIdentifier);
       }

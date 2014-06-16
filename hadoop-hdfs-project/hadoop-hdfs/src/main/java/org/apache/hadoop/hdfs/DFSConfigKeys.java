@@ -49,6 +49,12 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
   public static final boolean DFS_QUOTA_ENABLED_DEFAULT = true;
   
+  public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
+  public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 100;
+  
+  public static final String DFS_NAMENODE_BLOCKID_BATCH_SIZE = "dfs.namenode.blockid.batchsize";
+  public static final int DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT = 100;
+  
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
   public static final String  DFS_NAMENODES_RPC_ADDRESS_DEFAULT = "";
