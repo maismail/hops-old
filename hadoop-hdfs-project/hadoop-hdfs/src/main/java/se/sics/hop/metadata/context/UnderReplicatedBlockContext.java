@@ -96,7 +96,7 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
           syncUnderReplicatedBlockInstances(dataAccess.findAll());
           allUrBlocksRead = true;
         }
-        List<HopUnderReplicatedBlock> result = new ArrayList();
+        List<HopUnderReplicatedBlock> result = new ArrayList<HopUnderReplicatedBlock>();
         for (HopUnderReplicatedBlock urb : urBlocks.values()) {
           if (urb != null) {
             result.add(urb);
