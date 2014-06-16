@@ -35,10 +35,6 @@ cp       $HOP_Src_Folder/scripts/deployment_scripts/deployment.properties       
 parallel-rsync -arz -H "${All_Unique_Hosts[*]}" --user $HOP_User    $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/        $HOP_Dist_Folder
 
 
-# deploy the Experiments
-source ./internals/upload_experiments.sh
-
-
 # fix scripts on remote NN hosts
 echo "***   Fixing address in NameNode configs   ***" 
 for i in ${All_Unique_NNs[@]}

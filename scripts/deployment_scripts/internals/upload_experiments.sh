@@ -6,20 +6,25 @@
 source deployment.properties
 
 #upload Experiments
-if [ $HOP_Upload_Experiments = true ]; then
-   echo "***   Copying the Experiment to $HOP_Experiments_Dist_Folder ***"
-	for machine in $HOP_Experiments_Machine_List
+
+        echo "***   Copying the Experiment to $HOP_Experiments_Dist_Folder  on ${HOP_Experiments_Machine_List[*]}***"
+	for machine in ${HOP_Experiments_Machine_List[*]}
 	do
 		 connectStr="$HOP_User@$machine"
 		 ssh $connectStr 'mkdir -p '$HOP_Experiments_Dist_Folder
-		 
-		 RunScriptFile=$HOP_Experiments_Dist_Folder/run.sh	
-                 JarFileName=hop-experiments-1.0-SNAPSHOT-jar-with-dependencies.jar
-                 ssh $connectStr 'touch '                            $RunScriptFile
-		 ssh $connectStr "echo  \#\!/bin/bash > "              $RunScriptFile
-		 ssh $connectStr "echo  $HOP_Dist_Folder/bin/hadoop jar $JarFileName  $\* >>"   $RunScriptFile
-		 ssh $connectStr 'chmod +x '$RunScriptFile
-	done	
-	parallel-rsync -arz -H "${HOP_Experiments_Machine_List[*]}" --user $HOP_User     $HOP_Experiments_Folder/target/$JarFileName   $HOP_Experiments_Dist_Folder  
-fi
+	done
+		
+	JarFileName=hop-experiments-1.0-SNAPSHOT-jar-with-dependencies.jar
+	temp_folder=/tmp/hop_exp_distro
+	rm -rf $temp_folder
+	mkdir -p $temp_folder	
+	cp $HOP_Experiments_Folder/target/$JarFileName $temp_folder/
+	RunScriptFile=$temp_folder/run.sh	
+	touch $RunScriptFile
+        echo  \#\!/bin/bash >                  $RunScriptFile
+        echo  $HOP_Dist_Folder/bin/hadoop jar   $JarFileName  $\* >>   $RunScriptFile
+        chmod +x $RunScriptFile
+                 
+	parallel-rsync -arz -H "${HOP_Experiments_Machine_List[*]}" --user $HOP_User     $temp_folder/   $HOP_Experiments_Dist_Folder  
+
 

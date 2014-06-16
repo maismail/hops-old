@@ -9,5 +9,11 @@
 <configuration>
 
 
+<property>
+  <name>fs.default.name</name>
+  <value>hdfs://NN_MACHINE_NAME:Dfs_Namenode_Rpc_Address_Config_Param</value>
+  <description></description>
+</property>
+
 
 </configuration>

@@ -18,8 +18,15 @@ source deployment.properties
 source ./internals/build_distro.sh
 
 #upload the distribution
-source ./internals/upload_distro.sh
+if [ $HOP_Upload_Distro = true ]; then
+    source ./internals/upload_distro.sh
+fi
 
+
+# deploy the Experiments
+if [ $HOP_Upload_Experiments = true ]; then
+    source ./internals/upload_experiments.sh
+fi
 
 exit 0
 
