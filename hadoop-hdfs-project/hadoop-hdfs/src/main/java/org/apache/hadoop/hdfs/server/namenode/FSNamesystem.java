@@ -2451,7 +2451,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
                       addBlock().
                       addReplica().
-                      addLease(LockType.READ).
+                      addLease(LockType.READ, clientName).
                       addCorrupt().
                       addExcess().
                       addReplicaUc().
