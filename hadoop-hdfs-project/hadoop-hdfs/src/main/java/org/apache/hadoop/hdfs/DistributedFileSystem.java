@@ -1019,6 +1019,15 @@ public class DistributedFileSystem extends FileSystem {
       while (in.read(b) > 0) {
         out.write(b);
       }
+      try {
+        in.close();
+      } catch (IOException e) {
+      }
+      try {
+        out.close();
+      } catch (IOException e) {
+      }
+
       delete(path);
       rename(tmpFile, path);
     } finally {
@@ -1026,7 +1035,6 @@ public class DistributedFileSystem extends FileSystem {
         try {
           out.close();
         } catch (IOException e) {
-
         }
       }
     }
