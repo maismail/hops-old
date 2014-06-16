@@ -1,42 +1,36 @@
 package se.sics.hop.metadata;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.*;
 import se.sics.hop.DALDriver;
 import se.sics.hop.DALStorageFactory;
 import se.sics.hop.StorageConnector;
+import se.sics.hop.common.HopBlockIDGen;
+import se.sics.hop.common.HopINodeIdGen;
+import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.adaptor.*;
+import se.sics.hop.metadata.context.*;
+import se.sics.hop.metadata.hdfs.dal.*;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.hop.*;
+import se.sics.hop.metadata.hdfs.entity.hop.var.*;
+import se.sics.hop.transaction.ContextInitializer;
+import se.sics.hop.transaction.EntityManager;
+
 import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-
-import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.metadata.adaptor.*;
-import se.sics.hop.metadata.context.*;
-import se.sics.hop.metadata.hdfs.dal.*;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.server.blockmanagement.*;
-import org.apache.hadoop.hdfs.server.namenode.*;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopLongVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopStringVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
-import se.sics.hop.exception.StorageInitializtionException;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
-import se.sics.hop.transaction.ContextInitializer;
-import se.sics.hop.transaction.EntityManager;
 
 /**
  *
@@ -45,7 +39,7 @@ import se.sics.hop.transaction.EntityManager;
  */
 public class StorageFactory {
 
-  private static boolean isInitialized = false;
+  private static boolean isDALInitialized = false;
   private static DALStorageFactory dStorageFactory;
   private static Map<Class, EntityDataAccess> dataAccessAdaptors = new HashMap<Class, EntityDataAccess>();
   
@@ -54,16 +48,17 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    if (isInitialized) {
-      return;
+    HopINodeIdGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT));
+    HopBlockIDGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT));
+    if (!isDALInitialized) {
+      Variables.registerDefaultValues();
+      addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
+      dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
+      dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+      initDataAccessWrappers();
+      EntityManager.setContextInitializer(getContextInitializer());
+      isDALInitialized = true;
     }
-    Variables.registerDefaultValues();
-    addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
-    dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
-    dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
-    initDataAccessWrappers();
-    EntityManager.setContextInitializer(getContextInitializer());
-    isInitialized = true;
   }
 
   //[M]: just for testing purposes

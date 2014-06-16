@@ -61,6 +61,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType storageInfoLock = null;
   //indode id counter
   private LockType inodeIDCounterLock = null;
+  private int expectedMaxNumberofINodeIds = 0;
   //sidcounter
   private LockType sidCounterLock = null;
   
@@ -193,11 +194,16 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-  public HDFSTransactionLocks addInodeIDCounterLock(LockType inodeIDCounterLock) {
+  public HDFSTransactionLocks addInodeIDCounterLock(LockType inodeIDCounterLock, int expectedMaxNumberofInodeIds) {
     this.inodeIDCounterLock = inodeIDCounterLock;
+    this.expectedMaxNumberofINodeIds = expectedMaxNumberofInodeIds;
     return this;
   }
 
+  public HDFSTransactionLocks addInodeIDCounterLock(LockType inodeIDCounterLock) {
+    return addInodeIDCounterLock(inodeIDCounterLock, 1);
+  }
+   
   public HDFSTransactionLocks addBlockKey(LockType lock) {
     blockKeyLock = lock;
     return this;
@@ -299,7 +305,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
   public LockType getInodeIDCounterLock() {
     return inodeIDCounterLock;
   }
-
+  
+  public int getExpectedMaxNumberOfINodeIds(){
+    return expectedMaxNumberofINodeIds;
+  }
+  
   public LockType getLeaderLock() {
     return leaderLock;
   }

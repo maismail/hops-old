@@ -66,7 +66,7 @@ public class LeaderElection extends Thread {
 
         @Override
         public Object performTask() throws PersistanceException, IOException {
-          LOG.info(hostname+") Leader Election initializing ... ");
+          LOG.debug(hostname+") Leader Election initializing ... ");
           determineAndSetLeader();
           return null;
         }
@@ -76,7 +76,7 @@ public class LeaderElection extends Thread {
       start();
 
     } catch (Throwable t) {
-      LOG.info(hostname+") LeaderElection thread received Runtime exception. ", t);
+      LOG.debug(hostname+") LeaderElection thread received Runtime exception. ", t);
       nn.stop();
       Runtime.getRuntime().exit(-1);
     }
@@ -93,7 +93,7 @@ public class LeaderElection extends Thread {
     // delete all row with id less than the leader id
     // set role to leader
     if (leaderId == nn.getId() && !nn.isLeader() && leaderId != LEADER_INITIALIZATION_ID) {
-      LOG.info(hostname+") New leader elected. Namenode id: " + nn.getId() + ", rpcAddress: " + nn.getServiceRpcAddress() + ", Total Active namenodes in system: " + selectAll().size());
+      LOG.debug(hostname+") New leader elected. Namenode id: " + nn.getId() + ", rpcAddress: " + nn.getServiceRpcAddress() + ", Total Active namenodes in system: " + selectAll().size());
       // remove all previous leaders from [LEADER] table
       removePrevoiouslyElectedLeaders(leaderId);
       nn.setRole(NamenodeRole.LEADER);
@@ -140,12 +140,12 @@ public class LeaderElection extends Thread {
     
     while (nn.getNamesystem().isRunning()) {
       try {
-//        LOG.info(hostname+") Leader Election timeout. Updating the counter and checking for new leader");
+        LOG.debug(hostname+") Leader Election timeout. Updating the counter and checking for new leader");
         leaderElectionHandler.handle(null/*fanamesystem*/);
         Thread.sleep(leadercheckInterval);
 
       } catch (InterruptedException ie) {
-        LOG.info(hostname+") LeaderElection thread received InterruptedException.", ie);
+        LOG.debug(hostname+") LeaderElection thread received InterruptedException.", ie);
         break;
       } catch (Throwable t) {
         LOG.fatal(hostname+") LeaderElection thread received Runtime exception. ", t);
@@ -159,7 +159,7 @@ public class LeaderElection extends Thread {
     long maxCounter = getMaxNamenodeCounter();
     long totalNamenodes = getLeaderRowCount();
     if (totalNamenodes == 0) {
-      LOG.info(hostname+") No namenodes in the system. The first one to start would be the leader");
+      LOG.debug(hostname+") No namenodes in the system. The first one to start would be the leader");
       return LeaderElection.LEADER_INITIALIZATION_ID;
     }
 
@@ -244,7 +244,7 @@ public class LeaderElection extends Thread {
     // otherwise create a new row
     
     HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
-//    LOG.info(hostname+") Adding/updating row "+leader.toString());
+    LOG.debug(hostname+") Adding/updating row "+leader.toString());
     EntityManager.add(leader);
   }
 

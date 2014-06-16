@@ -290,7 +290,7 @@ public class INodeUtil {
   
   public static INodeIdentifier resolveINodeFromBlockID(final long bid) throws StorageException{
     INodeIdentifier inodeIdentifier = null;
-    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.RESOLVE_INODE_FROM_BLOCKID) {
         @Override
         public Object performTask() throws PersistanceException, IOException {
           

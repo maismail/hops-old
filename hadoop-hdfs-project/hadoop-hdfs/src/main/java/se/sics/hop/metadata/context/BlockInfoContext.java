@@ -265,15 +265,20 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
 
     return finalList;
   }
-
+  
   private void updateInodeBlocks(BlockInfo newBlock/*new or updated block*/) {
     List<BlockInfo> blockList = inodeBlocks.get(newBlock.getInodeId());
 
     if (blockList != null) {
       if (blockList.contains(newBlock)) {
-        BlockInfo oldBlock = blockList.remove(blockList.indexOf(newBlock));
-        blockList.add(newBlock);
-      }      
+        blockList.remove(blockList.indexOf(newBlock));
+      }
+      blockList.add(newBlock);
+
+    } else {
+      List<BlockInfo> list = new ArrayList<BlockInfo>();
+      list.add(newBlock);
+      inodeBlocks.put(newBlock.getInodeId(), list);
     }
   }
 
