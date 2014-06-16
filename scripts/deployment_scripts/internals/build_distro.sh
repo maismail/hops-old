@@ -23,7 +23,6 @@ source deployment.properties
 	    fi	
 	CMD="$CMD assembly:assembly -f $HOP_Metadata_Dal_Impl_Folder"
 	$CMD
-	cp $HOP_Metadata_Dal_Impl_Folder/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar  $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/share/hadoop/hdfs/lib/
     fi
 
     #Build Hadoop
@@ -54,3 +53,4 @@ source deployment.properties
 	$CMD
     fi
 
+    cp $HOP_Metadata_Dal_Impl_Folder/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar  $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/share/hadoop/hdfs/lib/
