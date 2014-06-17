@@ -1394,7 +1394,11 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
     this.shouldSyncBlock = flag.contains(CreateFlag.SYNC_BLOCK);
 
     if (policy != null) {
-      enableSourceStream(Codec.getCodec(policy.getCodec()).getStripeLength());
+      Codec codec = Codec.getCodec(policy.getCodec());
+      if (codec == null) {
+        throw new IOException("Unkown codec: " + policy.getCodec());
+      }
+      enableSourceStream(codec.getStripeLength());
     }
 
     computePacketChunkSize(dfsClient.getConf().writePacketSize,

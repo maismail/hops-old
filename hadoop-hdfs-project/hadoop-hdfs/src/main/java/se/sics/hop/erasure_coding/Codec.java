@@ -153,7 +153,7 @@ public class Codec implements Serializable {
         codecs = Collections.emptyList();
         idToCodec = Collections.emptyMap();
         if (LOG.isDebugEnabled()) {
-          LOG.debug("None Codec is specified");
+          LOG.info("None Codec is specified");
         }
         return;
       }
