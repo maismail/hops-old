@@ -60,7 +60,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT = 1*1000; // 1 second 
   
   public static final String  DFS_LEADER_MISSED_HB_THRESHOLD_KEY = "dfs.leader.missed.hb";
-  public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 1;
+  public static final int     DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT = 2;
   
   public static final String  DFS_BLOCK_POOL_ID_KEY = "dfs.block.pool.id";
   public static final String  DFS_BLOCK_POOL_ID_DEFAULT = "HOP_BLOCK_POOL_123";
