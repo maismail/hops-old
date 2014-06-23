@@ -15,6 +15,7 @@
  */
 package se.sics.hop.common;
 
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.exception.PersistanceException;
 
@@ -23,11 +24,34 @@ import se.sics.hop.exception.PersistanceException;
  * @author Mahmoud Ismail <maism@sics.se>
  */
 public class HopINodeIdGen {
-  
-  public static long getUniqueINodeID() throws PersistanceException{
-    long lastInodeId =  Variables.getInodeId();
-    lastInodeId++;
-    Variables.setInodeId(lastInodeId);
-    return lastInodeId;
+
+  private static int BATCH_SIZE;
+  private static int endId;
+  private static int currentId;
+
+  public static void setBatchSize(int batchSize) {
+    BATCH_SIZE = batchSize;
+    currentId = endId = 0;
+  }
+
+  public static int getUniqueINodeID() throws PersistanceException {
+    if (needMoreIds(1)) {
+      getMoreIds();
+    }
+    return ++currentId;
+  }
+
+  public static boolean needMoreIds(int expectedMaxNumberOfInodeIds) {
+    if(expectedMaxNumberOfInodeIds > 1){
+      return (currentId + expectedMaxNumberOfInodeIds) >= endId;
+    }
+    return currentId == endId;
+  }
+
+  private static void getMoreIds() throws PersistanceException {
+    int startId = Variables.getInodeId();
+    endId = startId + BATCH_SIZE;
+    Variables.setInodeId(endId);
+    currentId = startId;
   }
 }

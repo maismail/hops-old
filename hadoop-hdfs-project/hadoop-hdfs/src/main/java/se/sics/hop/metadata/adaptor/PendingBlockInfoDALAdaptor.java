@@ -46,8 +46,8 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   }
 
   @Override
-  public PendingBlockInfo findByPKey(long blockId) throws StorageException {
-    return convertDALtoHDFS(dataAccces.findByPKey(blockId));
+  public PendingBlockInfo findByPKey(long blockId,int inodeId) throws StorageException {
+    return convertDALtoHDFS(dataAccces.findByPKey(blockId, inodeId));
   }
 
   @Override
@@ -68,7 +68,7 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   @Override
   public HopPendingBlockInfo convertHDFStoDAL(PendingBlockInfo hdfsClass) throws StorageException {
     if (hdfsClass != null) {
-      return new HopPendingBlockInfo(hdfsClass.getBlockId(), hdfsClass.getTimeStamp(), hdfsClass.getNumReplicas());
+      return new HopPendingBlockInfo(hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getTimeStamp(), hdfsClass.getNumReplicas());
     } else {
       return null;
     }
@@ -77,9 +77,14 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   @Override
   public PendingBlockInfo convertDALtoHDFS(HopPendingBlockInfo dalClass) throws StorageException {
     if (dalClass != null) {
-      return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
+      return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getInodeId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
     } else {
       return null;
     }
+  }
+
+  @Override
+  public List<PendingBlockInfo> findByINodeId(int inodeId) throws StorageException {
+    return (List<PendingBlockInfo>) convertDALtoHDFS(dataAccces.findByINodeId(inodeId));
   }
 }

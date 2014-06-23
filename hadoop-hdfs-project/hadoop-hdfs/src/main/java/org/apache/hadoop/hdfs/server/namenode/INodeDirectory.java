@@ -51,8 +51,8 @@ public class INodeDirectory extends INode {
   protected static final int DEFAULT_FILES_PER_DIRECTORY = 5;
   public final static String ROOT_NAME = "";
   //START_HOP_CODE
-  public final static long ROOT_ID =  1L;
-  public final static long ROOT_PARENT_ID = NON_EXISTING_ID;
+  public final static int ROOT_ID =  1;
+  public final static int ROOT_PARENT_ID = NON_EXISTING_ID;
   //END_HOP_CODE
   
   //private List<INode> children;       // no need for a list here. get it from the DB
@@ -70,7 +70,7 @@ public class INodeDirectory extends INode {
   /** constructor */
   INodeDirectory(byte[] localName, PermissionStatus permissions, long mTime) {
     this(permissions, mTime);
-    this.name = localName;
+    this.setLocalNameNoPersistance(localName);
   }
   
   /** copy constructor
@@ -293,7 +293,7 @@ public class INodeDirectory extends INode {
     }
 
     if (!node.exists()) {
-      long inodeID = HopINodeIdGen.getUniqueINodeID();
+      Integer inodeID = HopINodeIdGen.getUniqueINodeID();
       node.setIdNoPersistance(inodeID);
       node.setParentNoPersistance(this);
       EntityManager.add(node);
@@ -347,7 +347,7 @@ public class INodeDirectory extends INode {
                               boolean propagateModTime
                               ) throws FileNotFoundException, PersistanceException {
     // insert into the parent children list
-    newNode.name = localname;
+    newNode.setLocalNameNoPersistance(localname);
     if(parent.addChild(newNode, propagateModTime) == null)
       return null;
     return parent;
@@ -386,7 +386,7 @@ public class INodeDirectory extends INode {
     if (pathComponents.length < 2) { // add root
       return null;
     }
-    newNode.name = pathComponents[pathComponents.length - 1];
+    newNode.setLocalNameNoPersistance(pathComponents[pathComponents.length - 1]);
     // insert into the parent children list
     INodeDirectory parent = getParent(pathComponents);
     return parent.addChild(newNode, propagateModTime) == null? null: parent;

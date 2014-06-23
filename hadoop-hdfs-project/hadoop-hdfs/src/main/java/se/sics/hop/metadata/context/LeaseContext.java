@@ -99,7 +99,10 @@ public class LeaseContext extends EntityContext<Lease> {
         if (leases.containsKey(holder)) {
           log("find-lease-by-pk", CacheHitState.HIT, new String[]{"holder", holder});
           result = leases.get(holder);
-        } else {
+        } else if(isLeaseRemoved(holder)){
+          return null;
+        }
+        else {
           log("find-lease-by-pk", CacheHitState.LOSS, new String[]{"holder", holder});
           if (!allLeasesRead) {
             aboutToAccessStorage();
@@ -168,6 +171,14 @@ public class LeaseContext extends EntityContext<Lease> {
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
+  boolean isLeaseRemoved(String holder){
+    for(Lease lease:removedLeases.values()){
+      if(lease.getHolder().equals(holder)){
+        return true;
+      }
+    }
+    return false;
+  }
     @Override
     public void prepare(TransactionLocks lks) throws StorageException {
         // if the list is not empty then check for the lock types

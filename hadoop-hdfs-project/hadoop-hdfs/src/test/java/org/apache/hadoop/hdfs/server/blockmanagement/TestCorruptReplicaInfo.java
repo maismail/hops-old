@@ -34,6 +34,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -43,6 +45,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 
 
 /**
@@ -56,22 +59,22 @@ public class TestCorruptReplicaInfo {
   private static final Log LOG = 
                            LogFactory.getLog(TestCorruptReplicaInfo.class);
   
-  private Map<Long, Block> block_map =
-    new HashMap<Long, Block>();  
+  private Map<Integer, BlockInfo> block_map =
+    new HashMap<Integer, BlockInfo>();  
     
   // Allow easy block creation by block id
   // Return existing block if one with same block id already exists
-  private Block getBlock(Long block_id) {
+  private BlockInfo getBlock(Integer block_id) {
     if (!block_map.containsKey(block_id)) {
-      block_map.put(block_id, new Block(block_id,0,0));
+      block_map.put(block_id, new BlockInfo(new Block(block_id,0,0),block_id));
     }
     
     return block_map.get(block_id);
   }
   
-  private Block getBlock(int block_id) {
-    return getBlock((long)block_id);
-  }
+//  private BlockInfo getBlock(int block_id) {
+//    return getBlock(block_id);
+//  }
   
   @Test
   public void testCorruptReplicaInfo() throws IOException, 
@@ -94,9 +97,9 @@ public class TestCorruptReplicaInfo {
       // create a list of block_ids. A list is used to allow easy validation of the
       // output of getCorruptReplicaBlockIds
       int NUM_BLOCK_IDS = 140;
-      List<Long> block_ids = new LinkedList<Long>();
+      List<Integer> block_ids = new LinkedList<Integer>();
       for (int i=0;i<NUM_BLOCK_IDS;i++) {
-        block_ids.add((long)i);
+        block_ids.add(i);
       }
       
       DatanodeDescriptor dn1 = DFSTestUtil.getLocalDatanodeDescriptor();
@@ -123,7 +126,7 @@ public class TestCorruptReplicaInfo {
       assertEquals("Number of corrupt blocks not returning correctly",
                    0, crm.size());
       
-      for (Long block_id: block_ids) {
+      for (Integer block_id: block_ids) {
         addToCorruptReplicasMap(crm, getBlock(block_id), dn1, "TEST");
       }
             
@@ -143,12 +146,13 @@ public class TestCorruptReplicaInfo {
       
   }
   
-  private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk, final DatanodeDescriptor dn, final String reason) throws IOException{
+  private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final BlockInfo blk, final DatanodeDescriptor dn, final String reason) throws IOException{
      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId())
+        tla.getLocks().addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)
                 .addCorrupt();
         return tla.acquire();
                 
@@ -159,15 +163,23 @@ public class TestCorruptReplicaInfo {
         crm.addToCorruptReplicasMap(blk, dn, reason);
         return null;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }    
+
     }.handle();
   }
   
-  private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final Block blk) throws IOException{
+  private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final BlockInfo blk) throws IOException{
      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blk.getBlockId())
+        tla.getLocks().addBlock(blk.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)
                 .addCorrupt();
         return tla.acquire();
       }
@@ -177,6 +189,12 @@ public class TestCorruptReplicaInfo {
         crm.removeFromCorruptReplicasMap(blk);
         return null;
       }
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
+        }   
+        
     }.handle();
   }
 }

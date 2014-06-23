@@ -1,56 +1,69 @@
 delimiter $$
 
 CREATE TABLE `block_infos` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `block_index` int(11) DEFAULT NULL,
-  `inode_id` bigint(20) NOT NULL DEFAULT '0',
   `num_bytes` bigint(20) DEFAULT NULL,
   `generation_stamp` bigint(20) DEFAULT NULL,
   `block_under_construction_state` int(11) DEFAULT NULL,
   `time_stamp` bigint(20) DEFAULT NULL,
   `primary_node_index` int(11) DEFAULT NULL,
   `block_recovery_id` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`block_id`),
-  KEY `inode_idx` (`inode_id`)
+  PRIMARY KEY (`inode_id`,`block_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
+
+
+delimiter $$
+
+CREATE TABLE `block_lookup_table` (
+  `block_id` bigint(20) NOT NULL,
+  `inode_id` int(11) NOT NULL,
+  PRIMARY KEY (`block_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
 delimiter $$
 
 CREATE TABLE `corrupt_replicas` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
-  `storage_id` int NOT NULL,
-  PRIMARY KEY (`block_id`,`storage_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  `storage_id` int(11) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
 
 CREATE TABLE `excess_replicas` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
-  `storage_id` int NOT NULL,
-  PRIMARY KEY (`block_id`,`storage_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  `storage_id` int(11) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`),
+  KEY `storage_idx` (`storage_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
 
 CREATE TABLE `inode_attributes` (
-  `inodeId` bigint(20) NOT NULL,
+  `inodeId` int(11) NOT NULL,
   `nsquota` bigint(20) DEFAULT NULL,
   `dsquota` bigint(20) DEFAULT NULL,
   `nscount` bigint(20) DEFAULT NULL,
   `diskspace` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`inodeId`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1
-/*!50100 PARTITION BY KEY (inodeId) */$$
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
 delimiter $$
 
 CREATE TABLE `inodes` (
-  `id` bigint(20) NOT NULL,
-  `parent_id` bigint(20) NOT NULL DEFAULT '0',
+  `id` int(11) NOT NULL,
+  `parent_id` int(11) NOT NULL DEFAULT '0',
   `name` varchar(3000) NOT NULL DEFAULT '',
   `is_dir` int(11) NOT NULL,
   `modification_time` bigint(20) DEFAULT NULL,
@@ -65,7 +78,6 @@ CREATE TABLE `inodes` (
   `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,
   PRIMARY KEY (`parent_id`,`name`),
-  KEY `parent_idx` (`parent_id`),
   KEY `inode_idx` (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
@@ -73,14 +85,15 @@ CREATE TABLE `inodes` (
 delimiter $$
 
 CREATE TABLE `invalidated_blocks` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
-  `storage_id` int NOT NULL,
+  `storage_id` int(11) NOT NULL,
   `generation_stamp` bigint(20) DEFAULT NULL,
   `num_bytes` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`block_id`,`storage_id`),
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`),
   KEY `storage_idx` (`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
-/*!50100 PARTITION BY KEY (block_id) */$$
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
@@ -122,34 +135,39 @@ CREATE TABLE `leases` (
 delimiter $$
 
 CREATE TABLE `pending_blocks` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `time_stamp` bigint(20) NOT NULL,
   `num_replicas_in_progress` int(11) NOT NULL,
-  PRIMARY KEY (`block_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  PRIMARY KEY (`inode_id`,`block_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
 
 CREATE TABLE `replica_under_constructions` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
-  `storage_id` int NOT NULL,
+  `storage_id` int(11) NOT NULL,
   `state` int(11) DEFAULT NULL,
   `replica_index` int(11) NOT NULL,
-  PRIMARY KEY (`block_id`,`storage_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
 
 CREATE TABLE `replicas` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
-  `storage_id` int NOT NULL,
+  `storage_id` int(11) NOT NULL,
   `replica_index` int(11) NOT NULL,
-  PRIMARY KEY (`block_id`,`storage_id`),
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`),
   KEY `storage_idx` (`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
-/*!50100 PARTITION BY KEY (storage_id) */$$
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$
@@ -164,10 +182,12 @@ CREATE TABLE `storage_id_map` (
 delimiter $$
 
 CREATE TABLE `under_replicated_blocks` (
+  `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `level` int(11) DEFAULT NULL,
-  PRIMARY KEY (`block_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  PRIMARY KEY (`inode_id`,`block_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 delimiter $$

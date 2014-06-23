@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.transaction.EntityManager;
@@ -55,16 +56,16 @@ public class ExcessReplicasMap {
     return excessBlocks;
   }
 
-  public boolean put(String dn, Block excessBlk) throws PersistanceException {
+  public boolean put(String dn, BlockInfo excessBlk) throws PersistanceException {
     HopExcessReplica er = getExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk);
     if (er == null) {
-      addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId()));
+      addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId(), excessBlk.getInodeId()));
       return true;
     }
     return false;
   }
 
-  public boolean remove(String dn, Block block) throws PersistanceException {
+  public boolean remove(String dn, BlockInfo block) throws PersistanceException {
     HopExcessReplica er = getExcessReplica(datanodeManager.getDatanode(dn).getSId(), block);
     if (er != null) {
       removeExcessReplicaFromDB(er);
@@ -74,7 +75,7 @@ public class ExcessReplicasMap {
     }
   }
 
-  public Collection<String> get(Block blk) throws PersistanceException {
+  public Collection<String> get(BlockInfo blk) throws PersistanceException {
     Collection<HopExcessReplica> excessReplicas = getExcessReplicas(blk);
     if (excessReplicas == null) {
       return null;
@@ -86,12 +87,12 @@ public class ExcessReplicasMap {
     return stIds;
   }
 
-  public boolean contains(String dn, Block blk) throws PersistanceException {
+  public boolean contains(String dn, BlockInfo blk) throws PersistanceException {
     Collection<HopExcessReplica> ers = getExcessReplicas(blk);
     if (ers == null) {
       return false;
     }
-    return ers.contains(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), blk.getBlockId()));
+    return ers.contains(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), blk.getBlockId(), blk.getInodeId()));
   }
 
   public void clear() throws IOException {
@@ -123,11 +124,11 @@ public class ExcessReplicasMap {
     EntityManager.remove(er);
   }
 
-  private Collection<HopExcessReplica> getExcessReplicas(Block blk) throws PersistanceException {
-    return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId());
+  private Collection<HopExcessReplica> getExcessReplicas(BlockInfo blk) throws PersistanceException {
+    return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
 
-  private HopExcessReplica getExcessReplica(int dn, Block block) throws PersistanceException {
-    return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn);
+  private HopExcessReplica getExcessReplica(int dn, BlockInfo block) throws PersistanceException {
+    return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn, block.getInodeId());
   }
 }

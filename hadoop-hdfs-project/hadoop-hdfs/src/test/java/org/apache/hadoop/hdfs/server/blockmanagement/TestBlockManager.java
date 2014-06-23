@@ -50,6 +50,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -363,22 +364,10 @@ public class TestBlockManager {
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        INode inode;
-        
-          inodeID = blockInfo.getInodeId();
-          inode = INodeUtil.indexINodeScanById(inodeID);
-         
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(blockInfo);
       }
 
       @Override
@@ -386,7 +375,8 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(blockInfo.getBlockId()).
+                addBlock(blockInfo.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
@@ -395,7 +385,7 @@ public class TestBlockManager {
                 addReplicaUc().
                 addInvalidatedBlock().
                 addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeID, pID,name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override
@@ -416,15 +406,16 @@ public class TestBlockManager {
        @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-        addBlock(blkId).
+        tla.getLocks().addBlock(blkId,
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
            addReplica();
         return tla.acquire();
       }
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Block block = new Block(blkId);
-        BlockInfo blockInfo = new BlockInfo(block);
+        BlockInfo blockInfo = new BlockInfo(block,
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
 
         for (DatanodeDescriptor dn : nodes) {
           //blockInfo.addNode(dn);
@@ -432,6 +423,13 @@ public class TestBlockManager {
         }
         return blockInfo;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blkId);
+        }    
+
     }.handle();
   }
 
@@ -460,7 +458,8 @@ public class TestBlockManager {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
          tla.getLocks().
-                 addBlock(blockId);
+                 addBlock(blockId,
+                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
          return tla.acquire();
       }
       @Override
@@ -468,32 +467,23 @@ public class TestBlockManager {
           bm.blocksMap.addBlockCollection(blockInfo, bc);
          return null;
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blockId);
+        }  
     }.handle();
     
     return blockInfo;
   }
 
-  private DatanodeDescriptor[] scheduleSingleReplication(final Block block) throws IOException {
+  private DatanodeDescriptor[] scheduleSingleReplication(final BlockInfo block) throws IOException {
     return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
-      Long inodeID = null, pID = null;
-      String name = null;
+      INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
-        name = null; pID = null; inodeID = null;
-        INode inode;
-        if (block instanceof BlockInfo) {
-          inodeID = ((BlockInfo) block).getInodeId();
-          inode = INodeUtil.indexINodeScanById(((BlockInfo) block).getInodeId());
-          
-        } else {
-          inode = INodeUtil.findINodeByBlockId(block.getBlockId());
-        }
-        
-        if(inode != null ){
-          name = inode.getLocalName();
-          pID = inode.getParentId();
-          inodeID = inode.getId();
-        }
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
       @Override
@@ -501,13 +491,14 @@ public class TestBlockManager {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeID, pID, name);
+        return tla.acquireByBlock(inodeIdentifier);
       }
 
       @Override

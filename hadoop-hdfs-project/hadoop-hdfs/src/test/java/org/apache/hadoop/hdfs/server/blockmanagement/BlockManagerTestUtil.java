@@ -30,10 +30,13 @@ import org.apache.hadoop.util.Daemon;
 import org.junit.Assert;
 
 import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 
@@ -75,7 +78,8 @@ public class BlockManagerTestUtil {
         public TransactionLocks acquireLock() throws PersistanceException, IOException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
-                  addBlock(b.getBlockId()).
+                  addBlock(b.getBlockId(),
+                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                   addReplica().
                   addCorrupt().
                   addExcess().
@@ -87,9 +91,15 @@ public class BlockManagerTestUtil {
         public Object performTask() throws PersistanceException, IOException {
           return new int[]{getNumberOfRacks(bm, b),
             bm.countNodes(b).liveReplicas(),
-            bm.neededReplications.contains(b) ? 1 : 0};
+            bm.neededReplications.contains(bm.getStoredBlock(b)) ? 1 : 0};
 
         }
+        
+        INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
+        }        
       }.handle(namesystem);
     } finally {
       namesystem.readUnlock();
@@ -105,7 +115,7 @@ public class BlockManagerTestUtil {
       final Block b) throws PersistanceException {
     final Set<String> rackSet = new HashSet<String>(0);
     final Collection<DatanodeDescriptor> corruptNodes = 
-       getCorruptReplicas(blockManager).getNodes(b);
+       getCorruptReplicas(blockManager).getNodes(blockManager.blocksMap.getStoredBlock(b));
     for (Iterator<DatanodeDescriptor> it = blockManager.blocksMap.nodeIterator(b); 
          it.hasNext();) {
       DatanodeDescriptor cur = it.next();

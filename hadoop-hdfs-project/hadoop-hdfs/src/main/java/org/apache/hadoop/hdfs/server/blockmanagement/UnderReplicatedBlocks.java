@@ -21,20 +21,16 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -156,7 +152,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** Check if a block is in the neededReplication queue */
-  boolean contains(Block block) throws PersistanceException {
+  boolean contains(BlockInfo block) throws PersistanceException {
     return getUnderReplicatedBlock(block) != null;
   }
 
@@ -203,7 +199,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param expectedReplicas expected number of replicas of the block
    * @return true if the block was added to a queue.
    */
-  boolean add(Block block,
+  boolean add(BlockInfo block,
                            int curReplicas, 
                            int decomissionedReplicas,
                            int expectedReplicas) throws PersistanceException {
@@ -226,7 +222,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** remove a block from a under replication queue */
-  boolean remove(Block block, 
+  boolean remove(BlockInfo block, 
                               int oldReplicas, 
                               int decommissionedReplicas,
                               int oldExpectedReplicas) throws PersistanceException {
@@ -251,7 +247,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param priLevel expected privilege level
    * @return true if the block was found and removed from one of the priority queues
    */
-  boolean remove(Block block, int priLevel) throws PersistanceException {
+  boolean remove(BlockInfo block, int priLevel) throws PersistanceException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if(priLevel >= 0 && priLevel < LEVEL 
             && remove(urb)) {
@@ -297,7 +293,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param curReplicasDelta the change in the replicate count from before
    * @param expectedReplicasDelta the change in the expected replica count from before
    */
-  void update(Block block, int curReplicas,
+  void update(BlockInfo block, int curReplicas,
                            int decommissionedReplicas,
                            int curExpectedReplicas,
                            int curReplicasDelta, int expectedReplicasDelta) throws PersistanceException {
@@ -559,10 +555,10 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
    
   // return true if it does not exist other wise return false
-  private boolean add(Block block, int priLevel) throws PersistanceException {
+  private boolean add(BlockInfo block, int priLevel) throws PersistanceException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if (urb == null) {
-      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId()));
+      addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId(), block.getInodeId()));
       return true;
     }
     return false;
@@ -589,8 +585,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }
   }
   
-  private HopUnderReplicatedBlock getUnderReplicatedBlock(Block blk) throws PersistanceException{
-     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId());
+  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException{
+     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
  
   private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
@@ -615,13 +611,13 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addUnderReplicatedBlock().
-                addBlock(urb.getBlockId());
+                addBlock(urb.getBlockId(),urb.getInodeId());
         return tla.acquire();
       }
       
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId());
+        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), urb.getInodeId());
         if(block == null){
          removeUnderReplicatedBlock(urb);
         }

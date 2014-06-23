@@ -56,7 +56,7 @@ public class CorruptReplicasMap{
    * @param dn DatanodeDescriptor which holds the corrupt replica
    * @param reason a textual reason (for logging purposes)
    */
-  public void addToCorruptReplicasMap(Block blk, DatanodeDescriptor dn,
+  public void addToCorruptReplicasMap(BlockInfo blk, DatanodeDescriptor dn,
       String reason) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     
@@ -68,7 +68,7 @@ public class CorruptReplicasMap{
     }
     
     if (!nodes.contains(dn)) {
-      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getSId()));
+      addCorruptReplicaToDB(new HopCorruptReplica(blk.getBlockId(), dn.getSId(), blk.getInodeId()));
       NameNode.blockStateChangeLog.info("BLOCK NameSystem.addToCorruptReplicasMap: "+
                                    blk.getBlockName() +
                                    " added as corrupt on " + dn +
@@ -89,7 +89,7 @@ public class CorruptReplicasMap{
    *
    * @param blk Block to be removed
    */
-  void removeFromCorruptReplicasMap(Block blk) throws PersistanceException {
+  void removeFromCorruptReplicasMap(BlockInfo blk) throws PersistanceException {
     Collection<HopCorruptReplica> corruptReplicas = getCorruptReplicas(blk);
     if (corruptReplicas != null) {
       for (HopCorruptReplica cr : corruptReplicas) {
@@ -105,14 +105,14 @@ public class CorruptReplicasMap{
    * @return true if the removal is successful; 
              false if the replica is not in the map
    */ 
-  boolean removeFromCorruptReplicasMap(Block blk, DatanodeDescriptor datanode) throws PersistanceException {  
+  boolean removeFromCorruptReplicasMap(BlockInfo blk, DatanodeDescriptor datanode) throws PersistanceException {  
     Collection<DatanodeDescriptor> datanodes = getNodes(blk);
     if (datanodes == null) {
       return false;
     }
 
     if (datanodes.contains(datanode)) {
-      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getSId()));
+      removeCorruptReplicaFromDB(new HopCorruptReplica(blk.getBlockId(), datanode.getSId(),blk.getInodeId()));
       return true;
     } else {
       return false;
@@ -126,7 +126,7 @@ public class CorruptReplicasMap{
    * @param blk Block for which nodes are requested
    * @return collection of nodes. Null if does not exists
    */
-  Collection<DatanodeDescriptor> getNodes(Block blk) throws PersistanceException {
+  Collection<DatanodeDescriptor> getNodes(BlockInfo blk) throws PersistanceException {
    
     //HOPS datanodeMgr is null in some tests
     if (datanodeMgr == null) return new ArrayList<DatanodeDescriptor>();  
@@ -151,12 +151,12 @@ public class CorruptReplicasMap{
    * @param node DatanodeDescriptor which holds the replica
    * @return true if replica is corrupt, false if does not exists in this map
    */
-  boolean isReplicaCorrupt(Block blk, DatanodeDescriptor node) throws PersistanceException {
+  boolean isReplicaCorrupt(BlockInfo blk, DatanodeDescriptor node) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return ((nodes != null) && (nodes.contains(node)));
   }
 
-  public int numCorruptReplicas(Block blk) throws PersistanceException {
+  public int numCorruptReplicas(BlockInfo blk) throws PersistanceException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return (nodes == null) ? 0 : nodes.size();
   }
@@ -238,8 +238,8 @@ public class CorruptReplicasMap{
     return ret;
   }  
   
-  private Collection<HopCorruptReplica> getCorruptReplicas(Block blk) throws PersistanceException {
-    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId());
+  private Collection<HopCorruptReplica> getCorruptReplicas(BlockInfo blk) throws PersistanceException {
+    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId(),blk.getInodeId());
   }
 
   private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {

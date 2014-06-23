@@ -2,19 +2,18 @@ package se.sics.hop.metadata.context;
 
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -22,14 +21,13 @@ import se.sics.hop.transaction.lock.TransactionLocks;
  * @author kamal hakimzadeh <kamal@sics.se>
  */
 public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
-
-//  protected Map<CorruptReplica, CorruptReplica> corruptReplicas = new HashMap<CorruptReplica, CorruptReplica>();
   protected Map<Long, Set<HopCorruptReplica>> blockCorruptReplicas = new HashMap<Long, Set<HopCorruptReplica>>();
   protected Map<HopCorruptReplica, HopCorruptReplica> newCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
   protected Map<HopCorruptReplica, HopCorruptReplica> removedCorruptReplicas = new HashMap<HopCorruptReplica, HopCorruptReplica>();
+  private Set<Integer> inodesRead = new HashSet<Integer>();
   protected boolean allCorruptBlocksRead = false;
   private CorruptReplicaDataAccess dataAccess;
-//  private int nullCount = 0;
+
 
   public CorruptReplicaContext(CorruptReplicaDataAccess dataAccess) {
     this.dataAccess = dataAccess;
@@ -40,10 +38,6 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
     if (removedCorruptReplicas.get(entity) != null) {
       throw new TransactionContextException("Removed corrupt replica passed to be persisted");
     }
-//    if (corruptReplicas.containsKey(entity) && corruptReplicas.get(entity) == null) {
-////      nullCount--;
-//    }
-//    corruptReplicas.put(entity, entity);
     newCorruptReplicas.put(entity, entity);
     Set<HopCorruptReplica> list = blockCorruptReplicas.get(entity.getBlockId());
     if(list == null)
@@ -60,63 +54,20 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   @Override
   public void clear() {
     storageCallPrevented = false;
-//    corruptReplicas.clear();
     blockCorruptReplicas.clear();
     newCorruptReplicas.clear();
     removedCorruptReplicas.clear();
     allCorruptBlocksRead = false;
-//    nullCount = 0;
+    inodesRead.clear();
   }
 
   @Override
   public int count(CounterType<HopCorruptReplica> counter, Object... params) throws PersistanceException {
-//    CorruptReplica.Counter cCounter = (CorruptReplica.Counter) counter;
-//
-//    switch (cCounter) {
-//      case All:
-//        if (allCorruptBlocksRead) {
-//          log("count-all-corrupts", CacheHitState.HIT);
-//          return corruptReplicas.size() - nullCount;
-//        } else {
-//          log("count-all-corrupts", CacheHitState.LOSS);
-//          return dataAccess.countAll() + newCorruptReplicas.size() - removedCorruptReplicas.size();
-//        }
-//    }
-
     throw new RuntimeException(UNSUPPORTED_COUNTER);
   }
 
   @Override
   public HopCorruptReplica find(FinderType<HopCorruptReplica> finder, Object... params) throws PersistanceException {
-//    CorruptReplica.Finder cFinder = (CorruptReplica.Finder) finder;
-//
-//    switch (cFinder) {
-//      case ByPk:
-//        Long blockId = (Long) params[0];
-//        String storageId = (String) params[1];
-//        CorruptReplica result = null;
-//        CorruptReplica searchKey = new CorruptReplica(blockId, storageId);
-//        // if corrupt replica was queried by bid before and it wasn't found.
-//        if (blockCorruptReplicas.containsKey(blockId) && !blockCorruptReplicas.get(blockId).contains(searchKey))
-//        {
-//          log("find-corrupt-by-pk-not-exist", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", storageId});
-//          return null;
-//        }
-//        // otherwise it should exist or it's the first time that we query for it
-//        if (corruptReplicas.containsKey(searchKey)) {
-//          log("find-corrupt-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "sid", storageId});
-//          result = corruptReplicas.get(searchKey);
-//        } else {
-//          log("find-corrupt-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "sid", storageId});
-//          aboutToAccessStorage();
-//          result = dataAccess.findByPk(blockId, storageId);
-//          if (result == null) {
-//            nullCount++;
-//          }
-//          corruptReplicas.put(searchKey, result);
-//        }
-//        return result;
-//    }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
@@ -125,37 +76,66 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
     HopCorruptReplica.Finder cFinder = (HopCorruptReplica.Finder) finder;
 
     switch (cFinder) {
-//      case All:
-//        if (allCorruptBlocksRead) {
-//          log("find-all-corrupts", CacheHitState.HIT);
-//        } else {
-//          log("find-all-corrupts", CacheHitState.LOSS);
-//          aboutToAccessStorage();
-//          syncCorruptReplicaInstances(dataAccess.findAll());
-//          allCorruptBlocksRead = true;
-//        }
-//        List<CorruptReplica> list = new ArrayList<CorruptReplica>();
-//        for (CorruptReplica cr : corruptReplicas.values()) {
-//          if (cr != null) {
-//            list.add(cr);
-//          }
-//        }
-//        return list;
       case ByBlockId:
         Long blockId = (Long) params[0];
+        Integer inodeId = (Integer) params[1];
         if (blockCorruptReplicas.containsKey(blockId)) {
-          log("find-corrupts-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId)});
+          log("find-corrupts-by-bid", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId)});
           return new ArrayList(blockCorruptReplicas.get(blockId));
+        } else if (inodesRead.contains(inodeId) /*|| inodeId == INode.NON_EXISTING_ID*/) {
+          return null;
+        } else {
+          log("find-corrupts-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId), "inodeid", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          Set<HopCorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId, inodeId));
+          blockCorruptReplicas.put(blockId, list);
+          return new ArrayList(blockCorruptReplicas.get(blockId)); // Shallow copy
         }
-        log("find-corrupts-by-bid", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId)});
-        aboutToAccessStorage();
-        Set<HopCorruptReplica> list = new TreeSet(dataAccess.findByBlockId(blockId));
-        blockCorruptReplicas.put(blockId, list);
-        return new ArrayList(blockCorruptReplicas.get(blockId)); // Shallow copy
-
+        case ByINodeId:;
+        inodeId = (Integer) params[0];
+        List<HopCorruptReplica> result = null;
+        if(inodesRead.contains(inodeId)){
+          log("find-corrupts-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
+          return getCorruptReplicasForINode(inodeId);
+        }else{
+          log("find-corrupts-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
+          aboutToAccessStorage();
+          result = dataAccess.findByINodeId(inodeId);
+          inodesRead.add(inodeId);
+          if(result != null){
+            saveLists(result);
+          }
+          return result;
+        }       
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
+  }
+  
+  
+  List<HopCorruptReplica> getCorruptReplicasForINode(int inodeId) {
+    List<HopCorruptReplica> list = new ArrayList<HopCorruptReplica>();
+
+    for (Set<HopCorruptReplica> set : blockCorruptReplicas.values()) {
+      for (HopCorruptReplica corruptReplica : set) {
+          if(corruptReplica.getInodeId() == inodeId){
+            list.add(corruptReplica);
+          }
+      }
+    }
+    return list;
+  }
+  
+  
+  private void saveLists(List<HopCorruptReplica> list){
+     for(HopCorruptReplica cr : list){
+       Set<HopCorruptReplica> set = blockCorruptReplicas.get(cr.getBlockId());
+       if(set == null){
+         set = new TreeSet<HopCorruptReplica>();
+       }
+       set.add(cr);
+       blockCorruptReplicas.put(cr.getBlockId(), set);
+     }
   }
 
     @Override
@@ -195,34 +175,6 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
-  /**
-   *
-   * @param crs Returns only the fetched data from storage not those cached in
-   * the memory.
-   * @return
-   */
-//  private List<CorruptReplica> syncCorruptReplicaInstances(List<CorruptReplica> crs) {
-//
-//    ArrayList<CorruptReplica> finalList = new ArrayList<CorruptReplica>();
-//
-//    for (CorruptReplica replica : crs) {
-//      if (removedCorruptReplicas.containsKey(replica)) {
-//        continue;
-//      }
-//      if (corruptReplicas.containsKey(replica)) {
-//        if (corruptReplicas.get(replica) == null) {
-//          corruptReplicas.put(replica, replica);
-//          nullCount--;
-//        }
-//        finalList.add(corruptReplicas.get(replica));
-//      } else {
-//        corruptReplicas.put(replica, replica);
-//        finalList.add(replica);
-//      }
-//    }
-//
-//    return finalList;
-//  }
   
   @Override
   public EntityContextStat collectSnapshotStat() throws PersistanceException {
@@ -232,6 +184,51 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
-    
+    HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
+    switch (hopCmds) {
+      case INodePKChanged:
+          // need to update the rows with updated inodeId or partKey
+        checkForSnapshotChange();        
+        INode inodeBeforeChange = (INode) params[0];
+        INode inodeAfterChange  = (INode) params[1];
+        break;
+      case Concat:
+        checkForSnapshotChange();
+        HopINodeCandidatePK trg_param = (HopINodeCandidatePK)params[0];
+        List<HopINodeCandidatePK> srcs_param = (List<HopINodeCandidatePK>)params[1];
+        List<BlockInfo> oldBlks  = (List<BlockInfo>)params[2];
+        updateCorruptReplicas(trg_param, srcs_param);
+        break;
+    }
+  }
+  
+  private void checkForSnapshotChange(){
+     if (newCorruptReplicas.size() != 0 || removedCorruptReplicas.size() != 0 ) // during the tx no replica should have been changed
+        {
+          throw new IllegalStateException("No corrupt replicas row should have been changed during the Tx");
+        }
+  }
+  
+  private void updateCorruptReplicas(HopINodeCandidatePK trg_param, List<HopINodeCandidatePK> toBeDeletedSrcs){
+    for(Set<HopCorruptReplica> set :blockCorruptReplicas.values() ){
+      for(HopCorruptReplica corruptReplica : set){
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(corruptReplica.getInodeId());
+        if(!trg_param.equals(pk) && toBeDeletedSrcs.contains(pk)){
+          HopCorruptReplica toBeDeleted = cloneCorruptReplicaObj(corruptReplica);
+          HopCorruptReplica toBeAdded = cloneCorruptReplicaObj(corruptReplica);
+          
+          removedCorruptReplicas.put(toBeDeleted, toBeDeleted);
+          log("snapshot-maintenance-removed-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeDeleted.getBlockId()),"inodeId", Integer.toString(toBeDeleted.getInodeId())});
+          //both inode id and partKey has changed
+          toBeAdded.setInodeId(trg_param.getInodeId());
+          newCorruptReplicas.put(toBeAdded, toBeAdded);
+          log("snapshot-maintenance-added-corrupt",CacheHitState.NA, new String[]{"bid", Long.toString(toBeAdded.getBlockId()),"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        }
+      }
+    }
+  }
+  
+  private HopCorruptReplica cloneCorruptReplicaObj(HopCorruptReplica src){
+    return new HopCorruptReplica(src.getBlockId(),src.getStorageId(),src.getInodeId());
   }
 }

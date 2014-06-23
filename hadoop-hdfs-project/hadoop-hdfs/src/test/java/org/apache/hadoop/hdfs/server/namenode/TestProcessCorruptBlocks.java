@@ -39,6 +39,7 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
+import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 public class TestProcessCorruptBlocks {
@@ -266,7 +267,8 @@ public class TestProcessCorruptBlocks {
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addBlock(block.getBlockId()).
+                addBlock(block.getBlockId(),
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
                 addReplica().
                 addExcess().
                 addCorrupt();
@@ -277,6 +279,12 @@ public class TestProcessCorruptBlocks {
       public Object performTask() throws PersistanceException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
+      
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        }
     }.handle(namesystem);
   }
 
