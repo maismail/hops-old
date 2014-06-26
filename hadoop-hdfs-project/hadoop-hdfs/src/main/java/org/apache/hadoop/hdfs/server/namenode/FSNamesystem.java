@@ -769,10 +769,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             "taking over writer role in edits logs");
 //        editLogTailer.catchupDuringFailover();
         
-        blockManager.setPostponeBlocksFromFuture(false);
+//        blockManager.setPostponeBlocksFromFuture(false);
         blockManager.getDatanodeManager().markAllDatanodesStale();
         blockManager.clearQueues();
-        blockManager.processAllPendingDNMessages();
+//        blockManager.processAllPendingDNMessages();
         
         if (!isInSafeMode() ||
             (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
@@ -857,7 +857,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //      dir.fsImage.editLog.initSharedJournalsForRead();
 //    }
     
-    blockManager.setPostponeBlocksFromFuture(true);
+//    blockManager.setPostponeBlocksFromFuture(true);
 
 //HOP    editLogTailer = new EditLogTailer(this, conf);
 //    editLogTailer.start();
@@ -5360,10 +5360,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   // HA-only metric
-  @Metric
-  public int getPendingDataNodeMessageCount() {
-    return blockManager.getPendingDataNodeMessageCount();
-  }
+//  @Metric
+//  public int getPendingDataNodeMessageCount() {
+//    return blockManager.getPendingDataNodeMessageCount();
+//  }
   
   // HA-only metric
   @Metric
