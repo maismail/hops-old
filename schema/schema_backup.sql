@@ -185,7 +185,9 @@ CREATE TABLE `under_replicated_blocks` (
   `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `level` int(11) DEFAULT NULL,
-  PRIMARY KEY (`inode_id`,`block_id`)
+  `timestamp` bigint(20) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_id`),
+  KEY `level` (`level`,`timestamp`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (inode_id) */$$
 
