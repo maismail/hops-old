@@ -41,7 +41,7 @@ public class LeaderElection extends Thread {
     protected long leaderId = -1;
     // list of actively running namenodes in the hdfs to be sent to DNs
     protected List<Long> nnList = new ArrayList<Long>();
-    private int missedHeartBeatThreshold = 1;
+    private int missedHeartBeatThreshold = 2;
     String hostname;
 
     private Map<Integer, List<HopLeader>> history = new HashMap<Integer, List<HopLeader>>();
@@ -179,7 +179,7 @@ public class LeaderElection extends Thread {
         List<HopLeader> newLeaders = getAllNameNodes();
         Collections.sort(newLeaders);
 
-        if (newLeaders != null) {
+        if (newLeaders != null && !newLeaders.isEmpty()) {
             if (oldLeaders == null) {
                 return newLeaders.get(0).getId();
             }
@@ -191,13 +191,20 @@ public class LeaderElection extends Thread {
                         return oldLeader.getId();
                     } else {
                         j++;
-                        newLeader = newLeaders.get(j);
+                        long histo = historyCounter - missedHeartBeatThreshold - 1;
+                        LOG.debug(nn.getId() + " newLeader.getId " + newLeader.getId() + " new counter " + newLeader.getCounter()
+                                + " old counter " + oldLeader.getCounter() + " histo " + histo + " historyCounter " + historyCounter);
+                        if (j < newLeaders.size()) {
+                            newLeader = newLeaders.get(j);
+                        } else {
+                            LOG.error(hostname + ") No alive nodes in the table");
+                            throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") {
+                            };
+                        }
                     }
                 }
             }
-            LOG.error(hostname + ") No alive nodes in the table");
-            throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") {
-            };
+            return newLeader.getId();
         }
         LOG.info(hostname + ") No namenodes in the system. The first one to start would be the leader");
         return LeaderElection.LEADER_INITIALIZATION_ID;
@@ -245,6 +252,7 @@ public class LeaderElection extends Thread {
                 maxCounter = lRecord.getCounter();
             }
         }
+        LOG.debug(nn.getId() + " max nn counter " + maxCounter + " allnn size " + namenodes.size());
         return maxCounter;
     }
 
@@ -271,7 +279,7 @@ public class LeaderElection extends Thread {
         // otherwise create a new row
 
         HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
-        LOG.info(hostname + ") Adding/updating row " + leader.toString());
+        LOG.info(hostname + ") Adding/updating row " + leader.toString() + " history counter " + historyCounter);
         EntityManager.add(leader);
     }
 
@@ -281,7 +289,7 @@ public class LeaderElection extends Thread {
         List<HopLeader> oldLeaders = history.get(historyCounter - missedHeartBeatThreshold - 1);
         List<HopLeader> newLeaders = getAllNameNodes();
         Collections.sort(newLeaders);
-        
+
         int j = 0;
         HopLeader newLeader = newLeaders.get(j);
         if (oldLeaders != null) {
@@ -291,9 +299,9 @@ public class LeaderElection extends Thread {
                         nns.add(oldLeader);
                     }
                     j++;
-                    if(j<newLeaders.size()){
+                    if (j < newLeaders.size()) {
                         newLeader = newLeaders.get(j);
-                    }else{
+                    } else {
                         break;
                     }
                 }
@@ -310,11 +318,11 @@ public class LeaderElection extends Thread {
         List<HopLeader> oldLeaders = history.get(historyCounter - missedHeartBeatThreshold - 1);
         List<HopLeader> newLeaders = getAllNameNodes();
         Collections.sort(newLeaders);
-        
-        if(oldLeaders==null){
+
+        if (oldLeaders == null) {
             return;
         }
-        
+
         int j = 0;
         HopLeader newLeader = newLeaders.get(j);
         for (HopLeader oldLeader : oldLeaders) {
@@ -324,9 +332,9 @@ public class LeaderElection extends Thread {
                     removeLeaderRow(oldLeader);
                 }
                 j++;
-                if(j< newLeaders.size()){
+                if (j < newLeaders.size()) {
                     newLeader = newLeaders.get(j);
-                }else{
+                } else {
                     break;
                 }
             }
@@ -357,8 +365,8 @@ public class LeaderElection extends Thread {
     void pause() {
         suspend = !suspend;
     }
-    
-    boolean ispaused(){
+
+    boolean ispaused() {
         return suspend;
     }
 }

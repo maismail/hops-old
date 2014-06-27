@@ -1589,7 +1589,7 @@ public class NameNode {
             if( elapsedTime < leaderWindow){
                 return true;
             }else{
-                LOG.debug(id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
+//                LOG.debug(id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
                 return false;
             }
         } else {

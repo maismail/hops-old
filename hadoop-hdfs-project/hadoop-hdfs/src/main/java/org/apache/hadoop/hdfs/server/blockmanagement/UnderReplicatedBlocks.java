@@ -569,6 +569,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
   
   private void fillPriorityQueues(int level) throws IOException{
+      synchronized(priorityQueuestmp){
     resetPrioriryQueue();
     Collection<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
     for(HopUnderReplicatedBlock urb : allUrb){
@@ -576,6 +577,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       if(blk != null)
         priorityQueuestmp.get(urb.getLevel()).add(blk);
     }
+      }
   }
   
   private void resetPrioriryQueue(){

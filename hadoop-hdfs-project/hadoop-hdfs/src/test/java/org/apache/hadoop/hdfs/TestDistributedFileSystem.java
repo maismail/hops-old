@@ -643,6 +643,7 @@ public class TestDistributedFileSystem {
             id.isValid());
       }
     }
+    cluster.shutdown();
   }
 
   /**
@@ -678,11 +679,12 @@ public class TestDistributedFileSystem {
       assertTrue("Expected one valid and one invalid replica",
           (l.getVolumeIds()[0].isValid()) ^ (l.getVolumeIds()[1].isValid()));
     }
+    cluster.shutdown();
   }
 
   @Test
   public void testCreateWithCustomChecksum() throws Exception {
-    Configuration conf = getTestConfiguration();
+      Configuration conf = getTestConfiguration();
     MiniDFSCluster cluster = null;
     Path testBasePath = new Path("/test/csum");
     // create args 

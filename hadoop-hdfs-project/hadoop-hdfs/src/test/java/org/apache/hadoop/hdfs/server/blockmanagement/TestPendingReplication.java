@@ -308,78 +308,83 @@ public class TestPendingReplication {
    * @throws Exception
    */
   @Test
-  public void testProcessPendingReplications() throws Exception {
-    final short REPLICATION_FACTOR = (short) 1;
-
-    // start a mini dfs cluster of 2 nodes
+  public void testProcessPendingReplications() throws Exception{
+   final short REPLICATION_FACTOR = (short)1;
+    
+   // start a mini dfs cluster of 2 nodes
     final Configuration conf = new HdfsConfiguration();
+    //we do not want the nameNode to run processPendingReplications before 
+    //we do it ourself 
+    conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 100);
     conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_PENDING_TIMEOUT_SEC_KEY, 10);
-    final MiniDFSCluster cluster
-            = new MiniDFSCluster.Builder(conf).numDataNodes(REPLICATION_FACTOR).build();
+    final MiniDFSCluster cluster = 
+      new MiniDFSCluster.Builder(conf).numDataNodes(REPLICATION_FACTOR).build();
     try {
       final FSNamesystem namesystem = cluster.getNamesystem();
       final BlockManager bm = namesystem.getBlockManager();
-      final FileSystem fs = cluster.getFileSystem();
-      namesystem.setNameNodeRole(HdfsServerConstants.NamenodeRole.SECONDARY);
+      final FileSystem fs = cluster.getFileSystem();  
+    namesystem.setNameNodeRole(HdfsServerConstants.NamenodeRole.SECONDARY);
+      
+    PendingReplicationBlocks pendingReplications = bm.pendingReplications; 
+   
+    //
+    // populate the cluster with 10 one block file
+    //
+    for (int i = 0; i < 10; i++) {      
+      final Path FILE_PATH = new Path("/testfile_" + i);
+      DFSTestUtil.createFile(fs, FILE_PATH, 1L, REPLICATION_FACTOR, 1L);
+      DFSTestUtil.waitReplication(fs, FILE_PATH, REPLICATION_FACTOR);
+      //increase the block replication so that they are under replicated
+      fs.setReplication(FILE_PATH, (short)2);
+      final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, FILE_PATH);  
+      increment(pendingReplications, block.getLocalBlock(), i);
+    }
+    
+    int test = pendingReplications.size();
+    
+    assertEquals("Size of pendingReplications " + test,
+                 10, pendingReplications.size());
 
-      PendingReplicationBlocks pendingReplications = bm.pendingReplications;
 
     //
-      // populate the cluster with 10 one block file
-      //
-      for (int i = 0; i < 10; i++) {
-        final Path FILE_PATH = new Path("/testfile_" + i);
-        DFSTestUtil.createFile(fs, FILE_PATH, 1L, REPLICATION_FACTOR, 1L);
-        DFSTestUtil.waitReplication(fs, FILE_PATH, REPLICATION_FACTOR);
-        //increase the block replication so that they are under replicated
-        fs.setReplication(FILE_PATH, (short) 2);
-        final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, FILE_PATH);
-        increment(pendingReplications, block.getLocalBlock(), i);
+    // Wait for everything to timeout.
+    //
+    int loop = 0;
+    while (pendingReplications.size() > 0) {
+      try {
+        Thread.sleep(1000);
+      } catch (Exception e) {
       }
-
-      int test = pendingReplications.size();
-
-      assertEquals("Size of pendingReplications " + test,
-              10, pendingReplications.size());
-
-    //
-      // Wait for everything to timeout.
-      //
-      int loop = 0;
-      while (pendingReplications.size() > 0) {
-        try {
-          Thread.sleep(1000);
-        } catch (Exception e) {
-        }
-        loop++;
-      }
-      System.out.println("Had to wait for " + loop
-              + " seconds for the lot to timeout");
+      loop++;
+    }
+    System.out.println("Had to wait for " + loop +
+                       " seconds for the lot to timeout");
 
     //
-      // Verify that everything has timed out.
-      //
-      assertEquals("Size of pendingReplications ",
-              0, pendingReplications.size());
-      long[] timedOut = pendingReplications.getTimedOutBlocks();
-      assertTrue(timedOut != null && timedOut.length == 10);
-
-      // run processPendingReplications
-      bm.processPendingReplications();
-
+    // Verify that everything has timed out.
     //
-      // Verify that the blocks have been removed from the pendingreplication
-      // database
-      //
-      timedOut = pendingReplications.getTimedOutBlocks();
-      assertTrue("blocks removed from pending", timedOut == null);
-
+    assertEquals("Size of pendingReplications ",
+                 0, pendingReplications.size());
+    long[] timedOut = pendingReplications.getTimedOutBlocks();
+    assertTrue(timedOut != null && timedOut.length == 10);
+    
+    // run processPendingReplications
+    bm.processPendingReplications();
+    
     //
-      // Verify that the blocks have been added to the underReplicated database
-      //
-      UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
-      assertEquals("Size of underReplications ", 10, queues.size());
-
+    // Verify that the blocks have been removed from the pendingreplication
+    // database
+    //
+    timedOut = pendingReplications.getTimedOutBlocks();
+    assertTrue("blocks removed from pending",timedOut == null);
+    
+    //
+    // Verify that the blocks have been added to the underReplicated database
+    //
+    UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
+    assertEquals("Size of underReplications ", 10, queues.size());
+    
+    
     } finally {
       cluster.shutdown();
     }
