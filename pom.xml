@@ -311,7 +311,7 @@
         <dependency>
           <groupId>se.sics.hop.metadata</groupId>
           <artifactId>hop-metadata-dal-impl-ndb</artifactId>
-          <version>1.0-SNAPSHOT</version>
+          <version>1.0-SNAPSHOT-EC</version>
         </dependency>
       </dependencies>
     </profile>
