@@ -43,9 +43,10 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
 
   @Override
   public void add(BlockInfo block) throws PersistanceException {
-    if (removedBlocks.containsKey(block.getBlockId())) {
-      throw new TransactionContextException("Removed block passed to be persisted");
+    if (removedBlocks.containsKey(block.getBlockId()) || modifiedBlocks.containsKey(block.getBlockId())) {
+      throw new TransactionContextException("Removed/Modified block passed to be persisted");
     }
+    
     if (blocks.containsKey(block.getBlockId()) && blocks.get(block.getBlockId()) == null) {
       nullCount--;
     }
@@ -226,7 +227,11 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       throw new TransactionContextException("Removed block passed to be persisted");
     }
     blocks.put(block.getBlockId(), block);
-    modifiedBlocks.put(block.getBlockId(), block);
+    if(newBlocks.containsKey(block.getBlockId())){
+      newBlocks.put(block.getBlockId(), block);
+    }else{
+      modifiedBlocks.put(block.getBlockId(), block);
+    }
     updateInodeBlocks(block);
     log("updated-blockinfo", CacheHitState.NA, new String[]{"bid", Long.toString(block.getBlockId()), "inodeId", Long.toString(block.getInodeId()), "blk index", Integer.toString(block.getBlockIndex())});
     if(block.getBlockId() == Long.MIN_VALUE){

@@ -41,8 +41,8 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
 
   @Override
   public void add(HopLeasePath lPath) throws PersistanceException {
-    if (removedLPaths.containsKey(lPath)) {
-      throw new TransactionContextException("Removed lease-path passed to be persisted");
+    if (removedLPaths.containsKey(lPath)  || modifiedLPaths.containsKey(lPath)) {
+      throw new TransactionContextException("Removed/modified lease-path passed to be persisted");
     }
 
     newLPaths.put(lPath, lPath);
@@ -203,7 +203,13 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
       throw new TransactionContextException("Removed lease-path passed to be persisted");
     }
 
-    modifiedLPaths.put(lPath, lPath);
+    if(newLPaths.containsKey(this)){
+      newLPaths.put(lPath, lPath);
+    }
+    else{
+      modifiedLPaths.put(lPath, lPath);
+    }
+    
     leasePaths.put(lPath, lPath);
     pathToLeasePath.put(lPath.getPath(), lPath);
     if (allLeasePathsRead) {

@@ -170,9 +170,11 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
 
   public void generateKeysIfNeeded(boolean isLeader) throws IOException {
     this.isLeader = isLeader;
-    retrieveBlockKeys();
-    if (currentKey == null && nextKey == null) {
-      generateKeys();
+    if(isLeader){ 
+      retrieveBlockKeys();
+      if (currentKey == null && nextKey == null) {
+        generateKeys();
+      }
     }
   }
 

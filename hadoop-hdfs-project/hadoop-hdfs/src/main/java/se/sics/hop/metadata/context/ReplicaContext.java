@@ -46,8 +46,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
   @Override
   public void add(HopIndexedReplica replica) throws PersistanceException {
-    if (removedReplicas.containsKey(replica)) {
-      throw new TransactionContextException("Removed replica passed to be persisted");
+    if (removedReplicas.containsKey(replica) || modifiedReplicas.containsKey(replica)) {
+      throw new TransactionContextException("Removed/Modified replica passed to be persisted");
     }
 
     newReplicas.put(replica, replica);
@@ -244,7 +244,13 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
       throw new TransactionContextException("Removed replica passed to be persisted");
     }
 
-    modifiedReplicas.put(replica, replica);
+    if(newReplicas.containsKey(replica)){
+      newReplicas.put(replica, replica);
+    }
+    else{
+      modifiedReplicas.put(replica, replica);
+    }
+    
     blocksReplicas.get(replica.getBlockId()).put(replica.getStorageId(), replica);
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),

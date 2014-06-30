@@ -419,14 +419,12 @@ class BPOfferService implements Runnable {
    * Called by the DN to report an error to the NNs.
    */
   void trySendErrorReport(int errCode, String errMsg) {
-    //for (BPServiceActor actor : bpServices) {
-    try{
-      trySendErrorReportWithRetry(errCode, errMsg);
-    }catch(Exception e){
-      LOG.error("FAILED to send error report to any namenode ");
-      e.printStackTrace();
+    //HOP error report should be sent to all the NN. 
+    //Leader will delete the blocks and clear the in meomory data structs from Datanode manager and HB Manager. 
+    //Non leader NNs will only clear the in memory data structures. 
+    for (BPServiceActor actor : bpServices) {
+      actor.trySendErrorReport(errCode, errMsg);
     }
-    //}
   }
 
   /**
@@ -1043,15 +1041,6 @@ class BPOfferService implements Runnable {
     });
   }
 
-  private void trySendErrorReportWithRetry(final int errCode, final String errMsg) throws IOException {
-    doActorActionWithRetry(new ActorActionHandler() {
-      @Override
-      public Object doAction(BPServiceActor actor) throws IOException {
-        actor.trySendErrorReport(errCode, errMsg);
-        return null;
-      }
-    });
-  }
 
   private interface ActorActionHandler {
 

@@ -32,7 +32,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   //START_HOP_CODE
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
-  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
+  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
