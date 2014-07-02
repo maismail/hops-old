@@ -52,8 +52,6 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType leaderLock = null;
   // block token key
   private LockType blockKeyLock = null;
-  // block generation stamp
-  private LockType generationStampLock = null;
   //block id counter 
   private LockType blockIdCounterLock = null;
   //storage info
@@ -183,11 +181,6 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-  public HDFSTransactionLocks addGenerationStamp(LockType lock) {
-    this.generationStampLock = lock;
-    return this;
-  }
-
   public HDFSTransactionLocks addBlockIdCounter(LockType lock) {
     this.blockIdCounterLock = lock;
     return this;
@@ -291,10 +284,6 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public LockType getInvLocks() {
     return invLocks;
-  }
-
-  public LockType getGenerationStampLock() {
-    return generationStampLock;
   }
 
   public LockType getBlockIdCounterLock() {

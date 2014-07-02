@@ -60,32 +60,32 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
     genstamp = stamp;
   }
 
-  /**
-   * Returns the current generation stamp
-   */
-  public long getStamp() throws PersistanceException {
-    genstamp = Variables.getGenerationStamp();
-    return genstamp;
-  }
-
-  /**
-   * Sets the current generation stamp
-   */
-  public void setStamp(long stamp) throws PersistanceException {
-    genstamp = stamp;
-    Variables.setGenerationStamp(stamp);
-  }
-
-  /**
-   * First increments the counter and then returns the stamp 
-   */
-  public long nextStamp() throws PersistanceException {
-    genstamp = Variables.getGenerationStamp();
-    genstamp++;
-    Variables.setGenerationStamp(genstamp);
-    return genstamp;
-  }
-
+//  /**
+//   * Returns the current generation stamp
+//   */
+//  public long getStamp() throws PersistanceException {
+//    genstamp = Variables.getGenerationStamp();
+//    return genstamp;
+//  }
+//
+//  /**
+//   * Sets the current generation stamp
+//   */
+//  public void setStamp(long stamp) throws PersistanceException {
+//    genstamp = stamp;
+//    Variables.setGenerationStamp(stamp);
+//  }
+//
+//  /**
+//   * First increments the counter and then returns the stamp 
+//   */
+//  public long nextStamp() throws PersistanceException {
+//    genstamp = Variables.getGenerationStamp();
+//    genstamp++;
+//    Variables.setGenerationStamp(genstamp);
+//    return genstamp;
+//  }
+//
   @Override // Comparable
   public int compareTo(GenerationStamp that) {
     long stamp1 = this.genstamp;
@@ -93,37 +93,37 @@ public class GenerationStamp implements Comparable<GenerationStamp> {
     return stamp1 < stamp2 ? -1 :
            stamp1 > stamp2 ? 1 : 0;
   }
-
-  @Override // Object
-  public boolean equals(Object o) {
-    if (!(o instanceof GenerationStamp)) {
-      return false;
-    }
-    return compareTo((GenerationStamp)o) == 0;
-  }
-
-  @Override // Object
-  public int hashCode() {
-    long stamp = genstamp;
-    return (int) (stamp^(stamp>>>32));
-  }
-  
-  //START_HOP_CODE
-  public void setStampTx(final long stamp) throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        setStamp(stamp);
-        return null;
-      }
-    }.handle();
-  }
+//
+//  @Override // Object
+//  public boolean equals(Object o) {
+//    if (!(o instanceof GenerationStamp)) {
+//      return false;
+//    }
+//    return compareTo((GenerationStamp)o) == 0;
+//  }
+//
+//  @Override // Object
+//  public int hashCode() {
+//    long stamp = genstamp;
+//    return (int) (stamp^(stamp>>>32));
+//  }
+//  
+//  //START_HOP_CODE
+//  public void setStampTx(final long stamp) throws IOException {
+//    new HDFSTransactionalRequestHandler(HDFSOperationType.SET_GEN_STAMP) {
+//      @Override
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+//        tla.getLocks().addGenerationStamp(TransactionLockTypes.LockType.WRITE);
+//        return tla.acquire();
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        setStamp(stamp);
+//        return null;
+//      }
+//    }.handle();
+//  }
   //END_HOP_CODE
 }

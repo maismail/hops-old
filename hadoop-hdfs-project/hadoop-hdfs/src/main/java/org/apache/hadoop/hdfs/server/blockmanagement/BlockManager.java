@@ -1784,8 +1784,7 @@ public class BlockManager {
                 addReplicaUc().
                 addUnderReplicatedBlock().
                 addInvalidatedBlock().
-                addPendingBlock().
-                addGenerationStamp(LockType.READ);
+                addPendingBlock();
         return tla.acquireByBlock(inodeIdentifier);
       }
 
@@ -2894,8 +2893,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica().
                 addExcess().
                 addCorrupt().
-                addUnderReplicatedBlock().
-                addGenerationStamp(LockType.READ);
+                addUnderReplicatedBlock();
         if (!rdbi.isDeletedBlock()) {
           tla.getLocks().
                   addPendingBlock().

@@ -504,10 +504,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       acquireLock(locks.getBlockKeyLock(), HopVariable.Finder.BlockTokenKeys);
     }
 
-    if (locks.getGenerationStampLock() != null) {
-      acquireLock(locks.getGenerationStampLock(), HopVariable.Finder.GenerationStamp);
-    }
-
     if (locks.getBlockIdCounterLock() != null && HopBlockIDGen.needMoreIds()) {
       acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
     }

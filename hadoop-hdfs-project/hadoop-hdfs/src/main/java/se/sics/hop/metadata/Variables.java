@@ -13,7 +13,6 @@ import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.EntityManager;
-import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
@@ -45,14 +44,6 @@ public class Variables {
   public static int getInodeId() throws PersistanceException {
     return (Integer) getVariable(HopVariable.Finder.INodeID).getValue();
     
-  }
-
-  public static void setGenerationStamp(long stamp) throws PersistanceException {
-    updateVariable(new HopLongVariable(HopVariable.Finder.GenerationStamp, new Long(stamp)));
-  }
-
-  public static long getGenerationStamp() throws PersistanceException {
-    return (Long) getVariable(HopVariable.Finder.GenerationStamp).getValue();
   }
 
   public static void setReplicationIndex(List<Integer> indeces) throws PersistanceException {
@@ -175,7 +166,6 @@ public class Variables {
   }
   
   public static void registerDefaultValues() {
-    HopVariable.registerVariableDefaultValue(HopVariable.Finder.GenerationStamp, new HopLongVariable(GenerationStamp.FIRST_VALID_STAMP).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.BlockID, new HopLongVariable(0).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.INodeID, new HopIntVariable(2).getBytes()); // 1 is taken by the root and zero is parent of the root
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
