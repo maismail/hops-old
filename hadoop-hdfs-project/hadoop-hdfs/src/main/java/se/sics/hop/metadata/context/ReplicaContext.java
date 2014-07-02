@@ -94,14 +94,20 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 //        }
       
       log("prepare-replica", CacheHitState.NA, new String[]{"removed size",Integer.toString(removedReplicas.size()),"new Size", Integer.toString(newReplicas.size()), "modified size", Integer.toString(modifiedReplicas.size())});
-        dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
+      dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
     }
 
   @Override
   public void remove(HopIndexedReplica replica) throws PersistanceException {
+    if (!blocksReplicas.get(replica.getBlockId()).get(replica.getStorageId()).equals(replica)) {
+      throw new TransactionContextException("Unattached replica passed to be removed, inodeId="+replica.getInodeId()+" bid="+replica.getBlockId()+" sid="+replica.getStorageId()+" index="+replica.getIndex());
+    }
+
+    
     modifiedReplicas.remove(replica);
     blocksReplicas.get(replica.getBlockId()).remove(replica.getStorageId());
-    if (newReplicas.containsKey(replica)) {
+    if (newReplicas.containsKey(replica)) {    //sometimes you add a replica in a Tx and then in the same tx the replica is removed. 
+                                               //in this case simply remove the replica
       newReplicas.remove(replica);
     } else {
       removedReplicas.put(replica, replica);

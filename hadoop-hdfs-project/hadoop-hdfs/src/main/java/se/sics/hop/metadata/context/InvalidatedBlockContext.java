@@ -246,14 +246,9 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
 
   @Override
   public void remove(HopInvalidatedBlock invBlock) throws TransactionContextException {
-    if (!invBlocks.containsKey(invBlock) && !inodesRead.contains(invBlock.getInodeId())) {
+    if (!invBlocks.containsKey(invBlock)) {
        // This is not necessary for invalidated-block
        throw new TransactionContextException("Unattached invalidated-block passed to be removed");
-    }
-    
-    else if (!invBlocks.containsKey(invBlock) && inodesRead.contains(invBlock.getInodeId())) {
-      // nothing to delete
-      return;
     }
 
     invBlocks.remove(invBlock);
