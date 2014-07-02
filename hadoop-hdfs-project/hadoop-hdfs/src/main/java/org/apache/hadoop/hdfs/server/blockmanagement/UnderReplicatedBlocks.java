@@ -21,6 +21,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -563,11 +564,9 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   private List<List<Block>>  fillPriorityQueues(int level) throws IOException{
     List<List<Block>> priorityQueuestmp = createPrioriryQueue();
-    Collection<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
-    for(HopUnderReplicatedBlock urb : allUrb){
-      Block blk = getBlock(urb);
-      if(blk != null)
-        priorityQueuestmp.get(urb.getLevel()).add(blk);
+    List<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
+     if (!allUrb.isEmpty()) {
+      addBlocksInPriorityQueues(allUrb, priorityQueuestmp);
     }
     return priorityQueuestmp;
   }
@@ -584,7 +583,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
      return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
  
-  private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
+  private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
     return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -599,24 +598,49 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }.handle();
   }
   
-  private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
-    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
+  private void addBlocksInPriorityQueues(final List<HopUnderReplicatedBlock> allUrb, final List<List<Block>> priorityQueuestmp) throws IOException {
+    final long[] blockIds = new long[allUrb.size()];
+    final int[] inodeIds = new int[allUrb.size()];
+    for (int i = 0; i < allUrb.size(); i++) {
+      HopUnderReplicatedBlock b = allUrb.get(i);
+      blockIds[i] = b.getBlockId();
+      inodeIds[i] = b.getInodeId();
+    }
+
+    new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCKS) {
+
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addUnderReplicatedBlock().
-                addBlock(urb.getBlockId(),urb.getInodeId());
-        return tla.acquire();
+        tla.getLocks().addBlocks(blockIds, inodeIds);
+        return tla.acquireBatch();
       }
-      
+
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), urb.getInodeId());
-        if(block == null){
-         removeUnderReplicatedBlock(urb);
+        for (Iterator<HopUnderReplicatedBlock> it = allUrb.iterator(); it.hasNext();) {
+          HopUnderReplicatedBlock urb = it.next();
+          BlockInfo blk = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId());
+          if (blk != null) {
+            it.remove();
+            priorityQueuestmp.get(urb.getLevel()).add(blk);
+          }
         }
-        return block;
+        //HOP[M]: allUrb should contains the list of underreplicatedblocks that doesn't have any block attached to 
+        // so it's safe to delete these blocks without taking anylocks
+        removeUnderReplicatedBlocks(allUrb);
+        return null;
+      }
+    }.handle();
+  }
+  
+  private void removeUnderReplicatedBlocks(final List<HopUnderReplicatedBlock> allUrb) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.REMOVE_UNDER_REPLICATED_BLOCK) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        UnderReplicatedBlockDataAccess uda = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
+        uda.prepare(allUrb, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
+        return null;
       }
     }.handle();
   }
@@ -625,10 +649,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     EntityManager.add(urb);
   }
 
-  private void updateUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
-    EntityManager.update(urb);
-  }
-  
   private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.remove(urb);
   }
