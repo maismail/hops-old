@@ -138,7 +138,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           if(inode == null){
             //there's no inode for this specific name,parentid which means this file is deleted
             //so fallback to the scan to update the inodecontext cache
-            throw new StorageException("Inconsistent state: INode doesn't exists for " + inodeIdentifer);
+            throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifer);
           }
       }else if(inodeIdentifer.getInodeId() != null ){
           inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
@@ -304,9 +304,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   public TransactionLocks acquireBatch() throws PersistanceException {
-    int[] inodeIds = null;
+    int[] inodeIds = locks.getInodesParam();
     if (locks.getBlockLock() != null && locks.getBlocksParam() != null) {
-      inodeIds = INodeUtil.resolveINodesFromBlockIds(locks.getBlocksParam());
+      if (inodeIds == null) {
+        inodeIds = INodeUtil.resolveINodesFromBlockIds(locks.getBlocksParam());
+      }
       acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByIds, locks.getBlocksParam(), inodeIds);
     }
     if (locks.getInvLocks() != null && locks.getBlocksParam() != null && locks.getInvalidatedBlocksDatanode() != null && inodeIds != null) {
@@ -519,6 +521,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     
     if (locks.getUrbLock() != null) {
       acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
+    }else if(locks.getReplicationIndexLock() != null){
+       acquireLock(locks.getReplicationIndexLock(), HopVariable.Finder.ReplicationIndex);
     }
     
     if (locks.getSIdCounter() != null) {

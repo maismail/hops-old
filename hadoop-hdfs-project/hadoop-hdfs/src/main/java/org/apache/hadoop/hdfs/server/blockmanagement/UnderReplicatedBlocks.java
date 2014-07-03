@@ -21,14 +21,13 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.Set;
 import java.util.TreeSet;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
@@ -40,6 +39,7 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 
 /**
  * Keep prioritized queues of under replicated blocks.
@@ -95,12 +95,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   /** The queue for corrupt blocks: {@value} */
   static final int QUEUE_WITH_CORRUPT_BLOCKS = 4;
   
-  private final List<Set<Block>> priorityQueuestmp = new ArrayList<Set<Block>>();
   /** Create an object. */
   UnderReplicatedBlocks() {
-    for (int i = 0; i < LEVEL; i++) {
-      priorityQueuestmp.add(new TreeSet<Block>());
-    }
   }
 
   /**
@@ -340,7 +336,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    *         represents its replication priority.
    */
   private List<List<Block>> chooseUnderReplicatedBlocksInt(
-      int blocksToProcess) throws IOException {
+      int blocksToProcess, List<List<Block>> priorityQueuestmp) throws IOException {
     // initialize data structure for the return value
     List<List<Block>> blocksToReplicate = new ArrayList<List<Block>>(LEVEL);
     for (int i = 0; i < LEVEL; i++) {
@@ -356,7 +352,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     int blockCount = 0;
     for (int priority = 0; priority < LEVEL; priority++) { 
       // Go through all blocks that need replications with current priority.
-      BlockIterator neededReplicationsIterator = new BlockIterator(priority);
+      BlockIterator neededReplicationsIterator = new BlockIterator(priorityQueuestmp, priority);
       Integer replIndex = priorityToReplIdx.get(priority);
       
       // skip to the first unprocessed block, which is at replIndex
@@ -398,8 +394,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   /** returns an iterator of all blocks in a given priority queue */
   BlockIterator iterator(int level) {
      try {
-      fillPriorityQueues(level);
-      return new BlockIterator(level);
+      return new BlockIterator(fillPriorityQueues(level), level);
     } catch (IOException ex) {
       BlockManager.LOG.error("Error while filling the priorityQueues from db", ex);
       return null;
@@ -410,8 +405,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   @Override
   public BlockIterator iterator() {
     try {
-      fillPriorityQueues();
-      return new BlockIterator();
+      return new BlockIterator(fillPriorityQueues());
     } catch (IOException ex) {
       BlockManager.LOG.error("Error while filling the priorityQueues from db", ex);
       return null;
@@ -429,7 +423,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     /**
      * Construct an iterator over all queues.
      */
-    private BlockIterator(){
+    private BlockIterator(List<List<Block>> priorityQueuestmp){
       level=0;
       synchronized (iterators) {
         for (int i = 0; i < LEVEL; i++) {
@@ -442,7 +436,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
      * Constrict an iterator for a single queue level
      * @param l the priority level to iterate over
      */
-    private BlockIterator(int l){
+    private BlockIterator(List<List<Block>> priorityQueuestmp, int l){
       level = l;
       isIteratorForLevel = true;
       synchronized (iterators) {
@@ -530,18 +524,18 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
-    fillPriorityQueues();
+    final List<List<Block>> priorityQueuestmp = fillPriorityQueues();
     return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addUnderReplicatedBlockFindAll();
+        tla.getLocks().addReplicationIndex(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();  
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        return chooseUnderReplicatedBlocksInt(blocksToProcess);
+        return chooseUnderReplicatedBlocksInt(blocksToProcess, priorityQueuestmp);
       }
     }.handle();
   }
@@ -564,34 +558,32 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     return false;
   }
   
-  private void fillPriorityQueues() throws IOException{
-     fillPriorityQueues(-1);
+  private List<List<Block>>  fillPriorityQueues() throws IOException{
+     return fillPriorityQueues(-1);
   }
   
-  private void fillPriorityQueues(int level) throws IOException{
-      synchronized(priorityQueuestmp){
-    resetPrioriryQueue();
-    Collection<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
-    for(HopUnderReplicatedBlock urb : allUrb){
-      Block blk = getBlock(urb);
-      if(blk != null)
-        priorityQueuestmp.get(urb.getLevel()).add(blk);
+  private List<List<Block>>  fillPriorityQueues(int level) throws IOException{
+    List<List<Block>> priorityQueuestmp = createPrioriryQueue();
+    List<HopUnderReplicatedBlock> allUrb = getUnderReplicatedBlocks(level);
+     if (!allUrb.isEmpty()) {
+      addBlocksInPriorityQueues(allUrb, priorityQueuestmp);
     }
-      }
+    return priorityQueuestmp;
   }
   
-  private void resetPrioriryQueue(){
-    priorityQueuestmp.clear();
+  private List<List<Block>> createPrioriryQueue(){
+    List<List<Block>> priorityQueuestmp = new ArrayList<List<Block>>();
     for (int i = 0; i < LEVEL; i++) {
-      priorityQueuestmp.add(new TreeSet<Block>());
+      priorityQueuestmp.add(new ArrayList<Block>());
     }
+    return priorityQueuestmp;
   }
   
   private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException{
      return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
  
-  private Collection<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
+  private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
     return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
@@ -606,24 +598,49 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }.handle();
   }
   
-  private Block getBlock(final HopUnderReplicatedBlock urb) throws IOException{
-    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
+  private void addBlocksInPriorityQueues(final List<HopUnderReplicatedBlock> allUrb, final List<List<Block>> priorityQueuestmp) throws IOException {
+    final long[] blockIds = new long[allUrb.size()];
+    final int[] inodeIds = new int[allUrb.size()];
+    for (int i = 0; i < allUrb.size(); i++) {
+      HopUnderReplicatedBlock b = allUrb.get(i);
+      blockIds[i] = b.getBlockId();
+      inodeIds[i] = b.getInodeId();
+    }
+
+    new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCKS) {
+
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addUnderReplicatedBlock().
-                addBlock(urb.getBlockId(),urb.getInodeId());
-        return tla.acquire();
+        tla.getLocks().addBlocks(blockIds, inodeIds);
+        return tla.acquireBatch();
       }
-      
+
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId(), urb.getInodeId());
-        if(block == null){
-         removeUnderReplicatedBlock(urb);
+        for (Iterator<HopUnderReplicatedBlock> it = allUrb.iterator(); it.hasNext();) {
+          HopUnderReplicatedBlock urb = it.next();
+          BlockInfo blk = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId());
+          if (blk != null) {
+            it.remove();
+            priorityQueuestmp.get(urb.getLevel()).add(blk);
+          }
         }
-        return block;
+        //HOP[M]: allUrb should contains the list of underreplicatedblocks that doesn't have any block attached to 
+        // so it's safe to delete these blocks without taking anylocks
+        removeUnderReplicatedBlocks(allUrb);
+        return null;
+      }
+    }.handle();
+  }
+  
+  private void removeUnderReplicatedBlocks(final List<HopUnderReplicatedBlock> allUrb) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.REMOVE_UNDER_REPLICATED_BLOCK) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        UnderReplicatedBlockDataAccess uda = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
+        uda.prepare(allUrb, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
+        return null;
       }
     }.handle();
   }
@@ -632,10 +649,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     EntityManager.add(urb);
   }
 
-  private void updateUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
-    EntityManager.update(urb);
-  }
-  
   private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.remove(urb);
   }

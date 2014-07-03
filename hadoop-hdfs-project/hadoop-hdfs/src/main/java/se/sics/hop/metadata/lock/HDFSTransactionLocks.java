@@ -61,8 +61,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private int expectedMaxNumberofINodeIds = 0;
   //sidcounter
   private LockType sidCounterLock = null;
+  //replicationIndex 
+  private LockType replicationIndexLock = null;
   
   private long[] blocksParam = null;
+  private int[] inodesParam = null;
   private Integer invdatanode = null;
   private Integer repldatanode = null;
   
@@ -172,6 +175,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
+  public HDFSTransactionLocks addReplicationIndex(LockType lock) {
+    this.replicationIndexLock = lock;
+    return this;
+  }
+   
   public HDFSTransactionLocks addUnderReplicatedBlock() {
     this.urbLock = LockType.READ_COMMITTED;
     return this;
@@ -280,7 +288,11 @@ public class HDFSTransactionLocks implements TransactionLocks{
   public LockType getUrbLock() {
     return urbLock;
   }
-
+  
+  public LockType getReplicationIndexLock(){
+    return replicationIndexLock;
+  }
+  
   public boolean isUrbLockFindAll() {
     return urbLockFindAll;
   }
@@ -358,11 +370,20 @@ public class HDFSTransactionLocks implements TransactionLocks{
     this.blocksParam = blocks;
     return this;
   }
-
+  
+  public HDFSTransactionLocks addBlocks(long[] blocks, int[] inodes) {
+    this.inodesParam = inodes;
+    return addBlocks(blocks);
+  }
+   
   public long[] getBlocksParam() {
     return blocksParam;
   }
 
+  public int[] getInodesParam(){
+    return inodesParam;
+  }
+  
   public HDFSTransactionLocks addInvalidatedBlocks(int datanode) {
     this.invLocks = LockType.READ_COMMITTED;
     this.invdatanode = datanode;
