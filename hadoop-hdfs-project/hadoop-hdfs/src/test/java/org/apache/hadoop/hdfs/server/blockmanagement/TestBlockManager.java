@@ -383,8 +383,7 @@ public class TestBlockManager {
                 addUnderReplicatedBlock().
                 addPendingBlock().
                 addReplicaUc().
-                addInvalidatedBlock().
-                addGenerationStamp(LockType.READ);
+                addInvalidatedBlock();
         return tla.acquireByBlock(inodeIdentifier);
       }
 

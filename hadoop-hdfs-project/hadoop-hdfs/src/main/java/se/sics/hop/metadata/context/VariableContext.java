@@ -83,11 +83,6 @@ public class VariableContext extends EntityContext<HopVariable> {
   private void checkLockUpgrade(HDFSTransactionLocks lks, EnumMap<HopVariable.Finder, HopVariable> varmap) throws LockUpgradeException {
     for (HopVariable.Finder varType : varmap.keySet()) {
       switch (varType) {
-        case GenerationStamp:
-          if (lks.getGenerationStampLock() != TransactionLockTypes.LockType.WRITE) {
-            throw new LockUpgradeException("Trying to upgrade generation stamp lock");
-          }
-          break;
         case BlockID:
           if (lks.getBlockIdCounterLock() != TransactionLockTypes.LockType.WRITE) {
             throw new LockUpgradeException("Trying to upgrade block id counter lock");

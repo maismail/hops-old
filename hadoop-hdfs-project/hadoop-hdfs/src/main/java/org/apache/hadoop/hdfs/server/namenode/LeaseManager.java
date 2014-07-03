@@ -455,8 +455,7 @@ public class LeaseManager {
                 addCorrupt().
                 addExcess().
                 addReplicaUc().
-                addUnderReplicatedBlock().
-                addGenerationStamp(LockType.WRITE);
+                addUnderReplicatedBlock();
         return tla.acquireByLease(leasePaths);
         }
       

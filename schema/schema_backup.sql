@@ -73,7 +73,7 @@ CREATE TABLE `inodes` (
   `client_name` varchar(45) DEFAULT NULL,
   `client_machine` varchar(45) DEFAULT NULL,
   `client_node` varchar(45) DEFAULT NULL,
-  `is_closed_file` int(11) DEFAULT NULL,
+  `generation_stamp` int(11) DEFAULT NULL,
   `header` bigint(20) DEFAULT NULL,
   `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,

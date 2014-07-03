@@ -133,7 +133,6 @@ public class TestLock {
                 addExcess().
                 addCorrupt().
                 addUnderReplicatedBlock().
-                addGenerationStamp(LockType.READ).
                 addPendingBlock().
                 addReplicaUc().
                 addInvalidatedBlock();
