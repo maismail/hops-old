@@ -483,6 +483,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   public HDFSTransactionLocks acquireLeaderLock() throws PersistanceException {
     if (locks.getLeaderLock() != null) {
       setPartitioningKeyForLeader();
+      acquireLocksOnVariablesTable();
       acquireLockList(locks.getLeaderLock(), HopLeader.Finder.All);
     }
     return locks;
@@ -522,6 +523,10 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     
     if (locks.getSIdCounter() != null) {
       acquireLock(locks.getSIdCounter(), HopVariable.Finder.SIdCounter);
+    }
+    
+    if (locks.getMaxNNID() != null) {
+      acquireLock(locks.getMaxNNID(), HopVariable.Finder.MaxNNID);
     }
   }
   /**
