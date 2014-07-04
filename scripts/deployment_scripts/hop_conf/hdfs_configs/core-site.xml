@@ -15,5 +15,10 @@
   <description></description>
 </property>
 
+<property>
+  <name>dfs.namenodes.rpc.address</name>
+  <value>NN_MACHINE_NAME:Dfs_Namenode_Rpc_Address_Config_Param</value> <!-- comma separated -->
+  <description>list of NN used by the clients</description>
+</property>
 
 </configuration>

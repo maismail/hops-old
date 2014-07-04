@@ -13,7 +13,87 @@
   limitations under the License. See accompanying LICENSE file.
 -->
 <configuration>
+  <property>
+    <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce.shuffle</value>
+    <description>shuffle service that needs to be set for Map Reduce to run </description>
+  </property>
+  <property>
+    <name>yarn.scheduler.minimum-allocation-mb</name>
+    <value>512</value>
+    <description>Minimum limit of memory to allocate to each container request at the Resource Manager.</description>
+  </property>
+  <property>
+    <name>yarn.scheduler.maximum-allocation-mb</name>
+    <value>2048</value>
+    <description>Maximum limit of memory to allocate to each container request at the Resource Manager.</description>
+  </property>
+  <property>
+    <name>yarn.scheduler.minimum-allocation-vcores</name>
+    <value>1</value>
+    <description>The minimum allocation for every container request at the RM, in terms of virtual CPU cores. Requests lower than this won't take effect, and the specified value will get allocated the minimum.</description>
+  </property>
+  <property>
+    <name>yarn.scheduler.maximum-allocation-vcores</name>
+    <value>4</value>
+    <description>The maximum allocation for every container request at the RM, in terms of virtual CPU cores. Requests higher than this won't take effect, and will get capped to this value.</description>
+  </property>
+  <property>
+    <name>yarn.nodemanager.resource.memory-mb</name>
+    <value>8192</value>
+    <description>Physical memory, in MB, to be made available to running containers</description>
+  </property>
+  <property>
+    <name>yarn.nodemanager.resource.cpu-vcores</name>
+    <value>8</value>
+    <description>Number of CPU cores that can be allocated for containers.</description>
+  </property>
 
-<!-- Site specific YARN configuration properties -->
+  <property>
+    <name>yarn.resourcemanager.webapp.address</name>
+    <value>YARN_MASTER:PORT_1</value>
+  </property>
+
+  <property>
+    <name>yarn.resourcemanager.address</name>
+    <value>YARN_MASTER:PORT_2</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.scheduler.address</name>
+    <value>YARN_MASTER:PORT_3</value>
+  </property>
+
+  <property>
+    <name>yarn.resourcemanager.webapp.https.address</name>
+    <value>YARN_MASTER:PORT_4</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.resource-tracker.address</name>
+    <value>YARN_MASTER:PORT_5</value>
+  </property>
+  <property>
+    <name>yarn.resourcemanager.admin.address</name>
+    <value>YARN_MASTER:PORT_6</value>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.address</name>
+    <value>0.0.0.0:PORT_7</value>
+  </property>
+  <property>
+    <name>yarn.nodemanager.localizer.address</name>
+    <value>0.0.0.0:PORT_8</value>
+  </property>
+
+  <property>
+    <name>yarn.nodemanager.webapp.address</name>
+    <value>0.0.0.0:PORT_9</value>
+  </property>
+
+  <property>
+    <description>Whether to enable log aggregation</description>
+    <name>yarn.log-aggregation-enable</name>
+    <value>false</value>
+  </property>
 
 </configuration>
