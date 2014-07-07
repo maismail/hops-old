@@ -34,6 +34,7 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
+import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import se.sics.hop.Common;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
@@ -62,7 +63,8 @@ public class INodeFile extends INode implements BlockCollection {
   static final long HEADERMASK = 0xffffL << BLOCKBITS;
 
   private long header;
-
+  private int generationStamp = (int) GenerationStamp.FIRST_VALID_STAMP;
+  
   //private BlockInfo[] blocks;
 
   public INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
@@ -80,6 +82,7 @@ public class INodeFile extends INode implements BlockCollection {
 //HOP    setBlocks(other.getBlocks());
     setReplicationNoPersistance(other.getBlockReplication());
     setPreferredBlockSizeNoPersistance(other.getPreferredBlockSize());
+    setGenerationStampNoPersistence(other.getGenerationStamp());
   }
   
   /**
@@ -298,6 +301,20 @@ public class INodeFile extends INode implements BlockCollection {
   {
     BlockInfo maxBlk = (BlockInfo)EntityManager.find(BlockInfo.Finder.MAX_BLK_INDX, this.getId());
     return maxBlk;
+  }
+  
+  public int getGenerationStamp() {
+    return generationStamp;
+  }
+
+  public void setGenerationStampNoPersistence(int generationStamp) {
+    this.generationStamp = generationStamp;
+  }
+  
+  public int nextGenerationStamp() throws PersistanceException{
+    generationStamp++;
+    save();
+    return generationStamp;
   }
   //END_HOP_CODE
 }

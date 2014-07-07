@@ -73,7 +73,7 @@ CREATE TABLE `inodes` (
   `client_name` varchar(45) DEFAULT NULL,
   `client_machine` varchar(45) DEFAULT NULL,
   `client_node` varchar(45) DEFAULT NULL,
-  `is_closed_file` int(11) DEFAULT NULL,
+  `generation_stamp` int(11) DEFAULT NULL,
   `header` bigint(20) DEFAULT NULL,
   `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,
@@ -185,7 +185,9 @@ CREATE TABLE `under_replicated_blocks` (
   `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `level` int(11) DEFAULT NULL,
-  PRIMARY KEY (`inode_id`,`block_id`)
+  `timestamp` bigint(20) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_id`),
+  KEY `level` (`level`,`timestamp`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (inode_id) */$$
 

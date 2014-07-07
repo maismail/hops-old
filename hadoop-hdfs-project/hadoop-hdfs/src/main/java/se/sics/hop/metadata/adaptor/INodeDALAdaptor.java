@@ -113,6 +113,7 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                         hopINode.setClientMachine(((INodeFileUnderConstruction) inode).getClientMachine());
                         hopINode.setClientNode(((INodeFileUnderConstruction) inode).getClientNode() == null ? null : ((INodeFileUnderConstruction) inode).getClientNode().getXferAddr());
                     }
+                    hopINode.setGenerationStamp(((INodeFile)inode).getGenerationStamp());
                 }
                 if (inode instanceof INodeSymlink) {
                     hopINode.setIsDir(0);
@@ -164,15 +165,16 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
                                 hopINode.getClientMachine(),
                                 dnID);
 
-                        inode.setAccessTimeNoPersistance(hopINode.getAccessTime());
+                        inode.setAccessTimeNoPersistance(hopINode.getAccessTime());                        
                     } else {
                         inode = new INodeFile(ps,
                                 null,
                                 INodeFile.getBlockReplication(hopINode.getHeader()),
                                 hopINode.getModificationTime(),
                                 hopINode.getAccessTime(),
-                                INodeFile.getPreferredBlockSize(hopINode.getHeader()));
+                                INodeFile.getPreferredBlockSize(hopINode.getHeader()));                     
                     }
+                    ((INodeFile) inode).setGenerationStampNoPersistence(hopINode.getGenerationStamp());
                 }
                 inode.setIdNoPersistance(hopINode.getId());
                 inode.setLocalNameNoPersistance(hopINode.getName());

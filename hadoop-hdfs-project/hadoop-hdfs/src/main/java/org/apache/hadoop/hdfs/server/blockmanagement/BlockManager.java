@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.commons.logging.Log;
@@ -43,7 +42,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportIterator;
@@ -70,7 +68,6 @@ import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocat
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
-import org.apache.hadoop.hdfs.util.LightWeightLinkedSet;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.Time;
@@ -81,17 +78,14 @@ import com.google.common.collect.Sets;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.exception.TransactionLockAcquireFailure;
 import se.sics.hop.exception.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
@@ -126,8 +120,8 @@ public class BlockManager {
   //HOP: This data structre is not used in HOPS. It is possible that the secondary NN
   //falls behind the primarny NN and receive a block with generation stamp in future.
   //in that case the block in put in the pending dn message queue for delayed processing.
-  private final PendingDataNodeMessages pendingDNMessages =
-    new PendingDataNodeMessages();
+//  private final PendingDataNodeMessages pendingDNMessages =
+//    new PendingDataNodeMessages();
 
   private volatile long pendingReplicationBlocksCount = 0L;
   private volatile long corruptReplicaBlocksCount = 0L;
@@ -165,9 +159,9 @@ public class BlockManager {
     return postponedMisreplicatedBlocksCount.get();
   }
   /** Used by metrics */
-  public int getPendingDataNodeMessageCount() {
-    return pendingDNMessages.count();
-  }
+//  public int getPendingDataNodeMessageCount() {
+//    return pendingDNMessages.count();
+//  }
 
   /**replicationRecheckInterval is how often namenode checks for new replication work*/
   private final long replicationRecheckInterval;
@@ -245,7 +239,7 @@ public class BlockManager {
    * the active NameNode. Thus, it will postpone them for later processing,
    * instead of marking the blocks as corrupt.
    */
-  private boolean shouldPostponeBlocksFromFuture = false;
+//  private boolean shouldPostponeBlocksFromFuture = false;
 
   /** for block replicas placement */
   private BlockPlacementPolicy blockplacement;
@@ -1132,9 +1126,9 @@ public class BlockManager {
   }
 
 
-  public void setPostponeBlocksFromFuture(boolean postpone) {
-    this.shouldPostponeBlocksFromFuture  = postpone;
-  }
+//  public void setPostponeBlocksFromFuture(boolean postpone) {
+//    this.shouldPostponeBlocksFromFuture  = postpone;
+//  }
 
 
   private void postponeBlock(Block blk) {
@@ -1524,7 +1518,8 @@ public class BlockManager {
    * If there were any replication requests that timed out, reap them
    * and put them back into the neededReplication queue
    */
-  void processPendingReplications() throws IOException{
+  @VisibleForTesting
+   void processPendingReplications() throws IOException{
     long[] timedOutItems = pendingReplications.getTimedOutBlocks();
     if (timedOutItems != null) {
       namesystem.writeLock();
@@ -1790,8 +1785,7 @@ public class BlockManager {
                 addReplicaUc().
                 addUnderReplicatedBlock().
                 addInvalidatedBlock().
-                addPendingBlock().
-                addGenerationStamp(LockType.READ);
+                addPendingBlock();
         return tla.acquireByBlock(inodeIdentifier);
       }
 
@@ -1803,12 +1797,12 @@ public class BlockManager {
 
 
 
-        if (shouldPostponeBlocksFromFuture
-                && namesystem.isGenStampInFuture(iblk.getGenerationStamp())) {
-          queueReportedBlock(node, iblk, reportedState,
-                  QUEUE_REASON_FUTURE_GENSTAMP);
-          return null;
-        }
+//        if (shouldPostponeBlocksFromFuture
+//                && namesystem.isGenStampInFuture(iblk.getGenerationStamp())) {
+//          queueReportedBlock(node, iblk, reportedState,
+//                  QUEUE_REASON_FUTURE_GENSTAMP);
+//          return null;
+//        }
 
         BlockInfo storedBlock = blocksMap.getStoredBlock(iblk);
         // If block does not belong to any file, we are done.
@@ -1821,14 +1815,14 @@ public class BlockManager {
         BlockToMarkCorrupt c = checkReplicaCorrupt(
                 iblk, reportedState, storedBlock, ucState, node);
         if (c != null) {
-          if (shouldPostponeBlocksFromFuture) {
-            // In the Standby, we may receive a block report for a file that we
-            // just have an out-of-date gen-stamp or state for, for example.
-            queueReportedBlock(node, iblk, reportedState,
-                    QUEUE_REASON_CORRUPT_STATE);
-          } else {
+//          if (shouldPostponeBlocksFromFuture) {
+//            // In the Standby, we may receive a block report for a file that we
+//            // just have an out-of-date gen-stamp or state for, for example.
+//            queueReportedBlock(node, iblk, reportedState,
+//                    QUEUE_REASON_CORRUPT_STATE);
+//          } else {
             markBlockAsCorrupt(c, node);
-          }
+//          }
           return null;
         }
 
@@ -1952,12 +1946,12 @@ public class BlockManager {
           + " replicaState = " + reportedState);
     }
   
-    if (shouldPostponeBlocksFromFuture &&
-        namesystem.isGenStampInFuture(block.getGenerationStamp())) {
-      queueReportedBlock(dn, block, reportedState,
-          QUEUE_REASON_FUTURE_GENSTAMP);
-      return null;
-    }
+//    if (shouldPostponeBlocksFromFuture &&
+//        namesystem.isGenStampInFuture(block.getGenerationStamp())) {
+//      queueReportedBlock(dn, block, reportedState,
+//          QUEUE_REASON_FUTURE_GENSTAMP);
+//      return null;
+//    }
     
     // find block by blockId
     BlockInfo storedBlock = blocksMap.getStoredBlock(block);
@@ -1988,15 +1982,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     BlockToMarkCorrupt c = checkReplicaCorrupt(
         block, reportedState, storedBlock, ucState, dn);
     if (c != null) {
-      if (shouldPostponeBlocksFromFuture) {
-        // If the block is an out-of-date generation stamp or state,
-        // but we're the standby, we shouldn't treat it as corrupt,
-        // but instead just queue it for later processing.
-        queueReportedBlock(dn, storedBlock, reportedState,
-            QUEUE_REASON_CORRUPT_STATE);
-      } else {
+//      if (shouldPostponeBlocksFromFuture) {
+//        // If the block is an out-of-date generation stamp or state,
+//        // but we're the standby, we shouldn't treat it as corrupt,
+//        // but instead just queue it for later processing.
+//        queueReportedBlock(dn, storedBlock, reportedState,
+//            QUEUE_REASON_CORRUPT_STATE);
+//      } else {
         toCorrupt.add(c);
-      }
+//      }
       return storedBlock;
     }
 
@@ -2019,78 +2013,78 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * standby node. @see PendingDataNodeMessages.
    * @param reason a textual reason to report in the debug logs
    */
-  private void queueReportedBlock(DatanodeDescriptor dn, Block block,
-      ReplicaState reportedState, String reason) {
-    assert shouldPostponeBlocksFromFuture;
-    
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("Queueing reported block " + block +
-          " in state " + reportedState + 
-          " from datanode " + dn + " for later processing " +
-          "because " + reason + ".");
-    }
-    pendingDNMessages.enqueueReportedBlock(dn, block, reportedState);
-  }
+//  private void queueReportedBlock(DatanodeDescriptor dn, Block block,
+//      ReplicaState reportedState, String reason) {
+//    assert shouldPostponeBlocksFromFuture;
+//    
+//    if (LOG.isDebugEnabled()) {
+//      LOG.debug("Queueing reported block " + block +
+//          " in state " + reportedState + 
+//          " from datanode " + dn + " for later processing " +
+//          "because " + reason + ".");
+//    }
+//    pendingDNMessages.enqueueReportedBlock(dn, block, reportedState);
+//  }
 
   /**
    * Try to process any messages that were previously queued for the given
    * block. This is called from FSEditLogLoader whenever a block's state
    * in the namespace has changed or a new block has been created.
    */
-  public void processQueuedMessagesForBlock(Block b) throws IOException {
-    Queue<ReportedBlockInfo> queue = pendingDNMessages.takeBlockQueue(b);
-    if (queue == null) {
-      // Nothing to re-process
-      return;
-    }
-    processQueuedMessages(queue);
-  }
+//  public void processQueuedMessagesForBlock(Block b) throws IOException {
+//    Queue<ReportedBlockInfo> queue = pendingDNMessages.takeBlockQueue(b);
+//    if (queue == null) {
+//      // Nothing to re-process
+//      return;
+//    }
+//    processQueuedMessages(queue);
+//  }
   
-  private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
-      throws IOException {
-    HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_QUEUED_REPORT) {
-     INodeIdentifier inodeIdentifier;
-      @Override
-      public void setUp() throws StorageException {
-        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        Block b = rbi.getBlock();
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
-      }
-
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(rbi.getBlock().getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addInvalidatedBlock().
-                addReplica().
-                addExcess().
-                addGenerationStamp(LockType.READ);
-        return tla.acquireByBlock(inodeIdentifier);
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
-        processAndHandleReportedBlock(
-                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
-
-        return null;
-      }
-    };
-    
-      
-    for (ReportedBlockInfo rbi : rbis) {
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Processing previouly queued message " + rbi);
-      }
-      processReportHandler.setParams(rbi);
-      processReportHandler.handle(namesystem);
-    }
-  }
+//  private void processQueuedMessages(Iterable<ReportedBlockInfo> rbis)
+//      throws IOException {
+//    HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_QUEUED_REPORT) {
+//     INodeIdentifier inodeIdentifier;
+//      @Override
+//      public void setUp() throws StorageException {
+//        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+//        Block b = rbi.getBlock();
+//        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
+//      }
+//
+//      @Override
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+//        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+//        tla.getLocks().
+//                addINode(TransactionLockTypes.INodeLockType.WRITE).
+//                addBlock(rbi.getBlock().getBlockId(), 
+//                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
+//                addInvalidatedBlock().
+//                addReplica().
+//                addExcess().
+//                addGenerationStamp(LockType.READ);
+//        return tla.acquireByBlock(inodeIdentifier);
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        ReportedBlockInfo rbi = (ReportedBlockInfo) getParams()[0];
+//        processAndHandleReportedBlock(
+//                rbi.getNode(), rbi.getBlock(), rbi.getReportedState(), null);
+//
+//        return null;
+//      }
+//    };
+//    
+//      
+//    for (ReportedBlockInfo rbi : rbis) {
+//      if (LOG.isDebugEnabled()) {
+//        LOG.debug("Processing previouly queued message " + rbi);
+//      }
+//      processReportHandler.setParams(rbi);
+//      processReportHandler.handle(namesystem);
+//    }
+//  }
   
   /**
    * Process any remaining queued datanode messages after entering
@@ -2098,18 +2092,18 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * we are the definitive master node and thus should be up-to-date
    * with the namespace information.
    */
-  public void processAllPendingDNMessages() throws IOException {
-    assert !shouldPostponeBlocksFromFuture :
-      "processAllPendingDNMessages() should be called after disabling " +
-      "block postponement.";
-    int count = pendingDNMessages.count();
-    if (count > 0) {
-      LOG.info("Processing " + count + " messages from DataNodes " +
-          "that were previously queued during standby state");
-    }
-    processQueuedMessages(pendingDNMessages.takeAll());
-    assert pendingDNMessages.count() == 0;
-  }
+//  public void processAllPendingDNMessages() throws IOException {
+//    assert !shouldPostponeBlocksFromFuture :
+//      "processAllPendingDNMessages() should be called after disabling " +
+//      "block postponement.";
+//    int count = pendingDNMessages.count();
+//    if (count > 0) {
+//      LOG.info("Processing " + count + " messages from DataNodes " +
+//          "that were previously queued during standby state");
+//    }
+//    processQueuedMessages(pendingDNMessages.takeAll());
+//    assert pendingDNMessages.count() == 0;
+//  }
 
   /**
    * The next two methods test the various cases under which we must conclude
@@ -2900,8 +2894,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addReplica().
                 addExcess().
                 addCorrupt().
-                addUnderReplicatedBlock().
-                addGenerationStamp(LockType.READ);
+                addUnderReplicatedBlock();
         if (!rdbi.isDeletedBlock()) {
           tla.getLocks().
                   addPendingBlock().
@@ -3627,6 +3620,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     return retVal;
   }
   
+  //TODO? this is only called in a test, should we remove it? 
   int computeReplicationWorkForBlocks(List<List<Block>> blocksToReplicate) throws IOException{
     int scheduledWork = 0;
     for (int priority = 0; priority < blocksToReplicate.size(); priority++) {

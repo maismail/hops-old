@@ -58,6 +58,7 @@ import org.apache.log4j.AppenderSkeleton;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.spi.LoggingEvent;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -125,6 +126,12 @@ public class TestReplicationPolicy {
     }    
   }
   
+  @After
+    public void tearDown() {
+        if(namenode!=null){
+            namenode.stop();
+        }
+    }
   /**
    * In this testcase, client is dataNodes[0]. So the 1st replica should be
    * placed on dataNodes[0], the 2nd replica should be placed on 
