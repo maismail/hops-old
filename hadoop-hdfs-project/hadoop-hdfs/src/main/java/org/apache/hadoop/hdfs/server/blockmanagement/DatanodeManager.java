@@ -77,8 +77,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageIdMap;
@@ -374,7 +372,9 @@ public class DatanodeManager {
   private void removeDatanode(DatanodeDescriptor nodeInfo) throws IOException {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
-    blockManager.removeBlocksAssociatedTo(nodeInfo);
+    if(namesystem.isLeader()){
+      blockManager.removeBlocksAssociatedTo(nodeInfo);
+    }
     networktopology.remove(nodeInfo);
 
     if (LOG.isDebugEnabled()) {
@@ -387,7 +387,7 @@ public class DatanodeManager {
    * Remove a datanode
    * @throws UnregisteredNodeException 
    */
-  public void removeDatanode(final DatanodeID node
+  public void removeDatanode(final DatanodeID node  //Called my NameNodeRpcServer
       ) throws UnregisteredNodeException, IOException {
     namesystem.writeLock();
     try {
@@ -415,7 +415,7 @@ public class DatanodeManager {
         if (d != null && isDatanodeDead(d)) {
           NameNode.stateChangeLog.info(
               "BLOCK* removeDeadDatanode: lost heartbeat from " + d);
-          removeDatanode(d);
+            removeDatanode(d);
         }
       }
   }
@@ -671,9 +671,9 @@ public class DatanodeManager {
       NameNode.LOG.info("BLOCK* registerDatanode: " + nodeN);
       // nodeN previously served a different data storage, 
       // which is not served by anybody anymore.
-      removeDatanode(nodeN);
+        removeDatanode(nodeN);
       // physically remove node from datanodeMap
-      wipeDatanode(nodeN);
+      wipeDatanode(nodeN);      
       nodeN = null;
     }
 

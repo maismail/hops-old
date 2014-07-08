@@ -509,7 +509,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     if (locks.getBlockIdCounterLock() != null && HopBlockIDGen.needMoreIds()) {
       acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
-    }
+    }  
     
     if(locks.getInodeIDCounterLock() != null && HopINodeIdGen.needMoreIds(locks.getExpectedMaxNumberOfINodeIds())){
       acquireLock(locks.getInodeIDCounterLock(), HopVariable.Finder.INodeID);

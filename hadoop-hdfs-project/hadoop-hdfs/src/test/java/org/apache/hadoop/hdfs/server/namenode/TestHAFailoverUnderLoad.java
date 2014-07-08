@@ -204,7 +204,7 @@ public class TestHAFailoverUnderLoad extends junit.framework.TestCase {
   @Test
   public void testFailoverWhenLeaderNNCrashes() {
     // Testing with replication factor of 3
-    short repFactor = 1;
+    short repFactor = 6;
     LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
     failoverWhenLeaderNNCrashes(repFactor);
     // Testing with replication factor of 6
@@ -448,7 +448,7 @@ public class TestHAFailoverUnderLoad extends junit.framework.TestCase {
         // increasing timeout to take into consideration 'ping' time with failed namenodes
         // if the client fetches for block locations from a dead NN, it would need to retry many times and eventually this time would cause a timeout
         // to avoid this, we set a larger timeout
-        long expectedRetyTime = 20000; // 20seconds
+        long expectedRetyTime = 100000; // 20seconds
         timeout = timeout + expectedRetyTime;
         DFSTestUtil.waitReplicationWithTimeout(fs, files[i].getPath(), replicationFactor, timeout);
         i++;

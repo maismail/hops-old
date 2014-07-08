@@ -36,8 +36,8 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
 
   @Override
   public void add(PendingBlockInfo pendingBlock) throws PersistanceException {
-    if (removedPendings.containsKey(pendingBlock.getBlockId())) {
-      throw new TransactionContextException("Removed pending-block passed to be persisted");
+    if (removedPendings.containsKey(pendingBlock.getBlockId()) || modifiedPendings.containsKey(pendingBlock.getBlockId())) {
+      throw new TransactionContextException("Removed/Modified pending-block passed to be persisted");
     }
 
     pendings.put(pendingBlock.getBlockId(), pendingBlock);
@@ -191,7 +191,13 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     }
 
     pendings.put(pendingBlock.getBlockId(), pendingBlock);
-    modifiedPendings.put(pendingBlock.getBlockId(), pendingBlock);
+    if(newPendings.containsKey(pendingBlock.getBlockId())){
+      newPendings.put(pendingBlock.getBlockId(), pendingBlock);
+    }
+    else{
+      modifiedPendings.put(pendingBlock.getBlockId(), pendingBlock);
+    }
+    
     log("updated-pending", CacheHitState.NA,
             new String[]{"bid", Long.toString(pendingBlock.getBlockId()),
               "numInProgress", Integer.toString(pendingBlock.getNumReplicas())});

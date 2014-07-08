@@ -11,5 +11,5 @@ build
 hadoop-hdfs-project/hadoop-hdfs/downloads
 hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
 *.junit
-/hadoop-hdfs-project/hadoop-hdfs/src/main/java/org/apache/hadoop/hdfs/DFSConfigKeys.java-mine
-/hadoop-hdfs-project/hadoop-hdfs/src/test/resources/hdfs-site.xml-mine
+/results/
+

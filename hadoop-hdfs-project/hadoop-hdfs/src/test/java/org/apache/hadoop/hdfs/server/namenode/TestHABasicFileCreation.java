@@ -300,7 +300,10 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                         datawrote++;
                         sleep(10);
                     }
-                } catch (Exception e) {
+                } catch(InterruptedException e ){
+                  
+                }
+                catch (Exception e) {
                     fail(getName() + " dies: e=" + e);
                     LOG.info(getName() + " dies: e=" + e, e);
                 } finally {

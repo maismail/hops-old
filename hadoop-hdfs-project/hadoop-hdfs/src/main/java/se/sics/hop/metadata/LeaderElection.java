@@ -198,8 +198,8 @@ public class LeaderElection extends Thread {
                             newLeader = newLeaders.get(j);
                         } else {
                             LOG.error(hostname + ") No alive nodes in the table");
-                            throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") {
-                            };
+                            //throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") { };
+                            return LeaderElection.LEADER_INITIALIZATION_ID;
                         }
                     }
                 }
