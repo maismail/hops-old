@@ -77,13 +77,12 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
         cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
         cluster.waitActive();
         
-        LOG.debug("NN1 address is "+cluster.getNameNode(NN1).getNameNodeAddress()+" NN2 address is "+cluster.getNameNode(NN2).getNameNodeAddress());
+        LOG.debug("NN1 address is "+cluster.getNameNode(NN1).getNameNodeAddress() + " ld: " + cluster.getNameNode(NN1).isLeader() +" NN2 address is " + cluster.getNameNode(NN2).getNameNodeAddress()+ " ld: " + cluster.getNameNode(NN2).isLeader());
 
         fs = cluster.getNewFileSystemInstance(NN1);
 
-        timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)
-                + conf.getLong(DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_KEY, DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT) * 1000L;
-
+        timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)*
+                (conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT)+2);
 
         // create the directory namespace
         assertTrue(fs.mkdirs(baseDir));
@@ -301,7 +300,10 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                         datawrote++;
                         sleep(10);
                     }
-                } catch (Exception e) {
+                } catch(InterruptedException e ){
+                  
+                }
+                catch (Exception e) {
                     fail(getName() + " dies: e=" + e);
                     LOG.info(getName() + " dies: e=" + e, e);
                 } finally {

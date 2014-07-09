@@ -46,6 +46,7 @@ import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
 import java.util.logging.Logger;
+import org.apache.commons.logging.Log;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
@@ -196,7 +197,7 @@ public class TestFileCreation {
   /** Same test but the client should bind to a local interface */
   //@Test      // also fails in the master branch
   public void testFileCreationSetLocalInterface() throws IOException {    //HOP also fails in the master branch
-    assumeTrue(System.getProperty("os.name").startsWith("Linux"));
+      assumeTrue(System.getProperty("os.name").startsWith("Linux"));
 
     // The mini cluster listens on the loopback so we can use it here
     checkFileCreation("lo", false);
@@ -950,7 +951,7 @@ public class TestFileCreation {
    */
   @Test
   public void testLeaseExpireHardLimit() throws Exception {
-    System.out.println("testLeaseExpireHardLimit start");
+      System.out.println("testLeaseExpireHardLimit start");
     final long leasePeriod = 1000;
     final int DATANODE_NUM = 3;
 
@@ -1014,7 +1015,7 @@ public class TestFileCreation {
   // test closing file system before all file handles are closed.
   @Test
   public void testFsClose() throws Exception {
-    System.out.println("test file system close start");
+      System.out.println("test file system close start");
     final int DATANODE_NUM = 3;
 
     Configuration conf = new HdfsConfiguration();
@@ -1043,7 +1044,7 @@ public class TestFileCreation {
   // test closing file after cluster is shutdown
   @Test
   public void testFsCloseAfterClusterShutdown() throws IOException {
-    System.out.println("test testFsCloseAfterClusterShutdown start");
+      System.out.println("test testFsCloseAfterClusterShutdown start");
     final int DATANODE_NUM = 3;
 
     Configuration conf = new HdfsConfiguration();
@@ -1232,7 +1233,7 @@ public class TestFileCreation {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      //cluster.shutdown();
+      cluster.shutdown();
     }
   }
 

@@ -37,9 +37,13 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
 
   @Override
   public void add(HopUnderReplicatedBlock entity) throws PersistanceException {
-    if (removedurBlocks.get(entity.getBlockId()) != null) {
-//      throw new TransactionContextException("Removed under replica passed to be persisted");
+    if (removedurBlocks.get(entity.getBlockId()) != null ) {
         removedurBlocks.remove(entity.getBlockId());  
+    }
+    
+    if (modifiedurBlocks.get(entity.getBlockId()) != null) {
+      throw new TransactionContextException("Under replicated block can be added only once. fix context");
+      
     }
 
     addNewReplica(entity);
@@ -228,7 +232,13 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
     }
 
     urBlocks.put(entity.getBlockId(), entity);
-    modifiedurBlocks.put(entity.getBlockId(), entity);
+    if(newurBlocks.containsKey(entity.getBlockId())){
+      newurBlocks.put(entity.getBlockId(), entity);
+    }
+    else{
+      modifiedurBlocks.put(entity.getBlockId(), entity);
+    }
+    
     log("updated-urblock", CacheHitState.NA,
             new String[]{"bid", Long.toString(entity.getBlockId()),
               "level", Integer.toString(entity.getLevel())});

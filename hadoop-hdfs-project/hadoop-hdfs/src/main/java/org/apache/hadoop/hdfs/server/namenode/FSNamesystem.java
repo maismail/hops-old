@@ -231,6 +231,7 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.transaction.EntityManager;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -375,7 +376,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * The global generation stamp for this file system. 
    */
-  private final GenerationStamp generationStamp = new GenerationStamp();
+//  private final GenerationStamp generationStamp = new GenerationStamp();
 
   // precision of access times.
   private final long accessTimePrecision;
@@ -421,7 +422,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void clear() throws IOException {
     dir.reset();
     dtSecretManager.reset();
-    generationStamp.setStampTx(GenerationStamp.FIRST_VALID_STAMP);
+//    generationStamp.setStampTx(GenerationStamp.FIRST_VALID_STAMP);
     leaseManager.removeAllLeases();
   }
 
@@ -781,10 +782,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             "taking over writer role in edits logs");
 //        editLogTailer.catchupDuringFailover();
         
-        blockManager.setPostponeBlocksFromFuture(false);
+//        blockManager.setPostponeBlocksFromFuture(false);
         blockManager.getDatanodeManager().markAllDatanodesStale();
         blockManager.clearQueues();
-        blockManager.processAllPendingDNMessages();
+//        blockManager.processAllPendingDNMessages();
         
         if (!isInSafeMode() ||
             (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
@@ -876,7 +877,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //      dir.fsImage.editLog.initSharedJournalsForRead();
 //    }
     
-    blockManager.setPostponeBlocksFromFuture(true);
+//    blockManager.setPostponeBlocksFromFuture(true);
 
 //HOP    editLogTailer = new EditLogTailer(this, conf);
 //    editLogTailer.start();
@@ -2004,7 +2005,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addCorrupt().
                     addExcess().
                     addReplicaUc().
-                    addGenerationStamp(LockType.WRITE).
                     addUnderReplicatedBlock().
                     addPendingBlock().
                     addInvalidatedBlock();
@@ -2157,7 +2157,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
        checkFsObjectLimit();
 
         // increment global generation stamp
-        long genstamp = nextGenerationStamp();
+       //HOP[M] generationstamp is not used for inodes 
+        long genstamp = 0;//nextGenerationStamp();
         INodeFileUnderConstruction newNode = dir.addFile(src, permissions,
             replication, blockSize, holder, clientMachine, clientNode, genstamp);
         if (newNode == null) {
@@ -2239,8 +2240,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addCorrupt().
                     addExcess().
                     addReplicaUc().
-                    addUnderReplicatedBlock().
-                    addGenerationStamp(LockType.WRITE);
+                    addUnderReplicatedBlock();
             return tla.acquire();
           }
 
@@ -2384,8 +2384,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addReplicaUc().
                     addUnderReplicatedBlock().
                     addInvalidatedBlock().
-                    addPendingBlock().
-                    addGenerationStamp(LockType.WRITE);
+                    addPendingBlock();
             return tla.acquire();
           }
 
@@ -2484,7 +2483,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                       addCorrupt().
                       addExcess().
                       addReplicaUc().
-                      addGenerationStamp(LockType.WRITE).
                       addBlockIdCounter(LockType.WRITE);
               return tla.acquire();
             }
@@ -2551,7 +2549,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                             ExtendedBlock.getLocalBlock(previous));
 
                     // allocate new block, record block locations in INode.
-                    newBlock = createNewBlock();
+                    newBlock = createNewBlock(pendingFile);
                     saveAllocatedBlock(src, inodes, newBlock, targets);
 
                     dir.persistBlocks(src, pendingFile);
@@ -2943,12 +2941,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Create new block with a unique block id and a new generation stamp.
    */
-  Block createNewBlock() throws IOException, PersistanceException {
+  Block createNewBlock(INodeFile pendingFile) throws IOException, PersistanceException {
     assert hasWriteLock();
     Block b = new Block(HopBlockIDGen.getUniqueBlockId(), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
-    nextGenerationStamp();
-    b.setGenerationStampNoPersistance(getGenerationStamp());
+    b.setGenerationStampNoPersistance(pendingFile.nextGenerationStamp());
     return b;
   }
 
@@ -3735,7 +3732,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         uc.setExpectedLocations(blockManager.getNodes(lastBlock));
       }
       // start recovery of the last block for this file
-      long blockRecoveryId = nextGenerationStamp();
+      long blockRecoveryId = pendingFile.nextGenerationStamp();
       lease = reassignLease(lease, src, recoveryLeaseHolder, pendingFile);
       uc.initializeBlockRecovery(blockRecoveryId, getBlockManager().getDatanodeManager());
       leaseManager.renewLease(lease);
@@ -5390,10 +5387,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   // HA-only metric
-  @Metric
-  public int getPendingDataNodeMessageCount() {
-    return blockManager.getPendingDataNodeMessageCount();
-  }
+//  @Metric
+//  public int getPendingDataNodeMessageCount() {
+//    return blockManager.getPendingDataNodeMessageCount();
+//  }
   
   // HA-only metric
   @Metric
@@ -5466,34 +5463,34 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return getBlockManager().getDatanodeManager().getNumStaleNodes();
   }
 
-  /**
-   * Sets the generation stamp for this filesystem
-   */
-  void setGenerationStamp(long stamp) throws PersistanceException {
-    generationStamp.setStamp(stamp);
-  }
-
-  /**
-   * Gets the generation stamp for this filesystem
-   */
-  long getGenerationStamp() throws PersistanceException {
-    return generationStamp.getStamp();
-  }
-
-  /**
-   * Increments, logs and then returns the stamp
-   */
-  private long nextGenerationStamp() throws SafeModeException, IOException, PersistanceException {
-    assert hasWriteLock();
-    if (isInSafeMode()) {
-      throw new SafeModeException(
-          "Cannot get next generation stamp", safeMode);
-    }
-    long gs = generationStamp.nextStamp();
-//HOP    getEditLog().logGenerationStamp(gs);
-    // NB: callers sync the log
-    return gs;
-  }
+//  /**
+//   * Sets the generation stamp for this filesystem
+//   */
+//  void setGenerationStamp(long stamp) throws PersistanceException {
+//    generationStamp.setStamp(stamp);
+//  }
+//
+//  /**
+//   * Gets the generation stamp for this filesystem
+//   */
+//  long getGenerationStamp() throws PersistanceException {
+//    return generationStamp.getStamp();
+//  }
+//
+//  /**
+//   * Increments, logs and then returns the stamp
+//   */
+//  private long nextGenerationStamp() throws SafeModeException, IOException, PersistanceException {
+//    assert hasWriteLock();
+//    if (isInSafeMode()) {
+//      throw new SafeModeException(
+//          "Cannot get next generation stamp", safeMode);
+//    }
+//    long gs = generationStamp.nextStamp();
+////HOP    getEditLog().logGenerationStamp(gs);
+//    // NB: callers sync the log
+//    return gs;
+//  }
 
   private INodeFileUnderConstruction checkUCBlock(ExtendedBlock block,
       String clientName) throws IOException, PersistanceException {
@@ -5570,10 +5567,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeLockType.READ).
+                addINode(INodeLockType.WRITE).
                 addBlock(block.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addGenerationStamp(LockType.WRITE);
+                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
         return tla.acquireByBlock(inodeIdentifier);
       }
 
@@ -5586,9 +5582,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           // check vadility of parameters
           checkUCBlock(block, clientName);
-
+          
+          INodeFile pendingFile = (INodeFile) EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+          
           // get a new generation stamp and an access token
-          block.setGenerationStamp(nextGenerationStamp());
+          block.setGenerationStamp(pendingFile.nextGenerationStamp());
           locatedBlock = new LocatedBlock(block, new DatanodeInfo[0]);
           blockManager.setBlockToken(locatedBlock, AccessMode.WRITE);
         } finally {
@@ -6411,7 +6409,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
   @Override
   public boolean isGenStampInFuture(long genStamp) throws PersistanceException {
-    return (genStamp > getGenerationStamp());
+    //return (genStamp > getGenerationStamp());
+    throw new UnsupportedOperationException("Not supported yet.");
   }
 //HOP  @VisibleForTesting
 //  public EditLogTailer getEditLogTailer() {

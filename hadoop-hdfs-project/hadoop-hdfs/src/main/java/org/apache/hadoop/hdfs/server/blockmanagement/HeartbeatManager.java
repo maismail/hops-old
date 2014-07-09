@@ -257,7 +257,7 @@ class HeartbeatManager implements DatanodeStatistics {
             return;
           }
           synchronized(this) {
-            dm.removeDeadDatanode(dead);
+              dm.removeDeadDatanode(dead);
           }
         } finally {
           namesystem.writeUnlock();
@@ -281,7 +281,7 @@ class HeartbeatManager implements DatanodeStatistics {
             heartbeatCheck();
             lastHeartbeatCheck = now;
           }
-          if (blockManager.shouldUpdateBlockKey(now - lastBlockKeyUpdate)) {
+          if (blockManager.shouldUpdateBlockKey(now - lastBlockKeyUpdate)) { //updeated when leader. blocktokensecretmanager does leader check
             synchronized(HeartbeatManager.this) {
               for(DatanodeDescriptor d : datanodes) {
                 d.needKeyUpdate = true;

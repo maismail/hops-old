@@ -302,6 +302,7 @@
   </reporting>
   
   <profiles>
+	
     <profile>
       <id>test</id>
       <activation>

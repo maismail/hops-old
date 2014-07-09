@@ -110,7 +110,10 @@ class InvalidateBlocks {
 
   /** Remove the block from the specified storage. */
   void remove(final String storageID, final BlockInfo block) throws PersistanceException {
-    removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId()));
+    HopInvalidatedBlock invBlok = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId());
+    if(invBlok!=null){
+      removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId()));
+    }
   }
 
   /** Print the contents to out. */

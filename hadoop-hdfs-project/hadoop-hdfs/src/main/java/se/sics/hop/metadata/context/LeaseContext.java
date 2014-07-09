@@ -41,8 +41,8 @@ public class LeaseContext extends EntityContext<Lease> {
 
   @Override
   public void add(Lease lease) throws PersistanceException {
-    if (removedLeases.containsKey(lease)) {
-      throw new TransactionContextException("Removed lease passed to be persisted");
+    if (removedLeases.containsKey(lease) || modifiedLeases.containsKey(lease)) {
+      throw new TransactionContextException("Removed/modified lease passed to be persisted");
     }
 
     if (leases.containsKey(lease.getHolder()) && leases.get(lease.getHolder()) == null) {
@@ -217,8 +217,11 @@ public class LeaseContext extends EntityContext<Lease> {
     if (removedLeases.containsKey(lease)) {
       throw new TransactionContextException("Removed lease passed to be persisted");
     }
-
-    modifiedLeases.put(lease, lease);
+    if(newLeases.containsKey(lease)){
+      newLeases.put(lease, lease);
+    }else{
+      modifiedLeases.put(lease, lease);
+    }
     leases.put(lease.getHolder(), lease);
     idToLease.put(lease.getHolderID(), lease);
     log("updated-lease", CacheHitState.NA, new String[]{"holder", lease.getHolder()});

@@ -42,7 +42,7 @@ public class INodeContext extends EntityContext<INode> {
 
   @Override
   public void add(INode inode) throws PersistanceException {
-    if (removedInodes.containsKey(inode.getId())) {
+    if (removedInodes.containsKey(inode.getId()) || modifiedInodes.containsKey(inode.getId())) {
       log("added-removed-inode", CacheHitState.NA,
               new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(),
         "pid", Integer.toString(inode.getParentId())});

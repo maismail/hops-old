@@ -48,7 +48,7 @@ public class HopINodeIdGen {
     return currentId == endId;
   }
 
-  private static void getMoreIds() throws PersistanceException {
+  private synchronized static void getMoreIds() throws PersistanceException {
     int startId = Variables.getInodeId();
     endId = startId + BATCH_SIZE;
     Variables.setInodeId(endId);

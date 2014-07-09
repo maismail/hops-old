@@ -155,9 +155,17 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
 
   @Override
   public void remove(HopCorruptReplica entity) throws PersistanceException {
-//    corruptReplicas.remove(entity);
-    newCorruptReplicas.remove(entity);
-    removedCorruptReplicas.put(entity, entity);
+    if (!blockCorruptReplicas.get(entity.getBlockId()).contains(entity)) {
+       // This is not necessary for invalidated-block
+       throw new TransactionContextException("Unattached corrupt-block passed to be removed");
+    }
+    
+    if(newCorruptReplicas.containsKey(entity)){
+      newCorruptReplicas.remove(entity);
+    }else{
+      removedCorruptReplicas.put(entity, entity);
+    }
+
     if (blockCorruptReplicas.containsKey(entity.getBlockId())) {
       blockCorruptReplicas.get(entity.getBlockId()).remove(entity);
     }

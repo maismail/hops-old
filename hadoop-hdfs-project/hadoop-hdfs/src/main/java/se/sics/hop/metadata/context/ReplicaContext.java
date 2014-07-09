@@ -46,8 +46,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 
   @Override
   public void add(HopIndexedReplica replica) throws PersistanceException {
-    if (removedReplicas.containsKey(replica)) {
-      throw new TransactionContextException("Removed replica passed to be persisted");
+    if (removedReplicas.containsKey(replica) || modifiedReplicas.containsKey(replica)) {
+      throw new TransactionContextException("Removed/Modified replica passed to be persisted");
     }
 
     newReplicas.put(replica, replica);
@@ -94,14 +94,20 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 //        }
       
       log("prepare-replica", CacheHitState.NA, new String[]{"removed size",Integer.toString(removedReplicas.size()),"new Size", Integer.toString(newReplicas.size()), "modified size", Integer.toString(modifiedReplicas.size())});
-        dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
+      dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
     }
 
   @Override
   public void remove(HopIndexedReplica replica) throws PersistanceException {
+    if (!blocksReplicas.get(replica.getBlockId()).get(replica.getStorageId()).equals(replica)) {
+      throw new TransactionContextException("Unattached replica passed to be removed, inodeId="+replica.getInodeId()+" bid="+replica.getBlockId()+" sid="+replica.getStorageId()+" index="+replica.getIndex());
+    }
+
+    
     modifiedReplicas.remove(replica);
     blocksReplicas.get(replica.getBlockId()).remove(replica.getStorageId());
-    if (newReplicas.containsKey(replica)) {
+    if (newReplicas.containsKey(replica)) {    //sometimes you add a replica in a Tx and then in the same tx the replica is removed. 
+                                               //in this case simply remove the replica
       newReplicas.remove(replica);
     } else {
       removedReplicas.put(replica, replica);
@@ -244,7 +250,13 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
       throw new TransactionContextException("Removed replica passed to be persisted");
     }
 
-    modifiedReplicas.put(replica, replica);
+    if(newReplicas.containsKey(replica)){
+      newReplicas.put(replica, replica);
+    }
+    else{
+      modifiedReplicas.put(replica, replica);
+    }
+    
     blocksReplicas.get(replica.getBlockId()).put(replica.getStorageId(), replica);
     log("updated-replica", CacheHitState.NA,
             new String[]{"bid", Long.toString(replica.getBlockId()),

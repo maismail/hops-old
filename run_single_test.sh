@@ -4,8 +4,8 @@ TestName=$1
 ResultFile=$2
 FAILED_DIR=$3
  echo "**** Running Test ($TestName) ****" >>  /tmp/hop_tx_stats.txt 
- echo "mvn -Dtest=$TestName test"
-       mvn -Dtest=$TestName test
+ echo "mvn -e -X -Dtest=$TestName test"
+       mvn -e -X -Dtest=$TestName test
  OUT=$?	
  
  if [ $OUT -eq 0 ]; then 

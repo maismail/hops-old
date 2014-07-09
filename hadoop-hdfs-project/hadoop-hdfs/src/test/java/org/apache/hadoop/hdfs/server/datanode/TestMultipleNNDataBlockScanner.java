@@ -25,6 +25,7 @@ import junit.framework.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.commons.math.stat.clustering.Cluster;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -38,6 +39,7 @@ import org.apache.hadoop.hdfs.server.datanode.BlockPoolSliceScanner;
 import static org.apache.hadoop.hdfs.server.datanode.DataBlockScanner.SLEEP_PERIOD_MS;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.junit.After;
 import org.junit.Test;
 import org.junit.Ignore;
 import static org.junit.Assert.fail;
@@ -74,8 +76,16 @@ public class TestMultipleNNDataBlockScanner {
     }
   }
   
+  @After
+    public void tearDown() {
+        if(cluster!=null){
+            cluster.shutdown();
+        }
+    }
+  
   @Test(timeout=120000)
   public void testDataBlockScanner() throws IOException, InterruptedException {
+      LOG.debug("**testDataBlockScanner");
     setUp();
     try {
       DataNode dn = cluster.getDataNodes().get(0);
@@ -93,13 +103,14 @@ public class TestMultipleNNDataBlockScanner {
       dn.blockScanner.printBlockReport(buffer, false);
       LOG.info("Block Report\n" + buffer.toString());
     } finally {
-      cluster.shutdown();
+//      cluster.shutdown();
     }
   }
   
   @Test(timeout=120000)
   public void testBlockScannerAfterRefresh() throws IOException,
       InterruptedException {
+      LOG.debug("**testBlockScannerAfterRefresh");
     setUp();
     try {
       Configuration dnConf = cluster.getDataNodes().get(0).getConf();
@@ -145,13 +156,15 @@ public class TestMultipleNNDataBlockScanner {
         }
       }
     } finally {
-      cluster.shutdown();
+//        LOG.debug("cluster.shutdown");
+//      cluster.shutdown();
     }
   }
   
   @Test(timeout=120000)
   public void testBlockScannerAfterRestart() throws IOException,
       InterruptedException {
+      LOG.debug("**testBlockScannerAfterRestart");
     setUp();
     try {
       cluster.restartDataNode(0);
@@ -172,12 +185,13 @@ public class TestMultipleNNDataBlockScanner {
         }
       }
     } finally {
-      cluster.shutdown();
+//      cluster.shutdown();
     }
   }
   
   @Test(timeout=120000)
   public void test2NNBlockRescanInterval() throws IOException {
+      LOG.debug("**test2NNBlockRescanInterval");
     ((Log4JLogger)BlockPoolSliceScanner.LOG).getLogger().setLevel(Level.ALL);
     Configuration conf = new HdfsConfiguration();
     cluster = new MiniDFSCluster.Builder(conf)
@@ -197,7 +211,7 @@ public class TestMultipleNNDataBlockScanner {
         waitAndScanBlocks(1, 1);
       }
     } finally {
-      cluster.shutdown();
+//      cluster.shutdown();
     }
   }
 
@@ -208,6 +222,7 @@ public class TestMultipleNNDataBlockScanner {
    */
   @Test(timeout=120000)
   public void testBlockRescanInterval() throws IOException {
+      LOG.debug("**testBlockRescanInterval");
     ((Log4JLogger)BlockPoolSliceScanner.LOG).getLogger().setLevel(Level.ALL);
     Configuration conf = new HdfsConfiguration();
     cluster = new MiniDFSCluster.Builder(conf).build();
@@ -221,7 +236,7 @@ public class TestMultipleNNDataBlockScanner {
         waitAndScanBlocks(1, 1);
       }
     } finally {
-      cluster.shutdown();
+//      cluster.shutdown();
     }
   }
 
@@ -246,4 +261,5 @@ public class TestMultipleNNDataBlockScanner {
     Assert.assertEquals(scansTotal, total);
     Assert.assertEquals(scansLastRun, blocksScanned);
   }
+    
 }
