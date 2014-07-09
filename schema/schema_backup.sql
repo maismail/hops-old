@@ -70,17 +70,10 @@ CREATE TABLE `inodes` (
   `access_time` bigint(20) DEFAULT NULL,
   `permission` varbinary(128) DEFAULT NULL,
   `is_under_construction` int(11) NOT NULL,
-<<<<<<< HEAD
   `client_name` varchar(200) DEFAULT NULL,
   `client_machine` varchar(200) DEFAULT NULL,
   `client_node` varchar(200) DEFAULT NULL,
-  `is_closed_file` int(11) DEFAULT NULL,
-=======
-  `client_name` varchar(100) DEFAULT NULL,
-  `client_machine` varchar(100) DEFAULT NULL,
-  `client_node` varchar(100) DEFAULT NULL,
   `generation_stamp` int(11) DEFAULT NULL,
->>>>>>> master
   `header` bigint(20) DEFAULT NULL,
   `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,
