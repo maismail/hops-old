@@ -90,7 +90,7 @@ public class TestBlockUnderConstruction {
 
   private void verifyFileBlocks(final String file,
                                 final boolean isFileOpen) throws IOException{
-    HDFSTransactionalRequestHandler verifyFileBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.VERIFY_FILE_BLOCKS) {
+    HDFSTransactionalRequestHandler verifyFileBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.VERIFY_FILE_BLOCKS, file) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();

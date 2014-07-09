@@ -31,6 +31,59 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.blockmanagement.*;
+import org.apache.hadoop.hdfs.server.namenode.*;
+import se.sics.hop.common.HopBlockIdGen;
+import se.sics.hop.common.HopINodeIdGen;
+import se.sics.hop.common.IDsMonitor;
+import se.sics.hop.metadata.adaptor.LeaseDALAdaptor;
+import se.sics.hop.metadata.context.BlockInfoContext;
+import se.sics.hop.metadata.context.CorruptReplicaContext;
+import se.sics.hop.metadata.context.INodeAttributesContext;
+import se.sics.hop.metadata.context.INodeContext;
+import se.sics.hop.metadata.context.InvalidatedBlockContext;
+import se.sics.hop.metadata.context.LeasePathContext;
+import se.sics.hop.metadata.context.PendingBlockContext;
+import se.sics.hop.metadata.context.ReplicaContext;
+import se.sics.hop.metadata.context.UnderReplicatedBlockContext;
+import se.sics.hop.metadata.context.VariableContext;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.EntityDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
+import se.sics.hop.metadata.adaptor.BlockInfoDALAdaptor;
+import se.sics.hop.metadata.adaptor.INodeAttributeDALAdaptor;
+import se.sics.hop.metadata.adaptor.INodeDALAdaptor;
+import se.sics.hop.metadata.adaptor.PendingBlockInfoDALAdaptor;
+import se.sics.hop.metadata.adaptor.ReplicaUnderConstructionDALAdaptor;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopLongVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopStringVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
+import se.sics.hop.transaction.ContextInitializer;
+import se.sics.hop.transaction.EntityManager;
 
 /**
  *
@@ -48,8 +101,11 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    HopINodeIdGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT));
-    HopBlockIDGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT));
+    IDsMonitor.getInstance().setConfiguration(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS, DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT));
     if (!isDALInitialized) {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
