@@ -98,14 +98,7 @@ class InvalidateBlocks {
 
   /** Remove a storage from the invalidatesSet */
   void remove(final String storageID) throws IOException {
-    List<HopInvalidatedBlock> invBlocks = findInvBlocksbyStorageId(datanodeManager.getDatanode(storageID).getSId());
-    if(invBlocks != null){
-      for(HopInvalidatedBlock invBlk : invBlocks){
-        if(invBlk != null){
-          removeInvBlockTx(invBlk);
-        }
-      }
-    }
+    removeInvBlocks(datanodeManager.getDatanode(storageID).getSId());
   }
 
   /** Remove the block from the specified storage. */
@@ -190,13 +183,15 @@ class InvalidateBlocks {
     // # blocks that can be sent in one message is limited
     final int limit = datanodeManager.blockInvalidateLimit;
     final List<Block> toInvalidate = new ArrayList<Block>(limit);
+    final List<HopInvalidatedBlock> toInvblks = new ArrayList<HopInvalidatedBlock>();
     final Iterator<HopInvalidatedBlock> it = invBlocks.iterator();
     for (int count = 0; count < limit && it.hasNext(); count++) {
       HopInvalidatedBlock invBlock = it.next();
       toInvalidate.add(new Block(invBlock.getBlockId(),
               invBlock.getNumBytes(), invBlock.getGenerationStamp()));
-      removeInvBlockTx(invBlock);
+      toInvblks.add(invBlock);
     }
+    removeInvBlocks(toInvblks);
     dn.addBlocksToBeInvalidated(toInvalidate);
     return toInvalidate;
   }
@@ -247,17 +242,28 @@ class InvalidateBlocks {
     }.handle();
   }
 
-  private void removeInvBlockTx(final HopInvalidatedBlock ib) throws IOException {    
-     new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLK) {
+  private void removeInvBlocks(final List<HopInvalidatedBlock> blks) throws IOException {    
+     new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
        InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
-       da.remove(ib);
+       da.prepare(blks, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
        return null;
       }
     }.handle();
   }
   
+   private void removeInvBlocks(final int storageId) throws IOException {    
+     new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+       InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
+       da.removeAllByStorageId(storageId);
+       return null;
+      }
+    }.handle();
+  }
+   
   private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId) throws PersistanceException {
     return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId);
   }
