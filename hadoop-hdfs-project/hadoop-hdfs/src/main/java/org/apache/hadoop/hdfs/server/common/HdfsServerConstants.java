@@ -46,6 +46,7 @@ public final class HdfsServerConstants {
   /** Startup options */
   static public enum StartupOption{
     FORMAT  ("-format"),
+    SAFEMODE_FIX  ("-safeModeFix"),
     CLUSTERID ("-clusterid"),
     GENCLUSTERID ("-genclusterid"),
     REGULAR ("-regular"),

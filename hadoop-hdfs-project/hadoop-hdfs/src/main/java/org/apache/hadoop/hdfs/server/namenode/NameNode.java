@@ -81,6 +81,16 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 
 /**
  * ********************************************************
@@ -208,7 +218,8 @@ public class NameNode {
             + StartupOption.BACKUP.getName() + "] | ["
             + StartupOption.CHECKPOINT.getName() + "] | ["
             + StartupOption.FORMAT.getName() + " ["
-            + StartupOption.CLUSTERID.getName() + " cid ] ["
+            + StartupOption.CLUSTERID.getName() + " cid ] | ["
+            + StartupOption.SAFEMODE_FIX.getName() + "] | ["
             + StartupOption.FORCE.getName() + "] ["
             + StartupOption.NONINTERACTIVE.getName() + "] ] | ["
             + StartupOption.UPGRADE.getName() + "] | ["
@@ -1065,6 +1076,8 @@ public class NameNode {
                         startOpt.setInteractiveFormat(false);
                     }
                 }
+            } else if (StartupOption.SAFEMODE_FIX.getName().equalsIgnoreCase(cmd)) {
+                startOpt = StartupOption.SAFEMODE_FIX;
             } else if (StartupOption.GENCLUSTERID.getName().equalsIgnoreCase(cmd)) {
                 startOpt = StartupOption.GENCLUSTERID;
             } else if (StartupOption.REGULAR.getName().equalsIgnoreCase(cmd)) {
@@ -1192,6 +1205,11 @@ public class NameNode {
         }
 
         switch (startOpt) {
+            //HOP
+          case SAFEMODE_FIX:{ //delete everything other than inode and blocks table. this is tmp fix for safe mode 
+            safeModeTmpFix(conf);
+            return null;
+          }
             case FORMAT: {
                 boolean aborted = format(conf, startOpt.getForceFormat(),
                         startOpt.getInteractiveFormat());
@@ -1636,6 +1654,13 @@ public class NameNode {
             LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
             return ann;
         }
+    }
+    
+    private static void safeModeTmpFix(Configuration conf) throws StorageInitializtionException, StorageException{
+            StorageFactory.setConfiguration(conf);
+            StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
+                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);  
     }
   //END_HOP_CODE
 }
