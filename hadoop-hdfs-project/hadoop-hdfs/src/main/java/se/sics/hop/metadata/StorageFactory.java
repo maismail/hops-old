@@ -21,8 +21,9 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
 import org.apache.hadoop.hdfs.server.namenode.*;
-import se.sics.hop.common.HopBlockIDGen;
+import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopINodeIdGen;
+import se.sics.hop.common.IDsMonitor;
 import se.sics.hop.metadata.adaptor.LeaseDALAdaptor;
 import se.sics.hop.metadata.context.BlockInfoContext;
 import se.sics.hop.metadata.context.CorruptReplicaContext;
@@ -86,8 +87,11 @@ public class StorageFactory {
   }
 
   public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    HopINodeIdGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT));
-    HopBlockIDGen.setBatchSize(conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT));
+    IDsMonitor.getInstance().setConfiguration(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS, DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT));
     if (!isDALInitialized) {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));

@@ -14,6 +14,7 @@ import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.EntityManager;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import se.sics.hop.common.CountersQueue;
 import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
@@ -29,21 +30,32 @@ import se.sics.hop.transaction.handler.LightWeightRequestHandler;
  */
 public class Variables {
 
-  public static void setBlockId(long blockId) throws PersistanceException {
-    updateVariable(new HopLongVariable(HopVariable.Finder.BlockID, blockId));
+  public static CountersQueue.Counter incrementBlockIdCounter(final int increment) throws IOException {
+    return (CountersQueue.Counter) new LightWeightRequestHandler(HDFSOperationType.UPDATE_BLOCK_ID_COUNTER) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        long oldValue = ((HopLongVariable) vd.getVariable(HopVariable.Finder.BlockID)).getValue();
+        long newValue = oldValue + increment;
+        vd.setVariable(new HopLongVariable(HopVariable.Finder.BlockID, newValue));
+        return new CountersQueue.Counter(oldValue, newValue);
+      }
+    }.handle();
   }
 
-  public static long getBlockId() throws PersistanceException {
-    return (Long) getVariable(HopVariable.Finder.BlockID).getValue();
-  }
-
-  public static void setInodeId(int inodeId) throws PersistanceException {
-    updateVariable(new HopIntVariable(HopVariable.Finder.INodeID, inodeId));
-  }
-
-  public static int getInodeId() throws PersistanceException {
-    return (Integer) getVariable(HopVariable.Finder.INodeID).getValue();
-    
+  public static CountersQueue.Counter incrementINodeIdCounter(final int increment) throws IOException {
+    return (CountersQueue.Counter) new LightWeightRequestHandler(HDFSOperationType.UPDATE_INODE_ID_COUNTER) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        int oldValue = ((HopIntVariable) vd.getVariable(HopVariable.Finder.INodeID)).getValue();
+        int newValue = oldValue + increment;
+        vd.setVariable(new HopIntVariable(HopVariable.Finder.INodeID, newValue));
+        return new CountersQueue.Counter(oldValue, newValue);
+      }
+    }.handle();
   }
 
   public static void setReplicationIndex(List<Integer> indeces) throws PersistanceException {

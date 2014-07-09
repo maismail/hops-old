@@ -35,8 +35,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.log4j.NDC;
-import se.sics.hop.common.HopBlockIDGen;
-import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
@@ -505,14 +503,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     //variables table
     if (locks.getBlockKeyLock() != null) {
       acquireLock(locks.getBlockKeyLock(), HopVariable.Finder.BlockTokenKeys);
-    }
-
-    if (locks.getBlockIdCounterLock() != null && HopBlockIDGen.needMoreIds()) {
-      acquireLock(locks.getBlockIdCounterLock(), HopVariable.Finder.BlockID);
-    }  
-    
-    if(locks.getInodeIDCounterLock() != null && HopINodeIdGen.needMoreIds(locks.getExpectedMaxNumberOfINodeIds())){
-      acquireLock(locks.getInodeIDCounterLock(), HopVariable.Finder.INodeID);
     }
     
     if (locks.getStorageInfo() != null) {

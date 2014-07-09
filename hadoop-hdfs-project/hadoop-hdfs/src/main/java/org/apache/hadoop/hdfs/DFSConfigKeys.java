@@ -30,7 +30,7 @@ import org.apache.hadoop.fs.CommonConfigurationKeys;
 @InterfaceAudience.Private
 public class DFSConfigKeys extends CommonConfigurationKeys {
   
-  //START_HOP_CODE
+  //START_HOP_CODE  
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
   public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
 
@@ -50,10 +50,19 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_QUOTA_ENABLED_DEFAULT = true;
   
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
-  public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 100;
+  public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 1000;
   
   public static final String DFS_NAMENODE_BLOCKID_BATCH_SIZE = "dfs.namenode.blockid.batchsize";
-  public static final int DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT = 100;
+  public static final int DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT = 1000;
+  
+  public static final String DFS_NAMENODE_INODEID_UPDATE_THRESHOLD = "dfs.namenode.inodeid.updateThreshold";
+  public static final float DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
+  
+  public static final String DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD = "dfs.namenode.blockid.updateThreshold";
+  public static final float DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
+
+  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.blockid.updateThreshold";
+  public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
   
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated

@@ -15,43 +15,36 @@
  */
 package se.sics.hop.common;
 
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import java.io.IOException;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.exception.PersistanceException;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
 public class HopINodeIdGen {
-
+  
   private static int BATCH_SIZE;
-  private static int endId;
-  private static int currentId;
-
+  private static CountersQueue cQ;
+  
   public static void setBatchSize(int batchSize) {
     BATCH_SIZE = batchSize;
-    currentId = endId = 0;
+    cQ = new CountersQueue();
   }
 
-  public static int getUniqueINodeID() throws PersistanceException {
-    if (needMoreIds(1)) {
-      getMoreIds();
+  public static int getUniqueINodeID(){
+    return (int) cQ.next();
+  }
+
+  public synchronized static boolean getMoreIdsIfNeeded(int threshold) throws IOException {
+    if (!cQ.has(threshold)) {
+      cQ.addCounter(Variables.incrementINodeIdCounter(BATCH_SIZE));
+      return true;
     }
-    return ++currentId;
+    return false;
   }
-
-  public static boolean needMoreIds(int expectedMaxNumberOfInodeIds) {
-    if(expectedMaxNumberOfInodeIds > 1){
-      return (currentId + expectedMaxNumberOfInodeIds) >= endId;
-    }
-    return currentId == endId;
-  }
-
-  private synchronized static void getMoreIds() throws PersistanceException {
-    int startId = Variables.getInodeId();
-    endId = startId + BATCH_SIZE;
-    Variables.setInodeId(endId);
-    currentId = startId;
+  
+  static CountersQueue getCQ(){
+    return cQ;
   }
 }
