@@ -185,16 +185,13 @@ public class CorruptReplicasMap{
    * @return Up to numExpectedBlocks blocks from startingBlockId if it exists
    *
    */
-  //FIXME default behaviour was that the order of blocks in the map was according 
-  //to when they were added to the list. To do that we will need time stamp column
-  //the corrupt replicas table. right now the blocks are sorted by the ids. 
   long[] getCorruptReplicaBlockIds(int numExpectedBlocks,
                                    Long startingBlockId) throws IOException {
     if (numExpectedBlocks < 0 || numExpectedBlocks > 100) {
       return null;
     }
     
-    SortedSet<Long> sortedIds = new TreeSet<Long>();
+    List<Long> sortedIds = new ArrayList<Long>();
     
     Collection<HopCorruptReplica> corruptReplicas = getAllCorruptReplicas();
     if (corruptReplicas != null) {
