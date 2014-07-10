@@ -50,6 +50,7 @@ import org.apache.commons.logging.Log;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.commons.math.stat.inference.TestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.CreateFlag;
@@ -58,10 +59,12 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -92,6 +95,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
+import org.junit.Assert;
 import org.junit.Test;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -1178,6 +1182,67 @@ public class TestFileCreation {
 
   
   //START_HOP_CODE
+  
+  @Test
+  public void testRename() throws Exception {
+
+     Configuration conf = new HdfsConfiguration(); 
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
+    FileSystem fs = cluster.getFileSystem();
+    DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
+    try{
+    
+    fs.mkdirs(new Path("/dir"));
+    fs.mkdirs(new Path("/test"));
+    
+    FSDataOutputStream stm = createFile(fs, new Path("/dir/file1"), 1);
+    writeFile(stm);
+    stm.close();
+    
+    fs.rename(new Path("/dir"), new Path("/test"));
+    
+    
+    
+    fs.mkdirs(new Path("/dir"));
+    stm = createFile(fs, new Path("/dir/file2"), 1);
+    writeFile(stm);
+    stm.close();
+    
+    if(!fs.rename(new Path("/dir"), new Path("/test"))){
+      try{
+        dfs.rename(new Path("/dir"), new Path("/test"), Options.Rename.OVERWRITE);
+        fail("rename should have failed");
+      }catch(Exception e){
+        // it should fail
+      }
+    }
+
+//    
+//    // overrite empty dir
+//    dfs.delete(new Path("/test"),true);
+//    
+//    dfs.mkdirs(new Path("/test/dir"));
+//    try{
+//        dfs.rename(new Path("/dir"), new Path("/test"), Options.Rename.OVERWRITE);
+//      }catch(Exception e){
+//        fail("overriting empty folder should pass");
+//      }
+    
+    
+    RemoteIterator<LocatedFileStatus>  itr = fs.listFiles(new Path("/test"), true);
+    while(itr.hasNext()){
+      LocatedFileStatus status = itr.next();
+      System.out.println("FILE LISTING: "+status.getPath());
+    }
+    
+    }finally{
+       cluster.shutdown();
+    }
+    
+   
+  }
+  
+  
   @Test
   public void testFileCreationSimple() throws IOException {
     Configuration conf = new HdfsConfiguration();
