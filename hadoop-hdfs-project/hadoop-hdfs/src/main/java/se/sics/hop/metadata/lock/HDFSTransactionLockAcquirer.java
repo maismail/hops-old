@@ -890,7 +890,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
   
   
-  private  void lockINode(INodeLockType lock) {
+  private  void lockINode(INodeLockType lock) throws StorageException {
     switch (lock) {
       case WRITE:
       case WRITE_ON_PARENT:
@@ -969,7 +969,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-  private void setPartitioningKey(Integer inodeId){
+  private void setPartitioningKey(Integer inodeId) throws StorageException{
     if(inodeId == null){
       LOG.warn("Transaction Partition Key is not Set");
     }
@@ -984,7 +984,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
   }
   
-    private void setPartitioningKeyForLeader(){
+    private void setPartitioningKeyForLeader() throws StorageException{
       //set partitioning key
       Object[] key = new Object[2];
       key[0] = LeaderElection.LEADER_INITIALIZATION_ID; //pid
