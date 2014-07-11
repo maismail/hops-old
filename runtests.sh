@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TestNames=$1
-MaxTime=12
+MaxTime=1200
 TestResultsParent=results
 AllTestsResults=$TestResultsParent/AllTestsResults.txt
 FAILED_DIR=$TestResultsParent/all_tests_reports
