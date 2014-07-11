@@ -1,10 +1,10 @@
 #!/bin/bash
 
 TestNames=$1
-MaxTime=1200
+MaxTime=12
 TestResultsParent=results
 AllTestsResults=$TestResultsParent/AllTestsResults.txt
-FAILED_DIR=$TestResultsParent/fail_tests_reports
+FAILED_DIR=$TestResultsParent/all_tests_reports
 
 rm -rf $TestResultsParent
 mkdir -p $FAILED_DIR
@@ -13,9 +13,10 @@ mkdir -p /tmp/$PID
 for i in $(cat $TestNames); do
  UnitTestResult="/tmp/$PID/$i.HOP_Results"
  rm $UnitTestResult
+
  ./run_single_test.sh $i  $UnitTestResult $FAILED_DIR &
 
- TimePassed=0;
+ TimePassed=1;
  while [ $TimePassed -le $MaxTime ];
  do
   sleep 1
@@ -33,7 +34,7 @@ for i in $(cat $TestNames); do
  if [ -f $UnitTestResult ]; then
    cat $UnitTestResult >> $AllTestsResults
  fi
-
+ 	
  if [ $TimePassed -ge $MaxTime ]; then
     sed -i "s/$i FAILED/$i TIMEOUT FAILED/g" $AllTestsResults
     #echo "    sed -i \"s/$i/$i TIMEOUT/g\" $AllTestsResults"

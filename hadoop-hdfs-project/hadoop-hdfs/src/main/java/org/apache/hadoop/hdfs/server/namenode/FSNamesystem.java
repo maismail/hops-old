@@ -205,6 +205,7 @@ import org.mortbay.util.ajax.JSON;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
@@ -224,7 +225,9 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -6499,6 +6502,196 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       safeMode.performSafeModePendingOperation();
     }
   }
+  
+  public class FNode implements Comparable<FNode>{
+    private String parentPath;
+    private INode inode;
+
+    public FNode(String parentPath, INode inode) {
+      this.parentPath = parentPath;
+      this.inode = inode;
+    }
+    
+    public String getPath(){
+      if(parentPath.endsWith("/")){
+        return parentPath+inode.getLocalName();
+      }else{
+        return parentPath +"/"+ inode.getLocalName();
+      }
+    }
+    
+    public INode getINode(){
+      return inode;
+    }
+    
+    public String getParentPath(){
+      return parentPath;
+    }
+
+    @Override
+    public int compareTo(FNode o) {
+      int obj1Length = INode.getPathComponents(getPath()).length;
+      int obj2Length = INode.getPathComponents(o.getPath()).length;
+      if(obj1Length == obj2Length){
+        return 0;
+      }
+      else if( obj1Length < obj2Length){
+        return 1;
+      }else{
+        return -1;
+      }
+    }
+  }
+  
+  
+  public LinkedList<FNode> checkPermissionRecursively(final String src, final boolean recursive)
+          throws AccessControlException, SafeModeException,
+          UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PRE_DELETE_CHECK) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        boolean enforcePermission = true;
+        FSPermissionChecker pc = getPermissionChecker();
+
+
+        checkOperation(OperationCategory.WRITE);
+        if (isInSafeMode()) {
+          throw new SafeModeException("Cannot delete " + src, safeMode);
+        }
+        if (!recursive && dir.isNonEmptyDirectory(src)) {
+          throw new IOException(src + " is non empty");
+        }
+        if (enforcePermission && isPermissionEnabled) {
+          checkPermission(pc, src, false, null, FsAction.WRITE, null, FsAction.ALL);
+        }
+        
+        
+        LinkedList<FNode> processedFiles = new LinkedList<FNode>();
+        LinkedList<FNode> processedDirs = new LinkedList<FNode>();
+        LinkedList<FNode> unProcessedNodes = new LinkedList<FNode>();
+
+        byte [][] pathComponent = INode.getPathComponents(src);
+        INode[] existingPath = dir.getExistingPathINodes(src);
+        
+        if(existingPath.length != pathComponent.length){
+          return null;
+        }
+        
+        String parentPath = INode.constructPath(pathComponent,0,pathComponent.length-1);
+        if(parentPath.compareToIgnoreCase("") == 0){
+          parentPath = "/";
+        }
+        
+        FNode node = new FNode(parentPath, existingPath[existingPath.length-1]);
+        
+        if (node != null) {
+          if (node.getINode() instanceof INodeDirectory) {
+            unProcessedNodes.add(node);
+          }
+          else if(node.getINode() instanceof INodeFile) {
+            processedFiles.add(node);
+          }
+        }
+
+        // Find all the children in the sub-directories.
+        while (!unProcessedNodes.isEmpty()) {
+          FNode next = unProcessedNodes.poll();
+          if (next.getINode() instanceof INodeDirectory) {
+            processedDirs.add(next);
+            List<INode> clist = ((INodeDirectory) next.getINode()).getChildren(); 
+            for(INode inode : clist){
+              if(inode instanceof INodeDirectory){
+                unProcessedNodes.add(new FNode(next.getPath(), inode));
+              }
+              else{
+                processedFiles.add( new FNode(next.getPath(),inode));
+              }
+            }
+          } 
+        }
+    
+      Collections.sort(processedDirs);
+      Collections.sort(processedFiles);
+    
+      //First Delete Files and then the Dirs
+      LinkedList<FNode> all = new LinkedList<FNode>();
+      all.addAll(processedFiles);
+      all.addAll(processedDirs);
+      return all;
+      
+      }
+
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+                addINode(
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.READ_COMMITED, false, new String[]{src});
+        return tla.acquire();
+      }
+    };
+    return (LinkedList<FNode>) deleteHandler.handle();
+  }
+
+  public boolean IncrementalDelete(final String src, final boolean recursive)
+          throws AccessControlException, SafeModeException,
+            UnresolvedLinkException, IOException
+   {
+   
+    LOG.debug("Deleting "+src+" isRecursive "+recursive);
+    LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
+    boolean[] isPreTxPathFullyResolved = new boolean[1];
+    INodeUtil.resolvePathWithNoTransaction(src,false,preTxResolvedInodes,isPreTxPathFullyResolved);   
+    if(isPreTxPathFullyResolved[0] == true && preTxResolvedInodes.getLast() instanceof  INodeDirectory){
+      byte[][] components = INode.getPathComponents(src);
+      String parentPath = INode.constructPath(components,0,components.length-1);
+      if(parentPath.compareToIgnoreCase("") == 0){
+        parentPath = "/";
+      }
+      LinkedList<FNode> toBeDeleted = checkPermissionRecursively(src, recursive);
+      return deleteChildrenIncremently(toBeDeleted, recursive);
+    }
+    else{
+      
+      return deleteWithTransaction(src, recursive);
+    }
+    
+  }
+  
+  private boolean deleteChildrenIncremently(LinkedList<FNode> toBeDeleted, final boolean recursive) throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    
+    for(FNode fnode : toBeDeleted){
+      if(fnode.getINode().isDirectory())
+      {
+        System.out.println("TestX dir to delete "+fnode.getPath());
+      }else{
+        System.out.println("TestX file to delete "+fnode.getPath());
+      }
+    }
+    
+    for(FNode fnode : toBeDeleted){
+      if(!deleteWithTransaction(fnode.getPath(), recursive))
+        return false;
+    }
+    
+    return true;
+  }
+  
+//  private List<INode> getChildren(final INodeDirectory dir) throws StorageException{
+//    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_CHILDREN) {
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+//        return da.indexScanFindInodesByParentId(dir.getId());
+//      }
+//    };
+//    try {
+//      return (List<INode>) handler.handle();
+//    } catch (IOException ex) {
+//      throw new StorageException(ex.getMessage());
+//    }
+//  }
   
   //END_HOP_CODE
   

@@ -1174,15 +1174,13 @@ public class DFSOutputStream extends FSOutputSummer implements Syncable {
                 throw e;
               } else {
                 --retries;
-                DFSClient.LOG.info("Exception while adding a block", e);
+                DFSClient.LOG.debug("Exception while adding a block", e);
                 if (Time.now() - localstart > 5000) {
-                  DFSClient.LOG.info("Waiting for replication for "
-                      + (Time.now() - localstart) / 1000
+                  DFSClient.LOG.debug("Waiting for replication for " + (Time.now() - localstart) / 1000
                       + " seconds");
                 }
                 try {
-                  DFSClient.LOG.warn("NotReplicatedYetException sleeping " + src
-                      + " retries left " + retries);
+                  //DFSClient.LOG.debug("NotReplicatedYetException sleeping " + src + " retries left " + retries);
                   Thread.sleep(sleeptime);
                   sleeptime *= 2;
                 } catch (InterruptedException ie) {

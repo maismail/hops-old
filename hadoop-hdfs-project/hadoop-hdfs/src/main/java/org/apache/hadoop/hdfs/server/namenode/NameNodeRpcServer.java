@@ -636,7 +636,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
       stateChangeLog.debug("*DIR* Namenode.delete: src=" + src
           + ", recursive=" + recursive);
     }
-    boolean ret = namesystem.deleteWithTransaction(src, recursive);
+    boolean ret = namesystem.IncrementalDelete(src, recursive);
+    //boolean ret = namesystem.deleteWithTransaction(src, recursive);
     if (ret) 
       metrics.incrDeleteFileOps();
     return ret;

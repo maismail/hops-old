@@ -47,7 +47,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
   
   public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = true;
+  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = false;
   
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
   public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 100;
