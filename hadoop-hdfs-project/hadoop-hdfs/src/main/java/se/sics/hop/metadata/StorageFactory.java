@@ -4,6 +4,7 @@ import se.sics.hop.DALDriver;
 import se.sics.hop.DALStorageFactory;
 import se.sics.hop.StorageConnector;
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -67,7 +68,9 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopStringVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.ContextInitializer;
 import se.sics.hop.transaction.EntityManager;
 
@@ -86,12 +89,10 @@ public class StorageFactory {
     return dStorageFactory.getConnector();
   }
 
-  public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    IDsMonitor.getInstance().setConfiguration(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT),
-            conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT),
-            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT),
-            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT),
-            conf.getInt(DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS, DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT));
+  public static void setConfiguration(Configuration conf) throws IOException {
+    IDsMonitor.getInstance().setConfiguration(conf);
+    PathMemcache.getInstance().setConfiguration(conf);
+    HDFSTransactionLockAcquirer.setConfiguration(conf);
     if (!isDALInitialized) {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));

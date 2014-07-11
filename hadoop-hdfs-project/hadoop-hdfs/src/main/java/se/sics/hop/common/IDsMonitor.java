@@ -18,56 +18,63 @@ package se.sics.hop.common;
 import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class IDsMonitor implements Runnable{
-  
+public class IDsMonitor implements Runnable {
+
   private static final Log LOG = LogFactory.getLog(IDsMonitor.class);
-  
   private static IDsMonitor instance = null;
   private Thread th = null;
-  
   private int inodeIdsThreshold;
   private int blockIdsThreshold;
   private int checkInterval;
-  
-  private IDsMonitor(){
-    
+
+  private IDsMonitor() {
   }
-  
-  public static IDsMonitor getInstance(){
-    if(instance == null){
+
+  public static IDsMonitor getInstance() {
+    if (instance == null) {
       instance = new IDsMonitor();
     }
     return instance;
   }
-  
-  public void setConfiguration(int inodeIdsBatchSize, int blockIdsBatchSize, float inodeIdsThreshold, float blockIdsThreshold, int checkInterval){
+
+  public void setConfiguration(Configuration conf) {
+    setConfiguration(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT),
+            conf.getInt(DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS, DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT));
+  }
+
+  public void setConfiguration(int inodeIdsBatchSize, int blockIdsBatchSize, float inodeIdsThreshold, float blockIdsThreshold, int checkInterval) {
     HopINodeIdGen.setBatchSize(inodeIdsBatchSize);
     HopBlockIdGen.setBatchSize(blockIdsBatchSize);
     this.inodeIdsThreshold = (int) (inodeIdsThreshold * inodeIdsBatchSize);
     this.blockIdsThreshold = (int) (blockIdsThreshold * blockIdsBatchSize);
     this.checkInterval = checkInterval;
   }
-  
+
   public void start() {
     th = new Thread(this, "IDsMonitor");
     th.setDaemon(true);
     th.start();
   }
-  
+
   @Override
   public void run() {
-    while(true){
+    while (true) {
       try {
-        if(HopINodeIdGen.getMoreIdsIfNeeded(inodeIdsThreshold)){
+        if (HopINodeIdGen.getMoreIdsIfNeeded(inodeIdsThreshold)) {
           LOG.debug("get more inode ids " + HopINodeIdGen.getCQ());
         }
-        
-        if(HopBlockIdGen.getMoreIdsIfNeeded(blockIdsThreshold)){
+
+        if (HopBlockIdGen.getMoreIdsIfNeeded(blockIdsThreshold)) {
           LOG.debug("get more block ids " + HopBlockIdGen.getCQ());
         }
         Thread.sleep(checkInterval);
@@ -78,5 +85,4 @@ public class IDsMonitor implements Runnable{
       }
     }
   }
-  
 }

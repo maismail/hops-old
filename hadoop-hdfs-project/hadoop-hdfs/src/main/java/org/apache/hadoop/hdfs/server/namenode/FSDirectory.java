@@ -61,11 +61,13 @@ import org.apache.hadoop.hdfs.util.ByteArray;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
+import java.util.Arrays;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -1794,6 +1796,16 @@ public class FSDirectory implements Closeable {
       updateCount(pathComponents, pos, -counts.getNsCount(), 
           -childDiskspace, true);
     }
+    //START_HOP_CODE
+    if(addedNode != null){
+      if(!addedNode.isDirectory()){
+        INode[] pc = Arrays.copyOf(pathComponents, pathComponents.length);
+        pc[pc.length -1] = addedNode;
+        String path = getFullPathName(pc, pc.length - 1);
+        PathMemcache.getInstance().set(path, pc);
+      }
+    }
+    //
     return addedNode;
   }
 

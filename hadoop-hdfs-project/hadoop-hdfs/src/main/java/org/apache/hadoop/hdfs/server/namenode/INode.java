@@ -437,7 +437,7 @@ public abstract class INode implements Comparable<byte[]> {
    * @throws AssertionError if the given path is invalid.
    * @return array of path components.
    */
-  static String[] getPathNames(String path) {
+  public static String[] getPathNames(String path) {
     if (path == null || !path.startsWith(Path.SEPARATOR)) {
       throw new AssertionError("Absolute path required");
     }

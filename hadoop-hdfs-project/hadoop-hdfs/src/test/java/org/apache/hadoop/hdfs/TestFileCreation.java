@@ -75,6 +75,7 @@ import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
@@ -93,6 +94,7 @@ import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
 import org.junit.Test;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -1193,7 +1195,7 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p1 = new Path("/f1");
+      Path p1 = new Path("/f1/f2/f3/myfile.txt");
       Path p2 = new Path("/f2"); 
       
       int blocks  = 1;
@@ -1203,24 +1205,22 @@ public class TestFileCreation {
         out.write(i);
       }
       out.close();
-      
-      
-      
-      FSDataInputStream in = fs.open(p1);
-      for (i = 0; i < blocks; i++) {
-        assertEquals(i, in.read());
-      }
+            
+//      FSDataInputStream in = fs.open(p1);
+//      for (i = 0; i < blocks; i++) {
+//        assertEquals(i, in.read());
+//      }
 
-      out = dfs.create(p2);
-      i = 0;
-      for (; i < blocks; i++) {
-        out.write(i);
-      }
-      out.close();  
-      
-      dfs.concat(p1, new Path[]{p2});
-      
-      dfs.rename(p1, p2);
+//      out = dfs.create(p2);
+//      i = 0;
+//      for (; i < blocks; i++) {
+//        out.write(i);
+//      }
+//      out.close();  
+//      
+//      dfs.concat(p1, new Path[]{p2});
+//      
+//      dfs.rename(p1, p2);
 //// 
 //      
 //      cluster.restartNameNode();
@@ -1237,8 +1237,10 @@ public class TestFileCreation {
     }
   }
 
-       
-
+  @Test
+  public void testMemcache(){
+    
+  }
   @Test
   public void testTx() throws IOException, InterruptedException{
       class thread extends Thread{

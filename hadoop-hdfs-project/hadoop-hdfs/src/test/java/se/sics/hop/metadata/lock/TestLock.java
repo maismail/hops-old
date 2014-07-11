@@ -81,7 +81,7 @@ public class TestLock {
   INodeFile file1, file2, file3;
 
   @Before
-  public void init() throws StorageException, PersistanceException, StorageInitializtionException {
+  public void init() throws IOException {
     conf = new HdfsConfiguration();
     StorageFactory.setConfiguration(conf);
     StorageFactory.getConnector().formatStorage();
