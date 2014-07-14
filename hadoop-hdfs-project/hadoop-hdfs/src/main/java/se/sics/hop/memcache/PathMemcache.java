@@ -39,23 +39,7 @@ import se.sics.hop.transaction.handler.LightWeightRequestHandler;
  * @author Mahmoud Ismail <maism@sics.se>
  */
 public class PathMemcache {
-
-  private class CacheEntry {
-
-    private int[] inodeIds;
-
-    public CacheEntry(int[] inodeIds) {
-      this.inodeIds = inodeIds;
-    }
-
-    int getPartitionKey() {
-      return inodeIds[inodeIds.length - 1];
-    }
-
-    int[] getParentIds() {
-      return PathMemcache.getParentIds(inodeIds);
-    }
-  }
+  
   private static final Log LOG = LogFactory.getLog(PathMemcache.class);
   private static PathMemcache instance = null;
   private MemcachedClientPool mcpool;
@@ -80,6 +64,7 @@ public class PathMemcache {
     keyExpiry = conf.getInt(DFSConfigKeys.DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS, DFSConfigKeys.DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT);
     keyPrefix = conf.get(DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX, DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX_DEFAULT);
     isEnabled = conf.getBoolean(DFSConfigKeys.DFS_MEMCACHE_ENABLED, DFSConfigKeys.DFS_MEMCACHE_ENABLED_DEFAULT);
+    LOG.error("Memcache is " + isEnabled);
     if (isEnabled) {
       mcpool = new MemcachedClientPool(numberOfConnections, server);
     }
@@ -89,7 +74,7 @@ public class PathMemcache {
     if (isEnabled) {
       final String key = getKey(path);
       final int[] inodeIds = getINodeIds(inodes);
-      mcpool.poll().set(key, keyExpiry, inodeIds).addListener(new OperationCompletionListener() {
+      mcpool.poll().set(key, keyExpiry, new CacheEntry(inodeIds)).addListener(new OperationCompletionListener() {
         @Override
         public void onComplete(OperationFuture<?> f) throws Exception {
           LOG.debug("SET for path (" + path + ")  " + key + "=" + Arrays.toString(inodeIds));
@@ -100,10 +85,10 @@ public class PathMemcache {
 
   public void get(String path) throws IOException {
     if (isEnabled) {
-      int[] inodeIds = (int[]) mcpool.poll().get(getKey(path));
-      if (inodeIds != null) {
-        LOG.debug("GET for path (" + path + ")  got value = " + Arrays.toString(inodeIds));
-        verifyINodes(path, inodeIds);
+      Object ce = mcpool.poll().get(getKey(path));
+      if (ce != null && ce instanceof CacheEntry) {
+        LOG.debug("GET for path (" + path + ")  got value = " + ce);
+        verifyINodes(path, (CacheEntry)ce);
       }
     }
   }
@@ -132,25 +117,38 @@ public class PathMemcache {
     return null;
   }
 
-  private void verifyINodes(final String path, final int[] inodeIds) throws IOException {
-    if (checkINodes(path, inodeIds)) {
+  public void flush(){
+    if(isEnabled){
+      mcpool.poll().flush().addListener(new OperationCompletionListener() {
+
+        @Override
+        public void onComplete(OperationFuture<?> f) throws Exception {
+          LOG.debug("Memcache flushed");
+        }
+      });
+    }
+  }
+  
+  private void verifyINodes(final String path, final CacheEntry ce) throws IOException {
+    if (checkINodes(path, ce)) {
       LOG.debug("GET verified the data we got from memcached with the database data");
-      cache.put(path, new CacheEntry(inodeIds));
+      cache.put(path, ce);
     } else {
       final String key = getKey(path);
       mcpool.poll().delete(key).addListener(new OperationCompletionListener() {
         @Override
         public void onComplete(OperationFuture<?> f) throws Exception {
-          LOG.debug("DELETE for path (" + path + ")  " + key + "=" + Arrays.toString(inodeIds));
+          LOG.debug("DELETE for path (" + path + ")  " + key + "=" + ce);
         }
       });
     }
   }
 
-  private boolean checkINodes(String path, int[] inodeIds) throws IOException {
+  private boolean checkINodes(String path, CacheEntry ce) throws IOException {
     final String[] names = getNamesWithoutRoot(path);
-    final int[] parentIds = getParentIds(inodeIds);
-
+    final int[] parentIds = ce.getParentIds();
+    final int[] inodeIds = ce.getInodeIds();
+    
     boolean verified = false;
     if (names.length == parentIds.length) {
       List<INode> inodes = getINodes(names, parentIds);
@@ -185,10 +183,6 @@ public class PathMemcache {
   private static String[] getNamesWithoutRoot(String path) {
     String[] names = INodeDirectory.getPathNames(path);
     return Arrays.copyOfRange(names, 1, names.length);
-  }
-
-  private static int[] getParentIds(int[] inodeIds) {
-    return Arrays.copyOfRange(inodeIds, 0, inodeIds.length - 1);
   }
 
   private String getKey(String path) {
