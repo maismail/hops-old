@@ -63,7 +63,7 @@ public class TestLeaderElection {
         conf = new HdfsConfiguration();
         nnList = new ArrayList<NameNode>();
         StorageFactory.setConfiguration(conf);
-        StorageFactory.getConnector().formatStorage();
+        StorageFactory.formatStorage();
 
         DFSTestUtil.getDatanodeDescriptor("1.1.1.1", "/d1/r1");
         DFSTestUtil.getDatanodeDescriptor("2.2.2.2", "/d1/r1");

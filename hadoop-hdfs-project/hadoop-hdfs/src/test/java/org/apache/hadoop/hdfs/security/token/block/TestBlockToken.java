@@ -417,6 +417,6 @@ public class TestBlockToken {
   }
   
   private void resetStorage() throws StorageException{
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
   }
 }

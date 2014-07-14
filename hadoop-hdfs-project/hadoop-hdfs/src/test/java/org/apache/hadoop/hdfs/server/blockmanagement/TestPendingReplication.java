@@ -64,7 +64,7 @@ public class TestPendingReplication {
   @Test
   public void testPendingReplication() throws IOException, StorageException {
     StorageFactory.setConfiguration(new HdfsConfiguration());
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
 
     PendingReplicationBlocks pendingReplications = new PendingReplicationBlocks(TIMEOUT * 1000);
     pendingReplications.start();

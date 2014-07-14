@@ -70,7 +70,7 @@ public class TestFsLimits {
   
   private void initFS() throws StorageException, IOException{
         StorageFactory.setConfiguration(conf);
-    assert (StorageFactory.getConnector().formatStorage());
+    assert (StorageFactory.formatStorage());
     rootInode = FSDirectory.createRootInode(perms,true);
     inodes = new INode[]{ rootInode, null };
     fs = null;

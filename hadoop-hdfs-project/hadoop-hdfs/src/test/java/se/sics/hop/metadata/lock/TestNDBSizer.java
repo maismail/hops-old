@@ -57,7 +57,7 @@ public class TestNDBSizer {
   public void init() throws IOException {
     conf = new HdfsConfiguration();
     StorageFactory.setConfiguration(conf);
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
 
 
   }

@@ -84,7 +84,7 @@ public class TestLock {
   public void init() throws IOException {
     conf = new HdfsConfiguration();
     StorageFactory.setConfiguration(conf);
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
     insertData();
 
   }

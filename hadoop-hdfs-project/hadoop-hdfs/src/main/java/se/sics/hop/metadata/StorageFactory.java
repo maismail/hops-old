@@ -25,6 +25,7 @@ import org.apache.hadoop.hdfs.server.namenode.*;
 import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.common.IDsMonitor;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.adaptor.LeaseDALAdaptor;
 import se.sics.hop.metadata.context.BlockInfoContext;
 import se.sics.hop.metadata.context.CorruptReplicaContext;
@@ -192,5 +193,15 @@ public class StorageFactory {
       return dataAccessAdaptors.get(type);
     }
     return dStorageFactory.getDataAccess(type);
+  }
+  
+  public static boolean formatStorage() throws StorageException{
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorage();
+  }
+  
+  public static boolean formatStorage(Class<? extends EntityDataAccess>... das) throws StorageException{
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorage(das);
   }
 }

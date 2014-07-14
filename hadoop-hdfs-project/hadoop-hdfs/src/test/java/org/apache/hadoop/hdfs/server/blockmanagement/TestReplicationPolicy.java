@@ -835,7 +835,7 @@ public class TestReplicationPolicy {
    */
   @Test
   public void testChooseUnderReplicatedBlocks() throws Exception { 
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
     int blockID = 0;
     UnderReplicatedBlocks underReplicatedBlocks = new UnderReplicatedBlocks();
 

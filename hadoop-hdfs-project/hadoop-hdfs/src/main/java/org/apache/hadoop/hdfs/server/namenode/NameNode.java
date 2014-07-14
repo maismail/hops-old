@@ -819,7 +819,7 @@ public class NameNode {
         //START_HOP_CODE
         try {
             StorageFactory.setConfiguration(conf);
-            StorageFactory.getConnector().formatStorage();
+            StorageFactory.formatStorage();
             StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
         } catch (PersistanceException e) {
             throw new RuntimeException(e.getMessage());
