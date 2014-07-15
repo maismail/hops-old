@@ -71,8 +71,8 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, replicationFactor);
         conf.setInt(DFSConfigKeys.DFS_DATANODE_HANDLER_COUNT_KEY, 1);
         conf.setInt(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, 1024);
-        //conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 10 * 1000); // 10 sec
-        //conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
+        conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 30 * 1000); // 10 sec
+        conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
 
         cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
         cluster.waitActive();
@@ -144,8 +144,8 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                     }
                 }
                 if (writers[i].datawrote != dataRead) {
-                    LOG.debug("File length read lenght is not consistant. wrote " + writers[i].datawrote + " data read " + dataRead);
-                    fail("File length read lenght is not consistant. wrote " + writers[i].datawrote + " data read " + dataRead);
+                    LOG.debug("File length read lenght is not consistant. wrote " + writers[i].datawrote + " data read " + dataRead+" file path "+writers[i].filepath);
+                    fail("File length read lenght is not consistant. wrote " + writers[i].datawrote + " data read " + dataRead+" file path "+writers[i].filepath);
                 }
             } catch (Exception ex) {
                 fail("File varification failed for file: " + writers[i].filepath + " exception " + ex);
@@ -165,13 +165,13 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
     @Test
     public void testFailoverWhenLeaderNNCrashes() {
         // Testing with replication factor of 3
-        short repFactor = 1;
+        short repFactor = 3;
         LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
         failoverWhenLeaderNNCrashes(repFactor);
         // Testing with replication factor of 6
-//    repFactor = 6;
-//    LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
-//    failoverWhenLeaderNNCrashes(repFactor);
+    repFactor = 6;
+    LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
+    failoverWhenLeaderNNCrashes(repFactor);
     }
 
     private void failoverWhenLeaderNNCrashes(short replicationFactor) {
@@ -187,33 +187,33 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                 startWriters();
 
                 // Give all the threads a chance to create their files and write something to it
-                Thread.sleep(3000); // 50 sec
+                Thread.sleep(10000); 
 
                 LOG.debug("TestNN about to shutdown the namenode with address " + cluster.getNameNode(NN1).getNameNodeAddress());
                 // kill leader NN1
                 if (killNN) {
                     cluster.shutdownNameNode(NN1);
-                    LOG.debug("KILLED Namenode with address ");
+                    LOG.debug("TestNN KILLED Namenode with address ");
                     TestHABasicFailover.waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout);
                     // Check NN2 is the leader and failover is detected
-                    assertTrue("NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
-                    assertTrue("Not all datanodes detected the new leader", TestHABasicFailover.doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
+                    assertTrue("TestNN NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
+                    assertTrue("TestNN Not all datanodes detected the new leader", TestHABasicFailover.doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
 
                 }
 
                 // the load should still continue without any IO Exception thrown
-                LOG.info("Wait a few seconds. Let them write some more");
-                Thread.sleep(2000);
+                LOG.info("TestNN Wait a few seconds. Let them write some more");
+                Thread.sleep(10000);
 
             } finally {
                 stopWriters();
             }
-            LOG.debug("All File Should Have been closed");
+            LOG.debug("TestNN All File Should Have been closed");
             //Thread.sleep(10000);
             verifyFile();
             // the block report intervals would inform the namenode of under replicated blocks
             // hflush() and close() would guarantee replication at all datanodes. This is a confirmation
-            waitReplication(fs, writers, replicationFactor, timeout);
+            waitReplication(fs, writers, replicationFactor, 120*1000);
 
             if (true) {
                 return;
@@ -297,7 +297,9 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                 try {
                     for (; running; i++) {
                         outputStream.writeInt(i);
+                        outputStream.flush();
                         datawrote++;
+                        
                         sleep(10);
                     }
                 } catch(InterruptedException e ){

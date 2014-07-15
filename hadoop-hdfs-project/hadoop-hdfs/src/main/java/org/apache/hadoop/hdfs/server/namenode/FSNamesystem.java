@@ -6677,22 +6677,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     return true;
   }
-  
-//  private List<INode> getChildren(final INodeDirectory dir) throws StorageException{
-//    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_CHILDREN) {
-//      @Override
-//      public Object performTask() throws PersistanceException, IOException {
-//        INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-//        return da.indexScanFindInodesByParentId(dir.getId());
-//      }
-//    };
-//    try {
-//      return (List<INode>) handler.handle();
-//    } catch (IOException ex) {
-//      throw new StorageException(ex.getMessage());
-//    }
-//  }
-  
+ 
   //END_HOP_CODE
   
 

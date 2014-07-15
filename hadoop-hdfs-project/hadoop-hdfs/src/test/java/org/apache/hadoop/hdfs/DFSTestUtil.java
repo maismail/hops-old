@@ -603,7 +603,7 @@ public class DFSTestUtil {
       }
       
       if(System.currentTimeMillis() - initTime > timeout) {
-        throw new TimeoutException("Waiting for replication timed out.");
+        throw new TimeoutException("Waiting for replication timed out. File "+fileName);
       }
     } while(!good);
   }

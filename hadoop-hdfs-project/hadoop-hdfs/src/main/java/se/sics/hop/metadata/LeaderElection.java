@@ -158,10 +158,18 @@ public class LeaderElection extends Thread {
         while (nn.getNamesystem().isRunning()) {
             try {
                 LOG.debug(hostname + ") Leader Election timeout. Updating the counter and checking for new leader " + nn.getId() + " " + nn.isLeader());
+                Long txStartTime = System.currentTimeMillis();
                 if (!suspend) {
                     leaderElectionHandler.handle(null/*fanamesystem*/);
                 }
-                Thread.sleep(leadercheckInterval);
+                Long txTotalTime = System.currentTimeMillis() - txStartTime;
+                if(txTotalTime < leadercheckInterval ){
+                  Thread.sleep(leadercheckInterval-txTotalTime);
+                }else{
+                  LOG.error("LeaderElection: Update Tx took very long time to update");
+                  Thread.sleep(10); // give a chance to other LE threads. There could be contention
+                }
+//                Thread.sleep(leadercheckInterval);
 
             } catch (InterruptedException ie) {
                 LOG.debug(hostname + ") LeaderElection thread received InterruptedException.", ie);
@@ -197,7 +205,7 @@ public class LeaderElection extends Thread {
                         if (j < newLeaders.size()) {
                             newLeader = newLeaders.get(j);
                         } else {
-                            LOG.error(hostname + ") No alive nodes in the table");
+                            LOG.error("LeaderElection:"+ hostname + ") No alive nodes in the table");
                             throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") { };
                         }
                     }
