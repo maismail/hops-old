@@ -13,3 +13,4 @@ hadoop-hdfs-project/hadoop-hdfs-httpfs/downloads
 *.junit
 /results/
 
+/results.backup/

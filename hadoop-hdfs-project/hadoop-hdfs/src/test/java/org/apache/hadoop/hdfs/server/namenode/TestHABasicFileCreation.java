@@ -45,13 +45,14 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
     FileSystem fs = null;
     int NN1 = 0, NN2 = 1;
     static int NUM_NAMENODES = 2;
-    static int NUM_DATANODES = 1;
+    static int NUM_DATANODES = 3;
     // 10 seconds timeout default
-    long timeout = 10000;
+    long NNDeathTimeout = 10000;
     boolean writeInSameDir = true;
-    boolean killNN = true;
+    boolean killNN = false;
     boolean waitFileisClosed = true;
     int fileCloseWaitTile = 5000;
+    int testTimeout = 5 * 60 * 1000;
     Path baseDir = new Path("/testsLoad");
     //Writer[] writers = new Writer[10];
     Writer[] writers = new Writer[100];
@@ -71,17 +72,18 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
         conf.setInt(DFSConfigKeys.DFS_REPLICATION_KEY, replicationFactor);
         conf.setInt(DFSConfigKeys.DFS_DATANODE_HANDLER_COUNT_KEY, 1);
         conf.setInt(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, 1024);
-        conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 30 * 1000); // 10 sec
-        conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
+        conf.setLong(DFSConfigKeys.DFS_NAMENODE_REPLICATION_PENDING_TIMEOUT_SEC_KEY,15);
+        //conf.setLong(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 30 * 1000); // 10 sec
+        //conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 3);  // 3 sec
 
-        cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).numDataNodes(NUM_DATANODES).build();
+        cluster = new MiniDFSCluster.Builder(conf).nnTopology(MiniDFSNNTopology.simpleHOPSTopology(NUM_NAMENODES)).format(true).numDataNodes(NUM_DATANODES).build();
         cluster.waitActive();
         
         LOG.debug("NN1 address is "+cluster.getNameNode(NN1).getNameNodeAddress() + " ld: " + cluster.getNameNode(NN1).isLeader() +" NN2 address is " + cluster.getNameNode(NN2).getNameNodeAddress()+ " ld: " + cluster.getNameNode(NN2).isLeader());
 
         fs = cluster.getNewFileSystemInstance(NN1);
 
-        timeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)*
+        NNDeathTimeout = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT)*
                 (conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT)+2);
 
         // create the directory namespace
@@ -163,15 +165,19 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
      * blocks should be reported
      */
     @Test
-    public void testFailoverWhenLeaderNNCrashes() {
+    public void testFailoverWhenLeaderNNCrashesTest1() {
         // Testing with replication factor of 3
         short repFactor = 3;
         LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
         failoverWhenLeaderNNCrashes(repFactor);
-        // Testing with replication factor of 6
-    repFactor = 6;
-    LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
-    failoverWhenLeaderNNCrashes(repFactor);
+    }
+    
+   @Test
+    public void testFailoverWhenLeaderNNCrashesTest2() {
+        // Testing with replication factor of 3
+        short repFactor = 6;
+        LOG.info("Running test [testFailoverWhenLeaderNNCrashes()] with replication factor " + repFactor);
+        failoverWhenLeaderNNCrashes(repFactor);
     }
 
     private void failoverWhenLeaderNNCrashes(short replicationFactor) {
@@ -194,7 +200,7 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
                 if (killNN) {
                     cluster.shutdownNameNode(NN1);
                     LOG.debug("TestNN KILLED Namenode with address ");
-                    TestHABasicFailover.waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), timeout);
+                    TestHABasicFailover.waitLeaderElection(cluster.getDataNodes(), cluster.getNameNode(NN2), NNDeathTimeout);
                     // Check NN2 is the leader and failover is detected
                     assertTrue("TestNN NN2 is expected to be the leader, but is not", cluster.getNameNode(NN2).isLeader());
                     assertTrue("TestNN Not all datanodes detected the new leader", TestHABasicFailover.doesDataNodesRecognizeLeader(cluster.getDataNodes(), cluster.getNameNode(NN2)));
@@ -213,7 +219,7 @@ public class TestHABasicFileCreation extends junit.framework.TestCase {
             verifyFile();
             // the block report intervals would inform the namenode of under replicated blocks
             // hflush() and close() would guarantee replication at all datanodes. This is a confirmation
-            waitReplication(fs, writers, replicationFactor, 120*1000);
+            waitReplication(fs, writers, replicationFactor, testTimeout);
 
             if (true) {
                 return;

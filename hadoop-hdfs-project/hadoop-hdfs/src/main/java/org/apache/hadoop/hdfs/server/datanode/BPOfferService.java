@@ -1068,7 +1068,7 @@ class BPOfferService implements Runnable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          LOG.warn("RPC faild. NN used was "+actor.getNNSocketAddress()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          LOG.debug("RPC faild. NN used was "+actor.getNNSocketAddress()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           blackListNN.add(actor.getNNSocketAddress());
           continue;
         } else {

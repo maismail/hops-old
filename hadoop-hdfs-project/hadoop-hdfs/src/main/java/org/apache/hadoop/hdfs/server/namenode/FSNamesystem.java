@@ -2536,6 +2536,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //              }
 
                 // Return located block
+                LocatedBlock locatedBlocks = makeLocatedBlock(newBlock, targets, offset);
+                LOG.debug("Create new bid="+newBlock.getBlockId()+" on "+Arrays.toString(targets));
                 return makeLocatedBlock(newBlock, targets, offset);
             }
         };

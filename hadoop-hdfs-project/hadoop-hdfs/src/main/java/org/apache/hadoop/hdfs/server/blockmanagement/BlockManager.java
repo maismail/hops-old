@@ -2907,7 +2907,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public Object performTask() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus());
+        LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus()+" bid="+rdbi.getBlock().getBlockId()+" dataNode="+node.getXferAddr());
         switch (rdbi.getStatus()) {
         case DELETED_BLOCK:
           removeStoredBlock(rdbi.getBlock(), node);
