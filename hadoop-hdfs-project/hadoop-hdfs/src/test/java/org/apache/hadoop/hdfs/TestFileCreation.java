@@ -46,7 +46,6 @@ import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
 import java.util.logging.Logger;
-import org.apache.commons.logging.Log;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
@@ -58,8 +57,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -75,12 +72,10 @@ import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
 import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -94,7 +89,6 @@ import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
 import org.junit.Test;
-import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -1206,30 +1200,30 @@ public class TestFileCreation {
       }
       out.close();
             
-//      FSDataInputStream in = fs.open(p1);
-//      for (i = 0; i < blocks; i++) {
-//        assertEquals(i, in.read());
-//      }
+      FSDataInputStream in = fs.open(p1);
+      for (i = 0; i < blocks; i++) {
+        assertEquals(i, in.read());
+      }
 
-//      out = dfs.create(p2);
-//      i = 0;
-//      for (; i < blocks; i++) {
-//        out.write(i);
-//      }
-//      out.close();  
-//      
-//      dfs.concat(p1, new Path[]{p2});
-//      
-//      dfs.rename(p1, p2);
-//// 
-//      
-//      cluster.restartNameNode();
-//
-//      //verify
-//      in = fs.open(p1);
-//      for (i = 0; i < blocks*2; i++) {
-//        assertEquals(0, in.read());
-//      }
+      out = dfs.create(p2);
+      i = 0;
+      for (; i < blocks; i++) {
+        out.write(i);
+      }
+      out.close();  
+      
+      dfs.concat(p1, new Path[]{p2});
+      
+      dfs.rename(p1, p2);
+// 
+      
+      cluster.restartNameNode();
+
+      //verify
+      in = fs.open(p1);
+      for (i = 0; i < blocks*2; i++) {
+        assertEquals(0, in.read());
+      }
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
@@ -1237,10 +1231,6 @@ public class TestFileCreation {
     }
   }
 
-  @Test
-  public void testMemcache(){
-    
-  }
   @Test
   public void testTx() throws IOException, InterruptedException{
       class thread extends Thread{
