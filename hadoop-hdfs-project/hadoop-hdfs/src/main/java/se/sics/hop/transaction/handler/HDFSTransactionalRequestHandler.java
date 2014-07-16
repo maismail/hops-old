@@ -2,9 +2,8 @@ package se.sics.hop.transaction.handler;
 
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import se.sics.hop.common.HopBlockIdGen;
-import se.sics.hop.common.HopINodeIdGen;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.TransactionInfo;
 
 /**
@@ -48,7 +47,9 @@ public abstract class HDFSTransactionalRequestHandler extends TransactionalReque
   @Override
   public void preTransactionSetup() throws PersistanceException, IOException {
     super.preTransactionSetup(); 
-    
+    if(path != null){
+      PathMemcache.getInstance().get(path);
+    }
     //call user defined setUp
     setUp();
   }

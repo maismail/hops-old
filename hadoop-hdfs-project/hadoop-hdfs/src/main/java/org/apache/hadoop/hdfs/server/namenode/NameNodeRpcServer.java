@@ -122,6 +122,7 @@ import org.apache.hadoop.util.VersionInfo;
 import org.apache.hadoop.util.VersionUtil;
 
 import com.google.protobuf.BlockingService;
+import java.util.List;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
@@ -1124,5 +1125,14 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
     return nn.getActiveNamenodes();
   }
+  
+  
+
     //HOP_CODE_END
+
+  @Override
+  public void changeConf(List<String> props, List<String> newVals) throws IOException {
+    namesystem.changeConf(props, newVals);
+  }
+
 }

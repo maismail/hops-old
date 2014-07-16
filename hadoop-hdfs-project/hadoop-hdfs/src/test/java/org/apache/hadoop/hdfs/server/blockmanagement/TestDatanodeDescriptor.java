@@ -68,7 +68,7 @@ public class TestDatanodeDescriptor {
   @Test
   public void testBlocksCounter() throws Exception {
     StorageFactory.setConfiguration(new HdfsConfiguration());
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
     
     DatanodeDescriptor dd = DFSTestUtil.getLocalDatanodeDescriptor();
     assertEquals(0, dd.numBlocks());

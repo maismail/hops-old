@@ -136,6 +136,15 @@ CREATE TABLE `leases` (
 
 delimiter $$
 
+CREATE TABLE `path_memcached` (
+  `path` varchar(128) NOT NULL,
+  `inodeids` varbinary(13500) NOT NULL,
+  PRIMARY KEY (`path`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
+delimiter $$
+
 CREATE TABLE `pending_blocks` (
   `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,

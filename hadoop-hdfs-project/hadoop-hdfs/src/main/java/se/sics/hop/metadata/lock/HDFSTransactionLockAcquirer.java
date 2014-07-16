@@ -13,6 +13,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
@@ -39,6 +41,7 @@ import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.context.BlockPK;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
@@ -65,7 +68,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private LinkedList<Lease> leaseResults = new LinkedList<Lease>();
   private LinkedList<BlockInfo> blockResults = new LinkedList<BlockInfo>();
   private boolean terminateAsyncThread = false;
-  
+  private static Configuration conf;
 
   public HDFSTransactionLockAcquirer() {
     this.locks = new HDFSTransactionLocks();
@@ -75,16 +78,20 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     this.locks = new HDFSTransactionLocks(resolvedInodes, preTxPathFullyResolved);
   }
 
+  public static void setConfiguration(Configuration c) {
+    conf = c;
+  }
+    
   public HDFSTransactionLocks getLocks() {
     return this.locks;
   }
-
+  
   @Override
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException { //start taking locks from inodes
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
       
-      setPartitioningKey(null);
+      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
     
       acquireInodeLocks(locks.getInodeParam());
     }
@@ -251,8 +258,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
   public HDFSTransactionLocks acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
     
-    setPartitioningKey(null);
-    
     byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
@@ -262,6 +267,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
       //layer will not let the request go to the db as it has already cached the root inode
       //one simple solution is that to acquire lock on the short path first
+      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
       if (srcComponents.length <= dstComponents.length) {
         acquireInodeLocks(locks.getInodeParam()[0]);
         acquireInodeLocks(locks.getInodeParam()[1]);
@@ -959,27 +965,30 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-  private void setPartitioningKey(Integer inodeId){
-    if(inodeId == null){
+  private void setPartitioningKey(Integer inodeId) {
+    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+    if (inodeId == null || !isSetPartitionKeyEnabled) {
       LOG.warn("Transaction Partition Key is not Set");
-    }
-    else{
+    } else {
       //set partitioning key
       Object[] key = new Object[2];
       key[0] = inodeId; //pid
       key[1] = new Long(0);
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-        LOG.debug("Setting Partitioning Key to be "+ inodeId);
+      LOG.debug("Setting Partitioning Key to be " + inodeId);
     }
   }
-  
-    private void setPartitioningKeyForLeader(){
+
+  private void setPartitioningKeyForLeader() {
+    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+    if (isSetPartitionKeyEnabled) {
       //set partitioning key
       Object[] key = new Object[2];
       key[0] = LeaderElection.LEADER_INITIALIZATION_ID; //pid
       key[1] = HopLeader.DEFAULT_PARTITION_VALUE;
       EntityManager.setPartitionKey(LeaderDataAccess.class, key);
       //LOG.debug("Setting Partitioning for Leader Election ");
+    }
   }
 }

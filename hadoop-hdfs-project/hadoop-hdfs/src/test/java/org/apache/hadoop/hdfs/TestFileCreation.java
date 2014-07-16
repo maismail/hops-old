@@ -46,7 +46,6 @@ import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
 import java.util.logging.Logger;
-import org.apache.commons.logging.Log;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
@@ -58,8 +57,6 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -79,7 +76,6 @@ import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -1193,7 +1189,7 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p1 = new Path("/f1");
+      Path p1 = new Path("/f1/f2/f3/myfile.txt");
       Path p2 = new Path("/f2"); 
       
       int blocks  = 1;
@@ -1203,9 +1199,7 @@ public class TestFileCreation {
         out.write(i);
       }
       out.close();
-      
-      
-      
+            
       FSDataInputStream in = fs.open(p1);
       for (i = 0; i < blocks; i++) {
         assertEquals(i, in.read());
@@ -1221,23 +1215,21 @@ public class TestFileCreation {
       dfs.concat(p1, new Path[]{p2});
       
       dfs.rename(p1, p2);
-//// 
-//      
-//      cluster.restartNameNode();
-//
-//      //verify
-//      in = fs.open(p1);
-//      for (i = 0; i < blocks*2; i++) {
-//        assertEquals(0, in.read());
-//      }
+// 
+      
+      cluster.restartNameNode();
+
+      //verify
+      in = fs.open(p1);
+      for (i = 0; i < blocks*2; i++) {
+        assertEquals(0, in.read());
+      }
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
       cluster.shutdown();
     }
   }
-
-       
 
   @Test
   public void testTx() throws IOException, InterruptedException{

@@ -82,7 +82,7 @@ public class TestCorruptReplicaInfo {
                                        StorageException {
     
       StorageFactory.setConfiguration(new HdfsConfiguration());
-      StorageFactory.getConnector().formatStorage();
+      StorageFactory.formatStorage();
       
       CorruptReplicasMap crm = new CorruptReplicasMap(null);
       
