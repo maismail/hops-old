@@ -439,6 +439,12 @@ message ActiveNamenodeListRequestProto {
 message ActiveNamenodeListResponseProto {
   repeated ActiveNamenodeProto namenodes = 1;
 }
+message ChangeConfProto{
+  repeated string props = 1;
+  repeated string newVals = 2;
+}
+message ChangeConfResponseProto{
+}
 //END_HOP_CODE
 
 service ClientNamenodeProtocol {
@@ -517,6 +523,7 @@ service ClientNamenodeProtocol {
   //START_HOP_CODE
   rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
   rpc ping (PingRequestProto) returns (PingResponseProto);
+  rpc changeConf (ChangeConfProto) returns (ChangeConfResponseProto);
   //END_HOP_CODE
 
 }

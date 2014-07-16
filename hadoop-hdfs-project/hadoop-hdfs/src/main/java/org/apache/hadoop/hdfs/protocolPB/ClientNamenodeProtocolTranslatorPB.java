@@ -896,5 +896,19 @@ public class ClientNamenodeProtocolTranslatorPB implements
     ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
     return an;
   }
+  
+  @Override
+  public void changeConf(List<String> props, List<String> newVals) throws IOException {
+    try {
+      ClientNamenodeProtocolProtos.ChangeConfProto.Builder req = ClientNamenodeProtocolProtos.ChangeConfProto.newBuilder();
+      req.addAllProps(props);
+      req.addAllNewVals(newVals);
+      rpcProxy.changeConf(null, req.build());
+    } catch (ServiceException ex) {
+      throw ProtobufHelper.getRemoteException(ex);
+    }
+  }
   //END_HOP_CODE
+
+
 }

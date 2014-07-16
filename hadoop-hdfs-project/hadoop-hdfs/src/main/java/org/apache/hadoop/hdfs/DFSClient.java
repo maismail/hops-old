@@ -2772,5 +2772,68 @@ public class DFSClient implements java.io.Closeable {
         };
         return (Boolean) doClientActionWithRetry(handler, "complete");
     }
+    
+    public void changeConf(final List<String> props, final List<String> newVals) throws IOException{
+      ClientActionHandler handler = new ClientActionHandler() {
+
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.changeConf(props, newVals);
+          return null;
+        }
+      };
+      doClientActionToAll(handler, "enableMemcache");
+    }
+    
+    
+  private Object doClientActionToAll(ClientActionHandler handler, String callerID) throws RemoteException, IOException {
+    callerID = callerID.toUpperCase();
+    long thisFnID = fnID.incrementAndGet();
+    
+    Exception exception = null;
+    boolean success = false;
+    for (NamenodeSelector.NamenodeHandle handle : namenodeSelector.getAllNameNode()) { 
+      try {
+        LOG.debug(thisFnID + ") " + callerID + " sending RPC to " + handle.getNamenode());
+        Object obj = handler.doAction(handle.getRPCHandle());
+        success = true;
+        //no exception 
+        return obj;
+      } catch (Exception e) {
+        exception = e;
+        if (ExceptionCheck.isLocalConnectException(e)) {
+          //black list the namenode 
+          //so that it is not used again
+          if (handle != null) {
+            LOG.warn(thisFnID + ") " + callerID + " RPC faild. NN used was " + handle.getNamenode() + ", Exception " + e);
+            namenodeSelector.blackListNamenode(handle);
+          } else {
+            LOG.warn(thisFnID + ") " + callerID + " RPC faild. NN was NULL,  Exception " + e);
+          }
+          continue;
+        } else {
+          break;
+        }
+      }
+    }
+    if (!success) {
+      //print the fn call trace to figure out with RPC failed
+      for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
+        LOG.debug(thisFnID + ") " + callerID + " Failed RPC Trace, " + Thread.currentThread().getStackTrace()[j]);
+      }
+
+      LOG.warn(thisFnID + ") " + callerID + " Exception was " + exception);
+      exception.printStackTrace();
+      if (exception != null) {
+        if (exception instanceof RemoteException) {
+          throw (RemoteException) exception;
+        } else {
+          throw (IOException) exception;
+        }
+      }
+    }
+    return null;
+  }
+   
   //END_HOP_CODE
 }

@@ -225,6 +225,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.EntityManager;
 
 /***************************************************
@@ -405,6 +406,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    private long nameNodeId;   // id of the name node. set by the NameNode instance
    private static boolean systemLevelLockEnabled = false;
    private static boolean rowLevelLockEnabled = true;
+   private final Configuration conf;
   //END_HOP_CODE
     
   /**
@@ -524,6 +526,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   FSNamesystem(Configuration conf/*, FSImage fsImage*/) throws IOException {
     try {
+      this.conf = conf;
       resourceRecheckInterval = conf.getLong(
           DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_KEY,
           DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_DEFAULT);
@@ -6495,6 +6498,23 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode != null) {
       safeMode.performSafeModePendingOperation();
+    }
+  }
+  
+  public void changeConf(List<String> props, List<String> newVals) throws IOException {
+    for (int i = 0; i < props.size(); i++) {
+      String prop = props.get(i);
+      String value = newVals.get(i);
+      if (prop.equals(DFSConfigKeys.DFS_MEMCACHE_ENABLED) || prop.equals(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED)) {
+        LOG.info("change configuration for  " + prop + " to " + value);
+        conf.set(prop, value);
+        if (prop.equals(DFSConfigKeys.DFS_MEMCACHE_ENABLED)) {
+          PathMemcache.getInstance().enableOrDisable(Boolean.parseBoolean(value));
+        }
+      }else{
+        LOG.info("change configuration for  " + prop + " to " + value + " is not applicable");
+      }
+
     }
   }
   

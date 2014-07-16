@@ -176,6 +176,15 @@ public class NamenodeSelector extends Thread {
             wiatObjectForUpdate.notify();
         }
     }
+    
+  public List<NamenodeSelector.NamenodeHandle> getAllNameNode() throws IOException {
+    if (nnList == null || nnList.isEmpty()) {
+      asyncNNListUpdate();
+      throw new NoAliveNamenodeException();
+    }
+    return nnList;
+  }
+       
     /**
      * Gets the appropriate namenode for a read/write operation
      *

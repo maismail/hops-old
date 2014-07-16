@@ -48,6 +48,9 @@ public class PathMemcache {
   private String keyPrefix;
   private final HashMap<String, CacheEntry> cache = new HashMap<String, CacheEntry>();
 
+  private int numberOfConnections;
+  private String server;
+  
   private PathMemcache() {
   }
 
@@ -59,25 +62,48 @@ public class PathMemcache {
   }
 
   public void setConfiguration(Configuration conf) throws IOException {
-    int numberOfConnections = conf.getInt(DFSConfigKeys.DFS_MEMCACHE_CONNECTION_POOL_SIZE, DFSConfigKeys.DFS_MEMCACHE_CONNECTION_POOL_SIZE_DEFAULT);
-    String server = conf.get(DFSConfigKeys.DFS_MEMCACHE_SERVER, DFSConfigKeys.DFS_MEMCACHE_SERVER_DEFAULT);
+    numberOfConnections = conf.getInt(DFSConfigKeys.DFS_MEMCACHE_CONNECTION_POOL_SIZE, DFSConfigKeys.DFS_MEMCACHE_CONNECTION_POOL_SIZE_DEFAULT);
+    server = conf.get(DFSConfigKeys.DFS_MEMCACHE_SERVER, DFSConfigKeys.DFS_MEMCACHE_SERVER_DEFAULT);
     keyExpiry = conf.getInt(DFSConfigKeys.DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS, DFSConfigKeys.DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT);
     keyPrefix = conf.get(DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX, DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX_DEFAULT);
     isEnabled = conf.getBoolean(DFSConfigKeys.DFS_MEMCACHE_ENABLED, DFSConfigKeys.DFS_MEMCACHE_ENABLED_DEFAULT);
-    LOG.error("Memcache is " + isEnabled);
-    if (isEnabled) {
-      mcpool = new MemcachedClientPool(numberOfConnections, server);
+    if(isEnabled){
+      forceStart();
+    }
+  }
+  
+  public void enableOrDisable(boolean forceEnable) throws IOException {
+    if (forceEnable) {
+      forceStart();
+    } else {
+      stop();
     }
   }
 
+  private void forceStart() throws IOException {
+    LOG.info("start PathMemcached");
+    mcpool = new MemcachedClientPool(numberOfConnections, server);
+    isEnabled = true;
+  }
+
+  private void stop() {
+    if (isEnabled) {
+      LOG.info("stop PathMemcached");
+      mcpool.shutdown();
+      isEnabled = false;
+    }
+  }
+    
   public void set(final String path, final INode[] inodes) {
     if (isEnabled) {
       final String key = getKey(path);
       final int[] inodeIds = getINodeIds(inodes);
+      final long startTime = System.currentTimeMillis();
       mcpool.poll().set(key, keyExpiry, new CacheEntry(inodeIds)).addListener(new OperationCompletionListener() {
         @Override
         public void onComplete(OperationFuture<?> f) throws Exception {
-          LOG.debug("SET for path (" + path + ")  " + key + "=" + Arrays.toString(inodeIds));
+          long elapsed = System.currentTimeMillis() - startTime;
+          LOG.debug("SET for path (" + path + ")  " + key + "=" + Arrays.toString(inodeIds) + " in " + elapsed + " msec");
         }
       });
     }
@@ -85,10 +111,12 @@ public class PathMemcache {
 
   public void get(String path) throws IOException {
     if (isEnabled) {
+      final long startTime = System.currentTimeMillis();
       Object ce = mcpool.poll().get(getKey(path));
       if (ce != null && ce instanceof CacheEntry) {
-        LOG.debug("GET for path (" + path + ")  got value = " + ce);
+        LOG.debug("GET for path (" + path + ")  got value = " + ce + " in " + (System.currentTimeMillis() - startTime) + " msec");
         verifyINodes(path, (CacheEntry)ce);
+        LOG.debug("GET for path (" + path + ") Total time = " + (System.currentTimeMillis() - startTime) + " msec");
       }
     }
   }
@@ -119,6 +147,7 @@ public class PathMemcache {
 
   public void flush(){
     if(isEnabled){
+      cache.clear();
       mcpool.poll().flush().addListener(new OperationCompletionListener() {
 
         @Override
