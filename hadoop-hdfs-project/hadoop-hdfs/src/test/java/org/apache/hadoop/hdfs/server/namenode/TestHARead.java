@@ -13,7 +13,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import static org.apache.hadoop.hdfs.server.namenode.TestHAFailoverUnderLoad.NUM_NAMENODES;
+import static org.apache.hadoop.hdfs.server.namenode.TestHADataNodeFailure.NUM_NAMENODES;
 import org.apache.log4j.Level;
 import org.junit.Test;
 

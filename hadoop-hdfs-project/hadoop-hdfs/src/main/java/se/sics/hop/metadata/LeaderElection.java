@@ -169,7 +169,6 @@ public class LeaderElection extends Thread {
                   LOG.error("LeaderElection: Update Tx took very long time to update");
                   Thread.sleep(10); // give a chance to other LE threads. There could be contention
                 }
-//                Thread.sleep(leadercheckInterval);
 
             } catch (InterruptedException ie) {
                 LOG.debug(hostname + ") LeaderElection thread received InterruptedException.", ie);

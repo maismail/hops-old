@@ -373,6 +373,8 @@ public class DatanodeManager {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     if(namesystem.isLeader()){
+       NameNode.stateChangeLog.info(
+              "DataNode is dead. Removing all replicas for datanode " + nodeInfo +" StorageID "+nodeInfo.getStorageID()+" index "+nodeInfo.getSId());
       blockManager.removeBlocksAssociatedTo(nodeInfo);
     }
     networktopology.remove(nodeInfo);
@@ -405,8 +407,10 @@ public class DatanodeManager {
 
   /** Remove a dead datanode. */
   void removeDeadDatanode(final DatanodeID nodeID) throws IOException {
+      DatanodeDescriptor d;
+      boolean removeDatanode = false;
       synchronized(datanodeMap) {
-        DatanodeDescriptor d;
+        
         try {
           d = getDatanode(nodeID);
         } catch(IOException e) {
@@ -415,8 +419,12 @@ public class DatanodeManager {
         if (d != null && isDatanodeDead(d)) {
           NameNode.stateChangeLog.info(
               "BLOCK* removeDeadDatanode: lost heartbeat from " + d);
-            removeDatanode(d);
+          removeDatanode = true;      
         }
+      }
+      //HOP removeDatanode might take verylong time. taking it out of the synchronized section. 
+      if(removeDatanode){
+        removeDatanode(d);
       }
   }
 

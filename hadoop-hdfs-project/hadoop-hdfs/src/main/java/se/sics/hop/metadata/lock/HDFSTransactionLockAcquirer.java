@@ -131,8 +131,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       if(!isPartKeySet){
           setPartitioningKey(inodeIdentifer.getInodeId());
         }
-      // dangling block
-      // take lock on the indeId basically bring null in the cache
+
       if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
           inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
           if(inode == null){
