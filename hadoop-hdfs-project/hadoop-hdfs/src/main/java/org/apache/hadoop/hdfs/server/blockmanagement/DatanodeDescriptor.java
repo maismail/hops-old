@@ -36,6 +36,7 @@ import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.util.LightWeightHashSet;
 import org.apache.hadoop.util.Time;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 
 /**
  * This class extends the DatanodeInfo class with ephemeral information (eg
@@ -104,7 +105,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
   //private volatile BlockInfo blockList = null;
   private int sid = -1;
   
-  private int numBlocks = 0;
+//  private int numBlocks = 0;
   // isAlive == heartbeats.contains(this)
   // This is an optimization, because contains takes O(n) time on Arraylist
   public boolean isAlive = false;
@@ -237,7 +238,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
     if(b.hasReplicaIn(this))
       return false;
     b.addReplica(this, b);
-    numBlocks++;
+//    numBlocks++;
     return true;
   }
   
@@ -247,7 +248,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
    */
   public boolean removeBlock(BlockInfo b) throws PersistanceException {
     if(b.removeReplica(this) != null){
-      numBlocks--;
+//      numBlocks--;
       return true;
     }else{
       return false;
@@ -314,8 +315,15 @@ public class DatanodeDescriptor extends DatanodeInfo {
     }
   }
 
-  public int numBlocks() {
-    return numBlocks;
+  public int numBlocks() throws IOException {
+//    return numBlocks;
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_REPLICAS_ON_NODE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        ReplicaDataAccess da = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
+        return da.countAllReplicasForStorageId(getSId());
+      }
+    }.handle();
   }
 
   /**
