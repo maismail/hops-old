@@ -4442,6 +4442,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     //HOP_START_CODE
     public ThreadLocal<Boolean> safeModePendingOperation = new ThreadLocal<Boolean>();
+    private final Set<Long> safeBlocks = new HashSet<Long>();
     //HOP_END_CODE
     
     /**
@@ -4562,6 +4563,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           + blockManager.numOfUnderReplicatedBlocks() + " blocks");
 
       startSecretManagerIfNecessary();
+      
+      safeBlocks.clear();
     }
 
     /**
@@ -4858,6 +4861,24 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     private void setSafeModePendingOperation(Boolean val){
       LOG.debug("SafeModeX Some operation are put on hold");
       safeModePendingOperation.set(val);
+    }
+    
+    //HOP
+    private void adjustSafeBlocks(Set<Long> safeBlocks) {
+      int lastSafeBlockSize = this.safeBlocks.size();
+      this.safeBlocks.addAll(safeBlocks);
+      int newSafeBlockSize = this.safeBlocks.size();
+      int deltaSafe = (newSafeBlockSize - lastSafeBlockSize);
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Adjusting safe blocks from "
+                + blockSafe + "/" + blockTotal + " to "
+                + (blockSafe + deltaSafe) + "/" + blockTotal);
+      }
+      assert blockSafe + deltaSafe >= 0 : "Can't reduce blockSafe "
+              + blockSafe + " by " + deltaSafe + ": would be negative";
+
+      blockSafe += deltaSafe;
+      setSafeModePendingOperation(true);
     }
     
     private void performSafeModePendingOperation() throws IOException {
@@ -6249,7 +6270,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * key and value is a map of live node attribute keys to its values
    */
   @Override // NameNodeMXBean
-  public String getLiveNodes() {
+  public String getLiveNodes() throws IOException{
     final Map<String, Map<String,Object>> info = 
       new HashMap<String, Map<String,Object>>();
     final List<DatanodeDescriptor> live = new ArrayList<DatanodeDescriptor>();
@@ -6516,6 +6537,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
 
     }
+  }
+  
+  @Override
+  public void adjustSafeModeBlocks(Set<Long> safeBlocks) throws IOException {
+        // safeMode is volatile, and may be set to null at any time
+    SafeModeInfo safeMode = this.safeMode;
+    if (safeMode == null)
+      return;
+    safeMode.adjustSafeBlocks(safeBlocks);
   }
   
   //END_HOP_CODE

@@ -18,6 +18,7 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import java.io.IOException;
+import java.util.Set;
 import org.apache.hadoop.classification.InterfaceAudience;
 import se.sics.hop.exception.PersistanceException;
 import org.apache.hadoop.hdfs.util.RwLock;
@@ -47,5 +48,8 @@ public interface Namesystem extends RwLock, SafeMode {
   
   /** Returns the namenode id*/
   public long getNamenodeId();
+  
+  public void adjustSafeModeBlocks(Set<Long> safeBlocks) throws IOException;
+   
   //END_HOP_CODE
 }

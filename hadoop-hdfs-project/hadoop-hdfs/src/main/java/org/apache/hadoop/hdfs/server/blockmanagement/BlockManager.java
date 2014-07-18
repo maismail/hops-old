@@ -75,6 +75,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import java.util.HashSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -1863,43 +1864,53 @@ public class BlockManager {
       final Collection<BlockToMarkCorrupt> toCorrupt, // add to corrupt replicas list
       final Collection<StatefulBlockInfo> toUC) throws IOException{ // add to under-construction list
     
-     final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    
+    HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        if (newReport == null) {
+          return null;
+        }
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+                .addBlocks(newReport.getBlockListAsLongs())
+                .addInvalidatedBlocks(dn.getSId())
+                .addReplicas(dn.getSId());
+        return tla.acquireBatch();
+      }
 
-     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-       @Override
-       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-         if(newReport == null)
-           return null;
-         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-         tla.getLocks()
-                 .addBlocks(newReport.getBlockListAsLongs())
-                 .addInvalidatedBlocks(dn.getSId())
-                 .addReplicas(dn.getSId());
-         return tla.acquireBatch();
-       }
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        if (newReport == null) {
+          return null;
+        }
+        final boolean isInStartupSafeMode = namesystem.isInStartupSafeMode();
+        Set<Long> sb = new HashSet<Long>();
+        if (isInStartupSafeMode) {
+          sb.addAll(allMachineBlocks);
+        }
+        // scan the report and process newly reported blocks
+        BlockReportIterator itBR = newReport.getBlockReportIterator();
+        while (itBR.hasNext()) {
+          Block iblk = itBR.next();
+          ReplicaState iState = itBR.getCurrentReplicaState();
+          BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
+                  toAdd, toInvalidate, toCorrupt, toUC, sb);
+          if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
+            allMachineBlocks.remove(storedBlock.getBlockId());
+          }
+        }
+        toRemove.addAll(allMachineBlocks);
+        if(isInStartupSafeMode){
+          sb.removeAll(toRemove);
+          namesystem.adjustSafeModeBlocks(sb);
+        }
+        return null;
+      }
+    };
 
-       @Override
-       public Object performTask() throws PersistanceException, IOException {
-         if (newReport == null) {
-           return null;
-         }
-         // scan the report and process newly reported blocks
-         BlockReportIterator itBR = newReport.getBlockReportIterator();
-         while (itBR.hasNext()) {
-           Block iblk = itBR.next();
-           ReplicaState iState = itBR.getCurrentReplicaState();
-           BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
-                   toAdd, toInvalidate, toCorrupt, toUC);
-           if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
-             allMachineBlocks.remove(storedBlock.getBlockId());
-           }
-         }
-         toRemove.addAll(allMachineBlocks);
-         return null;
-       }
-     };
-
-     processReportHandler.handle();
+    processReportHandler.handle(namesystem);
   }
 
   /**
@@ -1938,7 +1949,8 @@ public class BlockManager {
       final Collection<BlockInfo> toAdd, 
       final Collection<Block> toInvalidate, 
       final Collection<BlockToMarkCorrupt> toCorrupt,
-      final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
+      final Collection<StatefulBlockInfo> toUC, 
+      final Set<Long> safeBlocks) throws PersistanceException, IOException {
     
     if(LOG.isDebugEnabled()) {
       LOG.debug("Reported block " + block
@@ -1962,6 +1974,7 @@ public class BlockManager {
           + block + " on " + dn + " size " + block.getNumBytes()
           + " does not belong to any file");
       toInvalidate.add(new Block(block));
+      safeBlocks.remove(block.getBlockId());
       return null;
     }
     BlockUCState ucState = storedBlock.getBlockUCState();
@@ -1991,12 +2004,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 //      } else {
         toCorrupt.add(c);
 //      }
+      safeBlocks.remove(block.getBlockId());
       return storedBlock;
     }
 
     if (isBlockUnderConstruction(storedBlock, ucState, reportedState)) {
        toUC.add(new StatefulBlockInfo(
           (BlockInfoUnderConstruction)storedBlock, reportedState));
+      safeBlocks.remove(block.getBlockId());
       return storedBlock;
     }
 
@@ -2004,6 +2019,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if (reportedState == ReplicaState.FINALIZED
         && storedBlock.findDatanode(dn) < 0) {
       toAdd.add(storedBlock);
+      safeBlocks.remove(block.getBlockId());
     }
     return storedBlock;
   }
@@ -3828,5 +3844,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
     }.handle();
   }
+  
+   private BlockInfo processReportedBlock(final DatanodeDescriptor dn, 
+      final Block block, final ReplicaState reportedState, 
+      final Collection<BlockInfo> toAdd, 
+      final Collection<Block> toInvalidate, 
+      final Collection<BlockToMarkCorrupt> toCorrupt,
+      final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
+     return processReportedBlock(dn, block, reportedState, toAdd, toInvalidate, toCorrupt, toUC, new HashSet<Long>());
+   }
   //END_HOP_CODE
 }
