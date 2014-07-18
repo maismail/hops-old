@@ -334,7 +334,7 @@ public class INodeUtil {
   }
   
   public static int[] resolveINodesFromBlockIds(final long[] blockIds) throws StorageException {
-    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_INODEIDS_FOR_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockLookUpDataAccess.class);
