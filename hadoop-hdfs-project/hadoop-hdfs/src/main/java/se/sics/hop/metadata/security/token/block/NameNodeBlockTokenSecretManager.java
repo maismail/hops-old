@@ -11,7 +11,6 @@ import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
@@ -109,7 +108,6 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     }
     if (isLeader) {
       LOG.info("Updating block keys");
-      removeExpiredKeys();
       updateBlockKeys();
     } else {
       retrieveBlockKeys();
@@ -230,30 +228,6 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
 
   private Collection<BlockKey> getAllKeys() throws IOException {
     return Variables.getAllBlockTokenKeysByIDLW().values();
-  }
-
-  private void removeExpiredKeys() throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.REMOVE_BLOCK_KEY) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlockKey(LockType.WRITE);
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByID();
-        for (BlockKey key : keys.values()) {
-          if (key != null) {
-            if (isExpired(key.getExpiryDate())) {
-              EntityManager.remove(key);
-            }
-          }
-        }
-        return null;
-      }
-    }.handle();
   }
 
   private void updateBlockKeys() throws IOException {

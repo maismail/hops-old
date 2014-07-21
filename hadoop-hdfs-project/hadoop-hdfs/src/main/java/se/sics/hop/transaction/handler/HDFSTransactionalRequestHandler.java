@@ -2,6 +2,8 @@ package se.sics.hop.transaction.handler;
 
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.TransactionInfo;
 
 /**
@@ -9,31 +11,51 @@ import se.sics.hop.transaction.TransactionInfo;
  */
 public abstract class HDFSTransactionalRequestHandler extends TransactionalRequestHandler {
 
-    public HDFSTransactionalRequestHandler(HDFSOperationType opType) {
-        super(opType);
-    }
+  private final String path;
+  
+  public HDFSTransactionalRequestHandler(HDFSOperationType opType){
+    this(opType, null);
+  }
+  
+  public HDFSTransactionalRequestHandler(HDFSOperationType opType, String path) {
+    super(opType);
+    this.path = path;
+  }
 
-    @Override
-    protected Object run(final Object namesystem) throws IOException {
-        
-      return super.run(new TransactionInfo() {
-        @Override
-        public String getContextName(OperationType opType) {
-          if (namesystem != null && namesystem instanceof FSNamesystem) {
-            return "NN (" + ((FSNamesystem)namesystem).getNamenodeId() + ") " + opType.toString() + "[" + Thread.currentThread().getId() + "]";
-          } else {
-            return opType.toString();
-          }
-        }
+  @Override
+  protected Object run(final Object namesystem) throws IOException {
 
-        @Override
-        public void performPostTransactionAction() throws IOException {
-          if (namesystem != null && namesystem instanceof FSNamesystem) {
-            ((FSNamesystem) namesystem).performPendingSafeModeOperation();
-          }
+    return super.run(new TransactionInfo() {
+      @Override
+      public String getContextName(OperationType opType) {
+        if (namesystem != null && namesystem instanceof FSNamesystem) {
+          return "NN (" + ((FSNamesystem) namesystem).getNamenodeId() + ") " + opType.toString() + "[" + Thread.currentThread().getId() + "]";
+        } else {
+          return opType.toString();
         }
-      });
+      }
+
+      @Override
+      public void performPostTransactionAction() throws IOException {
+        if (namesystem != null && namesystem instanceof FSNamesystem) {
+          ((FSNamesystem) namesystem).performPendingSafeModeOperation();
+        }
+      }
+    });
+  }
+
+  @Override
+  public void preTransactionSetup() throws PersistanceException, IOException {
+    super.preTransactionSetup(); 
+    if(path != null){
+      PathMemcache.getInstance().get(path);
     }
+    //call user defined setUp
+    setUp();
+  }
+
+  
+  public void setUp() throws PersistanceException, IOException {
     
-    
+  }
 }

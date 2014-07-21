@@ -30,7 +30,9 @@ CREATE TABLE `corrupt_replicas` (
   `inode_id` int(11) NOT NULL,
   `block_id` bigint(20) NOT NULL,
   `storage_id` int(11) NOT NULL,
-  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`)
+  `timestamp` bigint(20) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_id`,`storage_id`),
+  KEY `timestamp` (`timestamp`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (inode_id) */$$
 
@@ -129,6 +131,15 @@ CREATE TABLE `leases` (
   PRIMARY KEY (`holder`),
   KEY `holderid_idx` (`holder_id`),
   KEY `update_idx` (`last_update`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
+delimiter $$
+
+CREATE TABLE `path_memcached` (
+  `path` varchar(128) NOT NULL,
+  `inodeids` varbinary(13500) NOT NULL,
+  PRIMARY KEY (`path`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 

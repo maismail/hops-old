@@ -65,6 +65,11 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
         return convertDALtoHDFS(dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId));
     }
 
+  @Override
+  public List<INode> getINodesPkBatched(String[] names, int[] parentIds) throws StorageException {
+    return (List<INode>) convertDALtoHDFS(dataAccess.getINodesPkBatched(names, parentIds));
+  }
+      
     @Override
     public void prepare(Collection<INode> removed, Collection<INode> newed, Collection<INode> modified) throws StorageException {
         dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));

@@ -15,7 +15,7 @@
  */
 package se.sics.hop.common;
 
-import se.sics.hop.exception.PersistanceException;
+import java.io.IOException;
 import se.sics.hop.metadata.Variables;
 
 /**
@@ -25,32 +25,29 @@ import se.sics.hop.metadata.Variables;
  * this function was previously in FSImage.java.
  *
  */
-public class HopBlockIDGen {
+public class HopBlockIdGen {
 
   private static int BATCH_SIZE;
-  private static long endId;
-  private static long currentId;
-
+  private static CountersQueue cQ;
+  
   public static void setBatchSize(int batchSize) {
     BATCH_SIZE = batchSize;
-    currentId = endId = 0;
+    cQ = new CountersQueue();
   }
 
-  public static long getUniqueBlockId() throws PersistanceException {
-    if (needMoreIds()) {
-      getMoreIds();
+  public static int getUniqueBlockId(){
+    return (int) cQ.next();
+  }
+
+  public synchronized static boolean getMoreIdsIfNeeded(int threshold) throws IOException {
+    if (!cQ.has(threshold)) {
+      cQ.addCounter(Variables.incrementBlockIdCounter(BATCH_SIZE));
+      return true;
     }
-    return ++currentId;
+    return false;
   }
-
-  public static boolean needMoreIds() {
-    return currentId == endId;
-  }
-
-  private static void getMoreIds() throws PersistanceException {
-    long startId = Variables.getBlockId();
-    endId = startId + BATCH_SIZE;
-    Variables.setBlockId(endId);
-    currentId = startId;
+  
+  static CountersQueue getCQ() {
+    return cQ;
   }
 }

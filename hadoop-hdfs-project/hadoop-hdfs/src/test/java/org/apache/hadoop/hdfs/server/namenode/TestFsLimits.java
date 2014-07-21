@@ -70,7 +70,7 @@ public class TestFsLimits {
   
   private void initFS() throws StorageException, IOException{
         StorageFactory.setConfiguration(conf);
-    assert (StorageFactory.getConnector().formatStorage());
+    assert (StorageFactory.formatStorage());
     rootInode = FSDirectory.createRootInode(perms,true);
     inodes = new INode[]{ rootInode, null };
     fs = null;
@@ -175,8 +175,7 @@ public class TestFsLimits {
     @Override
     public TransactionLocks acquireLock() throws PersistanceException, IOException {
       HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name})
-             .addInodeIDCounterLock(TransactionLockTypes.LockType.WRITE);
+      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
       return tla.acquire();
     }
 

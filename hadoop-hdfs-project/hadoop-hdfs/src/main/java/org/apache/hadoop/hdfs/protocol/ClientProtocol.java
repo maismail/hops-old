@@ -19,6 +19,7 @@ package org.apache.hadoop.hdfs.protocol;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.List;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -958,5 +959,6 @@ public interface ClientProtocol {
   //START_HOP_CODE
   public void ping() throws IOException ;   // client checks if the NN is alive
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
+  public void changeConf(List<String> props, List<String> newVals) throws IOException;
   //END_HOP_CODE
 }

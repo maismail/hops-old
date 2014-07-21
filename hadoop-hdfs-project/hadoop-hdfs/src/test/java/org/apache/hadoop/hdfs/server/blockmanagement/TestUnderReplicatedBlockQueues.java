@@ -41,7 +41,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   @Test
   public void testBlockPriorities() throws Throwable  {
     StorageFactory.setConfiguration(new HdfsConfiguration());
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
     
     UnderReplicatedBlocks queues = new UnderReplicatedBlocks();
     BlockInfo block1 = add(new BlockInfo(new Block(1),1));
