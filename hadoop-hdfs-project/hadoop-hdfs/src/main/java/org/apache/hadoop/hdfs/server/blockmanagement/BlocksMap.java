@@ -29,7 +29,6 @@ import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -147,8 +146,6 @@ class BlocksMap {
     LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        //FIXME. Very inefficient way of block processing
-        EntityContext.log(HDFSOperationType.GET_ALL_BLOCKS.toString(), EntityContext.CacheHitState.LOSS, "FIXME. Very inefficient way of block processing");
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.findAllBlocks();
       }

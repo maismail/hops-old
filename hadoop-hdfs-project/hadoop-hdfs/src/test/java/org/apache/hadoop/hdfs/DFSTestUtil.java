@@ -97,7 +97,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 /** Utilities for HDFS tests */
 public class DFSTestUtil {

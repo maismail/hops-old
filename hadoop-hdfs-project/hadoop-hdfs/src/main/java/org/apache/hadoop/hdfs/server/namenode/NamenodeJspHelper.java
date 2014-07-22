@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.INodeIdentifier;
 import static org.apache.hadoop.hdfs.DFSUtil.percent2String;
 
 import java.io.IOException;
