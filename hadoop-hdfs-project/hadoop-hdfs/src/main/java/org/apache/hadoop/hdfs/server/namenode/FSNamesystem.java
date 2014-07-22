@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
