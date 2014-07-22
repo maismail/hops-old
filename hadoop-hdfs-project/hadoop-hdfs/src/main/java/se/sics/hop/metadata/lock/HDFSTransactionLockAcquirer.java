@@ -33,7 +33,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.log4j.NDC;
@@ -110,6 +110,80 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return locks;
   }
 
+  //just read all related Inode data withou taking any locks on the path
+  public HDFSTransactionLocks acquire(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException {
+    INode inode = null;
+    if (inode == null && inodeIdentifer != null) {
+      setPartitioningKey(inodeIdentifer.getInodeId());
+      // dangling block
+      // take lock on the indeId basically bring null in the cache
+      if (inodeIdentifer.getName() != null && inodeIdentifer.getPid() != null) {
+        inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), inodeIdentifer.getName(), inodeIdentifer.getPid(), locks);
+        if (inode == null) {
+          //there's no inode for this specific name,parentid which means this file is deleted
+          //so fallback to the scan to update the inodecontext cache
+          throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifer);
+        }
+      } else if (inodeIdentifer.getInodeId() != null) {
+        inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      } else {
+        throw new StorageException("INodeIdentifier objec is not properly initialized ");
+      }
+    }
+
+
+    if (inode != null) {
+      LinkedList<INode> resolvedINodeForBlk = new LinkedList<INode>();
+      resolvedINodeForBlk.add(inode);
+      allResolvedINodes.add(resolvedINodeForBlk);
+
+      List<BlockInfo> allBlks = (List<BlockInfo>) acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId());
+      blockResults.addAll(allBlks);
+
+      // if the allBlks does not contain the locks.blocksParam block then
+      // re-read it to bring null in the cache. the block was there in the pre-tx phase
+      // but was deleted before the locks were acquired
+      boolean found = false;
+      if (locks.getBlockID() != null) {
+        for (BlockInfo blk : allBlks) {
+          if (blk.getBlockId() == locks.getBlockID()) {
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
+          // we need to bring null for the other tables too. so put a dummy obj in the blocksResults list
+          BlockInfo blk = new BlockInfo();
+          if (inode != null) {
+            blk.setINodeIdNoPersistance(inode.getId());
+          }
+          blk.setBlockIdNoPersistance(locks.getBlockID());
+
+          blockResults.add(blk);
+        }
+      }
+
+      // sort the blocks. it is important as the ndb returns the blocks in random order and two
+      // txs trying to take locks on the blocks of a file will end up in dead lock 
+      Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
+    }
+
+    if (blockResults.isEmpty()) {
+      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
+      if (block != null) {
+        blockResults.add(block);
+      }
+    }
+
+    // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    acquireLeaseAndLpathLockNormal();
+    acquireLocksOnVariablesTable();
+    readINodeAttributes();
+    acquireBlockRelatedInfoASync();
+    return locks;
+  }
   /**
    * This method acquires lockk on the inode starting with a block-id. The
    * lock-types should be set before using add* methods. Otherwise, no lock

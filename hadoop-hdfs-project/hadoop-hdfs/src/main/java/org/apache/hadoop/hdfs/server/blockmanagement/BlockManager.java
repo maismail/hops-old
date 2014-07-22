@@ -79,7 +79,8 @@ import java.util.HashSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -91,7 +92,10 @@ import se.sics.hop.exception.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -2416,74 +2420,78 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * For each block in the name-node verify whether it belongs to any file,
    * over or under replicated. Place it into the respective queue.
    */
-  public void processMisReplicatedBlocks() throws IOException {
+ public void processMisReplicatedBlocks() throws IOException {
     assert namesystem.hasWriteLock();
 
     final long[] nrInvalid = {0}, nrOverReplicated = {0}, nrUnderReplicated = {0}, nrPostponed = {0},
             nrUnderConstruction = {0};
     neededReplications.clear();
 
-
-    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
-      INodeIdentifier inodeIdentifier;
-      @Override
-      public void setUp() throws StorageException {
-        Block b = (Block) getParams()[0];
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
-      }
-
+    //[M] we need to have a garbage collection to check for the invalid blocks,
+    // also this could be optimized even more by batching multiple inode files at a time
+    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        Block b = (Block) getParams()[0];
+        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
+                addINode(TransactionLockTypes.INodeLockType.READ).
+                addBlock().
                 addInvalidatedBlock().
                 addReplica().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addExcess();
-        return tla.acquireByBlock(inodeIdentifier);
+        return tla.acquire(inodeIdentifier);
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        BlockInfo block = (BlockInfo) getParams()[0];
-        MisReplicationResult res = processMisReplicatedBlock(block);
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("block " + block + ": " + res);
-        }
-        switch (res) {
-          case UNDER_REPLICATED:
-            nrUnderReplicated[0]++;
-            break;
-          case OVER_REPLICATED:
-            nrOverReplicated[0]++;
-            break;
-          case INVALID:
-            nrInvalid[0]++;
-            break;
-          case POSTPONE:
-            nrPostponed[0]++;
-            postponeBlock(block);
-            break;
-          case UNDER_CONSTRUCTION:
-            nrUnderConstruction[0]++;
-            break;
-          case OK:
-            break;
-          default:
-            throw new AssertionError("Invalid enum value: " + res);
+        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
+        INode inode = EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+        for (BlockInfo block : ((INodeFile) inode).getBlocks()) {
+          MisReplicationResult res = processMisReplicatedBlock(block);
+          if (LOG.isTraceEnabled()) {
+            LOG.trace("block " + block + ": " + res);
+          }
+          switch (res) {
+            case UNDER_REPLICATED:
+              nrUnderReplicated[0]++;
+              break;
+            case OVER_REPLICATED:
+              nrOverReplicated[0]++;
+              break;
+            case INVALID:
+              nrInvalid[0]++;
+              break;
+            case POSTPONE:
+              nrPostponed[0]++;
+              postponeBlock(block);
+              break;
+            case UNDER_CONSTRUCTION:
+              nrUnderConstruction[0]++;
+              break;
+            case OK:
+              break;
+            default:
+              throw new AssertionError("Invalid enum value: " + res);
+          }
         }
         return null;
       }
     };
-    for (BlockInfo block : blocksMap.getBlocks()) {
-      processMisReplicatedBlocksHandler.setParams(block);
+
+
+    List<INodeIdentifier> allINodes = getAllINodeFiles();
+    for (INodeIdentifier inode : allINodes) {
+      processMisReplicatedBlocksHandler.setParams(inode);
       processMisReplicatedBlocksHandler.handle(namesystem);
     }
+            
+//    for (BlockInfo block : blocksMap.getBlocks()) {
+//      processMisReplicatedBlocksHandler.setParams(block);
+//      processMisReplicatedBlocksHandler.handle(namesystem);
+//    }
 
     LOG.info("Total number of blocks            = " + blocksMap.size());
     LOG.info("Number of invalid blocks          = " + nrInvalid[0]);
@@ -3853,5 +3861,15 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
      return processReportedBlock(dn, block, reportedState, toAdd, toInvalidate, toCorrupt, toUC, new HashSet<Long>());
    }
+ 
+  private List<INodeIdentifier> getAllINodeFiles() throws IOException {
+    return (List<INodeIdentifier>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INODES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.getAllINodeFiles();
+      }
+    }.handle();
+  }
   //END_HOP_CODE
 }
