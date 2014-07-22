@@ -1335,7 +1335,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
+                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}). /*taking write lock because of access time*/
                 addBlock().
                 addReplica().
                 addExcess().
