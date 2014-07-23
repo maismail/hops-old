@@ -170,7 +170,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
     }
 
-    if (blockResults.isEmpty()) {
+    if (blockResults.isEmpty() && locks.getBlockID() != null) {
       BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
       if (block != null) {
         blockResults.add(block);
