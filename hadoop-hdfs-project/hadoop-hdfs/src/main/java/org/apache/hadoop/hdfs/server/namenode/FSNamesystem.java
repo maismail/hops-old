@@ -5033,7 +5033,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
       return;
-    safeMode.setBlockTotal((int)getCompleteBlocksTotal());
+    safeMode.setBlockTotal((int)blockManager.getTotalCompleteBlocks());
   }
 
   /**
@@ -5049,69 +5049,69 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Get the total number of COMPLETE blocks in the system.
    * For safe mode only complete blocks are counted.
    */
-  private long getCompleteBlocksTotal() throws IOException{
-    // Calculate number of blocks under construction
-    final long[] numUCBlocks = {0};
-    readLock();
-    HDFSTransactionalRequestHandler getCompleteBlocksTotal = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_COMPLETE_BLOCKS_TOTAL) {
-     
-      private SortedSet<String> leasePaths = null;
-      @Override
-      public void setUp() throws StorageException
-      {
-        String holder = ((Lease) getParams()[0]).getHolder();
-        leasePaths = INodeUtil.findPathsByLeaseHolder(holder);
-      }
-      
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        String holder = ((Lease) getParams()[0]).getHolder();
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                addBlock().
-                addLease(LockType.WRITE, holder).
-                addNameNodeLease(LockType.WRITE).
-                addLeasePath(LockType.WRITE);
-        return tla.acquireByLease(leasePaths);
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Lease lease = (Lease) getParams()[0];
-        for (HopLeasePath path : lease.getPaths()) {
-          final INodeFileUnderConstruction cons;
-          try {
-            cons = INodeFileUnderConstruction.valueOf(dir.getINode(path.getPath()), path.getPath());
-          } catch (UnresolvedLinkException e) {
-            throw new AssertionError("Lease files should reside on this FS");
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          }
-          BlockInfo[] blocks = cons.getBlocks();
-          if (blocks == null) {
-            continue;
-          }
-          for (BlockInfo b : blocks) {
-            if (!b.isComplete()) {
-              numUCBlocks[0]++;
-            }
-          }
-        }
-        return null;
-      }
-    };
-    try {
-      for (Lease lease : leaseManager.getSortedLeases()) {
-        getCompleteBlocksTotal.setParams(lease);
-        getCompleteBlocksTotal.handle(this);
-      }
-      LOG.info("Number of blocks under construction: " + numUCBlocks[0]);
-      return getBlocksTotal() - numUCBlocks[0];
-    } finally {
-      readUnlock();
-    }
-  }
+//  private long getCompleteBlocksTotal() throws IOException{
+//    // Calculate number of blocks under construction
+//    final long[] numUCBlocks = {0};
+//    readLock();
+//    HDFSTransactionalRequestHandler getCompleteBlocksTotal = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_COMPLETE_BLOCKS_TOTAL) {
+//     
+//      private SortedSet<String> leasePaths = null;
+//      @Override
+//      public void setUp() throws StorageException
+//      {
+//        String holder = ((Lease) getParams()[0]).getHolder();
+//        leasePaths = INodeUtil.findPathsByLeaseHolder(holder);
+//      }
+//      
+//      @Override
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+//        String holder = ((Lease) getParams()[0]).getHolder();
+//        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+//        tla.getLocks().
+//                addINode(INodeResolveType.PATH, INodeLockType.WRITE).
+//                addBlock().
+//                addLease(LockType.WRITE, holder).
+//                addNameNodeLease(LockType.WRITE).
+//                addLeasePath(LockType.WRITE);
+//        return tla.acquireByLease(leasePaths);
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        Lease lease = (Lease) getParams()[0];
+//        for (HopLeasePath path : lease.getPaths()) {
+//          final INodeFileUnderConstruction cons;
+//          try {
+//            cons = INodeFileUnderConstruction.valueOf(dir.getINode(path.getPath()), path.getPath());
+//          } catch (UnresolvedLinkException e) {
+//            throw new AssertionError("Lease files should reside on this FS");
+//          } catch (IOException e) {
+//            throw new RuntimeException(e);
+//          }
+//          BlockInfo[] blocks = cons.getBlocks();
+//          if (blocks == null) {
+//            continue;
+//          }
+//          for (BlockInfo b : blocks) {
+//            if (!b.isComplete()) {
+//              numUCBlocks[0]++;
+//            }
+//          }
+//        }
+//        return null;
+//      }
+//    };
+//    try {
+//      for (Lease lease : leaseManager.getSortedLeases()) {
+//        getCompleteBlocksTotal.setParams(lease);
+//        getCompleteBlocksTotal.handle(this);
+//      }
+//      LOG.info("Number of blocks under construction: " + numUCBlocks[0]);
+//      return getBlocksTotal() - numUCBlocks[0];
+//    } finally {
+//      readUnlock();
+//    }
+//  }
 
   /**
    * Enter safe mode manually.
