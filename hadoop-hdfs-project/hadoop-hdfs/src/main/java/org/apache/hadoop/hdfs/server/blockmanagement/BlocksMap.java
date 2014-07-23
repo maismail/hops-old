@@ -28,10 +28,11 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 
 /**
  * This class maintains the map from a block to its metadata.
@@ -142,6 +143,17 @@ class BlocksMap {
     return (Integer) getAllBlocksSizeHander.handle();
   }
 
+  int sizeCompleteOnly() throws IOException {
+    LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(HDFSOperationType.GET_COMPLETE_BLOCKS_TOTAL) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        return bida.countAllCompleteBlocks();
+      }
+    };
+    return (Integer) getAllBlocksSizeHander.handle();
+  }
+    
   Iterable<BlockInfo> getBlocks() throws IOException {
     LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS) {
       @Override
@@ -155,8 +167,6 @@ class BlocksMap {
   
   /** Get the capacity of the HashMap that stores blocks */
   int getCapacity(){
-    //FIXME XXX fix the capacity thing. not really applicable in our case
-    EntityContext.log("GET_CAPACITY", EntityContext.CacheHitState.LOSS, "FIXME. CAPACITY OF MEMORY IS 1");
     return Integer.MAX_VALUE;
   }
 
@@ -169,5 +179,15 @@ class BlocksMap {
   BlockInfo replaceBlock(BlockInfo newBlock) {
     //HOP: [M] doesn't make sense in our case, beacause the new block will have the same id as the old one
     return newBlock;
+  }
+  
+  List<INodeIdentifier> getAllINodeFiles() throws IOException {
+    return (List<INodeIdentifier>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INODES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.getAllINodeFiles();
+      }
+    }.handle();
   }
 }

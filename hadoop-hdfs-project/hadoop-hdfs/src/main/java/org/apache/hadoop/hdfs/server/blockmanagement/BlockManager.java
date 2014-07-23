@@ -31,7 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -55,7 +54,6 @@ import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager.AccessMode;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingDataNodeMessages.ReportedBlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.namenode.FSClusterStats;
@@ -84,7 +82,6 @@ import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -92,10 +89,7 @@ import se.sics.hop.exception.StorageException;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
-import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
@@ -2482,7 +2476,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
 
 
-    List<INodeIdentifier> allINodes = getAllINodeFiles();
+    List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
     for (INodeIdentifier inode : allINodes) {
       processMisReplicatedBlocksHandler.setParams(inode);
       processMisReplicatedBlocksHandler.handle(namesystem);
@@ -3861,15 +3855,9 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
      return processReportedBlock(dn, block, reportedState, toAdd, toInvalidate, toCorrupt, toUC, new HashSet<Long>());
    }
- 
-  private List<INodeIdentifier> getAllINodeFiles() throws IOException {
-    return (List<INodeIdentifier>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INODES) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-        return ida.getAllINodeFiles();
-      }
-    }.handle();
+   
+  public int getTotalCompleteBlocks() throws IOException {
+    return blocksMap.sizeCompleteOnly();
   }
   //END_HOP_CODE
 }
