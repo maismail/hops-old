@@ -165,10 +165,9 @@ public class TestHABasicFailover extends junit.framework.TestCase
         long initTime = System.currentTimeMillis();
         while (!nn.isLeader())
         {
-
             try
             {
-                Thread.sleep(2000); // 2sec
+                Thread.sleep(500); 
             }
             catch (InterruptedException ex)
             {
@@ -178,7 +177,7 @@ public class TestHABasicFailover extends junit.framework.TestCase
             // check for time out
             if (System.currentTimeMillis() - initTime >= timeout)
             {
-                throw new TimeoutException("Namenode was not elected leader");
+                throw new TimeoutException("Namenode was not elected leader. Time out "+timeout);
             }
         }
 

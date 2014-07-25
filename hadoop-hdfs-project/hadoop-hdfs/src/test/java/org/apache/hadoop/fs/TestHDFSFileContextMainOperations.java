@@ -45,11 +45,11 @@ public class TestHDFSFileContextMainOperations extends
   private static MiniDFSCluster cluster;
   private static Path defaultWorkingDirectory;
   private static HdfsConfiguration CONF = new HdfsConfiguration();
-  
+  private static int NNPORT=5555;
   @BeforeClass
   public static void clusterSetupAtBegining() throws IOException,
       LoginException, URISyntaxException {
-    cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(2).build();
+    cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(2).nameNodePort(NNPORT).build();
     cluster.waitClusterUp();
     fc = FileContext.getFileContext(cluster.getURI(0), CONF);
     defaultWorkingDirectory = fc.makeQualified( new Path("/user/" + 
@@ -62,7 +62,7 @@ public class TestHDFSFileContextMainOperations extends
       cluster.shutdown();
       cluster = null;
     }
-    cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(1)
+    cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(1).nameNodePort(NNPORT)
                                               .format(false).build();
     cluster.waitClusterUp();
     fc = FileContext.getFileContext(cluster.getURI(0), CONF);
@@ -278,4 +278,6 @@ public class TestHDFSFileContextMainOperations extends
     Assert.assertEquals(renameSucceeds, !exists(fc, src));
     Assert.assertEquals((dstExists||renameSucceeds), exists(fc, dst));
   }
+
+  
 }

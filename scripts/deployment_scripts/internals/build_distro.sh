@@ -11,7 +11,7 @@ source deployment.properties
 	    if [ $HOP_Do_Clean_Build = true ]; then
 		    CMD="$CMD clean "
 	    fi	
-       	CMD="$CMD install -Dmaven.test.skip=true -f $HOP_Metadata_Dal_Folder"
+       	CMD="$CMD install -Dmaven.test.skip=true -f $HOP_Metadata_Dal_Folder/pom.xml"
 	$CMD
     fi
 
@@ -21,7 +21,7 @@ source deployment.properties
 	    if [ $HOP_Do_Clean_Build = true ]; then
 		    CMD="$CMD clean "
 	    fi	
-	CMD="$CMD assembly:assembly -f $HOP_Metadata_Dal_Impl_Folder"
+	CMD="$CMD assembly:assembly -f $HOP_Metadata_Dal_Impl_Folder/pom.xml"
 	$CMD
     fi
 
@@ -38,7 +38,7 @@ source deployment.properties
                CMD="$CMD,native "  
             fi 	
 
-            CMD="$CMD -DskipTests -Dtar -f $HOP_Src_Folder"  
+            CMD="$CMD -DskipTests -Dtar -f $HOP_Src_Folder/pom.xml"  
             $CMD
     fi
 
@@ -49,7 +49,7 @@ source deployment.properties
 	    if [ $HOP_Do_Clean_Build = true ]; then
 		    CMD="$CMD clean "
 	    fi	
-    	CMD="$CMD assembly:assembly -f $HOP_Experiments_Folder"  
+    	CMD="$CMD assembly:assembly -f $HOP_Experiments_Folder/pom.xml"  
 	$CMD
     fi
 

@@ -586,8 +586,14 @@ public class DFSTestUtil {
         if (hostnames.length != replFactor) {
           String hostNameList = "";
           for (String h : hostnames) hostNameList += h + " ";
+          String status = "";
+          if(hostnames.length < replFactor){
+            status = "Under Replicated";
+          }else{
+            status = "Over Replicated";
+          }
           LOG.info("Block " + j + " of file " + fileName 
-              + " has replication factor " + hostnames.length + "; locations "
+              + " has replication factor " + hostnames.length + " status = "+status+" ; locations "
               + hostNameList);
           good = false;
           try {
@@ -603,7 +609,7 @@ public class DFSTestUtil {
       }
       
       if(System.currentTimeMillis() - initTime > timeout) {
-        throw new TimeoutException("Waiting for replication timed out.");
+        throw new TimeoutException("Waiting for replication timed out. File "+fileName);
       }
     } while(!good);
   }

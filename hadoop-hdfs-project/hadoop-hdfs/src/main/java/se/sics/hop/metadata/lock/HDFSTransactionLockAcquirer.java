@@ -81,11 +81,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   public static void setConfiguration(Configuration c) {
     conf = c;
   }
-    
+
   public HDFSTransactionLocks getLocks() {
     return this.locks;
   }
-  
+
   @Override
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException { //start taking locks from inodes
     // acuires lock in order
@@ -210,8 +210,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       if(!isPartKeySet){
           setPartitioningKey(inodeIdentifer.getInodeId());
         }
-      // dangling block
-      // take lock on the indeId basically bring null in the cache
+      
       if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
           inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
           if(inode == null){
@@ -331,7 +330,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   public HDFSTransactionLocks acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
-    
+        
     byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
@@ -479,7 +478,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            else if (parallelReadParams.getDefaultFinder()!=null && !terminateAsyncThread) {
                acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getDefaultFinder());
            }else{
-              LOG.warn(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
+              LOG.debug(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getInodeFinder()!= null?parallelReadParams.getInodeFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getDefaultFinder()!= null?parallelReadParams.getDefaultFinder().getClass().getName():""));
            }
@@ -960,7 +959,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
   
   
-  private  void lockINode(INodeLockType lock) {
+  private  void lockINode(INodeLockType lock) throws StorageException {
     switch (lock) {
       case WRITE:
       case WRITE_ON_PARENT:
@@ -1039,7 +1038,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-  private void setPartitioningKey(Integer inodeId) {
+  private void setPartitioningKey(Integer inodeId) throws StorageException {
     boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
     if (inodeId == null || !isSetPartitionKeyEnabled) {
       LOG.warn("Transaction Partition Key is not Set");
@@ -1050,12 +1049,12 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       key[1] = new Long(0);
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-      LOG.debug("Setting Partitioning Key to be " + inodeId);
+        LOG.debug("Setting Partitioning Key to be "+ inodeId);
     }
   }
-
-  private void setPartitioningKeyForLeader() {
-    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+  
+    private void setPartitioningKeyForLeader() throws StorageException{
+       boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
     if (isSetPartitionKeyEnabled) {
       //set partitioning key
       Object[] key = new Object[2];

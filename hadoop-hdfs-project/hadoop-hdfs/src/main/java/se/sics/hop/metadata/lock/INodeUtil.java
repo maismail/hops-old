@@ -118,7 +118,7 @@ public class INodeUtil {
           String name,
           int parentId)
           throws StorageException {
-    LOG.info(String.format(
+    LOG.debug(String.format(
             "Read inode with no transaction by parent-id=%d, name=%s",
             parentId,
             name));
@@ -270,7 +270,7 @@ public class INodeUtil {
   }
 
   public static INode indexINodeScanById(int id) throws StorageException {
-    LOG.info(String.format(
+    LOG.debug(String.format(
             "Read inode with no transaction by id=%d",
             id));
     INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);

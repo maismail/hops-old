@@ -2590,11 +2590,11 @@ public class DFSClient implements java.io.Closeable {
           //black list the namenode 
           //so that it is not used again
           if(handle != null){
-            LOG.warn(thisFnID+") "+callerID+" RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            LOG.debug(thisFnID+") "+callerID+" RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
             namenodeSelector.blackListNamenode(handle);
             blackListedNamenodes.add(handle.getNamenode());
           }else{
-              LOG.warn(thisFnID+") "+callerID+" RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+              LOG.debug(thisFnID+") "+callerID+" RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           }
 
           //Before retry wait for some random time.
@@ -2603,7 +2603,7 @@ public class DFSClient implements java.io.Closeable {
               rand.setSeed(System.currentTimeMillis());
               int waitTime = rand.nextInt(dfsClientConf.dfsClientMaxRandomWaitOnRetry);
               try {
-                  //LOG.warn(thisFnID+") RPC failed. Rand Sleep "+waitTime);
+                  LOG.debug(thisFnID+") RPC failed. Rand Sleep "+waitTime);
                   Thread.sleep(waitTime);
               } catch (InterruptedException ex) {
               }
@@ -2617,11 +2617,10 @@ public class DFSClient implements java.io.Closeable {
     if (!success) {
       //print the fn call trace to figure out with RPC failed
       for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-          LOG.debug(thisFnID+") "+callerID+" Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
+          LOG.warn(thisFnID+") "+callerID+" Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
       }
       
       LOG.warn(thisFnID+") "+callerID+" Exception was "+exception);
-      exception.printStackTrace();
       if (exception != null) {
         if (exception instanceof RemoteException) {
           throw (RemoteException) exception;
