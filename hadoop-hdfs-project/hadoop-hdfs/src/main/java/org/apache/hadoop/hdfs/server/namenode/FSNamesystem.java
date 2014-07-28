@@ -4517,7 +4517,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check if safe mode is on.
      * @return true if in safe mode
      */
-    private /*HOP synchronized*/ boolean isOn() throws IOException {
+    private synchronized boolean isOn() throws IOException {
       doConsistencyCheck();
       return this.reached >= 0;
     }
@@ -4525,7 +4525,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Check if we are populating replication queues.
      */
-    private /*HOP synchronized*/ boolean isPopulatingReplQueues() {
+    private synchronized boolean isPopulatingReplQueues() {
       return initializedReplQueues;
     }
 
@@ -4541,7 +4541,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * <p>
      * Check for invalid, under- & over-replicated blocks in the end of startup.
      */
-    private /*HOP synchronized*/ void leave() throws IOException {
+    private synchronized void leave() throws IOException {
       // if not done yet, initialize replication queues.
       // In the standby, do not populate repl queues
       if (!isPopulatingReplQueues() && shouldPopulateReplQueues()) {
@@ -4572,7 +4572,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Initialize replication queues.
      */
-    private /*HOP synchronized*/ void initializeReplQueues() throws IOException {
+    private synchronized void initializeReplQueues() throws IOException {
       LOG.info("initializing replication queues");
       assert !isPopulatingReplQueues() : "Already initialized repl queues";
       long startTimeMisReplicatedScan = now();
@@ -4588,7 +4588,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check whether we have reached the threshold for 
      * initializing replication queues.
      */
-    private /*HOP synchronized*/ boolean canInitializeReplQueues() {
+    private synchronized boolean canInitializeReplQueues() {
       return shouldPopulateReplQueues()
           && blockSafe >= blockReplQueueThreshold;
     }
@@ -4599,7 +4599,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * the extension time have passed.
      * @return true if can leave or false otherwise.
      */
-    private /*HOP synchronized*/ boolean canLeave() {
+    private synchronized boolean canLeave() {
       if (reached == 0)
         return false;
       if (now() - reached < extension) {
@@ -4623,7 +4623,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check and trigger safe mode if needed. 
      */
     
-    private /*HOP synchronized*/ void checkMode() throws IOException {
+    private synchronized void checkMode() throws IOException {
       // Have to have write-lock since leaving safemode initializes
       // repl queues, which requires write lock
       assert hasWriteLock();
@@ -4661,7 +4661,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Set total number of blocks.
      */
-    private /*HOP synchronized*/ void setBlockTotal(int total) throws IOException {
+    private synchronized void setBlockTotal(int total) throws IOException {
       this.blockTotal = total;
       this.blockThreshold = (int) (blockTotal * threshold);
       this.blockReplQueueThreshold = 
@@ -4683,7 +4683,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * reached minimal replication.
      * @param replication current replication 
      */
-    private /*HOP synchronized*/ void incrementSafeBlockCount(short replication) throws IOException {
+    private synchronized void incrementSafeBlockCount(short replication) throws IOException {
       if (replication == safeReplication) {
         this.blockSafe++;
 //HOP        checkMode();
@@ -4696,7 +4696,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * fallen below minimal replication.
      * @param replication current replication 
      */
-    private /*HOP synchronized*/ void decrementSafeBlockCount(short replication) throws IOException {
+    private synchronized void decrementSafeBlockCount(short replication) throws IOException {
       if (replication == safeReplication-1) {
         this.blockSafe--;
         assert blockSafe >= 0 || isManual();
@@ -4716,7 +4716,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Set manual safe mode.
      */
-    private /*HOP synchronized*/ void setManual() {
+    private synchronized void setManual() {
       extension = Integer.MAX_VALUE;
     }
 
@@ -4840,7 +4840,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     }
 
-    private /*HOP synchronized*/ void adjustBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
+    private synchronized void adjustBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
       if (!shouldIncrementallyTrackBlocks) {
         return;
       }
@@ -4866,7 +4866,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     
     //HOP
-    private void adjustSafeBlocks(Set<Long> safeBlocks) {
+    private synchronized void adjustSafeBlocks(Set<Long> safeBlocks) {
       int lastSafeBlockSize = this.safeBlocks.size();
       this.safeBlocks.addAll(safeBlocks);
       int newSafeBlockSize = this.safeBlocks.size();
