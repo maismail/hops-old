@@ -824,16 +824,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       // TODO - memcached - primary key lookup for the row.
       if (((locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
               || (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
-        EntityManager.writeLock(); // if the next p-component is the last one or is the parent (in case of write on parent), acquire the write lock
-        curInodeLock = INodeLockType.WRITE;
+        curInodeLock = INodeLockType.WRITE;// if the next p-component is the last one or is the parent (in case of write on parent), acquire the write lock
       } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        EntityManager.readCommited();
         curInodeLock = INodeLockType.READ_COMMITED;
       } else {
-        EntityManager.readLock();
-        curInodeLock = INodeLockType.READ;
+        curInodeLock = locks.getPrecedingPathLockType();  
       }
-
+      lockINode(curInodeLock);
+      
       lastComp = INodeUtil.getNextChild(
               curNode,
               components,
@@ -926,7 +924,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
         pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITED, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
       } else {
-        pkINodeLookUpByNameAndPid(INodeLockType.READ, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
+        pkINodeLookUpByNameAndPid(locks.getPrecedingPathLockType(), resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
       }
 
       lastComp = (count == (palthLength - 1));

@@ -371,4 +371,9 @@ public class HDFSTransactionLocks implements TransactionLocks{
   public Integer getReplicasDatanode() {
     return repldatanode;
   }
+  
+  public INodeLockType getPrecedingPathLockType(){
+    return INodeLockType.READ; // default
+    //return INodeLockType.READ_COMMITED; // dangerous. leads to inconsistent state of metadata
+  }
 }

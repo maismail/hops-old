@@ -6678,14 +6678,14 @@ public class FNode implements Comparable<FNode>{
   
   private boolean deleteChildrenIncremently(LinkedList<FNode> toBeDeleted, final boolean recursive) throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     
-    for(FNode fnode : toBeDeleted){
-      if(fnode.getINode().isDirectory())
-      {
-        System.out.println("TestX dir to delete "+fnode.getPath());
-      }else{
-        System.out.println("TestX file to delete "+fnode.getPath());
-      }
-    }
+//    for(FNode fnode : toBeDeleted){
+//      if(fnode.getINode().isDirectory())
+//      {
+//        System.out.println("TestX dir to delete "+fnode.getPath());
+//      }else{
+//        System.out.println("TestX file to delete "+fnode.getPath());
+//      }
+//    }
     
     for(FNode fnode : toBeDeleted){
       if(!deleteWithTransaction(fnode.getPath(), recursive))
