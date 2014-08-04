@@ -105,19 +105,19 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
         hopINode.setId(inode.getId());
 
         if (inode instanceof INodeDirectory) {
-          hopINode.setIsUnderConstruction(0);
-          hopINode.setIsDirWithQuota(0);
-          hopINode.setIsDir(1);
+          hopINode.setUnderConstruction(false);
+          hopINode.setDirWithQuota(false);
+          hopINode.setDir(true);
         }
         if (inode instanceof INodeDirectoryWithQuota) {
-          hopINode.setIsDir(1); //why was it false earlier?	    	
-          hopINode.setIsUnderConstruction(0);
-          hopINode.setIsDirWithQuota(1);
+          hopINode.setDir(true); //why was it false earlier?
+          hopINode.setUnderConstruction(false);
+          hopINode.setDirWithQuota(true);
         }
         if (inode instanceof INodeFile) {
-          hopINode.setIsDir(0);
-          hopINode.setIsUnderConstruction(inode.isUnderConstruction() ? 1 : 0);
-          hopINode.setIsDirWithQuota(0);
+          hopINode.setDir(false);
+          hopINode.setUnderConstruction(inode.isUnderConstruction() ? true : false);
+          hopINode.setDirWithQuota(false);
           hopINode.setHeader(((INodeFile) inode).getHeader());
           if (inode instanceof INodeFileUnderConstruction) {
             hopINode.setClientName(((INodeFileUnderConstruction) inode).getClientName());
@@ -127,9 +127,9 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
           hopINode.setGenerationStamp(((INodeFile) inode).getGenerationStamp());
         }
         if (inode instanceof INodeSymlink) {
-          hopINode.setIsDir(0);
-          hopINode.setIsUnderConstruction(0);
-          hopINode.setIsDirWithQuota(0);
+          hopINode.setDir(false);
+          hopINode.setUnderConstruction(false);
+          hopINode.setDirWithQuota(false);
 
           String linkValue = DFSUtil.bytes2String(((INodeSymlink) inode).getSymlink());
           hopINode.setSymlink(linkValue);
@@ -150,8 +150,8 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
         buffer.reset(hopINode.getPermission(), hopINode.getPermission().length);
         PermissionStatus ps = PermissionStatus.read(buffer);
 
-        if (hopINode.getIsDir() == 1) {
-          if (hopINode.getIsDirWithQuota() == 1) {
+        if (hopINode.isDir()) {
+          if (hopINode.isDirWithQuota()) {
             inode = new INodeDirectoryWithQuota(hopINode.getName(), ps);
           } else {
             String iname = (hopINode.getName().length() == 0) ? INodeDirectory.ROOT_NAME : hopINode.getName();
@@ -164,7 +164,7 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
           inode = new INodeSymlink(hopINode.getSymlink(), hopINode.getModificationTime(),
                   hopINode.getAccessTime(), ps);
         } else {
-          if (hopINode.getIsUnderConstruction() == 1) {
+          if (hopINode.isUnderConstruction()) {
             DatanodeID dnID = (hopINode.getClientNode() == null
                     || hopINode.getClientNode().isEmpty()) ? null : new DatanodeID(hopINode.getClientNode());
 
