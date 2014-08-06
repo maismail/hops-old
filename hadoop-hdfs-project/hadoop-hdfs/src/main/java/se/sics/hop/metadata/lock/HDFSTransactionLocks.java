@@ -3,6 +3,8 @@ package se.sics.hop.metadata.lock;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
@@ -65,8 +67,9 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private Integer repldatanode = null;
   
   private LockType leaderTocken = null;
+  private static Configuration conf;
   
-  HDFSTransactionLocks() {
+  HDFSTransactionLocks(){
   }
 
   HDFSTransactionLocks(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
@@ -371,9 +374,18 @@ public class HDFSTransactionLocks implements TransactionLocks{
   public Integer getReplicasDatanode() {
     return repldatanode;
   }
-  
+  public static void setConfiguration(final Configuration config){
+    conf = config;
+  }
   public INodeLockType getPrecedingPathLockType(){
-    return INodeLockType.READ; // default
-    //return INodeLockType.READ_COMMITED; // dangerous. leads to inconsistent state of metadata
+    String val = conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
+    if(val.compareToIgnoreCase("READ")==0){
+      return INodeLockType.READ;
+    }
+    else if(val.compareToIgnoreCase("READ_COMMITTED")==0){
+      return INodeLockType.READ_COMMITTED;
+    }else{
+      throw new IllegalStateException("Critical Parameter is not defined. Set "+DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE);
+    }
   }
 }

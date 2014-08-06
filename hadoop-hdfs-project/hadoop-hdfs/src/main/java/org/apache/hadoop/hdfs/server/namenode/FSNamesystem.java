@@ -5828,7 +5828,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           Block blk = (Block) getParams()[0];
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
-                  addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
+                  addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITTED).
                   addBlock(blk.getBlockId(), INode.NON_EXISTING_ID).
                   addReplica().
                   addCorrupt().
@@ -6463,8 +6463,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     systemLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT);
     rowLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT);
     StorageFactory.setConfiguration(conf);
-    LOG.fatal(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
-    LOG.fatal(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
+    LOG.info(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
+    LOG.info(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
   }
 
   public static boolean rowLevelLock() {
@@ -6644,7 +6644,7 @@ public class FNode implements Comparable<FNode>{
         tla.getLocks().
                 addINode(
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.READ_COMMITED, false, new String[]{src});
+                INodeLockType.READ_COMMITTED, false, new String[]{src});
         return tla.acquire();
       }
     };
@@ -6694,7 +6694,9 @@ public class FNode implements Comparable<FNode>{
     
     return true;
   }
-  
+  public String getFilePathAncestorLockType(){
+    return conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
+  }
   //END_HOP_CODE
   
 

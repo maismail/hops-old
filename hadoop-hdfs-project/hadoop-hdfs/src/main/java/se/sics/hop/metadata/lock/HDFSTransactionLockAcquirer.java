@@ -80,6 +80,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
   public static void setConfiguration(Configuration c) {
     conf = c;
+    HDFSTransactionLocks.setConfiguration(conf);
   }
 
   public HDFSTransactionLocks getLocks() {
@@ -739,7 +740,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         lockedLeafINode = pkINodeLookUpByNameAndPid(inodeLock, inodes.get(i).getLocalName(),inodes.get(i).getParentId(), locks);
       } else // take read commited lock
       {
-        lockedLeafINode = pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITED, inodes.get(i).getLocalName(), inodes.get(i).getParentId(), locks);
+        lockedLeafINode = pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITTED, inodes.get(i).getLocalName(), inodes.get(i).getParentId(), locks);
       }
 
       if (!lockedLeafINode.getLocalName().equals("")) {
@@ -814,7 +815,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     {
       curNode[0] = acquireLockOnRoot(locks.getInodeLock(), locks);
     } else {
-      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITED, locks);
+      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITTED, locks);
     }
     resolvedInodes.add(curNode[0]);
     
@@ -825,8 +826,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       if (((locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
               || (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
         curInodeLock = INodeLockType.WRITE;// if the next p-component is the last one or is the parent (in case of write on parent), acquire the write lock
-      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        curInodeLock = INodeLockType.READ_COMMITED;
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITTED) {
+        curInodeLock = INodeLockType.READ_COMMITTED;
       } else {
         curInodeLock = locks.getPrecedingPathLockType();  
       }
@@ -892,7 +893,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       case READ:
         EntityManager.readLock();
         break;
-      case READ_COMMITED:
+      case READ_COMMITTED:
         EntityManager.readCommited();
         break;
     }
@@ -921,8 +922,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
               ((count == (palthLength - 1)) && (locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT))
               || ((count == (palthLength - 2)) && (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && canTakeParentLock)) {
         pkINodeLookUpByNameAndPid(INodeLockType.WRITE, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
-      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITED, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITTED) {
+        pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITTED, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
       } else {
         pkINodeLookUpByNameAndPid(locks.getPrecedingPathLockType(), resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
       }

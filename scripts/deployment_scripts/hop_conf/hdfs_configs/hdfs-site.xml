@@ -129,5 +129,22 @@
 </property>
 
 
+<property>
+   <name>dfs.namenode.handler.count</name>
+  <value>100</value>
+  <description>The RPC server that listens to requests from clients</description>
+</property>
+
+<property>
+   <name>dfs.namenode.service.handler.count</name>
+  <value>100</value>
+  <description>The RPC server threads that listens to requests from DataNodes</description>
+</property>
+
+<property>
+   <name>dfs.storage.ansestor.lock.type</name>
+  <value>READ_COMMITTED</value>
+  <description>Lock type for ancestors in the file path. Values: READ | READ_COMMITTED</description>
+</property>
 
 </configuration>

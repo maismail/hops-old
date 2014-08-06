@@ -81,7 +81,8 @@ CREATE TABLE `inodes` (
   `symlink` varchar(3000) DEFAULT NULL,
   PRIMARY KEY (`parent_id`,`name`),
   KEY `inode_idx` (`id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (parent_id) */$$
 
 
 delimiter $$
