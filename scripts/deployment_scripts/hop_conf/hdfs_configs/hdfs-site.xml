@@ -131,13 +131,13 @@
 
 <property>
    <name>dfs.namenode.handler.count</name>
-  <value>100</value>
+  <value>2000</value>
   <description>The RPC server that listens to requests from clients</description>
 </property>
 
 <property>
    <name>dfs.namenode.service.handler.count</name>
-  <value>100</value>
+  <value>2000</value>
   <description>The RPC server threads that listens to requests from DataNodes</description>
 </property>
 
@@ -146,5 +146,32 @@
   <value>READ_COMMITTED</value>
   <description>Lock type for ancestors in the file path. Values: READ | READ_COMMITTED</description>
 </property>
+
+
+<property>
+   <name>dfs.namenode.inodeid.batchsize</name>
+  <value>10000</value>
+  <description></description>
+</property>
+
+<property>
+   <name>dfs.namenode.blockid.batchsize</name>
+  <value>10000</value>
+  <description></description>
+</property>
+
+
+<property>
+   <name>dsf.client.refresh.namenode.list</name>
+  <value>60000</value>
+  <description>Time in ms</description>
+</property>
+
+<property>
+   <name>dfs.namenode.selector-policy</name>
+  <value>ROUND_ROBIN</value>
+  <description>Used by clients. Possible values ROUND_ROBIN, RANDOM</description>
+</property>
+
 
 </configuration>

@@ -29,6 +29,8 @@ done
 
 # copy data to the remote directories
 echo "***   Copying the Distro   ***"
+mkdir -p $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/Java
+cp -nr    $JAVA_Folder/*                                                          $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/Java                                                                   
 cp       $LIB_NDB_CLIENT_BIN                                                     $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/lib/native 
 cp -rf   $HOP_Src_Folder/scripts/deployment_scripts/hop_conf                     $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/
 cp       $HOP_Src_Folder/scripts/deployment_scripts/deployment.properties        $HOP_Src_Folder/hadoop-dist/target/$Hadoop_Version/hop_conf/
