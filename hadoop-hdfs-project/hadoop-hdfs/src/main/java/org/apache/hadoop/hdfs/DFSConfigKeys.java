@@ -65,7 +65,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD = "dfs.namenode.blockid.updateThreshold";
   public static final float DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
 
-  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.blockid.updateThreshold";
+  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.id.updateThreshold";
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
   
   /*for client failover api*/
