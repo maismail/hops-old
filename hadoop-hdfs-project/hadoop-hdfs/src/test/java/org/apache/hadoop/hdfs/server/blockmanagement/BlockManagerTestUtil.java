@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
@@ -75,7 +76,7 @@ public class BlockManagerTestUtil {
     try {
       return (int[]) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(b.getBlockId(),

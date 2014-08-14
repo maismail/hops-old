@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
@@ -122,7 +123,7 @@ public class TestOverReplicatedBlocks {
           
           new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addBlock(block.getBlockId(),
@@ -251,7 +252,7 @@ public class TestOverReplicatedBlocks {
       
       new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(block.getBlockId(),

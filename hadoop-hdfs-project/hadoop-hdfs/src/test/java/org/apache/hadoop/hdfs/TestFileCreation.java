@@ -45,6 +45,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 
@@ -1392,7 +1393,7 @@ public class TestFileCreation {
       HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               lockType = (TransactionLockTypes.LockType)getParams()[0];
               tla.getLocks().addLease(lockType, holder);

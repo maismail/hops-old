@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
@@ -527,7 +528,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     final List<List<Block>> priorityQueuestmp = fillPriorityQueues();
     return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addReplicationIndex(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();  

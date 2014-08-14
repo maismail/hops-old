@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -149,7 +150,7 @@ public class TestCorruptReplicaInfo {
   private void addToCorruptReplicasMap(final CorruptReplicasMap crm, final BlockInfo blk, final DatanodeDescriptor dn, final String reason) throws IOException{
      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(blk.getBlockId(),
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)
@@ -176,7 +177,7 @@ public class TestCorruptReplicaInfo {
   private void removeFromCorruptReplicasMap(final CorruptReplicasMap crm, final BlockInfo blk) throws IOException{
      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_CORRUPT_REPLICA_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(blk.getBlockId(),
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID)

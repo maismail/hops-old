@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import se.sics.hop.exception.PersistanceException;
@@ -80,7 +82,7 @@ public class StorageIdMap {
   private void getSetSId(final String storageId) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SET_SID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addSIdCounter(LockType.WRITE);
         return tla.acquire();

@@ -18,6 +18,8 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.conf.Configuration;
@@ -93,7 +95,7 @@ public class TestComputeInvalidateWork {
   private void addToInvalidates(final BlockManager bm,final Block block,final DatanodeDescriptor node, final FSNamesystem namesystem) throws IOException{
     new HDFSTransactionalRequestHandler(HDFSOperationType.COMP_INVALIDATE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),

@@ -25,6 +25,8 @@ import com.google.common.base.Joiner;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -127,7 +129,7 @@ public class StorageInfo {
   public static StorageInfo getStorageInfoFromDB() throws IOException {
     return (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
         return tla.acquire();
@@ -145,7 +147,7 @@ public class StorageInfo {
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
     HDFSTransactionalRequestHandler formatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();
