@@ -131,13 +131,13 @@
 
 <property>
    <name>dfs.namenode.handler.count</name>
-  <value>2000</value>
+  <value>512</value>
   <description>The RPC server that listens to requests from clients</description>
 </property>
 
 <property>
    <name>dfs.namenode.service.handler.count</name>
-  <value>2000</value>
+  <value>512</value>
   <description>The RPC server threads that listens to requests from DataNodes</description>
 </property>
 

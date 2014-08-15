@@ -9,6 +9,7 @@ hdfs_site_xml=$HOP_Dist_Folder/hop_conf/hdfs_configs/hdfs-site.xml
 core_site_xml=$HOP_Dist_Folder/hop_conf/hdfs_configs/core-site.xml
 yarn_site_xml=$HOP_Dist_Folder/hop_conf/hdfs_configs/yarn-site.xml
 hadoop_env_sh=$HOP_Dist_Folder/hop_conf/hdfs_configs/hadoop-env.sh
+yarn_env_sh=$HOP_Dist_Folder/hop_conf/hdfs_configs/yarn-env.sh
 
 #making changes in core-site.xml
 sed -i 's|NN_MACHINE_NAME|'$namenode'|g' $core_site_xml
@@ -62,6 +63,9 @@ sed -i 's|PORT_9|'$port'|g' $yarn_site_xml
 
 #makgin changes in hadoop-env.sh
 sed -i 's|JAVA_PATH_STRING|'$HOP_Dist_Folder/Java'|g' $hadoop_env_sh
+
+#makgin changes in hadoop-env.sh
+sed -i 's|JAVA_PATH_STRING|'$HOP_Dist_Folder/Java'|g' $yarn_env_sh
 
 
 exit 0

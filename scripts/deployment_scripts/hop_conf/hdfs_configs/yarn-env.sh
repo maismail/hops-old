@@ -20,7 +20,7 @@ export HADOOP_YARN_USER=${HADOOP_YARN_USER:-yarn}
 export YARN_CONF_DIR="${YARN_CONF_DIR:-$HADOOP_YARN_HOME/conf}"
 
 # some Java parameters
-export JAVA_HOME=/usr/lib/jvm/java-6-sun/
+export JAVA_HOME=JAVA_PATH_STRING
 if [ "$JAVA_HOME" != "" ]; then
   #echo "run java in $JAVA_HOME"
   JAVA_HOME=$JAVA_HOME
