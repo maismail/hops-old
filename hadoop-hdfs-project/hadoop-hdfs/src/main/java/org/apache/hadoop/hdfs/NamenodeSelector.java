@@ -17,7 +17,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem.Statistics;
-import static org.apache.hadoop.hdfs.NamenodeSelector.rrIndex;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
@@ -194,7 +193,7 @@ public class NamenodeSelector extends Thread {
      *
      * @return DFSClient
      */
-    static int rrIndex = 0;
+    int rrIndex = 0;
 
     public NamenodeSelector.NamenodeHandle getNextNamenode() throws IOException {
         if (nnList == null || nnList.isEmpty()) {
