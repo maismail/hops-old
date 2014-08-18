@@ -2621,6 +2621,7 @@ public class DFSClient implements java.io.Closeable {
       }
       
       LOG.warn(thisFnID+") "+callerID+" Exception was "+exception);
+      exception.printStackTrace();
       if (exception != null) {
         if (exception instanceof RemoteException) {
           throw (RemoteException) exception;
