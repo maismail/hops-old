@@ -318,7 +318,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
     }
     boolean insert = true;
     if(allLockedInodesInTx.containsKey(inode)){
-      if((allLockedInodesInTx.get(inode).ordinal() > lock.ordinal())){
+      if(allLockedInodesInTx.get(inode).gt(lock)){
         insert = false;
       }
     }
