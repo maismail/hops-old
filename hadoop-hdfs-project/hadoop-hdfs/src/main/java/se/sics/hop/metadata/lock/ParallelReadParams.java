@@ -25,30 +25,39 @@ import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
  * @author salman
  */
 class ParallelReadParams{
-    List<BlockPK> blockIds;
-    List<HopINodeCandidatePK> inodeIds;
-    FinderType blockFinder;
-    boolean isListBlockFinder;
-    FinderType inodeFinder;
-    FinderType defaultFinder;
+    final List<BlockPK> blockIds;
+    final List<HopINodeCandidatePK> inodePKs;
+    final int[] inodeIds;
+    final FinderType blockFinder;
+    final boolean isListBlockFinder;
+    final FinderType inodeFinder;
+    final FinderType defaultFinder;
 
-    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, boolean isListBlockFinder, List<HopINodeCandidatePK> inodeIds, FinderType inodeFinder, FinderType defFinder) {
+    public ParallelReadParams(List<BlockPK> blockIds, FinderType blockFinder, boolean isListBlockFinder, List<HopINodeCandidatePK> inodePKs, FinderType inodeFinder, FinderType defFinder) {
       this.blockIds = blockIds;
-      this.inodeIds = inodeIds;
+      this.inodePKs = inodePKs;
       this.blockFinder = blockFinder;
       this.inodeFinder = inodeFinder;
       this.defaultFinder = defFinder;
       this.isListBlockFinder = isListBlockFinder;
+      this.inodeIds = new int[inodePKs.size()];
+      for(int i=0; i< inodePKs.size(); i++){
+        inodeIds[i] = inodePKs.get(i).getInodeId();
+      }
     }
 
     public List<BlockPK> getBlockIds() {
       return blockIds;
     }
 
-    public List<HopINodeCandidatePK> getInodeIds() {
-      return inodeIds;
+    public List<HopINodeCandidatePK> getInodePKs() {
+      return inodePKs;
     }
 
+    public int[] getInodeIds(){
+      return inodeIds;
+    }
+    
     public FinderType getBlockFinder() {
       return blockFinder;
     }

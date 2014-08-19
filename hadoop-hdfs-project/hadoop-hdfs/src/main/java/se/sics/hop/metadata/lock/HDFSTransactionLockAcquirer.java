@@ -188,6 +188,49 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireBlockRelatedInfoASync();
     return locks;
   }
+  
+   
+  public HDFSTransactionLocks acquire(List<INodeIdentifier> inodeIdentifiers) throws PersistanceException, UnresolvedPathException, ExecutionException {
+    
+    Collection<INode> inodes = null;
+    int[] inodeIds = null;
+    if(inodeIdentifiers != null && !inodeIdentifiers.isEmpty()){
+      String[] names =  new String[inodeIdentifiers.size()];
+      int[] parentIds = new int[inodeIdentifiers.size()];
+      inodeIds = new int[inodeIdentifiers.size()];
+      for(int i=0; i<inodeIdentifiers.size(); i++){
+        INodeIdentifier inodeIdentifier = inodeIdentifiers.get(i);
+        names[i] = inodeIdentifier.getName();
+        parentIds[i] = inodeIdentifier.getPid();
+        inodeIds[i] = inodeIdentifier.getInodeId();
+      }
+      
+      inodes = pkINodesLookUpByNameAndPid(locks.getInodeLock(), names, parentIds, locks);
+    }else{
+      throw new StorageException("INodeIdentifier object is not properly initialized ");
+    }
+    
+    if (inodes != null) {
+      LinkedList<INode> resolvedINodeForBlk = new LinkedList<INode>();
+      resolvedINodeForBlk.addAll(inodes);
+      allResolvedINodes.add(resolvedINodeForBlk);
+
+      List<BlockInfo> allBlks = (List<BlockInfo>) acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeIds, inodeIds);
+      blockResults.addAll(allBlks);
+
+      // sort the blocks. it is important as the ndb returns the blocks in random order and two
+      // txs trying to take locks on the blocks of a file will end up in dead lock 
+      Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
+    }
+
+    // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    acquireLeaseAndLpathLockNormal();
+    acquireLocksOnVariablesTable();
+    readINodeAttributes();
+    acquireBlockRelatedInfoASync();
+    return locks;
+  }
+  
   /**
    * This method acquires lockk on the inode starting with a block-id. The
    * lock-types should be set before using add* methods. Otherwise, no lock
@@ -456,12 +499,10 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
        public void run() {
          try {
            NDC.push(threadName);
-           if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
-             for(HopINodeCandidatePK inodeParam : parallelReadParams.getInodeIds()){
-               if (!terminateAsyncThread) {
-                 concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), parentThreadId, inodeParam.getInodeId());
+           if(parallelReadParams.getInodePKs() != null && !parallelReadParams.getInodePKs().isEmpty() && parallelReadParams.getInodeFinder() != null ){
+             if (!terminateAsyncThread) {
+                 concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), parentThreadId, parallelReadParams.getInodeIds());
                }
-             }
            }
            else if (parallelReadParams.getBlockIds() != null && !parallelReadParams.getBlockIds().isEmpty() && parallelReadParams.getBlockFinder() != null ){
              for(BlockPK blkParam : parallelReadParams.getBlockIds()){
@@ -623,27 +664,27 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     // blocks related tables
     List<Future> futures = new ArrayList<Future>();
     if (locks.getReplicaLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, true, HopIndexedReplica.Finder.ByINodeId, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, true, HopIndexedReplica.Finder.ByINodeIds, null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getCrLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, true, HopCorruptReplica.Finder.ByINodeId, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, true, HopCorruptReplica.Finder.ByINodeIds, null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getErLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, HopExcessReplica.Finder.ByINodeId, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, HopExcessReplica.Finder.ByINodeIds, null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getRucLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, true, ReplicaUnderConstruction.Finder.ByINodeId , null);
+      ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, true, ReplicaUnderConstruction.Finder.ByINodeIds , null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getInvLocks() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, HopInvalidatedBlock.Finder.ByINodeId, null);
+      ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, HopInvalidatedBlock.Finder.ByINodeIds, null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
@@ -652,13 +693,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         ParallelReadParams parallelReadParams = new ParallelReadParams(null, null, false, null, null,HopUnderReplicatedBlock.Finder.All );
         futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
       }else{
-        ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, false, HopUnderReplicatedBlock.Finder.ByINodeId, null);
+        ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, false, HopUnderReplicatedBlock.Finder.ByINodeIds, null);
         futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
       }
     }
 
     if (locks.getPbLock() != null) {
-      ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId, false,PendingBlockInfo.Finder.ByInodeId,null);
+      ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId, false,PendingBlockInfo.Finder.ByInodeIds,null);
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
     
@@ -958,7 +999,21 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     locks.addLockedINodes(inode, lock);
     return inode;
   }
-
+  
+  private Collection<INode> pkINodesLookUpByNameAndPid(
+          INodeLockType lock,
+          String[] names,
+          int[] parentIds,
+          HDFSTransactionLocks locks)
+          throws PersistanceException {
+    lockINode(lock);
+    Collection<INode> inodes = EntityManager.findList(INode.Finder.ByPKS, names, parentIds);
+    for(INode inode : inodes){
+      locks.addLockedINodes(inode, lock);
+    }
+    return inodes;
+  }
+    
   private  INode iNodeScanLookUpByID(
           INodeLockType lock,
           int id,
