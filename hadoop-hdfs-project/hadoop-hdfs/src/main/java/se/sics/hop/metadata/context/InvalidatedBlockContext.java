@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
@@ -212,6 +213,17 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
         int[] sids = new int[blockIds.length];
         Arrays.fill(sids, sid);
         return syncInstances(dataAccess.findInvalidatedBlocksbyPKS(blockIds, inodeIds, sids), blockIds, inodeIds, sid);
+        
+      case ByINodeIds:
+        int[] ids = (int[]) params[0];
+        log("find-invblock-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Arrays.toString(ids)});
+        aboutToAccessStorage();
+        List<HopInvalidatedBlock> list = (List<HopInvalidatedBlock>) dataAccess.findInvalidatedBlocksByINodeIds(ids);
+        inodesRead.addAll(Ints.asList(ids));
+        if (list != null && !list.isEmpty()) {
+          syncInstances(list);
+        }
+        return list;
         }   
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }

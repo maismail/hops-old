@@ -87,4 +87,9 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   public List<PendingBlockInfo> findByINodeId(int inodeId) throws StorageException {
     return (List<PendingBlockInfo>) convertDALtoHDFS(dataAccces.findByINodeId(inodeId));
   }
+
+  @Override
+  public List<PendingBlockInfo> findByINodeIds(int[] inodeIds) throws StorageException {
+    return (List<PendingBlockInfo>) convertDALtoHDFS(dataAccces.findByINodeIds(inodeIds));
+  }
 }

@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,6 +173,11 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
         Arrays.fill(sids, sid);
         log("find-replicas-by-pks", CacheHitState.NA, new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
         return syncInstances(dataAccess.findReplicasByPKS(blockIds, inodeIds, sids), blockIds, sid);
+      case ByINodeIds:
+        int[] ids = (int[]) params[0];
+        log("find-replicas-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays.toString(ids)});
+        aboutToAccessStorage();
+        return syncInstances(dataAccess.findReplicasByINodeIds(ids), ids);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -195,6 +201,14 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     return new ArrayList<HopIndexedReplica>(list);
   }
 
+  private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, int[] inodeIds) {
+    for (HopIndexedReplica r : list) {
+      addReplica(r.getBlockId(), r.getStorageId(), r);
+    }
+    inodesRead.addAll(Ints.asList(inodeIds));
+    return new ArrayList<HopIndexedReplica>(list);
+  }
+   
   private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, long[] blockIds, int sid) {
     List<Long> nullBlks = new ArrayList<Long>();
     for (long id : blockIds) {

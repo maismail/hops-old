@@ -18,7 +18,7 @@ public class ReplicaUnderConstruction extends HopIndexedReplica {
 
   public static enum Finder implements FinderType<ReplicaUnderConstruction> {
 
-    ByBlockId, ByINodeId;
+    ByBlockId, ByINodeId, ByINodeIds;
 
     @Override
     public Class getType() {

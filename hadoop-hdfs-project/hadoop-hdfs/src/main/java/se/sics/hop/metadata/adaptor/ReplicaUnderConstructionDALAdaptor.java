@@ -42,6 +42,12 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
     return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByINodeId(inodeId));
   }
   
+  
+  @Override
+  public List<ReplicaUnderConstruction> findReplicaUnderConstructionByINodeIds(int[] inodeIds) throws StorageException {
+    return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByINodeIds(inodeIds));
+  }
+  
   @Override
   public List<ReplicaUnderConstruction> findReplicaUnderConstructionByBlockId(long blockId, int inodeId) throws StorageException {
     return (List<ReplicaUnderConstruction>) convertDALtoHDFS(dataAccces.findReplicaUnderConstructionByBlockId(blockId, inodeId));

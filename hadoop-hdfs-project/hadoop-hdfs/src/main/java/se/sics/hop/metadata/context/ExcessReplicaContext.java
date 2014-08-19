@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
@@ -181,7 +182,17 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
             syncExcessReplicaInstances(list);
           }
           return list;
-        }   
+        }
+       case ByINodeIds:
+         int[] inodeIds = (int[]) params[0];
+         log("find-excess-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays.toString(inodeIds)});
+         aboutToAccessStorage();
+         List<HopExcessReplica> list = dataAccess.findExcessReplicaByINodeIds(inodeIds);
+         inodesRead.addAll(Ints.asList(inodeIds));
+         if (list != null && !list.isEmpty()) {
+           syncExcessReplicaInstances(list);
+         }
+         return list;
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }

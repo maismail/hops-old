@@ -16,7 +16,7 @@ public class PendingBlockInfo {
 
   public static enum Finder implements FinderType<PendingBlockInfo> {
 
-    ByBlockId, ByInodeId, All, ByTimeLimit;
+    ByBlockId, ByInodeId, ByInodeIds, All, ByTimeLimit;
 
     @Override
     public Class getType() {

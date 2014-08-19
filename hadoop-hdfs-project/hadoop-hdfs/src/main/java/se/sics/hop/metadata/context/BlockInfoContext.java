@@ -3,9 +3,7 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -175,6 +173,15 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
         aboutToAccessStorage();
         result = dataAccess.findByIds(blockIds, inodeIds);
         return syncBlockInfoInstances(result, blockIds);
+      case ByInodeIds:
+        int[] ids = (int[]) params[0];
+        log("find-blocks-by-inodeids", CacheHitState.NA, new String[]{"InodeIds", "" + ids});
+        aboutToAccessStorage();
+        result = dataAccess.findByInodeIds(ids);
+        for(int id : ids){
+          inodeBlocks.put(id, null);
+        }
+        return syncBlockInfoInstances(result, true);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -251,8 +258,12 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
     return result;
   }
-    
+  
   private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks) {
+    return syncBlockInfoInstances(newBlocks, false);
+  }
+  
+  private List<BlockInfo> syncBlockInfoInstances(List<BlockInfo> newBlocks, boolean syncInodeBlocks) {
     List<BlockInfo> finalList = new ArrayList<BlockInfo>();
 
     for (BlockInfo blockInfo : newBlocks) {
@@ -265,6 +276,14 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
       } else {
         blocks.put(blockInfo.getBlockId(), blockInfo);
         finalList.add(blockInfo);
+      }
+      if (syncInodeBlocks) {
+        List<BlockInfo> blockList = inodeBlocks.get(blockInfo.getInodeId());
+        if (blockList == null) {
+          blockList = new ArrayList<BlockInfo>();
+          inodeBlocks.put(blockInfo.getInodeId(), blockList);
+        }
+        blockList.add(blockInfo);
       }
     }
 

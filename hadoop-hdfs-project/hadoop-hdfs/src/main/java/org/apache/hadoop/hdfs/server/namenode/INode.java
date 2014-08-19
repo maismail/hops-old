@@ -54,7 +54,7 @@ public abstract class INode implements Comparable<byte[]> {
   //START_HOP_CODE
   public static enum Finder implements FinderType<INode> {
 
-    ByINodeID, ParentId, ByPK_NameAndParentId;
+    ByINodeID, ParentId, ByPK_NameAndParentId, ByPKS;
 
     @Override
     public Class getType() {

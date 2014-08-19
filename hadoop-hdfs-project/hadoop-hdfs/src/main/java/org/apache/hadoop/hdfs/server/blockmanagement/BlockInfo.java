@@ -57,7 +57,7 @@ public class BlockInfo extends Block {
   
   public static enum Finder implements FinderType<BlockInfo> {
     
-    ById, ByInodeId, All, ByStorageId, MAX_BLK_INDX, ByIds;
+    ById, ByInodeId, ByInodeIds, All, ByStorageId, MAX_BLK_INDX, ByIds;
     
     @Override
     public Class getType() {
