@@ -121,13 +121,10 @@ public class TestLock {
     final String src = "/dir1/dir2/d3/d4/d5";
     final boolean resolveLink = false;
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
-      protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
-      protected boolean[] isPreTxPathFullyResolved = new boolean[1];
-
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, resolveLink);
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
+                addINode(INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
                 addBlock().
                 addReplica().
                 addExcess().
@@ -147,7 +144,6 @@ public class TestLock {
 
       @Override
       public void setUp() throws StorageException, UnresolvedPathException, PersistanceException {
-INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
       }
     };
 

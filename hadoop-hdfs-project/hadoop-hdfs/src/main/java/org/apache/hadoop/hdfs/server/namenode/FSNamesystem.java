@@ -1752,9 +1752,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler createSymLinkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CREATE_SYM_LINK, link) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE, resolveLink, new String[]{link});
+                addINode(INodeResolveType.PATH, INodeLockType.WRITE, resolveLink, new String[]{link});
         return tla.acquire();
       }
 
@@ -1768,12 +1768,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
         return null;
       }
-      private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
-      private boolean[] isPreTxPathFullyResolved = new boolean[1];
 
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        INodeUtil.resolvePathWithNoTransaction(link, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
       }
     };
     createSymLinkHandler.handle(this);
@@ -1965,14 +1962,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FileNotFoundException, ParentNotDirectoryException, IOException {
       final boolean resolveLink = false;
       HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
-          protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
-          protected boolean[] isPreTxPathFullyResolved = new boolean[1];
-
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
-                    addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
                     addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
@@ -2000,7 +1994,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void setUp() throws PersistanceException, IOException {
-              INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       startFileHanlder.handle(this);
@@ -3390,8 +3383,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler mkdirsHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.MKDIRS, src) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedINodes, preTxPathFullyResolved[0]);
-        tla.getLocks().addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src});
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src});
         return tla.acquire();
       }
 
@@ -3404,12 +3397,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           throw e;
         }
       }
-      private LinkedList<INode> preTxResolvedINodes = new LinkedList<INode>();
-      private boolean[] preTxPathFullyResolved = new boolean[1];
-
+      
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        INodeUtil.resolvePathWithNoTransaction(src, resolvedLink, preTxResolvedINodes, preTxPathFullyResolved);
       }
     };
     return (Boolean) mkdirsHanlder.handle(this);

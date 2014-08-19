@@ -51,7 +51,6 @@ public class INodeUtil {
           INode[] curInode,
           byte[][] components,
           int[] count,
-          LinkedList<INode> resolvedInodes,
           boolean resolveLink,
           boolean transactional) throws UnresolvedPathException, PersistanceException {
 
@@ -80,9 +79,6 @@ public class INodeUtil {
             components[count[0] + 1],
             curInode[0].getId(),
             transactional);
-    if (curInode[0] != null) {
-      resolvedInodes.add(curInode[0]);
-    }
     count[0] = count[0] + 1;
     lastComp = (count[0] == components.length - 1);
     return lastComp;
@@ -106,8 +102,6 @@ public class INodeUtil {
           throws PersistanceException {
     String nameString = DFSUtil.bytes2String(name);
     if (transactional) {
-      // TODO - Memcache success check - do primary key instead.
-      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
       return EntityManager.find(INode.Finder.ByPK_NameAndParentId, nameString, parentId);
     } else {
       return findINodeWithNoTransaction(nameString, parentId);
@@ -160,9 +154,11 @@ public class INodeUtil {
               curNode,
               components,
               count,
-              preTxResolvedINodes,
               resolveLink,
               false);
+      if(curNode[0] != null){
+        preTxResolvedINodes.add(curNode[0]);
+      }
       if (lastComp) {
         break;
       }

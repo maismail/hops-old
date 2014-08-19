@@ -316,14 +316,13 @@ public class HDFSTransactionLocks implements TransactionLocks{
     if (inode == null) {
       return;
     }
-
-    //snapshot layer will prevent the read from going to db if it has already 
-    //read that row. In a tx you can only read a row once. if you read again then
-    //the snapshot layer will return the  cached value and the lock type will
-    //remain the same as it was set when reading the row for the first time.
-    //So if the lock for a indoe already exist in the hash map then
-    //then there is no need to update the map
-    if (!allLockedInodesInTx.containsKey(inode)) {
+    boolean insert = true;
+    if(allLockedInodesInTx.containsKey(inode)){
+      if((allLockedInodesInTx.get(inode).ordinal() > lock.ordinal())){
+        insert = false;
+      }
+    }
+    if(insert){
       allLockedInodesInTx.put(inode, lock);
     }
   }
