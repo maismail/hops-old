@@ -244,6 +244,9 @@ public class BlockManager {
   /** for block replicas placement */
   private BlockPlacementPolicy blockplacement;
   
+  //Hop
+  private final int processMisReplicatedBatchSize;
+  
   public BlockManager(final Namesystem namesystem, final FSClusterStats stats,
       final Configuration conf) throws IOException {
     this.namesystem = namesystem;
@@ -311,6 +314,10 @@ public class BlockManager {
         conf.getBoolean(DFSConfigKeys.DFS_ENCRYPT_DATA_TRANSFER_KEY,
             DFSConfigKeys.DFS_ENCRYPT_DATA_TRANSFER_DEFAULT);
     
+    //Hop
+    this.processMisReplicatedBatchSize = conf.getInt(DFSConfigKeys.DFS_NAMENODE_PROCESS_MISREPLICATED_BATCH_SIZE, 
+            DFSConfigKeys.DFS_NAMENODE_PROCESS_MISREPLICATED_BATCH_SIZE_DEFAULT);
+    
     LOG.info("defaultReplication         = " + defaultReplication);
     LOG.info("maxReplication             = " + maxReplication);
     LOG.info("minReplication             = " + minReplication);
@@ -318,6 +325,8 @@ public class BlockManager {
     LOG.info("shouldCheckForEnoughRacks  = " + shouldCheckForEnoughRacks);
     LOG.info("replicationRecheckInterval = " + replicationRecheckInterval);
     LOG.info("encryptDataTransfer        = " + encryptDataTransfer);
+    //HOP
+    LOG.info("misReplicatedBatchSize     = " + processMisReplicatedBatchSize);
   }
 
   private  NameNodeBlockTokenSecretManager createBlockTokenSecretManager(
@@ -2424,10 +2433,10 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
     //[M] we need to have a garbage collection to check for the invalid blocks,
     // also this could be optimized even more by batching multiple inode files at a time
-    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE) {
+    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE_BATCH) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
+        List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
@@ -2437,39 +2446,41 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addExcess();
-        return tla.acquire(inodeIdentifier);
+        return tla.acquire(inodeIdentifiers);
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
-        INode inode = EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
-        for (BlockInfo block : ((INodeFile) inode).getBlocks()) {
-          MisReplicationResult res = processMisReplicatedBlock(block);
-          if (LOG.isTraceEnabled()) {
-            LOG.trace("block " + block + ": " + res);
-          }
-          switch (res) {
-            case UNDER_REPLICATED:
-              nrUnderReplicated[0]++;
-              break;
-            case OVER_REPLICATED:
-              nrOverReplicated[0]++;
-              break;
-            case INVALID:
-              nrInvalid[0]++;
-              break;
-            case POSTPONE:
-              nrPostponed[0]++;
-              postponeBlock(block);
-              break;
-            case UNDER_CONSTRUCTION:
-              nrUnderConstruction[0]++;
-              break;
-            case OK:
-              break;
-            default:
-              throw new AssertionError("Invalid enum value: " + res);
+        List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
+        for (INodeIdentifier inodeIdentifier : inodeIdentifiers) {
+          INode inode = EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+          for (BlockInfo block : ((INodeFile) inode).getBlocks()) {
+            MisReplicationResult res = processMisReplicatedBlock(block);
+            if (LOG.isTraceEnabled()) {
+              LOG.trace("block " + block + ": " + res);
+            }
+            switch (res) {
+              case UNDER_REPLICATED:
+                nrUnderReplicated[0]++;
+                break;
+              case OVER_REPLICATED:
+                nrOverReplicated[0]++;
+                break;
+              case INVALID:
+                nrInvalid[0]++;
+                break;
+              case POSTPONE:
+                nrPostponed[0]++;
+                postponeBlock(block);
+                break;
+              case UNDER_CONSTRUCTION:
+                nrUnderConstruction[0]++;
+                break;
+              case OK:
+                break;
+              default:
+                throw new AssertionError("Invalid enum value: " + res);
+            }
           }
         }
         return null;
@@ -2477,11 +2488,20 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
 
 
-    List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
-    for (INodeIdentifier inode : allINodes) {
-      processMisReplicatedBlocksHandler.setParams(inode);
-      processMisReplicatedBlocksHandler.handle(namesystem);
-    }
+   List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
+   int numOfBatches;
+   if (!allINodes.isEmpty() && allINodes.size() <= processMisReplicatedBatchSize) {
+     numOfBatches = 1;
+   } else {
+     numOfBatches = (int) ((double) allINodes.size() / processMisReplicatedBatchSize);
+   }
+   for (int b = 0; b < numOfBatches; b++) {
+     int startIndex = b * processMisReplicatedBatchSize;
+     int endIndex = Math.min((b + 1) * processMisReplicatedBatchSize, allINodes.size());
+     List<INodeIdentifier> inodes = allINodes.subList(startIndex, endIndex);
+     processMisReplicatedBlocksHandler.setParams(inodes);
+     processMisReplicatedBlocksHandler.handle(namesystem);
+   }
             
 //    for (BlockInfo block : blocksMap.getBlocks()) {
 //      processMisReplicatedBlocksHandler.setParams(block);
