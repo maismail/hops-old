@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
@@ -188,7 +190,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void addBlockKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
@@ -233,7 +235,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void updateBlockKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();

@@ -15,7 +15,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
@@ -330,7 +330,7 @@ public class INodeUtil {
   }
   
   public static int[] resolveINodesFromBlockIds(final long[] blockIds) throws StorageException {
-    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_INODEIDS_FOR_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockLookUpDataAccess.class);

@@ -185,12 +185,12 @@
 //    
 //    for(Iterator<Path> it = fileMap.keySet().iterator(); it.hasNext();) {
 //      Path path = it.next();
-//      boolean isDir = fileMap.get(path);
+//      boolean setDir = fileMap.get(path);
 //      
 //      String pathName = path.toUri().getPath();
 //      overallChecksum.update(pathName.getBytes());
 //      
-//      if ( isDir ) {
+//      if ( setDir ) {
 //        verifyDir(dfs, path, overallChecksum);
 //      } else {
 //        // this is not a directory. Checksum the file data.
@@ -310,7 +310,7 @@
 //      Path path) throws IOException {
 //    String pathStr = path.toString();
 //    HdfsFileStatus status = dfs.getFileInfo(pathStr);
-//    if (!status.isDir()) {
+//    if (!status.setDir()) {
 //      dfs.recoverLease(pathStr);
 //      return;
 //    }

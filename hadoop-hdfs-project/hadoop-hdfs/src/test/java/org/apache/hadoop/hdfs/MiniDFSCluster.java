@@ -2390,7 +2390,7 @@ public class MiniDFSCluster {
         }
         if (activeNameNodes == 0) {
             try {
-              StorageFactory.formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+              StorageFactory.formatStorage(/*ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class,*/
                       UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
                       InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);   
               

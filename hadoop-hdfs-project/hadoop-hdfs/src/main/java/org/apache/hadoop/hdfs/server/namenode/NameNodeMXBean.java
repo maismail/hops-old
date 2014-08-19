@@ -138,7 +138,7 @@ public interface NameNodeMXBean {
    * 
    * @return the live node information
    */
-  public String getLiveNodes();
+  public String getLiveNodes() throws IOException;
   
   /**
    * Gets the dead node information of the cluster.

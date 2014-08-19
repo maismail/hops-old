@@ -352,7 +352,11 @@ public class JspHelper {
           ret = (ddbl < 0) ? -1 : ((ddbl > 0) ? 1 : 0);
           break;
         case FIELD_BLOCKS:
+        try {
           ret = d1.numBlocks() - d2.numBlocks();
+        } catch (IOException ex) {
+          LOG.error(ex);
+        }
           break;
         case FIELD_ADMIN_STATE:
           ret = d1.getAdminState().toString().compareTo(
