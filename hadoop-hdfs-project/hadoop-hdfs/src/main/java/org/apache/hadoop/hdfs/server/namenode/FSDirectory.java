@@ -2315,9 +2315,7 @@ public class FSDirectory implements Closeable {
    
   private INode cloneINode(final INode inode) throws PersistanceException{
           INode clone = null;
-      if(inode instanceof  INodeDirectory){
-        clone = new INodeDirectory((INodeDirectory) inode);
-      }else if(inode instanceof INodeDirectoryWithQuota){
+      if(inode instanceof INodeDirectoryWithQuota){
         clone = new INodeDirectoryWithQuota(((INodeDirectoryWithQuota)inode).getNsQuota(), ((INodeDirectoryWithQuota) inode).getDsQuota(),(INodeDirectory)inode);
       }else if(inode instanceof INodeSymlink){
         clone = new INodeSymlink(((INodeSymlink)inode).getLinkValue(), ((INodeSymlink)inode).getModificationTime(), ((INodeSymlink)inode).getAccessTime(), ((INodeSymlink)inode).getPermissionStatus());
@@ -2341,6 +2339,8 @@ public class FSDirectory implements Closeable {
                 
       }else if(inode instanceof INodeFile){
         clone = new INodeFile((INodeFile) inode);
+      }else if(inode instanceof  INodeDirectory){
+        clone = new INodeDirectory((INodeDirectory) inode);
       }
       return clone;
   }

@@ -1016,7 +1016,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private void setPartitioningKey(Integer inodeId) throws StorageException {
     boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
     if (inodeId == null || !isSetPartitionKeyEnabled) {
-      LOG.warn("Transaction Partition Key is not Set");
+      LOG.debug("Transaction Partition Key is not Set");
     } else {
       //set partitioning key
       Object[] key = new Object[2];
