@@ -108,10 +108,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -183,10 +184,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
   /**
@@ -277,10 +279,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -294,6 +297,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
     blockResults.addAll(acquireBlockLock());
+    
+    List<Future> futures = acquireBlockRelatedInfoASync();;
 
     Lease nnLease = acquireNameNodeLease(); // NameNode lease is always acquired first.
     if (nnLease != null) {
@@ -311,7 +316,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -373,10 +378,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -616,7 +622,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    *
    * @throws PersistanceException
    */
-  private void acquireBlockRelatedInfoASync() throws PersistanceException, ExecutionException {
+  private List<Future> acquireBlockRelatedInfoASync() throws PersistanceException, ExecutionException {
     // blocks related tables
     List<Future> futures = new ArrayList<Future>();
     if (locks.getReplicaLock() != null) {
@@ -659,14 +665,15 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
     
-    InterruptedException intrException = null;
+   return futures;
+  }
+  
+  private void checkTerminationOfAsyncThreads(List<Future> futures) throws PersistanceException, ExecutionException {
+       InterruptedException intrException = null;
     try {
       for (int i = 0; i < futures.size(); i++) {
         Future f = futures.get(i);
         f.get();
-        // This didn't seem to have any purpose
-//        ParallelReadParams params = (ParallelReadParams)t.getParams();
-//        params.clear();
       }
     } catch (InterruptedException e) {
       terminateAsyncThread = true;
@@ -710,7 +717,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           if (inode instanceof INodeFile || inode instanceof INodeFileUnderConstruction) {
             HopINodeCandidatePK param = new HopINodeCandidatePK(inode.getId());
             inodesParams.add(param);
-          //  LOG.debug("Param inode "+param.id+" paratKey "+param.partKey);
           }
         }
       }
@@ -799,6 +805,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     StringBuilder msg = new StringBuilder();
     msg.append("Took Lock on the entire path ");
     INode lockedLeafINode = null;
+    
     for (int i = 0; i < inodes.size(); i++) {
       if (i == (inodes.size() - 1)) // take specified lock
       {
@@ -808,10 +815,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         lockedLeafINode = pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITTED, inodes.get(i).getLocalName(), inodes.get(i).getParentId(), locks);
       }
 
-      if (!lockedLeafINode.getLocalName().equals("")) {
+      if(lockedLeafINode == null){
+        throw new StorageException("Abort the transaction because INode doesn't exists for " + inodes.get(i).getLocalName()+inodes.get(i).getParentId());
+      }
+      else if (!lockedLeafINode.getLocalName().equals("")) {
         msg.append("/");
         msg.append(lockedLeafINode.getLocalName());
       }
+      
     }
     LOG.debug(msg.toString());
     return lockedLeafINode;
@@ -932,7 +943,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         if(inode != null){ // re-read after taking write lock to make sure that no one has created the same inode. 
           locks.addLockedINodes(inode, locks.getInodeLock());
           String existingPath = buildPath(path, resolvedInodes.size());  
-          System.out.println("Existing Path"+existingPath);
           LinkedList<INode> rest = acquireLockOnRestOfPath(locks.getInodeLock(), inode,
                   path, existingPath, false);
           resolvedInodes.addAll(rest);
