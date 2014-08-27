@@ -118,21 +118,25 @@ delimiter $$
 CREATE TABLE `lease_paths` (
   `holder_id` int(11) NOT NULL,
   `path` varchar(256) NOT NULL,
-  PRIMARY KEY (`path`),
-  KEY `id_idx` (`holder_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  `part_key` int(11) NOT NULL,
+  PRIMARY KEY (`path`,`part_key`),
+  KEY `holder_idx` (`holder_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (part_key) */$$
 
 
 delimiter $$
 
 CREATE TABLE `leases` (
   `holder` varchar(255) NOT NULL,
+  `part_key` int(11) NOT NULL,
   `last_update` bigint(20) DEFAULT NULL,
   `holder_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`holder`),
+  PRIMARY KEY (`holder`,`part_key`),
   KEY `holderid_idx` (`holder_id`),
   KEY `update_idx` (`last_update`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (part_key) */$$
 
 
 delimiter $$
