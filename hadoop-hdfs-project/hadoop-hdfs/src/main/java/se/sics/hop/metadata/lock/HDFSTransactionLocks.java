@@ -3,6 +3,8 @@ package se.sics.hop.metadata.lock;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
@@ -65,8 +67,9 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private Integer repldatanode = null;
   
   private LockType leaderTocken = null;
+  private static Configuration conf;
   
-  HDFSTransactionLocks() {
+  HDFSTransactionLocks(){
   }
 
   HDFSTransactionLocks(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {
@@ -313,14 +316,13 @@ public class HDFSTransactionLocks implements TransactionLocks{
     if (inode == null) {
       return;
     }
-
-    //snapshot layer will prevent the read from going to db if it has already 
-    //read that row. In a tx you can only read a row once. if you read again then
-    //the snapshot layer will return the  cached value and the lock type will
-    //remain the same as it was set when reading the row for the first time.
-    //So if the lock for a indoe already exist in the hash map then
-    //then there is no need to update the map
-    if (!allLockedInodesInTx.containsKey(inode)) {
+    boolean insert = true;
+    if(allLockedInodesInTx.containsKey(inode)){
+      if(allLockedInodesInTx.get(inode).gt(lock)){
+        insert = false;
+      }
+    }
+    if(insert){
       allLockedInodesInTx.put(inode, lock);
     }
   }
@@ -370,5 +372,19 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public Integer getReplicasDatanode() {
     return repldatanode;
+  }
+  public static void setConfiguration(final Configuration config){
+    conf = config;
+  }
+  public INodeLockType getPrecedingPathLockType(){
+    String val = conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
+    if(val.compareToIgnoreCase("READ")==0){
+      return INodeLockType.READ;
+    }
+    else if(val.compareToIgnoreCase("READ_COMMITTED")==0){
+      return INodeLockType.READ_COMMITTED;
+    }else{
+      throw new IllegalStateException("Critical Parameter is not defined. Set "+DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE);
+    }
   }
 }

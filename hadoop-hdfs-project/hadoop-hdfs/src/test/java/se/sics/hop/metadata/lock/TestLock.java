@@ -129,7 +129,7 @@ public class TestLock {
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, resolveLink);
         tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
+                addINode(INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
                 addBlock().
                 addReplica().
                 addExcess().

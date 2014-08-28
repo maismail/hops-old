@@ -1622,7 +1622,7 @@ public class NameNode {
       }
     }
 
-    public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+    public SortedActiveNamenodeList getActiveNamenodes(){
         // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle();
       synchronized(leaderSyncObj){
         return nnList;

@@ -33,6 +33,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   //START_HOP_CODE  
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
   public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
+ // public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
@@ -42,6 +43,9 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
+  
+  public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE = "dfs.storage.ansestor.lock.type";
+  public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT = "READ_COMMITTED"; // "READ"  | "READ_COMMITTED"
   
   public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
@@ -61,7 +65,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD = "dfs.namenode.blockid.updateThreshold";
   public static final float DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
 
-  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.blockid.updateThreshold";
+  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.id.updateThreshold";
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
   
   public static final String DFS_NAMENODE_PROCESS_MISREPLICATED_BATCH_SIZE = "dfs.namenode.misreplicated.batchsize";

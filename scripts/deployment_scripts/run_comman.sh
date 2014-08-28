@@ -15,11 +15,7 @@ All_Unique_Hosts=$(echo "${All_Hosts[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 for i in ${All_Unique_Hosts[@]}
 do
 	connectStr="$HOP_User@$i"
-	echo "Deleting HOP Distribution Folder on $i"
-	ssh $connectStr 'rm -rf ' $HOP_Dist_Folder
+	echo "***   $i   ***"
+	ssh $connectStr  $@
 done
-
-
-
-
 

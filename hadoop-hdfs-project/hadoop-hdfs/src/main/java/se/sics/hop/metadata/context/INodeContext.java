@@ -15,6 +15,8 @@ import se.sics.hop.exception.StorageException;
 import org.apache.log4j.NDC;
 import se.sics.hop.Common;
 import se.sics.hop.exception.StorageCallPreventedException;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.currentLockMode;
+import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -36,7 +38,7 @@ public class INodeContext extends EntityContext<INode> {
   protected Map<Integer, INode> removedInodes = new HashMap<Integer, INode>();
   protected INodeDataAccess<INode> dataAccess;
 
-  public INodeContext(INodeDataAccess<INode>  dataAccess) {
+  public INodeContext(INodeDataAccess<INode> dataAccess) {
     this.dataAccess = dataAccess;
   }
 
@@ -88,8 +90,6 @@ public class INodeContext extends EntityContext<INode> {
         } else if (inodesIdIndex.containsKey(inodeId)) {
           log("find-inode-by-pk", CacheHitState.HIT, new String[]{"id", Integer.toString(inodeId)});
           result = inodesIdIndex.get(inodeId);
-        } else if (isRemoved(inodeId)) {
-          return result;
         } else {
           log("find-inode-by-pk", CacheHitState.LOSS, new String[]{"id", Integer.toString(inodeId)});
           aboutToAccessStorage();
@@ -101,13 +101,26 @@ public class INodeContext extends EntityContext<INode> {
         }
         break;
       case ByPK_NameAndParentId:
-        String name       = (String)  params[0];
-        Integer parentId  = (Integer) params[1];
+        String name = (String) params[0];
+        Integer parentId = (Integer) params[1];
         String key = parentId + name;
         if (inodesNameParentIndex.containsKey(key)) {
-          log("find-inode-by-name-parentid", CacheHitState.HIT,
-                  new String[]{"name", name, "pid", Integer.toString(parentId)});
           result = inodesNameParentIndex.get(key);
+          if (!preventStorageCalls() && (currentLockMode.get() == LockMode.WRITE_LOCK)) {
+            //trying to upgrade lock. re-read the row from DB
+            log("find-inode-by-name-parentid-LOCK_UPGRADE", CacheHitState.LOSS_LOCK_UPGRADE,
+                    new String[]{"name", name, "pid", Integer.toString(parentId)});
+            aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId);
+            result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
+            if(result!=null){
+              inodesIdIndex.put(result.getId(), result);
+            }
+            inodesNameParentIndex.put(key, result);
+          } else {
+            log("find-inode-by-name-parentid", CacheHitState.HIT,
+                    new String[]{"name", name, "pid", Integer.toString(parentId)});
+          }
+
         } else if (newInodes.containsKey(parentId)) {
           log("find-inode-by-name-new-parentid", CacheHitState.HIT,
                   new String[]{"name", name, "pid", Integer.toString(parentId)});
@@ -117,12 +130,7 @@ public class INodeContext extends EntityContext<INode> {
         } else {
           aboutToAccessStorage(getClass().getSimpleName() + " findInodeByNameAndParentId. name " + name + " parent_id " + parentId);
           result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
-          if (result != null) {
-            if (removedInodes.containsKey(result.getId())) {
-              log("find-inode-by-name-parentid-removed", CacheHitState.LOSS,
-                      new String[]{"name", name, "pid", Integer.toString(parentId)});
-              return null;
-            }
+          if(result!=null){
             inodesIdIndex.put(result.getId(), result);
           }
           inodesNameParentIndex.put(key, result);
@@ -132,6 +140,10 @@ public class INodeContext extends EntityContext<INode> {
     }
 
     return result;
+  }
+  
+  void addINodeToCache(INode inode){
+    
   }
 
   @Override
@@ -171,7 +183,7 @@ public class INodeContext extends EntityContext<INode> {
     // because some times in the tx handler the acquire lock 
     // function is empty and in that case tlm will throw 
     // null pointer exceptions
-    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+    HDFSTransactionLocks hlks = (HDFSTransactionLocks) lks;
     if (!removedInodes.values().isEmpty()) {
       for (INode inode : removedInodes.values()) {
         INodeLockType lock = hlks.getLockedINodeLockType(inode);
@@ -211,19 +223,18 @@ public class INodeContext extends EntityContext<INode> {
   public void update(INode inode) throws PersistanceException {
 
     if (removedInodes.containsKey(inode.getId())) {
-        throw new TransactionContextException("Removed  inode passed to be persisted. NDC peek " + NDC.peek());
+      throw new TransactionContextException("Removed  inode passed to be persisted. NDC peek " + NDC.peek());
     }
 
     inodesIdIndex.put(inode.getId(), inode);
     inodesNameParentIndex.put(inode.nameParentKey(), inode);
     //if in new list then update in the new list
-    if(newInodes.containsKey(inode.getId()))
-    {
+    if (newInodes.containsKey(inode.getId())) {
       newInodes.put(inode.getId(), inode);
-    }else{
+    } else {
       modifiedInodes.put(inode.getId(), inode);
     }
-    
+
     log("updated-inode", CacheHitState.NA, new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName()});
   }
 
@@ -281,21 +292,21 @@ public class INodeContext extends EntityContext<INode> {
 
   @Override
   public EntityContextStat collectSnapshotStat() throws PersistanceException {
-    EntityContextStat stat = new EntityContextStat("INode Context",newInodes.size(),modifiedInodes.size(),removedInodes.size());
+    EntityContextStat stat = new EntityContextStat("INode Context", newInodes.size(), modifiedInodes.size(), removedInodes.size());
     return stat;
   }
 
   @Override
   public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
-    switch (hopCmds){
+    switch (hopCmds) {
       case INodePKChanged:
         //delete the previous row from db
         INode inodeBeforeChange = (INode) params[0];
-        INode inodeAfterChange  = (INode) params[1];
-        removedInodes.put(inodeBeforeChange.getId(),inodeBeforeChange);
-        log("snapshot-maintenance-inode-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()),"After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId()) });
-        log("snapshot-maintenance-removed-inode",CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(),"inodeId", Integer.toString(inodeBeforeChange.getId()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
+        INode inodeAfterChange = (INode) params[1];
+        removedInodes.put(inodeBeforeChange.getId(), inodeBeforeChange);
+        log("snapshot-maintenance-inode-pk-change", CacheHitState.NA, new String[]{"Before inodeId", Integer.toString(inodeBeforeChange.getId()), "name", inodeBeforeChange.getLocalName(), "pid", Integer.toString(inodeBeforeChange.getParentId()), "After inodeId", Integer.toString(inodeAfterChange.getId()), "name", inodeAfterChange.getLocalName(), "pid", Integer.toString(inodeAfterChange.getParentId())});
+        log("snapshot-maintenance-removed-inode", CacheHitState.NA, new String[]{"name", inodeBeforeChange.getLocalName(), "inodeId", Integer.toString(inodeBeforeChange.getId()), "pid", Integer.toString(inodeBeforeChange.getParentId())});
         break;
       case Concat:
         // do nothing
@@ -305,6 +316,4 @@ public class INodeContext extends EntityContext<INode> {
         break;
     }
   }
-
-  
 }

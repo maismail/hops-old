@@ -45,7 +45,7 @@
 </head>    
 <body>
 <h1><%=namenodeRole%> '<%=namenodeLabel%>' (<%=namenodeState%>)</h1>
-<%= NamenodeJspHelper.getVersionTable(fsn) %>
+<%= NamenodeJspHelper.getVersionTable(fsn,nn) %>
 <br />
 <% if (isActive) { %> 
   <b><a href="/nn_browsedfscontent.jsp">Browse the filesystem</a></b><br>

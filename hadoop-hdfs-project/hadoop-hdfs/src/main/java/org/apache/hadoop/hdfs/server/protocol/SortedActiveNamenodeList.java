@@ -18,10 +18,11 @@ package org.apache.hadoop.hdfs.server.protocol;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
+import org.apache.hadoop.net.NetUtils;
 
 /**
  *
- * @author jdowling
+ * @author salman
  */
 public class SortedActiveNamenodeList {
     private List<ActiveNamenode> listActiveNamenodes;
@@ -62,7 +63,8 @@ public class SortedActiveNamenodeList {
             {
                 ActiveNamenode ann = listActiveNamenodes.get(i);
                 sb.append("[ id: "+ann.getId());
-                sb.append(" addr: "+ann.getIpAddress()+":"+ann.getPort());
+                //sb.append(" addr: "+ann.getIpAddress()+":"+ann.getPort());
+                sb.append(" addr: "+NetUtils.getHostPortString(ann.getInetSocketAddress()));
                 sb.append(" ] ");
             }
         }

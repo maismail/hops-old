@@ -7,6 +7,11 @@
 #load config parameters
 source deployment.properties
 
+if [ -z $1 ]; then
+	echo "please, specify the process name"
+	exit
+fi
+
 #All Unique Hosts
 All_Hosts=${HOP_Default_NN[*]}" "${HOP_NN_List[*]}" "${HOP_DN_List[*]}" "${HOP_Experiments_Machine_List[*]}
 All_Unique_Hosts=$(echo "${All_Hosts[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
@@ -15,11 +20,9 @@ All_Unique_Hosts=$(echo "${All_Hosts[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
 for i in ${All_Unique_Hosts[@]}
 do
 	connectStr="$HOP_User@$i"
-	echo "Deleting HOP Distribution Folder on $i"
-	ssh $connectStr 'rm -rf ' $HOP_Dist_Folder
+	echo "Killing  $1 on $i"
+        pids=`ssh $connectStr pgrep $1`
+        echo "PIDS to kill "$pids
+	ssh $connectStr  kill -9 $pids
 done
-
-
-
-
 

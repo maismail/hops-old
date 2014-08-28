@@ -3,7 +3,7 @@
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * to you under the cd Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -1309,34 +1309,36 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p1 = new Path("/f1");
+      dfs.mkdirs(new Path("/f1/f2"));
+      dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
+      Path p1 = new Path("/f1/test.txt");
       Path p2 = new Path("/f2"); 
       
       int blocks  = 1;
-      FSDataOutputStream out = dfs.create(p1);
-      int i = 0;
-      for (; i < blocks; i++) {
-        out.write(i);
-      }
-      out.close();
+//      FSDataOutputStream out = dfs.create(p1);
+//      int i = 0;
+//      for (; i < blocks; i++) {
+//        out.write(i);
+//      }
+//      out.close();
       
       
       
-      FSDataInputStream in = fs.open(p1);
-      for (i = 0; i < blocks; i++) {
-        assertEquals(i, in.read());
-      }
-
-      out = dfs.create(p2);
-      i = 0;
-      for (; i < blocks; i++) {
-        out.write(i);
-      }
-      out.close();  
-      
-      dfs.concat(p1, new Path[]{p2});
-      
-      dfs.rename(p1, p2);
+//      FSDataInputStream in = fs.open(p1);
+//      for (i = 0; i < blocks; i++) {
+//        assertEquals(i, in.read());
+//      }
+//
+//      out = dfs.create(p2);
+//      i = 0;
+//      for (; i < blocks; i++) {
+//        out.write(i);
+//      }
+//      out.close();  
+//      
+//      dfs.concat(p1, new Path[]{p2});
+//      
+//      dfs.rename(p1, p2);
 //// 
 //      
 //      cluster.restartNameNode();
@@ -1349,7 +1351,7 @@ public class TestFileCreation {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      cluster.shutdown();
+      //cluster.shutdown();
     }
   }
 

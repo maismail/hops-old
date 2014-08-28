@@ -1754,9 +1754,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler createSymLinkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CREATE_SYM_LINK, link) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE, resolveLink, new String[]{link});
+                addINode(INodeResolveType.PATH, INodeLockType.WRITE, resolveLink, new String[]{link});
         return tla.acquire();
       }
 
@@ -1770,12 +1770,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
         return null;
       }
-      private LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
-      private boolean[] isPreTxPathFullyResolved = new boolean[1];
 
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        INodeUtil.resolvePathWithNoTransaction(link, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
       }
     };
     createSymLinkHandler.handle(this);
@@ -1967,14 +1964,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FileNotFoundException, ParentNotDirectoryException, IOException {
       final boolean resolveLink = false;
       HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
-          protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
-          protected boolean[] isPreTxPathFullyResolved = new boolean[1];
-
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
-                    addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
                     addBlock().
                     addLease(LockType.WRITE, holder).
                     addLeasePath(LockType.WRITE).
@@ -2002,7 +1996,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void setUp() throws PersistanceException, IOException {
-              INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, isPreTxPathFullyResolved);
           }
       };
       startFileHanlder.handle(this);
@@ -3392,8 +3385,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler mkdirsHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.MKDIRS, src) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedINodes, preTxPathFullyResolved[0]);
-        tla.getLocks().addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src});
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src});
         return tla.acquire();
       }
 
@@ -3406,12 +3399,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           throw e;
         }
       }
-      private LinkedList<INode> preTxResolvedINodes = new LinkedList<INode>();
-      private boolean[] preTxPathFullyResolved = new boolean[1];
 
       @Override
       public void setUp() throws UnresolvedPathException, PersistanceException {
-        INodeUtil.resolvePathWithNoTransaction(src, resolvedLink, preTxResolvedINodes, preTxPathFullyResolved);
       }
     };
     return (Boolean) mkdirsHanlder.handle(this);
@@ -5851,7 +5841,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           Block blk = (Block) getParams()[0];
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
-                  addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITED).
+                  addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITTED).
                   addBlock(blk.getBlockId(), INode.NON_EXISTING_ID).
                   addReplica().
                   addCorrupt().
@@ -6486,8 +6476,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     systemLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT);
     rowLevelLockEnabled = conf.getBoolean(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY, DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT);
     StorageFactory.setConfiguration(conf);
-    LOG.fatal(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
-    LOG.fatal(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
+    LOG.info(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY + " = " + systemLevelLockEnabled);
+    LOG.info(DFSConfigKeys.DFS_ROW_LEVEL_LOCK_ENABLED_KEY + " = " + rowLevelLockEnabled);
   }
 
   public static boolean rowLevelLock() {
@@ -6667,7 +6657,7 @@ public class FNode implements Comparable<FNode>{
         tla.getLocks().
                 addINode(
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.READ_COMMITED, false, new String[]{src});
+                INodeLockType.READ_COMMITTED, false, new String[]{src});
         return tla.acquire();
       }
     };
@@ -6701,14 +6691,14 @@ public class FNode implements Comparable<FNode>{
   
   private boolean deleteChildrenIncremently(LinkedList<FNode> toBeDeleted, final boolean recursive) throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     
-    for(FNode fnode : toBeDeleted){
-      if(fnode.getINode().isDirectory())
-      {
-        System.out.println("TestX dir to delete "+fnode.getPath());
-      }else{
-        System.out.println("TestX file to delete "+fnode.getPath());
-      }
-    }
+//    for(FNode fnode : toBeDeleted){
+//      if(fnode.getINode().isDirectory())
+//      {
+//        System.out.println("TestX dir to delete "+fnode.getPath());
+//      }else{
+//        System.out.println("TestX file to delete "+fnode.getPath());
+//      }
+//    }
     
     for(FNode fnode : toBeDeleted){
       if(!deleteWithTransaction(fnode.getPath(), recursive))
@@ -6725,6 +6715,10 @@ public class FNode implements Comparable<FNode>{
     if (safeMode == null)
       return;
     safeMode.adjustSafeBlocks(safeBlocks);
+  }
+
+ public String getFilePathAncestorLockType(){
+    return conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
   }
   
   //END_HOP_CODE

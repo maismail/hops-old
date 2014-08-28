@@ -31,12 +31,20 @@ source deployment.properties
 	    if [ $HOP_Do_Clean_Build = true ]; then
                CMD="$CMD clean "
 	    fi	
+	    
+	    if [ $HOP_Build_offline = true ]; then
+               CMD="$CMD -o "
+	    fi	
 
             CMD="$CMD package -Pdist"  
 
 	    if [ $HOP_Rebuild_HDFS_Native_Libs = true ]; then
                CMD="$CMD,native "  
-            fi 	
+            fi
+            
+            if [ $HOP_Skip_Java_Doc = true ]; then
+               CMD="$CMD -Dmaven.javadoc.skip=true "
+	    fi 	
 
             CMD="$CMD -DskipTests -Dtar -f $HOP_Src_Folder/pom.xml"  
             $CMD
