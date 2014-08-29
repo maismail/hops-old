@@ -227,10 +227,11 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    List<Future> futures = acquireBlockRelatedInfoASync();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
   
@@ -1011,7 +1012,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           int[] parentIds,
           HDFSTransactionLocks locks)
           throws PersistanceException {
-    lockINode(lock);
+    setINodeLockType(lock);
     Collection<INode> inodes = EntityManager.findList(INode.Finder.ByPKS, names, parentIds);
     for(INode inode : inodes){
       locks.addLockedINodes(inode, lock);
