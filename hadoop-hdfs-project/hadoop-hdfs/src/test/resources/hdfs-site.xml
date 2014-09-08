@@ -27,8 +27,8 @@
   </property>
 
  <!-- for testing only set the hop-metadata-dal-impl-ndb jarfile !-->
-  <!--property> 
+  <property> 
     <name>dfs.storage.driver.jarFile</name>
      <value>/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar</value>
-  </property-->
+  </property>
 </configuration>

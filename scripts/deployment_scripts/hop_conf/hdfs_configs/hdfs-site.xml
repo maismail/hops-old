@@ -137,7 +137,7 @@
 
 <property>
    <name>dfs.namenode.service.handler.count</name>
-  <value>10</value>
+  <value>1000</value>
   <description>The RPC server threads that listens to requests from DataNodes</description>
 </property>
 

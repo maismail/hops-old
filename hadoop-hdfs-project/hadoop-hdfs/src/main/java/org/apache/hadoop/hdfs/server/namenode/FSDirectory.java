@@ -99,8 +99,8 @@ public class FSDirectory implements Closeable {
   private final int lsLimit;  // max list limit
 
   // lock to protect the directory and BlockMap
-  private ReentrantReadWriteLock dirLock;
-  private Condition cond;
+ // private ReentrantReadWriteLock dirLock;
+  //private Condition cond;
   
   //START_HOP_CODE
   private boolean quotaEnabled;
@@ -108,28 +108,28 @@ public class FSDirectory implements Closeable {
 
   // utility methods to acquire and release read lock and write lock
   void readLock() {
-    this.dirLock.readLock().lock();
+ //   this.dirLock.readLock().lock();
   }
 
   void readUnlock() {
-    this.dirLock.readLock().unlock();
+ //   this.dirLock.readLock().unlock();
   }
 
   void writeLock() {
-    this.dirLock.writeLock().lock();
+  //  this.dirLock.writeLock().lock();
   }
 
   void writeUnlock() {
-    this.dirLock.writeLock().unlock();
+  //  this.dirLock.writeLock().unlock();
   }
 
-  boolean hasWriteLock() {
-    return this.dirLock.isWriteLockedByCurrentThread();
-  }
-
-  boolean hasReadLock() {
-    return this.dirLock.getReadHoldCount() > 0;
-  }
+//  boolean hasWriteLock() {
+//    return this.dirLock.isWriteLockedByCurrentThread();
+//  }
+//
+//  boolean hasReadLock() {
+//    return this.dirLock.getReadHoldCount() > 0;
+//  }
 
   /**
    * Caches frequently used file names used in {@link INode} to reuse 
@@ -143,8 +143,8 @@ public class FSDirectory implements Closeable {
                 DFSConfigKeys.DFS_QUOTA_ENABLED_DEFAULT);  
      //END_HOP_CODE
       
-    this.dirLock = new ReentrantReadWriteLock(true); // fair
-    this.cond = dirLock.writeLock().newCondition();
+//    this.dirLock = new ReentrantReadWriteLock(true); // fair
+//    this.cond = dirLock.writeLock().newCondition();
 //HOP     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
 //        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
@@ -195,7 +195,7 @@ public class FSDirectory implements Closeable {
     try {
       setReady(true);
       this.nameCache.initialized();
-      cond.signalAll();
+      //cond.signalAll();
     } finally {
       writeUnlock();
     }
@@ -229,19 +229,19 @@ public class FSDirectory implements Closeable {
    * Block until the object is ready to be used.
    */
   void waitForReady() {
-    if (!ready) {
-      writeLock();
-      try {
-        while (!ready) {
-          try {
-            cond.await(5000, TimeUnit.MILLISECONDS);
-          } catch (InterruptedException ie) {
-          }
-        }
-      } finally {
-        writeUnlock();
-      }
-    }
+//    if (!ready) {
+//      writeLock();
+//      try {
+//        while (!ready) {
+//          try {
+//            cond.await(5000, TimeUnit.MILLISECONDS);
+//          } catch (InterruptedException ie) {
+//          }
+//        }
+//      } finally {
+//        writeUnlock();
+//      }
+//    }
   }
 
   /**
@@ -306,7 +306,7 @@ public class FSDirectory implements Closeable {
                             String clientName,
                             String clientMachine) throws PersistanceException {
     INode newNode;
-    assert hasWriteLock();
+//    assert hasWriteLock();
     if (underConstruction) {
       newNode = new INodeFileUnderConstruction(
           permissions, replication,
@@ -538,7 +538,7 @@ public class FSDirectory implements Closeable {
     throws QuotaExceededException, UnresolvedLinkException, 
     FileAlreadyExistsException,
     PersistanceException {
-    assert hasWriteLock();
+ //   assert hasWriteLock();
     INode[] srcInodes = getRootDir().getExistingPathINodes(src, false);
     INode srcInode = srcInodes[srcInodes.length-1];
     
@@ -663,7 +663,7 @@ public class FSDirectory implements Closeable {
       Options.Rename... options) throws FileAlreadyExistsException,
       FileNotFoundException, ParentNotDirectoryException,
       QuotaExceededException, UnresolvedLinkException, IOException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     boolean overwrite = false;
     if (null != options) {
       for (Rename option : options) {
@@ -858,7 +858,7 @@ public class FSDirectory implements Closeable {
                                     ) throws QuotaExceededException, 
                                     UnresolvedLinkException,
                                     PersistanceException {
-    assert hasWriteLock();
+  //  assert hasWriteLock();
 
     INode[] inodes = getRootDir().getExistingPathINodes(src, true);
     INode inode = inodes[inodes.length - 1];
@@ -935,7 +935,7 @@ public class FSDirectory implements Closeable {
 
   void unprotectedSetPermission(String src, FsPermission permissions) 
       throws FileNotFoundException, UnresolvedLinkException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     INode inode = getRootDir().getNode(src, true);
     if (inode == null) {
       throw new FileNotFoundException("File does not exist: " + src);
@@ -956,7 +956,7 @@ public class FSDirectory implements Closeable {
 
   void unprotectedSetOwner(String src, String username, String groupname) 
       throws FileNotFoundException, UnresolvedLinkException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     INode inode = getRootDir().getNode(src, true);
     if (inode == null) {
       throw new FileNotFoundException("File does not exist: " + src);
@@ -974,7 +974,7 @@ public class FSDirectory implements Closeable {
    */
   public void concat(String target, String [] srcs) 
       throws UnresolvedLinkException, PersistanceException {
-    writeLock();
+    //writeLock();
     try {
       // actual move
       waitForReady();
@@ -998,7 +998,7 @@ public class FSDirectory implements Closeable {
    */
   public void unprotectedConcat(String target, String [] srcs, long timestamp) 
       throws UnresolvedLinkException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* FSNamesystem.concat to "+target);
     }
@@ -1106,7 +1106,7 @@ public class FSDirectory implements Closeable {
    */ 
   void unprotectedDelete(String src, long mtime) 
     throws UnresolvedLinkException, PersistanceException, IOException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     List<Block> collectedBlocks = new ArrayList<Block>();
     int filesRemoved = unprotectedDelete(src, collectedBlocks, mtime);
     if (filesRemoved > 0) {
@@ -1124,7 +1124,7 @@ public class FSDirectory implements Closeable {
    */ 
   int unprotectedDelete(String src, List<Block> collectedBlocks, 
       long mtime) throws UnresolvedLinkException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     src = normalizePath(src);
 
     INode[] inodes =  getRootDir().getExistingPathINodes(src, false);
@@ -1401,7 +1401,7 @@ public class FSDirectory implements Closeable {
                            throws QuotaExceededException, PersistanceException {
     if(!isQuotaEnabled()) return;   //HOP
     
-    assert hasWriteLock();
+    //assert hasWriteLock();
     if (!ready) {
       //still initializing. do not check or update quotas.
       return;
@@ -1426,7 +1426,7 @@ public class FSDirectory implements Closeable {
    */ 
   private void updateCountNoQuotaCheck(INode[] inodes, int numOfINodes, 
                            long nsDelta, long dsDelta) throws PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     try {
       updateCount(inodes, numOfINodes, nsDelta, dsDelta, false);
     } catch (QuotaExceededException e) {
@@ -1446,7 +1446,7 @@ public class FSDirectory implements Closeable {
                                       long nsDelta, long dsDelta) throws PersistanceException {
      if(!isQuotaEnabled()) return;    //HOP
      
-     assert hasWriteLock();
+     //assert hasWriteLock();
     for(int i=0; i < numOfINodes; i++) {
       if (inodes[i].isQuotaSet()) { // a directory with quota
         INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
@@ -1597,7 +1597,7 @@ public class FSDirectory implements Closeable {
                           long timestamp) throws QuotaExceededException,
                           UnresolvedLinkException,
                           PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     byte[][] components = INode.getPathComponents(src);
     INode[] inodes = new INode[components.length];
 
@@ -1614,7 +1614,7 @@ public class FSDirectory implements Closeable {
   private void unprotectedMkdir(INode[] inodes, int pos,
       byte[] name, PermissionStatus permission,
       long timestamp) throws QuotaExceededException, PersistanceException {
-    assert hasWriteLock();
+    //assert hasWriteLock();
     inodes[pos] = addChild(inodes, pos, 
         new INodeDirectory(name, permission, timestamp),
         -1);
@@ -1975,7 +1975,7 @@ public class FSDirectory implements Closeable {
       UnresolvedLinkException, PersistanceException {
     if(!isQuotaEnabled()) return null;    //HOP
     
-    assert hasWriteLock();
+   // assert hasWriteLock();
     // sanity check
     if ((nsQuota < 0 && nsQuota != HdfsConstants.QUOTA_DONT_SET && 
          nsQuota < HdfsConstants.QUOTA_RESET) || 
@@ -2086,14 +2086,14 @@ public class FSDirectory implements Closeable {
 
   boolean unprotectedSetTimes(String src, long mtime, long atime, boolean force) 
       throws UnresolvedLinkException, PersistanceException {
-    assert hasWriteLock();
+   // assert hasWriteLock();
     INode inode = getINode(src);
     return unprotectedSetTimes(src, inode, mtime, atime, force);
   }
 
   private boolean unprotectedSetTimes(String src, INode inode, long mtime,
                                       long atime, boolean force) throws PersistanceException {
-    assert hasWriteLock();
+  //  assert hasWriteLock();
     boolean status = false;
     if (mtime != -1) {
       inode.setModificationTimeForce(mtime);
@@ -2180,7 +2180,7 @@ public class FSDirectory implements Closeable {
     */
     private HdfsLocatedFileStatus createLocatedFileStatus(
         byte[] path, INode node) throws IOException, PersistanceException {
-      assert hasReadLock();
+   //   assert hasReadLock();
       long size = 0;     // length is zero for directories
       short replication = 0;
       long blocksize = 0;
@@ -2256,7 +2256,7 @@ public class FSDirectory implements Closeable {
   INodeSymlink unprotectedAddSymlink(String path, String target, long mtime, 
                                   long atime, PermissionStatus perm) 
       throws UnresolvedLinkException, QuotaExceededException, PersistanceException {
-    assert hasWriteLock();
+  //  assert hasWriteLock();
     final INodeSymlink symlink = new INodeSymlink(target, mtime, atime, perm);
     return addNode(path, symlink, UNKNOWN_DISK_SPACE);
   }
