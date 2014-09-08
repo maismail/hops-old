@@ -848,7 +848,7 @@ public abstract class FSMainOperationsBaseTest  {
       rename(src, src, false, true, false, Rename.NONE);
       Assert.fail("Renamed file to itself");
     } catch (IOException e) {
-      Assert.assertTrue(unwrapException(e) instanceof FileAlreadyExistsException);
+      Assert.assertTrue("Catched wrong exception type: " + e.toString(), unwrapException(e) instanceof FileAlreadyExistsException);
     }
     // Also fails with overwrite
     try {

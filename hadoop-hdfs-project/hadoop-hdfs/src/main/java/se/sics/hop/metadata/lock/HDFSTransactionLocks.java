@@ -20,6 +20,8 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private INodeLockType inodeLock = null;
   private INodeResolveType inodeResolveType = null;
   private boolean resolveLink = true; // the file is a symlink should it resolve it?
+  private boolean ignoreLocalSubtreeLocks;
+  private long namenodeId;
   private String[] inodeParam = null;
   private INode[] inodeResult = null;
   protected LinkedList<INode> preTxResolvedInodes = null; // For the operations requires to have inodes before starting transactions.
@@ -97,13 +99,28 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return blockKeyLock;
   }
 
-  public HDFSTransactionLocks addINode(INodeResolveType resolveType,
-          INodeLockType lock, boolean resolveLink, String[] param) {
+  public HDFSTransactionLocks addINode(
+      INodeResolveType resolveType,
+      INodeLockType lock,
+      boolean resolveLink,
+      String[] param,
+      boolean ignoreLocalSubtreeLocks,
+      long namenodeId) {
     this.inodeLock = lock;
     this.inodeResolveType = resolveType;
     this.inodeParam = param;
     this.resolveLink = resolveLink;
+    this.ignoreLocalSubtreeLocks = ignoreLocalSubtreeLocks;
+    this.namenodeId = namenodeId;
     return this;
+  }
+
+  public HDFSTransactionLocks addINode(
+      INodeResolveType resolveType,
+      INodeLockType lock,
+      boolean resolveLink,
+      String[] param) {
+    return addINode(resolveType, lock, resolveLink, param, false, 0);
   }
 
   public HDFSTransactionLocks addINode(INodeResolveType resolveType,
@@ -306,6 +323,14 @@ public class HDFSTransactionLocks implements TransactionLocks{
   
   public INode[] getInodeResult() {
     return inodeResult;
+  }
+
+  public boolean getIgnoreLocalSubtreeLocks() {
+    return ignoreLocalSubtreeLocks;
+  }
+
+  public long getNamenodeId() {
+    return namenodeId;
   }
 
   public LinkedList<INode> getPreTxResolvedInodes() {

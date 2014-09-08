@@ -203,7 +203,7 @@ class FSPermissionChecker {
   }
 
   /** Guarded by {@link FSNamesystem#readLock()} */
-  private void check(INode inode, FsAction access
+  void check(INode inode, FsAction access
       ) throws AccessControlException {
     if (inode == null) {
       return;
@@ -220,7 +220,7 @@ class FSPermissionChecker {
       if (mode.getOtherAction().implies(access)) { return; }
     }
     throw new AccessControlException("Permission denied: user=" + user
-        + ", access=" + access + ", inode=" + inode);
+        + ", access=" + access + ", inode=" + inode.getId());
   }
 
   /** Guarded by {@link FSNamesystem#readLock()} */

@@ -134,6 +134,8 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
           String linkValue = DFSUtil.bytes2String(((INodeSymlink) inode).getSymlink());
           hopINode.setSymlink(linkValue);
         }
+        hopINode.setSubtreeLocked(inode.isSubtreeLocked());
+        hopINode.setSubtreeLockOwner(inode.getSubtreeLockOwner());
       } catch (IOException e) {
         throw new HopEnitityInitializationError(e);
       }
@@ -190,6 +192,8 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
         inode.setIdNoPersistance(hopINode.getId());
         inode.setLocalNameNoPersistance(hopINode.getName());
         inode.setParentIdNoPersistance(hopINode.getParentId());
+        inode.setSubtreeLocked(hopINode.isSubtreeLocked());
+        inode.setSubtreeLockOwner(hopINode.getSubtreeLockOwner());
       } catch (IOException e) {
         throw new HopEnitityInitializationError(e);
       }

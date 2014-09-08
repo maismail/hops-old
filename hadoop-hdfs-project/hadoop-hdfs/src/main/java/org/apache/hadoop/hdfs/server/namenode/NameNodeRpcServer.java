@@ -605,7 +605,13 @@ class NameNodeRpcServer implements NamenodeProtocols {
       throw new IOException("rename: Pathname too long.  Limit "
           + MAX_PATH_LENGTH + " characters, " + MAX_PATH_DEPTH + " levels.");
     }
-    boolean ret = namesystem.renameTo(src, dst);
+
+    boolean ret;
+    if (namesystem.isLegacyRenameEnabled()) {
+      ret = namesystem.renameTo(src, dst);
+    } else {
+      ret = namesystem.multiTransactionalRename(src, dst);
+    }
     if (ret) {
       metrics.incrFilesRenamed();
     }
@@ -627,7 +633,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
       throw new IOException("rename: Pathname too long.  Limit "
           + MAX_PATH_LENGTH + " characters, " + MAX_PATH_DEPTH + " levels.");
     }
-    namesystem.renameTo(src, dst, options);
+
+    if (namesystem.isLegacyRenameEnabled()) {
+      namesystem.renameTo(src, dst, options);
+    } else {
+      namesystem.multiTransactionalRename(src, dst, options);
+    }
     metrics.incrFilesRenamed();
   }
 
@@ -637,9 +648,16 @@ class NameNodeRpcServer implements NamenodeProtocols {
       stateChangeLog.debug("*DIR* Namenode.delete: src=" + src
           + ", recursive=" + recursive);
     }
-    boolean ret = namesystem.IncrementalDelete(src, recursive);
-    //boolean ret = namesystem.deleteWithTransaction(src, recursive);
-    if (ret) 
+
+    boolean ret;
+    if (namesystem.isLegacyDeleteEnabled()) {
+      ret = namesystem.incrementalDelete(src, recursive);
+      //boolean ret = namesystem.deleteWithTransaction(src, recursive);
+    } else {
+      ret = namesystem.multiTransactionalDelete(src, recursive);
+    }
+
+    if (ret)
       metrics.incrDeleteFileOps();
     return ret;
   }
@@ -859,7 +877,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public void createSymlink(String target, String link, FsPermission dirPerms,
       boolean createParent) throws IOException {
     metrics.incrCreateSymlinkOps();
-    /* We enforce the MAX_PATH_LENGTH limit even though a symlink target 
+    /* We enforce the MAX_PATH_LENGTH limit even though a symlink
      * URI may refer to a non-HDFS file system. 
      */
     if (!checkPathLength(link)) {
