@@ -299,7 +299,7 @@ public class NameNode {
      * at this location.  *
      */
     public static void format(Configuration conf) throws IOException {
-        format(conf, true, true);
+        format(conf, false, true);
     }
 
     static NameNodeMetrics metrics;
@@ -831,7 +831,11 @@ public class NameNode {
         //START_HOP_CODE
         try {
             StorageFactory.setConfiguration(conf);
+          if (force) {
+            StorageFactory.formatStorageNonTransactional();
+          } else {
             StorageFactory.formatStorage();
+          }
             StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
         } catch (PersistanceException e) {
             throw new RuntimeException(e.getMessage());
@@ -1613,7 +1617,7 @@ public class NameNode {
             if( elapsedTime < leaderWindow){
                 return true;
             }else{
-                LOG.error("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
+                LOG.warn("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
                 return false;
             }
         } else {

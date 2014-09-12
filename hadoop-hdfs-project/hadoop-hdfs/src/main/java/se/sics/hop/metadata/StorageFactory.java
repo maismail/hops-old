@@ -200,6 +200,11 @@ public class StorageFactory {
     return dStorageFactory.getConnector().formatStorage();
   }
   
+  public static boolean formatStorageNonTransactional() throws StorageException {
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorageNonTransactional();
+  }
+
   public static boolean formatStorage(Class<? extends EntityDataAccess>... das) throws StorageException{
     PathMemcache.getInstance().flush();
     return dStorageFactory.getConnector().formatStorage(das);
