@@ -17,6 +17,7 @@ package se.sics.hop.metadata.adaptor;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
@@ -80,7 +81,7 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public List<Long> findByStorageIdOnlyIds(int storageId) throws StorageException {
+  public Set<Long> findByStorageIdOnlyIds(int storageId) throws StorageException {
     return dataAccess.findByStorageIdOnlyIds(storageId);
   }
   
