@@ -10,7 +10,7 @@ source deployment.properties
 
 	connectStr="$HOP_User@${HOP_Default_NN[0]}"
 	echo "Starting NN on ${HOP_Default_NN[0]}"
-	ssh $connectStr $HOP_Dist_Folder/bin/hdfs namenode -format
+	ssh $connectStr $HOP_Dist_Folder/bin/hdfs namenode -format -force
 
 
 
