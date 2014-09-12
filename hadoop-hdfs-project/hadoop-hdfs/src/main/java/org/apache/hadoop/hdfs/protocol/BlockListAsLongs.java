@@ -320,4 +320,14 @@ public class BlockListAsLongs implements Iterable<Block> {
     }
     return maxGs;
   }
+  
+  //HOP
+  public long[] getBlockIds() {
+    int numOfBlocks = getNumberOfBlocks();
+    long[] blkIds = new long[numOfBlocks];
+    for (int index = 0; index < numOfBlocks; index++) {
+      blkIds[index] = blockId(index);
+    }
+    return blkIds;
+  }
 }
