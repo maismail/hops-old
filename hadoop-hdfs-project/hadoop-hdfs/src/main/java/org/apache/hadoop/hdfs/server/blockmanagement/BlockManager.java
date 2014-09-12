@@ -92,6 +92,7 @@ import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.Bl
 import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.util.Slicer;
 
 /**
  * Keeps information related to the blocks stored in the Hadoop cluster.
@@ -1872,17 +1873,18 @@ public class BlockManager {
       final Collection<BlockToMarkCorrupt> toCorrupt, // add to corrupt replicas list
       final Collection<StatefulBlockInfo> toUC) throws IOException{ // add to under-construction list
     
-    final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    if(newReport == null)
+      return;
+    
+    final Set<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    final long[] reportedBlks = newReport.getBlockIds();
     
     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        if (newReport == null) {
-          return null;
-        }
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
-                .addBlocks(newReport.getBlockListAsLongs())
+                .addBlocks(reportedBlks)
                 .addInvalidatedBlocks(dn.getSId())
                 .addReplicas(dn.getSId());
         return tla.acquireBatch();
@@ -1890,9 +1892,6 @@ public class BlockManager {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        if (newReport == null) {
-          return null;
-        }
         final boolean isInStartupSafeMode = namesystem.isInStartupSafeMode();
         Set<Long> sb = new HashSet<Long>();
         if (isInStartupSafeMode) {
@@ -2433,13 +2432,13 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 
     //[M] we need to have a garbage collection to check for the invalid blocks,
     // also this could be optimized even more by batching multiple inode files at a time
-    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE_BATCH) {
+    final HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE_BATCH) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.READ).
+                addINode(TransactionLockTypes.INodeLockType.READ_COMMITTED).
                 addBlock().
                 addInvalidatedBlock().
                 addReplica().
@@ -2488,21 +2487,20 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     };
 
 
-   List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
-   int numOfBatches;
-   if (!allINodes.isEmpty() && allINodes.size() <= processMisReplicatedBatchSize) {
-     numOfBatches = 1;
-   } else {
-     numOfBatches = (int) ((double) allINodes.size() / processMisReplicatedBatchSize);
+   final List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
+   try {
+     Slicer.slice(allINodes.size(), processMisReplicatedBatchSize, new Slicer.OperationHandler() {
+       @Override
+       public void handle(int startIndex, int endIndex) throws Exception {
+         List<INodeIdentifier> inodes = allINodes.subList(startIndex, endIndex);
+         processMisReplicatedBlocksHandler.setParams(inodes);
+         processMisReplicatedBlocksHandler.handle(namesystem);
+       }
+     });
+   } catch (Exception ex) {
+     throw new IOException(ex);
    }
-   for (int b = 0; b < numOfBatches; b++) {
-     int startIndex = b * processMisReplicatedBatchSize;
-     int endIndex = Math.min((b + 1) * processMisReplicatedBatchSize, allINodes.size());
-     List<INodeIdentifier> inodes = allINodes.subList(startIndex, endIndex);
-     processMisReplicatedBlocksHandler.setParams(inodes);
-     processMisReplicatedBlocksHandler.handle(namesystem);
-   }
-            
+
 //    for (BlockInfo block : blocksMap.getBlocks()) {
 //      processMisReplicatedBlocksHandler.setParams(block);
 //      processMisReplicatedBlocksHandler.handle(namesystem);
