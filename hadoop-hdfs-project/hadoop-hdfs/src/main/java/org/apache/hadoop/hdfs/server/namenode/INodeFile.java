@@ -201,21 +201,23 @@ public class INodeFile extends INode implements BlockCollection {
    * May or may not include BlockInfoUnderConstruction.
    */
   long computeFileSize(boolean includesBlockInfoUnderConstruction) throws PersistanceException {
-    BlockInfo[] blocks = getBlocks();
+    return computeFileSize(includesBlockInfoUnderConstruction, getBlocks());
+  }
+
+  long computeFileSize(boolean includesBlockInfoUnderConstruction, BlockInfo[] blocks) throws PersistanceException {
     if (blocks == null || blocks.length == 0) {
       return 0;
     }
     final int last = blocks.length - 1;
     //check if the last block is BlockInfoUnderConstruction
     long bytes = blocks[last] instanceof BlockInfoUnderConstruction
-                 && !includesBlockInfoUnderConstruction?
-                     0: blocks[last].getNumBytes();
+        && !includesBlockInfoUnderConstruction?
+        0: blocks[last].getNumBytes();
     for(int i = 0; i < last; i++) {
       bytes += blocks[i].getNumBytes();
     }
     return bytes;
   }
-  
 
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
@@ -228,7 +230,7 @@ public class INodeFile extends INode implements BlockCollection {
     return diskspaceConsumed(getBlocks());
   }
   
-  private long diskspaceConsumed(Block[] blkArr) {
+  long diskspaceConsumed(Block[] blkArr) {
     long size = 0;
     if(blkArr == null) 
       return 0;

@@ -22,9 +22,8 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
@@ -75,7 +74,6 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.base.Joiner;
-import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
@@ -91,6 +89,7 @@ import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 
 /**
  * ********************************************************
@@ -1603,6 +1602,7 @@ public class NameNode {
     public void setNameNodeList(SortedActiveNamenodeList list) {
       synchronized(leaderSyncObj){
         this.nnList = list;
+        HDFSTransactionLockAcquirer.setActiveNamenodes(Collections.unmodifiableCollection(list.getActiveNamenodes()));
       }
     }
 

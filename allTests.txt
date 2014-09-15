@@ -298,6 +298,7 @@ TestStartSecureDataNode.java
 TestStartupOptionUpgrade.java
 TestStickyBit.java
 TestStreamFile.java
+TestSubtreeLock.java
 TestTransferRbw.java
 TestUnderReplicatedBlockQueues.java
 TestUnderReplicatedBlocks.java

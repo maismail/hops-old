@@ -79,7 +79,7 @@ public class TestQuota {
    @Test
   public void testQuotaCommands() throws Exception {
     final Configuration conf = new HdfsConfiguration();
-    // set a smaller block size so that we can test with smaller 
+    // set a smaller block size so that we can test with smaller
     // Space quotas
     final int DEFAULT_BLOCK_SIZE = 512;
     conf.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, DEFAULT_BLOCK_SIZE);

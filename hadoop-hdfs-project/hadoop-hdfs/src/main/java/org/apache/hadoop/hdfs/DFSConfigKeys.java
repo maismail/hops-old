@@ -88,10 +88,10 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 2; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 5; //min value is 0. Better set it >= 1
   
-  public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
-  public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
+  public static final String  DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.initial.wait.on.retry";
+  public static final int     DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
   
   public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
   public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
@@ -112,8 +112,17 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_MEMCACHE_KEY_PREFIX_DEFAULT = "p:"; 
   
   public static final String  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS = "dfs.memcache.key.expiry";  
-  public static final int  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT = 0; 
-  
+  public static final int  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT = 0;
+
+  public static final String DFS_LEGACY_DELETE_ENABLE_KEY = "dfs.namenode.legacy-delete.enable";
+  public static final boolean DFS_LEGACY_DELETE_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_RENAME_ENABLE_KEY = "dfs.namenode.legacy-rename.enable";
+  public static final boolean DFS_LEGACY_RENAME_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY = "dfs.namenode.legacy-content-summary.enable";
+  public static final boolean DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT = false;
+
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

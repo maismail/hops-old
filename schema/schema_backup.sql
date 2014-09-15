@@ -79,6 +79,8 @@ CREATE TABLE `inodes` (
   `dir` bit(1) NOT NULL,
   `quota_enabled` bit(1) NOT NULL,
   `under_construction` bit(1) NOT NULL,
+  `subtree_locked` bit(1) DEFAULT NULL,
+  `subtree_lock_owner` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`parent_id`,`name`),
   KEY `inode_idx` (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
