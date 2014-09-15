@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -38,6 +39,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -139,13 +141,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 
   /** Return the number of corrupt blocks */
   int getCorruptBlockSize() throws IOException {
-    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_LVL4) {
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
-        return da.countByLevel(QUEUE_WITH_CORRUPT_BLOCKS);
-      }
-    }.handle();
+    return count(QUEUE_WITH_CORRUPT_BLOCKS);
   }
 
   /** Check if a block is in the neededReplication queue */
@@ -337,7 +333,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    *         represents its replication priority.
    */
   private List<List<Block>> chooseUnderReplicatedBlocksInt(
-      int blocksToProcess, List<List<Block>> priorityQueuestmp) throws IOException {
+      int blocksToProcess) throws IOException {
     // initialize data structure for the return value
     List<List<Block>> blocksToReplicate = new ArrayList<List<Block>>(LEVEL);
     for (int i = 0; i < LEVEL; i++) {
@@ -348,47 +344,40 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }
     
     List<Integer> priorityToReplIdx = getReplicationIndex();
-    
+    List<List<Block>> priorityQueuestmp = createPrioriryQueue();
     
     int blockCount = 0;
     for (int priority = 0; priority < LEVEL; priority++) { 
       // Go through all blocks that need replications with current priority.
-      BlockIterator neededReplicationsIterator = new BlockIterator(priorityQueuestmp, priority);
       Integer replIndex = priorityToReplIdx.get(priority);
-      
-      // skip to the first unprocessed block, which is at replIndex
-      for (int i = 0; i < replIndex && neededReplicationsIterator.hasNext(); i++) {
-        neededReplicationsIterator.next();
-      }
-
-      blocksToProcess = Math.min(blocksToProcess, size());
       
       if (blockCount == blocksToProcess) {
         break;  // break if already expected blocks are obtained
       }
       
-      // Loop through all remaining blocks in the list.
-      while (blockCount < blocksToProcess
-          && neededReplicationsIterator.hasNext()) {
-        Block block = neededReplicationsIterator.next();
-        blocksToReplicate.get(priority).add(block);
-        replIndex++;
-        blockCount++;
-      }
+      blocksToProcess = Math.min(blocksToProcess, size());
       
-      if (!neededReplicationsIterator.hasNext()
-          && neededReplicationsIterator.getPriority() == LEVEL - 1) {
+      int remainingblksToProcess = blocksToProcess - blockCount;
+      List<HopUnderReplicatedBlock> urbs = getUnderReplicatedBlocks(priority, replIndex, remainingblksToProcess);
+      addBlocksInPriorityQueues(urbs, priorityQueuestmp);
+      
+      List<Block> blks = priorityQueuestmp.get(priority);
+      blocksToReplicate.get(priority).addAll(blks);
+      blockCount += blks.size();
+      replIndex += blks.size();
+      
+      
+      if (count(priority) <= remainingblksToProcess && priority == LEVEL - 1) {
         // reset all priorities replication index to 0 because there is no
         // recently added blocks in any list.
         for (int i = 0; i < LEVEL; i++) {
           priorityToReplIdx.set(i, 0);
         }
-        setReplicationIndex(priorityToReplIdx);
         break;
       }
       priorityToReplIdx.set(priority, replIndex); 
-      setReplicationIndex(priorityToReplIdx);
     }
+    setReplicationIndex(priorityToReplIdx);
     return blocksToReplicate;
   }
 
@@ -525,7 +514,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
-    final List<List<Block>> priorityQueuestmp = fillPriorityQueues();
     return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
@@ -536,7 +524,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        return chooseUnderReplicatedBlocksInt(blocksToProcess, priorityQueuestmp);
+        return chooseUnderReplicatedBlocksInt(blocksToProcess);
       }
     }.handle();
   }
@@ -580,9 +568,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     return priorityQueuestmp;
   }
   
-  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException{
-     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
-  }
  
   private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
     return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
@@ -599,53 +584,68 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     }.handle();
   }
   
+  private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level, final int offset, final int count) throws IOException {
+    return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_UNDER_REPLICATED_BLKS_By_LEVEL_LIMITED) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
+        return da.findByLevel(level, offset, count);
+
+      }
+    }.handle();
+  }
+    
   private void addBlocksInPriorityQueues(final List<HopUnderReplicatedBlock> allUrb, final List<List<Block>> priorityQueuestmp) throws IOException {
     final long[] blockIds = new long[allUrb.size()];
     final int[] inodeIds = new int[allUrb.size()];
+    final HashMap<Long, HopUnderReplicatedBlock> allUrbHashMap = new HashMap<Long, HopUnderReplicatedBlock>();
     for (int i = 0; i < allUrb.size(); i++) {
       HopUnderReplicatedBlock b = allUrb.get(i);
       blockIds[i] = b.getBlockId();
       inodeIds[i] = b.getInodeId();
+      allUrbHashMap.put(b.getBlockId(), b);
     }
 
-    new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCKS) {
-
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlocks(blockIds, inodeIds);
-        return tla.acquireBatch();
-      }
-
+   // use lightweight transaction handler here and it should work
+            
+    new LightWeightRequestHandler(HDFSOperationType.GET_BLOCKS) {
+      
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        for (Iterator<HopUnderReplicatedBlock> it = allUrb.iterator(); it.hasNext();) {
-          HopUnderReplicatedBlock urb = it.next();
-          BlockInfo blk = EntityManager.find(BlockInfo.Finder.ById, urb.getBlockId());
-          if (blk != null) {
-            it.remove();
-            priorityQueuestmp.get(urb.getLevel()).add(blk);
-          }
+        BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        List<BlockInfo> blks = bda.findByIdsNoCommit(blockIds, inodeIds);
+        for(BlockInfo blk : blks){
+          HopUnderReplicatedBlock urb = allUrbHashMap.remove(blk.getBlockId());
+          assert urb.getInodeId() == blk.getInodeId();
+          priorityQueuestmp.get(urb.getLevel()).add(blk);
         }
+        
         //HOP[M]: allUrb should contains the list of underreplicatedblocks that doesn't have any block attached to 
         // so it's safe to delete these blocks without taking anylocks
-        removeUnderReplicatedBlocks(allUrb);
+        Collection<HopUnderReplicatedBlock> toRemove = allUrbHashMap.values();
+        if (!toRemove.isEmpty()) {
+          UnderReplicatedBlockDataAccess uda = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
+          uda.prepare(toRemove, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
+        }  
         return null;
       }
     }.handle();
   }
   
-  private void removeUnderReplicatedBlocks(final List<HopUnderReplicatedBlock> allUrb) throws IOException {
-    new LightWeightRequestHandler(HDFSOperationType.REMOVE_UNDER_REPLICATED_BLOCK) {
+  int count(final int level) throws IOException {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_AT_LVL) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        UnderReplicatedBlockDataAccess uda = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
-        uda.prepare(allUrb, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
-        return null;
+        UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
+        return da.countByLevel(level);
       }
     }.handle();
   }
   
+  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException {
+    return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
+  }
+
   private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
     EntityManager.add(urb);
   }
