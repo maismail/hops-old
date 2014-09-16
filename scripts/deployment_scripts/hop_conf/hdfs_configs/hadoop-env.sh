@@ -41,20 +41,21 @@ for f in $HADOOP_HOME/contrib/capacity-scheduler/*.jar; do
 done
 
 # The maximum amount of heap to use, in MB. Default is 1000.
-export HADOOP_HEAPSIZE=5000
-export HADOOP_NAMENODE_INIT_HEAPSIZE=500
+export HADOOP_HEAPSIZE=8000
+export HADOOP_NAMENODE_INIT_HEAPSIZE=1000
 
 # Extra Java runtime options.  Empty by default.
 export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
 
 # Command specific options appended to HADOOP_OPTS when specified
-export HADOOP_NAMENODE_OPTS=" -XX:MaxDirectMemorySize=1024m -Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"
+export HADOOP_NAMENODE_OPTS=" -XX:MaxDirectMemorySize=2048m -Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"
 export HADOOP_DATANODE_OPTS="-Dhadoop.security.logger=ERROR,RFAS $HADOOP_DATANODE_OPTS"
 
 export HADOOP_SECONDARYNAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_SECONDARYNAMENODE_OPTS"
 
 # The following applies to multiple commands (fs, dfs, fsck, distcp etc)
-export HADOOP_CLIENT_OPTS="-Xmx256m $HADOOP_CLIENT_OPTS"
+# comment the HADOOP_CLIENT_OPTS since it results in adding another -Xmx
+#export HADOOP_CLIENT_OPTS="-Xmx256m $HADOOP_CLIENT_OPTS"
 #HADOOP_JAVA_PLATFORM_OPTS="-XX:-UsePerfData $HADOOP_JAVA_PLATFORM_OPTS"
 
 # On secure datanodes, user to run the datanode as after dropping privileges
@@ -77,4 +78,6 @@ export HADOOP_SECURE_DN_PID_DIR=${HADOOP_PID_DIR}
 export HADOOP_IDENT_STRING=$USER
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native
-export HADOOP_ROOT_LOGGER=INFO,DRFA 
+export HADOOP_ROOT_LOGGER=ERROR,DRFA 
+
+

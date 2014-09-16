@@ -150,13 +150,13 @@
 
 <property>
    <name>dfs.namenode.inodeid.batchsize</name>
-  <value>10000</value>
+  <value>100000</value>
   <description></description>
 </property>
 
 <property>
    <name>dfs.namenode.blockid.batchsize</name>
-  <value>10000</value>
+  <value>100000</value>
   <description></description>
 </property>
 
@@ -169,7 +169,7 @@
 
 <property>
    <name>dfs.namenode.selector-policy</name>
-  <value>ROUND_ROBIN</value>
+  <value>RANDOM</value>
   <description>Used by clients. Possible values ROUND_ROBIN, RANDOM</description>
 </property>
 
