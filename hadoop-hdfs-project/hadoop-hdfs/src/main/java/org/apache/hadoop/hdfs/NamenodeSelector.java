@@ -187,6 +187,11 @@ public class NamenodeSelector extends Thread {
     }
     return nnList;
   }
+
+  public NamenodeHandle getLeadingNameNode() throws IOException {
+    // The first one is supposed to be the leader. An exception is thrown if none is available.
+    return getAllNameNode().get(0);
+  }
        
     /**
      * Gets the appropriate namenode for a read/write operation

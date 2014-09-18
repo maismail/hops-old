@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import javax.security.auth.login.LoginException;
 
 import org.apache.hadoop.fs.Options.Rename;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
@@ -46,9 +47,12 @@ public class TestHDFSFileContextMainOperations extends
   private static Path defaultWorkingDirectory;
   private static HdfsConfiguration CONF = new HdfsConfiguration();
   private static int NNPORT=5555;
+  private static int QUOTA_UPDATE_INTERVAL = 1;
+
   @BeforeClass
   public static void clusterSetupAtBegining() throws IOException,
       LoginException, URISyntaxException {
+    CONF.setInt(DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY, QUOTA_UPDATE_INTERVAL);
     cluster = new MiniDFSCluster.Builder(CONF).numDataNodes(2).nameNodePort(NNPORT).build();
     cluster.waitClusterUp();
     fc = FileContext.getFileContext(cluster.getURI(0), CONF);
@@ -121,6 +125,8 @@ public class TestHDFSFileContextMainOperations extends
      */
     oldRename(src1, dst1, true, false);
 
+    // HOP - Wait for asynchronous quota updates to be applied
+    Thread.sleep(5000);
     /*
      * Test2: src does not exceed quota and dst has *no* quota to accommodate 
      * rename. 
@@ -164,6 +170,8 @@ public class TestHDFSFileContextMainOperations extends
      * rename. 
      */
     // dstDir quota = 1 and dst1 already uses it
+    // HOP - Wait for asynchronous quota updates to be applied
+    Thread.sleep(5000);
     createFile(src2);
     rename(src2, dst2, false, false, true, Rename.NONE);
 
@@ -208,11 +216,17 @@ public class TestHDFSFileContextMainOperations extends
     createFile(src1);
     fs.mkdirs(dst1.getParent());
     createFile(dst1);
-    
+
     // Set quota so that dst1 parent cannot allow under it new files/directories 
     fs.setQuota(dst1.getParent(), 2, HdfsConstants.QUOTA_DONT_SET);
     // Free up quota for a subsequent rename
+    System.out.println("quota set");
+    Thread.sleep(60000);
     fs.delete(dst1, true);
+    System.out.println("delete");
+    // HOP - Wait for asynchronous quota updates to be applied
+    Thread.sleep(dst1.depth() * QUOTA_UPDATE_INTERVAL * 1000 + 2000);
+    System.out.println("start rename");
     oldRename(src1, dst1, true, false);
     
     // Restart the cluster and ensure the above operations can be
@@ -240,8 +254,14 @@ public class TestHDFSFileContextMainOperations extends
     
     // Set quota so that dst1 parent cannot allow under it new files/directories 
     fs.setQuota(dst1.getParent(), 2, HdfsConstants.QUOTA_DONT_SET);
+    System.out.println("quota set");
+    Thread.sleep(60000);
     // Free up quota for a subsequent rename
     fs.delete(dst1, true);
+    System.out.println("delete");
+    // HOP - Wait for asynchronous quota updates to be applied
+    Thread.sleep(dst1.depth() * QUOTA_UPDATE_INTERVAL + 2000);
+    System.out.println("start rename");
     rename(src1, dst1, true, true, false, Rename.OVERWRITE);
     
     // Restart the cluster and ensure the above operations can be
@@ -260,7 +280,7 @@ public class TestHDFSFileContextMainOperations extends
     try {
       Assert.assertEquals(renameSucceeds, fs.rename(src, dst));
     } catch (Exception ex) {
-      Assert.assertTrue(exception);
+      Assert.assertTrue(ex.getMessage(), exception);
     }
     Assert.assertEquals(renameSucceeds, !exists(fc, src));
     Assert.assertEquals(renameSucceeds, exists(fc, dst));
@@ -273,11 +293,9 @@ public class TestHDFSFileContextMainOperations extends
       fc.rename(src, dst, options);
       Assert.assertTrue(renameSucceeds);
     } catch (Exception ex) {
-      Assert.assertTrue(exception);
+      Assert.assertTrue(ex.getMessage(), exception);
     }
     Assert.assertEquals(renameSucceeds, !exists(fc, src));
     Assert.assertEquals((dstExists||renameSucceeds), exists(fc, dst));
   }
-
-  
 }

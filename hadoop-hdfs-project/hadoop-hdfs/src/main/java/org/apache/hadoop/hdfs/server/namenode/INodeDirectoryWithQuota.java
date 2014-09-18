@@ -45,6 +45,13 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
     createINodeAttributes(nsQuota, counts.getNsCount(), dsQuota, counts.getDsCount());
     setQuota(nsQuota, dsQuota);
   }
+
+  INodeDirectoryWithQuota(Long nsQuota, Long dsQuota, Long nsCount, Long dsCount,
+      INodeDirectory other) throws PersistanceException {
+    super(other);
+    createINodeAttributes(nsQuota, nsCount, dsQuota, dsCount);
+    setQuota(nsQuota, dsQuota);
+  }
   
   /** constructor with no quota verification */
   public INodeDirectoryWithQuota(String name, PermissionStatus permissions) {
@@ -77,8 +84,7 @@ public class INodeDirectoryWithQuota extends INodeDirectory {
     getINodeAttributes().setNsQuota(newNsQuota);
     getINodeAttributes().setDsQuota(newDsQuota);
   }
-  
-  
+
   @Override
   DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException{
     counts.nsCount += getINodeAttributes().getNsCount();

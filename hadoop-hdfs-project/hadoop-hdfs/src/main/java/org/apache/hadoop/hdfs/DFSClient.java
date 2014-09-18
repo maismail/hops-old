@@ -2468,7 +2468,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler, "setQuota");
+      doClientActionOnLeader(handler, "setQuota");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2546,21 +2546,47 @@ public class DFSClient implements java.io.Closeable {
   private interface ClientActionHandler {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
-  
-  private NamenodeHandle getNextNamenode(long thisFnID /*for debugging*/, List<ActiveNamenode> blist) throws IOException{
+
+  private interface NameNodeFetcher {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException;
+  }
+
+  private final NameNodeFetcher defaultNameNodeFetcher = new NameNodeFetcher() {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
       NamenodeSelector.NamenodeHandle handle = null;
-      for(int i = 0; i < 10; i++){
-        handle = namenodeSelector.getNextNamenode();  
-        if(!blist.contains(handle.getNamenode())){
-            return handle;
+      for (int i = 0; i < 10; i++) {
+        handle = namenodeSelector.getNextNamenode();
+        if (!blackList.contains(handle.getNamenode())) {
+          return handle;
         }
-        //LOG.debug(thisFnID+") Black listed descriptor returned");
       }
       return handle;
+    }
+  };
+
+  private final NameNodeFetcher leaderNameNodeFetcher = new NameNodeFetcher() {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
+      NamenodeHandle leader = namenodeSelector.getLeadingNameNode();
+      if (blackList.contains(leader)) {
+        return null;
+      }
+      return leader;
+    }
+  };
+
+  private Object doClientActionOnLeader(ClientActionHandler handler, String callerID)
+      throws RemoteException, IOException {
+    return doClientActionWithRetry(handler, callerID, leaderNameNodeFetcher);
+  }
+
+  private Object doClientActionWithRetry(ClientActionHandler handler, String callerID)
+      throws RemoteException, IOException {
+    return doClientActionWithRetry(handler, callerID, defaultNameNodeFetcher);
   }
 
   private static AtomicLong fnID = new AtomicLong(); // for debugging purpose
-  private Object doClientActionWithRetry(ClientActionHandler handler, String callerID) throws RemoteException, IOException {
+  private Object doClientActionWithRetry(ClientActionHandler handler, String callerID, NameNodeFetcher nameNodeFetcher)
+      throws RemoteException, IOException {
     callerID = callerID.toUpperCase();
     long thisFnID = fnID.incrementAndGet();
     //When a RPC call to NN fails then the client will put the NamenodeSelector.java
@@ -2578,7 +2604,7 @@ public class DFSClient implements java.io.Closeable {
     int waitTime = dfsClientConf.dfsClientInitialWaitOnRetry;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
-        handle = getNextNamenode(thisFnID,blackListedNamenodes);
+        handle = nameNodeFetcher.getNextNameNode(blackListedNamenodes);
 
         LOG.debug(thisFnID + ") " + callerID + " sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         Object obj = handler.doAction(handle.getRPCHandle());
