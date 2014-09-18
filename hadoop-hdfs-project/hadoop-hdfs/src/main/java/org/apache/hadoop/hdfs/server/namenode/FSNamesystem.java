@@ -1921,8 +1921,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addReplicaUc().
                 addUnderReplicatedBlock().
                 addPendingBlock().
-                addInvalidatedBlock().
-                addQuotaUpdateOnSubtree();
+                addInvalidatedBlock();
+            if (flag.contains(CreateFlag.OVERWRITE)) {
+              tla.getLocks().addQuotaUpdateOnSubtree();
+            }
             return tla.acquire();
           }
 
