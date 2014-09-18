@@ -2934,18 +2934,18 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
-                addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                addLease(LockType.WRITE).
-                addLeasePath(LockType.WRITE).
-                addBlock().
-                addReplica().
-                addReplicaUc().
-                addInvalidatedBlock().
-                addCorrupt().
-                addExcess().
-                addPendingBlock().
-                addUnderReplicatedBlock().
+                  addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                      INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
+                  addLease(LockType.WRITE).
+                  addLeasePath(LockType.WRITE).
+                  addBlock().
+                  addReplica().
+                  addReplicaUc().
+                  addInvalidatedBlock().
+                  addCorrupt().
+                  addExcess().
+                  addPendingBlock().
+                  addUnderReplicatedBlock().
                 addQuotaUpdateOnSubtree();
             return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
@@ -7047,13 +7047,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
             @Override
             public Object performTask() throws PersistanceException, IOException {
-              INode inode = dir.getINode(path);
+              INode[] pathComponents = dir.getRootDir().getExistingPathINodes(path, false);
+              INode inode = pathComponents[pathComponents.length-1];
               if (inode == null) {
                 LOG.error("INode disappeared during deletion");
                 return false;
               }
-              INodeDirectory parent = inode.getParent();
-              INode[] pathComponents = dir.getExistingPathINodes(path);
+              INodeDirectory parent = (INodeDirectory) pathComponents[pathComponents.length-2];
               dir.removeChildNonRecursively(pathComponents, pathComponents.length-1);
               parent.setModificationTime(now());
 
@@ -7113,7 +7113,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           pc.checkPermission(path, dir.getRootDir(), doCheckOwner, ancestorAccess, parentAccess, access, subAccess);
         }
 
-        INode inode = dir.getINode(path);
+        INode[] nodes = dir.getRootDir().getExistingPathINodes(path, false);
+        INode inode = nodes[nodes.length-1];
         if (inode != null && !inode.isRoot()) { // Do never lock the fs root
           inode.setSubtreeLocked(true);
           inode.setSubtreeLockOwner(getNamenodeId());
@@ -7146,7 +7147,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        INode inode = dir.getINode(path);
+        INode[] nodes = dir.getRootDir().getExistingPathINodes(path, false);
+        INode inode = nodes[nodes.length-1];
         if (inode != null && inode.isSubtreeLocked()) {
           inode.setSubtreeLocked(false);
           EntityManager.update(inode);
