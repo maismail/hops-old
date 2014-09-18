@@ -1921,7 +1921,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 addReplicaUc().
                 addUnderReplicatedBlock().
                 addPendingBlock().
-                addInvalidatedBlock();
+                addInvalidatedBlock().
+                addQuotaUpdateOnSubtree();
             return tla.acquire();
           }
 
