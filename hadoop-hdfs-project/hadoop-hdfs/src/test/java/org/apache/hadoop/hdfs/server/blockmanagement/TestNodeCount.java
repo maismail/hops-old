@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -35,7 +36,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -110,7 +111,7 @@ public class TestNodeCount {
       // find out a non-excess node
       HDFSTransactionalRequestHandler getnonExcessDN = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(block.getBlockId(),
@@ -208,7 +209,7 @@ public class TestNodeCount {
     try {
       return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
          @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
            tla.getLocks().
                    addBlock(block.getBlockId(),

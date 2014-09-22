@@ -217,6 +217,9 @@ public class TestSafeMode {
     // the lock.
     nn.getNamesystem().writeLock();
     nn.getNamesystem().writeUnlock();
+    
+    Thread.sleep(1000);
+    
     int safe = NameNodeAdapter.getSafeModeSafeBlocks(nn);
     assertTrue("Expected first block report to make some but not all blocks " +
         "safe. Got: " + safe, safe >= 1 && safe < 15);

@@ -157,14 +157,21 @@ public class LeaderElection extends Thread {
 
         while (nn.getNamesystem().isRunning()) {
             try {
-                LOG.info(hostname + ") Leader Election timeout. Updating the counter and checking for new leader " + nn.getId() + " " + nn.isLeader());
+                LOG.debug(hostname + ") Leader Election timeout. Updating the counter and checking for new leader " + nn.getId() + " " + nn.isLeader());
+                Long txStartTime = System.currentTimeMillis();
                 if (!suspend) {
                     leaderElectionHandler.handle(null/*fanamesystem*/);
                 }
-                Thread.sleep(leadercheckInterval);
+                Long txTotalTime = System.currentTimeMillis() - txStartTime;
+                if(txTotalTime < leadercheckInterval ){
+                  Thread.sleep(leadercheckInterval-txTotalTime);
+                }else{
+                  LOG.error("LeaderElection: Update Tx took very long time to update");
+                  Thread.sleep(10); // give a chance to other LE threads. There could be contention
+                }
 
             } catch (InterruptedException ie) {
-                LOG.info(hostname + ") LeaderElection thread received InterruptedException.", ie);
+                LOG.debug(hostname + ") LeaderElection thread received InterruptedException.", ie);
                 break;
             } catch (Throwable t) {
                 LOG.fatal(hostname + ") LeaderElection thread received Runtime exception. ", t);
@@ -197,7 +204,7 @@ public class LeaderElection extends Thread {
                         if (j < newLeaders.size()) {
                             newLeader = newLeaders.get(j);
                         } else {
-                            LOG.error(hostname + ") No alive nodes in the table");
+                            LOG.error("LeaderElection:"+ hostname + ") No alive nodes in the table");
                             throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") { };
                         }
                     }
@@ -205,7 +212,7 @@ public class LeaderElection extends Thread {
             }
             return newLeader.getId();
         }
-        LOG.info(hostname + ") No namenodes in the system. The first one to start would be the leader");
+        LOG.debug(hostname + ") No namenodes in the system. The first one to start would be the leader");
         return LeaderElection.LEADER_INITIALIZATION_ID;
     }
 
@@ -278,7 +285,7 @@ public class LeaderElection extends Thread {
         // otherwise create a new row
 
         HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
-        LOG.info(hostname + ") Adding/updating row " + leader.toString() + " history counter " + historyCounter);
+        LOG.debug(hostname + ") Adding/updating row " + leader.toString() + " history counter " + historyCounter);
         EntityManager.add(leader);
     }
 

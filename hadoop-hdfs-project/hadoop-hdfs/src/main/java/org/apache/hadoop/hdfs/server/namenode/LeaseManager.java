@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -442,7 +443,7 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         String holder = (String) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().

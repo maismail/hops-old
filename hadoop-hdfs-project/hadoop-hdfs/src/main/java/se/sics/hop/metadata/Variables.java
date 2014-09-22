@@ -58,6 +58,20 @@ public class Variables {
     }.handle();
   }
 
+  public static CountersQueue.Counter incrementQuotaUpdateIdCounter(final int increment) throws IOException {
+    return (CountersQueue.Counter) new LightWeightRequestHandler(HDFSOperationType.UPDATE_INODE_ID_COUNTER) {
+      @Override
+      public Object performTask() throws IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        int oldValue = ((HopIntVariable) vd.getVariable(HopVariable.Finder.QuotaUpdateID)).getValue();
+        int newValue = oldValue + increment;
+        vd.setVariable(new HopIntVariable(HopVariable.Finder.QuotaUpdateID, newValue));
+        return new CountersQueue.Counter(oldValue, newValue);
+      }
+    }.handle();
+  }
+
   public static void setReplicationIndex(List<Integer> indeces) throws PersistanceException {
     updateVariable(new HopArrayVariable(HopVariable.Finder.ReplicationIndex, indeces));
   }
@@ -191,5 +205,6 @@ public class Variables {
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.SIdCounter, new HopIntVariable(0).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.MaxNNID, new HopLongVariable(0).getBytes());
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.QuotaUpdateID, new HopIntVariable(0).getBytes());
   }
 }

@@ -33,6 +33,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   //START_HOP_CODE  
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
   public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
+ // public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
@@ -43,11 +44,26 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
   
+  public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE = "dfs.storage.ansestor.lock.type";
+  public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT = "READ_COMMITTED"; // "READ"  | "READ_COMMITTED"
+  
   public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
-  
-  public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = true;
+
+  public static final String DFS_NAMENODE_QUOTA_ENABLED_KEY = "dfs.namenode.quota.enabled";
+  public static final boolean DFS_NAMENODE_QUOTA_ENABLED_DEFAULT = true;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY = "dfs.namenode.quota.update.interval";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT = 1000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_LIMIT_KEY = "dfs.namenode.quota.update.limit";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 10000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZE = "dfs.namenode.quota.update.id.batchsize";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZ_DEFAULT = 100000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD = "dfs.namenode.quota.update.updateThreshold";
+  public static final float DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
   
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
   public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 1000;
@@ -61,7 +77,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD = "dfs.namenode.blockid.updateThreshold";
   public static final float DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
 
-  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.blockid.updateThreshold";
+  public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.id.updateThreshold";
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
   
   /*for client failover api*/
@@ -84,14 +100,44 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 2; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 5; //min value is 0. Better set it >= 1
   
-  public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
-  public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
+  public static final String  DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.initial.wait.on.retry";
+  public static final int     DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
   
   public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
   public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
   
+  public static final String  DFS_SET_PARTITION_KEY_ENABLED = "dfs.ndb.setpartitionkey.enabled";  
+  public static final boolean  DFS_SET_PARTITION_KEY_ENABLED_DEFAULT = false;
+  
+  public static final String  DFS_MEMCACHE_ENABLED = "dfs.memcache.enabled";  
+  public static final boolean  DFS_MEMCACHE_ENABLED_DEFAULT = false;
+  
+  public static final String  DFS_MEMCACHE_SERVER = "dfs.memcache.server.address";  
+  public static final String  DFS_MEMCACHE_SERVER_DEFAULT = "127.0.0.1:11212"; 
+  
+  public static final String  DFS_MEMCACHE_CONNECTION_POOL_SIZE = "dfs.memcache.connectionpool.size";  
+  public static final int  DFS_MEMCACHE_CONNECTION_POOL_SIZE_DEFAULT = 10;
+  
+  public static final String  DFS_MEMCACHE_KEY_PREFIX = "dfs.memcache.key.prefix";  
+  public static final String  DFS_MEMCACHE_KEY_PREFIX_DEFAULT = "p:"; 
+  
+  public static final String  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS = "dfs.memcache.key.expiry";  
+  public static final int  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT = 0;
+
+  public static final String DFS_LEGACY_DELETE_ENABLE_KEY = "dfs.namenode.legacy-delete.enable";
+  public static final boolean DFS_LEGACY_DELETE_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_RENAME_ENABLE_KEY = "dfs.namenode.legacy-rename.enable";
+  public static final boolean DFS_LEGACY_RENAME_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY = "dfs.namenode.legacy-content-summary.enable";
+  public static final boolean DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
+  public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
+
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

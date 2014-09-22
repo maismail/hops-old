@@ -17,27 +17,9 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import org.apache.hadoop.hdfs.server.namenode.*;
-import se.sics.hop.erasure_coding.Codec;
-import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.metadata.blockmanagement.ExcessReplicasMap;
-import static org.apache.hadoop.util.ExitUtil.terminate;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
@@ -45,55 +27,43 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
+import org.apache.hadoop.hdfs.protocol.*;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs.BlockReportIterator;
-import org.apache.hadoop.hdfs.protocol.DatanodeID;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
-import org.apache.hadoop.hdfs.protocol.LocatedBlock;
-import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
-import org.apache.hadoop.hdfs.protocol.UnregisteredNodeException;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager.AccessMode;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingDataNodeMessages.ReportedBlockInfo;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
+import org.apache.hadoop.hdfs.server.namenode.*;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
-import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
-import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
+import org.apache.hadoop.hdfs.server.protocol.*;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocations;
-import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
-import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
-import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
 import org.apache.hadoop.net.Node;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.Time;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
-import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
-import se.sics.hop.metadata.lock.INodeUtil;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.DELETED_BLOCK;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK;
-import static org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus.RECEIVING_BLOCK;
+import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.metadata.blockmanagement.ExcessReplicasMap;
+import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicLong;
+
+import static org.apache.hadoop.util.ExitUtil.terminate;
 
 /**
  * Keeps information related to the blocks stored in the Hadoop cluster.
@@ -1027,7 +997,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -1700,7 +1670,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Block b = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
@@ -1807,7 +1777,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Block b = (Block) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
@@ -1894,49 +1864,59 @@ public class BlockManager {
   }
 
   private void reportDiff(final DatanodeDescriptor dn, 
-      final BlockListAsLongs newReport,
-      final Collection<BlockInfo> toAdd,              // add to DatanodeDescriptor
-      final Collection<Long> toRemove,           // remove from DatanodeDescriptor
-      final Collection<Block> toInvalidate,       // should be removed from DN
-      final Collection<BlockToMarkCorrupt> toCorrupt, // add to corrupt replicas list
-      final Collection<StatefulBlockInfo> toUC) throws IOException{ // add to under-construction list
-     final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    final BlockListAsLongs newReport,
+    final Collection<BlockInfo> toAdd,              // add to DatanodeDescriptor
+    final Collection<Long> toRemove,           // remove from DatanodeDescriptor
+    final Collection<Block> toInvalidate,       // should be removed from DN
+    final Collection<BlockToMarkCorrupt> toCorrupt, // add to corrupt replicas list
+    final Collection<StatefulBlockInfo> toUC) throws IOException{ // add to under-construction list
+    final List<Long> allMachineBlocks = dn.getAllMachineBlocks();
+    
+    HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        if (newReport == null) {
+          return null;
+        }
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+                .addBlocks(newReport.getBlockListAsLongs())
+                .addInvalidatedBlocks(dn.getSId())
+                .addReplicas(dn.getSId());
+        return tla.acquireBatch();
+      }
 
-     HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_REPORT) {
-       @Override
-       public TransactionLocks acquireLock() throws PersistanceException, IOException {
-         if(newReport == null)
-           return null;
-         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-         tla.getLocks()
-                 .addBlocks(newReport.getBlockListAsLongs())
-                 .addInvalidatedBlocks(dn.getSId())
-                 .addReplicas(dn.getSId());
-         return tla.acquireBatch();
-       }
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        if (newReport == null) {
+          return null;
+        }
+        final boolean isInStartupSafeMode = namesystem.isInStartupSafeMode();
+        Set<Long> sb = new HashSet<Long>();
+        if (isInStartupSafeMode) {
+          sb.addAll(allMachineBlocks);
+        }
+        // scan the report and process newly reported blocks
+        BlockReportIterator itBR = newReport.getBlockReportIterator();
+        while (itBR.hasNext()) {
+          Block iblk = itBR.next();
+          ReplicaState iState = itBR.getCurrentReplicaState();
+          BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
+                  toAdd, toInvalidate, toCorrupt, toUC, sb);
+          if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
+            allMachineBlocks.remove(storedBlock.getBlockId());
+          }
+        }
+        toRemove.addAll(allMachineBlocks);
+        if(isInStartupSafeMode){
+          sb.removeAll(toRemove);
+          namesystem.adjustSafeModeBlocks(sb);
+        }
+        return null;
+      }
+    };
 
-       @Override
-       public Object performTask() throws PersistanceException, IOException {
-         if (newReport == null) {
-           return null;
-         }
-         // scan the report and process newly reported blocks
-         BlockReportIterator itBR = newReport.getBlockReportIterator();
-         while (itBR.hasNext()) {
-           Block iblk = itBR.next();
-           ReplicaState iState = itBR.getCurrentReplicaState();
-           BlockInfo storedBlock = processReportedBlock(dn, iblk, iState,
-                   toAdd, toInvalidate, toCorrupt, toUC);
-           if (storedBlock != null && storedBlock.findDatanode(dn) >= 0) {
-             allMachineBlocks.remove(storedBlock.getBlockId());
-           }
-         }
-         toRemove.addAll(allMachineBlocks);
-         return null;
-       }
-     };
-
-     processReportHandler.handle();
+    processReportHandler.handle(namesystem);
   }
 
   /**
@@ -1975,7 +1955,8 @@ public class BlockManager {
       final Collection<BlockInfo> toAdd, 
       final Collection<Block> toInvalidate, 
       final Collection<BlockToMarkCorrupt> toCorrupt,
-      final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
+      final Collection<StatefulBlockInfo> toUC, 
+      final Set<Long> safeBlocks) throws PersistanceException, IOException {
     
     if(LOG.isDebugEnabled()) {
       LOG.debug("Reported block " + block
@@ -1999,6 +1980,7 @@ public class BlockManager {
           + block + " on " + dn + " size " + block.getNumBytes()
           + " does not belong to any file");
       toInvalidate.add(new Block(block));
+      safeBlocks.remove(block.getBlockId());
       return null;
     }
     BlockUCState ucState = storedBlock.getBlockUCState();
@@ -2028,12 +2010,14 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
 //      } else {
         toCorrupt.add(c);
 //      }
+      safeBlocks.remove(block.getBlockId());
       return storedBlock;
     }
 
     if (isBlockUnderConstruction(storedBlock, ucState, reportedState)) {
        toUC.add(new StatefulBlockInfo(
           (BlockInfoUnderConstruction)storedBlock, reportedState));
+      safeBlocks.remove(block.getBlockId());
       return storedBlock;
     }
 
@@ -2041,6 +2025,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
     if (reportedState == ReplicaState.FINALIZED
         && storedBlock.findDatanode(dn) < 0) {
       toAdd.add(storedBlock);
+      safeBlocks.remove(block.getBlockId());
     }
     return storedBlock;
   }
@@ -2482,74 +2467,78 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
    * For each block in the name-node verify whether it belongs to any file,
    * over or under replicated. Place it into the respective queue.
    */
-  public void processMisReplicatedBlocks() throws IOException {
+ public void processMisReplicatedBlocks() throws IOException {
     assert namesystem.hasWriteLock();
 
     final long[] nrInvalid = {0}, nrOverReplicated = {0}, nrUnderReplicated = {0}, nrPostponed = {0},
             nrUnderConstruction = {0};
     neededReplications.clear();
 
-
-    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS) {
-      INodeIdentifier inodeIdentifier;
+    //[M] we need to have a garbage collection to check for the invalid blocks,
+    // also this could be optimized even more by batching multiple inode files at a time
+    HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE) {
       @Override
-      public void setUp() throws StorageException {
-        Block b = (Block) getParams()[0];
-        inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
-      }
-
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
-        Block b = (Block) getParams()[0];
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-                addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(), 
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
+                addINode(TransactionLockTypes.INodeLockType.READ).
+                addBlock().
                 addInvalidatedBlock().
                 addReplica().
                 addCorrupt().
                 addUnderReplicatedBlock().
                 addExcess();
-        return tla.acquireByBlock(inodeIdentifier);
+        return tla.acquire(inodeIdentifier);
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        BlockInfo block = (BlockInfo) getParams()[0];
-        MisReplicationResult res = processMisReplicatedBlock(block);
-        if (LOG.isTraceEnabled()) {
-          LOG.trace("block " + block + ": " + res);
-        }
-        switch (res) {
-          case UNDER_REPLICATED:
-            nrUnderReplicated[0]++;
-            break;
-          case OVER_REPLICATED:
-            nrOverReplicated[0]++;
-            break;
-          case INVALID:
-            nrInvalid[0]++;
-            break;
-          case POSTPONE:
-            nrPostponed[0]++;
-            postponeBlock(block);
-            break;
-          case UNDER_CONSTRUCTION:
-            nrUnderConstruction[0]++;
-            break;
-          case OK:
-            break;
-          default:
-            throw new AssertionError("Invalid enum value: " + res);
+        INodeIdentifier inodeIdentifier = (INodeIdentifier) getParams()[0];
+        INode inode = EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+        for (BlockInfo block : ((INodeFile) inode).getBlocks()) {
+          MisReplicationResult res = processMisReplicatedBlock(block);
+          if (LOG.isTraceEnabled()) {
+            LOG.trace("block " + block + ": " + res);
+          }
+          switch (res) {
+            case UNDER_REPLICATED:
+              nrUnderReplicated[0]++;
+              break;
+            case OVER_REPLICATED:
+              nrOverReplicated[0]++;
+              break;
+            case INVALID:
+              nrInvalid[0]++;
+              break;
+            case POSTPONE:
+              nrPostponed[0]++;
+              postponeBlock(block);
+              break;
+            case UNDER_CONSTRUCTION:
+              nrUnderConstruction[0]++;
+              break;
+            case OK:
+              break;
+            default:
+              throw new AssertionError("Invalid enum value: " + res);
+          }
         }
         return null;
       }
     };
-    for (BlockInfo block : blocksMap.getBlocks()) {
-      processMisReplicatedBlocksHandler.setParams(block);
+
+
+    List<INodeIdentifier> allINodes = blocksMap.getAllINodeFiles();
+    for (INodeIdentifier inode : allINodes) {
+      processMisReplicatedBlocksHandler.setParams(inode);
       processMisReplicatedBlocksHandler.handle(namesystem);
     }
+            
+//    for (BlockInfo block : blocksMap.getBlocks()) {
+//      processMisReplicatedBlocksHandler.setParams(block);
+//      processMisReplicatedBlocksHandler.handle(namesystem);
+//    }
 
     LOG.info("Total number of blocks            = " + blocksMap.size());
     LOG.info("Number of invalid blocks          = " + nrInvalid[0]);
@@ -2885,7 +2874,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
@@ -3004,7 +2993,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
@@ -3030,7 +3019,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       @Override
       public Object performTask() throws PersistanceException, IOException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
-        LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus());
+        LOG.debug("BLOCK_RECEIVED_AND_DELETED_INC_BLK_REPORT "+rdbi.getStatus()+" bid="+rdbi.getBlock().getBlockId()+" dataNode="+node.getXferAddr());
         switch (rdbi.getStatus()) {
         case DELETED_BLOCK:
           removeStoredBlock(rdbi.getBlock(), node);
@@ -3190,7 +3179,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         final Block block = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
@@ -3252,7 +3241,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         final Block block = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
@@ -3684,7 +3673,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException {
+      public TransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3721,7 +3710,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3799,7 +3788,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3861,7 +3850,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3898,7 +3887,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3939,7 +3928,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3962,6 +3951,19 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
         return null;
       }
     }.handle();
+  }
+  
+   private BlockInfo processReportedBlock(final DatanodeDescriptor dn, 
+      final Block block, final ReplicaState reportedState, 
+      final Collection<BlockInfo> toAdd, 
+      final Collection<Block> toInvalidate, 
+      final Collection<BlockToMarkCorrupt> toCorrupt,
+      final Collection<StatefulBlockInfo> toUC) throws PersistanceException, IOException {
+     return processReportedBlock(dn, block, reportedState, toAdd, toInvalidate, toCorrupt, toUC, new HashSet<Long>());
+   }
+   
+  public int getTotalCompleteBlocks() throws IOException {
+    return blocksMap.sizeCompleteOnly();
   }
   //END_HOP_CODE
 }

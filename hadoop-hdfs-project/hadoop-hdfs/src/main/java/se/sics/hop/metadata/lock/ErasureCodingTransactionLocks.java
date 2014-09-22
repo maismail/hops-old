@@ -30,7 +30,7 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
     return encodingStatusLock;
   }
 
-  public int getInodeId() {
+  public Integer getEncodingStatusInodeId() {
     return inodeId;
   }
 }

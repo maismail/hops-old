@@ -18,6 +18,8 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
+
 import static org.junit.Assert.assertEquals;
 
 import org.apache.hadoop.conf.Configuration;
@@ -31,7 +33,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -70,7 +72,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
@@ -110,7 +112,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).

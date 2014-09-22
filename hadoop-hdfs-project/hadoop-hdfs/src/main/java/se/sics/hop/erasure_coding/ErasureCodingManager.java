@@ -27,6 +27,7 @@ import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -210,7 +211,7 @@ public class ErasureCodingManager extends Configured{
       HDFSTransactionalRequestHandler handler =
           new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
               tla.getLocks().
                   addEncodingStatusLock(status.getInodeId()).
@@ -353,7 +354,7 @@ public class ErasureCodingManager extends Configured{
 
     TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks()
             .addEncodingStatusLock(inodeId)
@@ -383,7 +384,7 @@ public class ErasureCodingManager extends Configured{
 
     TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks()
             .addEncodingStatusLock(inodeId)

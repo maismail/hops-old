@@ -13,46 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.hadoop.hdfs.server.namenode;
+package se.sics.hop.memcache;
+
+import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  *
- * @author salman
+ * @author Mahmoud Ismail <maism@sics.se>
  */
-public class INodeIdentifier {
-  Integer inodeID;
-  Integer pid;
-  String name;
+public class CacheEntry implements Serializable{
 
-  public INodeIdentifier(Integer inodeID) {
-    this.inodeID = inodeID;
-    this.pid = null;
-    this.name = null;
+  private int[] inodeIds;
+
+  public CacheEntry(int[] inodeIds) {
+    this.inodeIds = inodeIds;
   }
 
-  public Integer getInodeId() {
-    return inodeID;
+  public int getPartitionKey() {
+    return inodeIds[inodeIds.length - 1];
   }
 
-    public Integer getPid() {
-        return pid;
-    }
+  public int[] getParentIds() {
+    return Arrays.copyOfRange(inodeIds, 0, inodeIds.length - 1);
+  }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setPid(Integer pid) {
-        this.pid = pid;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
+  public int[] getInodeIds() {
+    return inodeIds;
+  }
 
   @Override
   public String toString() {
-    return "INodeIdentifier{" + "inodeID=" + inodeID + ", pid=" + pid + ", name=" + name + '}';
+    return "CacheEntry{" + "inodeIds=" + Arrays.toString(inodeIds) + '}';
   }
-    
 }

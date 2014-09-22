@@ -1,56 +1,45 @@
 package se.sics.hop.metadata.lock;
 
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLocks;
-import se.sics.hop.exception.INodeResolveException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
-import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
-import org.apache.hadoop.hdfs.server.namenode.Lease;
+import org.apache.hadoop.hdfs.server.namenode.*;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.log4j.NDC;
+import se.sics.hop.common.GlobalThreadPool;
 import se.sics.hop.exception.AcquireLockInterruptedException;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+import se.sics.hop.exception.INodeResolveException;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.memcache.PathMemcache;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.context.BlockPK;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.metadata.hdfs.entity.hop.*;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
-
+import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.ParallelReadThread;
+import se.sics.hop.transaction.lock.TransactionLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 /**
  *
@@ -65,7 +54,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private LinkedList<Lease> leaseResults = new LinkedList<Lease>();
   private LinkedList<BlockInfo> blockResults = new LinkedList<BlockInfo>();
   private boolean terminateAsyncThread = false;
-  
+  private static Configuration conf;
+  private static Collection<ActiveNamenode> activeNamenodes;
 
   public HDFSTransactionLockAcquirer() {
     this.locks = new HDFSTransactionLocks();
@@ -79,18 +69,26 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     this.locks = new HDFSTransactionLocks(resolvedInodes, preTxPathFullyResolved);
   }
 
+  public static void setConfiguration(Configuration c) {
+    conf = c;
+    HDFSTransactionLocks.setConfiguration(conf);
+  }
+
   public HDFSTransactionLocks getLocks() {
     return this.locks;
   }
 
   @Override
-  public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException { //start taking locks from inodes
+  public TransactionLocks acquire()
+      throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException { //start taking locks from inodes
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
       
-      setPartitioningKey(null);
+      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
     
       acquireInodeLocks(locks.getInodeParam());
+    } else if (locks.getInodeLock() != null && locks.getInodeId() != null) {
+      acquireIndividualInodeLock();
     }
 
     if (locks.getBlockLock() != null) {
@@ -100,13 +98,90 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    acquireOutstandingQuotaUpdates();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
+  //just read all related Inode data withou taking any locks on the path
+  public HDFSTransactionLocks acquire(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException, ExecutionException {
+    INode inode = null;
+    if (inode == null && inodeIdentifer != null) {
+      setPartitioningKey(inodeIdentifer.getInodeId());
+      // dangling block
+      // take lock on the indeId basically bring null in the cache
+      if (inodeIdentifer.getName() != null && inodeIdentifer.getPid() != null) {
+        inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), inodeIdentifer.getName(), inodeIdentifer.getPid(), locks);
+        if (inode == null) {
+          //there's no inode for this specific name,parentid which means this file is deleted
+          //so fallback to the scan to update the inodecontext cache
+          throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifer);
+        }
+      } else if (inodeIdentifer.getInodeId() != null) {
+        inode = iNodeScanLookUpByID(locks.getInodeLock(), inodeIdentifer.getInodeId(), locks);
+      } else {
+        throw new StorageException("INodeIdentifier objec is not properly initialized ");
+      }
+    }
+
+
+    if (inode != null) {
+      LinkedList<INode> resolvedINodeForBlk = new LinkedList<INode>();
+      resolvedINodeForBlk.add(inode);
+      allResolvedINodes.add(resolvedINodeForBlk);
+
+      List<BlockInfo> allBlks = (List<BlockInfo>) acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByInodeId, inode.getId());
+      blockResults.addAll(allBlks);
+
+      // if the allBlks does not contain the locks.blocksParam block then
+      // re-read it to bring null in the cache. the block was there in the pre-tx phase
+      // but was deleted before the locks were acquired
+      boolean found = false;
+      if (locks.getBlockID() != null) {
+        for (BlockInfo blk : allBlks) {
+          if (blk.getBlockId() == locks.getBlockID()) {
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          acquireLock(LockType.READ_COMMITTED, BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
+          // we need to bring null for the other tables too. so put a dummy obj in the blocksResults list
+          BlockInfo blk = new BlockInfo();
+          if (inode != null) {
+            blk.setINodeIdNoPersistance(inode.getId());
+          }
+          blk.setBlockIdNoPersistance(locks.getBlockID());
+
+          blockResults.add(blk);
+        }
+      }
+
+      // sort the blocks. it is important as the ndb returns the blocks in random order and two
+      // txs trying to take locks on the blocks of a file will end up in dead lock 
+      Collections.sort((List<BlockInfo>) blockResults, BlockInfo.Order.ByBlockId);
+    }
+
+    if (blockResults.isEmpty() && locks.getBlockID() != null) {
+      BlockInfo block = acquireLock(locks.getBlockLock(), BlockInfo.Finder.ById, locks.getBlockID(), locks.getBlockInodeId());
+      if (block != null) {
+        blockResults.add(block);
+      }
+    }
+
+    // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    List<Future> futures = acquireBlockRelatedInfoASync();;
+    acquireLeaseAndLpathLockNormal();
+    acquireLocksOnVariablesTable();
+    readINodeAttributes();
+    checkTerminationOfAsyncThreads(futures);
+    return locks;
+  }
   /**
    * This method acquires lockk on the inode starting with a block-id. The
    * lock-types should be set before using add* methods. Otherwise, no lock
@@ -114,7 +189,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    *
    * @throws PersistanceException
    */
-  public HDFSTransactionLocks acquireByBlock(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException {
+  public HDFSTransactionLocks acquireByBlock(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException, ExecutionException {
     boolean isPartKeySet = false;
     INode inode = null;
     if (locks.getInodeResolveType() == INodeResolveType.PATH) {
@@ -133,8 +208,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       if(!isPartKeySet){
           setPartitioningKey(inodeIdentifer.getInodeId());
         }
-      // dangling block
-      // take lock on the indeId basically bring null in the cache
+      
       if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
           inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(),inodeIdentifer.getName(), inodeIdentifer.getPid(),locks);
           if(inode == null){
@@ -196,14 +270,16 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
-  public HDFSTransactionLocks acquireByLease(SortedSet<String> sortedPaths) throws PersistanceException, UnresolvedPathException {
+  public HDFSTransactionLocks acquireByLease(SortedSet<String> sortedPaths)
+      throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     if (locks.getLeaseParam() == null) {
       return locks;
     }
@@ -213,6 +289,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
     blockResults.addAll(acquireBlockLock());
+    
+    List<Future> futures = acquireBlockRelatedInfoASync();;
 
     Lease nnLease = acquireNameNodeLease(); // NameNode lease is always acquired first.
     if (nnLease != null) {
@@ -230,7 +308,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -248,15 +326,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return locks;
   }
 
-  public HDFSTransactionLocks acquireForRename() throws PersistanceException, UnresolvedPathException {
+  public HDFSTransactionLocks acquireForRename()
+      throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     return acquireForRename(false);
-    
   }
 
-  public HDFSTransactionLocks acquireForRename(boolean allowExistingDir) throws PersistanceException, UnresolvedPathException {
-    
-    setPartitioningKey(null);
-    
+  public HDFSTransactionLocks acquireForRename(boolean allowExistingDir)
+      throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     byte[][] srcComponents = INode.getPathComponents(locks.getInodeParam()[0]);
     byte[][] dstComponents = INode.getPathComponents(locks.getInodeParam()[1]);
 
@@ -266,6 +342,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
       //layer will not let the request go to the db as it has already cached the root inode
       //one simple solution is that to acquire lock on the short path first
+      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
       if (srcComponents.length <= dstComponents.length) {
         acquireInodeLocks(locks.getInodeParam()[0]);
         acquireInodeLocks(locks.getInodeParam()[1]);
@@ -283,10 +360,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
                   locks.getInodeLock(),
                   DFSUtil.bytes2String(srcComponents[srcComponents.length - 1]),
                   dstINodes.getLast().getId(), locks);
-//        inodeResult = new INode[inodeResult1.length + inodeResult2.length + 1];
-//        if (existingInode != null & !existingInode.isDirectory()) {
-//          inodeResult[inodeResult.length - 1] = existingInode;
-//        }
         }
       }
     }
@@ -298,10 +371,12 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
+    List<Future> futures = acquireBlockRelatedInfoASync();;
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
     readINodeAttributes();
-    acquireBlockRelatedInfoASync();
+    acquireOutstandingQuotaUpdates();
+    checkTerminationOfAsyncThreads(futures);
     return locks;
   }
 
@@ -324,7 +399,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private LinkedList<Lease> acquireLeaseLock() throws PersistanceException {
-
     checkStringParam(locks.getLeaseParam());
     SortedSet<String> holders = new TreeSet<String>();
     if (locks.getLeaseParam() != null) {
@@ -370,22 +444,18 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return lPaths;
   }
 
-   private ParallelReadThread acquireBlockRelatedTableLocksASync(final ParallelReadParams parallelReadParams) throws PersistanceException {
+  private Future acquireBlockRelatedTableLocksASync(final ParallelReadParams parallelReadParams) throws PersistanceException {
     final String threadName = getTransactionName();
-    ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId(), parallelReadParams) {     
+    final Long parentThreadId = Thread.currentThread().getId();
+    ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId(), parallelReadParams) {
       @Override
        public void run() {
-         super.run(); //To change body of generated methods, choose Tools | Templates.
          try {
            NDC.push(threadName);
-           if (!terminateAsyncThread) {
-             EntityManager.begin();
-             EntityManager.readCommited();
-           }
            if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
              for(HopINodeCandidatePK inodeParam : parallelReadParams.getInodeIds()){
                if (!terminateAsyncThread) {
-                 acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), inodeParam.getInodeId());
+                 concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.getInodeFinder(), parentThreadId, inodeParam.getInodeId());
                }
              }
            }
@@ -393,23 +463,19 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
              for(BlockPK blkParam : parallelReadParams.getBlockIds()){
                if (!terminateAsyncThread) {
                  if(parallelReadParams.isListBlockFinder){
-                   acquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId);
+                   concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.blockFinder, parentThreadId, blkParam.id, blkParam.inodeId);
                  }else{
-                   acquireLock(LockType.READ_COMMITTED, parallelReadParams.blockFinder, blkParam.id, blkParam.inodeId);
+                   concurrentAcquireLock(LockType.READ_COMMITTED, parallelReadParams.blockFinder, parentThreadId, blkParam.id, blkParam.inodeId);
                  }
                }
              }
            }
            else if (parallelReadParams.getDefaultFinder()!=null && !terminateAsyncThread) {
-               acquireLockList(LockType.READ_COMMITTED, parallelReadParams.getDefaultFinder());
+             concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.getDefaultFinder(), parentThreadId);
            }else{
-              LOG.warn(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
+              LOG.debug(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getInodeFinder()!= null?parallelReadParams.getInodeFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getDefaultFinder()!= null?parallelReadParams.getDefaultFinder().getClass().getName():""));
-           }
-           
-           if (!terminateAsyncThread) {
-             EntityManager.commit(null);
            }
          } catch (Exception ex) {
            exceptionList.add(ex); //after join all exceptions will be thrown
@@ -418,18 +484,34 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
          NDC.remove();
        }
      };
-    pThread.start();
-    return pThread;
+    Future future = GlobalThreadPool.getExecutorService().submit(pThread);
+    return future;
   }
   
   List<Exception> exceptionList = new ArrayList<Exception>();
 
+  private  <T> Collection<T> concurrentAcquireLockList(LockType lock, FinderType<T> finder, Long parentThreadId, Object... param) throws PersistanceException {
+    setLockMode(lock);
+    if (param == null) {
+      return EntityManager.concurrentFindList(finder, parentThreadId);
+    } else {
+      return EntityManager.concurrentFindList(finder, parentThreadId, param);
+    }
+  }
+
+  private  <T> T concurrentAcquireLock(LockType lock, FinderType<T> finder, Long parentThreadId, Object... param) throws PersistanceException {
+    setLockMode(lock);
+    if (param == null) {
+      return null;
+    }
+    return EntityManager.concurrentFind(finder, parentThreadId, param);
+  }
 
   private LinkedList<INode> findImmediateChildren(INode lastINode) throws PersistanceException {
     LinkedList<INode> children = new LinkedList<INode>();
     if (lastINode != null) {
       if (lastINode instanceof INodeDirectory) {
-        lockINode(locks.getInodeLock());
+        setINodeLockType(locks.getInodeLock());
         children.addAll(((INodeDirectory) lastINode).getChildren());
       }
     }
@@ -449,7 +531,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     while (!unCheckedDirs.isEmpty()) {
       INode next = unCheckedDirs.poll();
       if (next instanceof INodeDirectory) {
-        lockINode(locks.getInodeLock());
+        setINodeLockType(locks.getInodeLock());
         List<INode> clist = ((INodeDirectory) next).getChildren();
         unCheckedDirs.addAll(clist);
         children.addAll(clist);
@@ -533,56 +615,58 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
    *
    * @throws PersistanceException
    */
-  private void acquireBlockRelatedInfoASync() throws PersistanceException {
+  private List<Future> acquireBlockRelatedInfoASync() throws PersistanceException, ExecutionException {
     // blocks related tables
-    List<ParallelReadThread> threads = new ArrayList<ParallelReadThread>();
+    List<Future> futures = new ArrayList<Future>();
     if (locks.getReplicaLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, true, HopIndexedReplica.Finder.ByINodeId, null);
-      threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getCrLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, true, HopCorruptReplica.Finder.ByINodeId, null);
-      threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getErLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, HopExcessReplica.Finder.ByINodeId, null);
-      threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getRucLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, true, ReplicaUnderConstruction.Finder.ByINodeId , null);
-      threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getInvLocks() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, HopInvalidatedBlock.Finder.ByINodeId, null);
-      threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
 
     if (locks.getUrbLock() != null) {
       if(locks.isUrbLockFindAll()){
         ParallelReadParams parallelReadParams = new ParallelReadParams(null, null, false, null, null,HopUnderReplicatedBlock.Finder.All );
-        threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+        futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
       }else{
         ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, false, HopUnderReplicatedBlock.Finder.ByINodeId, null);
-        threads.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+        futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
       }
     }
 
     if (locks.getPbLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId, false,PendingBlockInfo.Finder.ByInodeId,null);
-      threads.add(acquireBlockRelatedTableLocksASync( parallelReadParams));
+      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
     }
     
-    InterruptedException intrException = null;
+   return futures;
+  }
+  
+  private void checkTerminationOfAsyncThreads(List<Future> futures) throws PersistanceException, ExecutionException {
+       InterruptedException intrException = null;
     try {
-      for (int i = 0; i < threads.size(); i++) {
-        ParallelReadThread t = threads.get(i);
-        t.join();
-        ParallelReadParams params = (ParallelReadParams)t.getParams();
-        params.clear();
+      for (int i = 0; i < futures.size(); i++) {
+        Future f = futures.get(i);
+        f.get();
       }
     } catch (InterruptedException e) {
       terminateAsyncThread = true;
@@ -590,7 +674,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         intrException = e;
       }
     }
-    threads.clear();
+    futures.clear();
     if(intrException != null){
       throw new AcquireLockInterruptedException(intrException);
     }
@@ -626,7 +710,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           if (inode instanceof INodeFile || inode instanceof INodeFileUnderConstruction) {
             HopINodeCandidatePK param = new HopINodeCandidatePK(inode.getId());
             inodesParams.add(param);
-          //  LOG.debug("Param inode "+param.id+" paratKey "+param.partKey);
           }
         }
       }
@@ -652,7 +735,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return new ParallelReadParams(blocksParams, blockFinder, isListBlockFinder, inodesParams, inodeFinder, defaultFinder);
   }
 
-  private void acquireInodeLocks(String... params) throws UnresolvedPathException, PersistanceException {
+  private void acquireInodeLocks(String... params)
+      throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
     switch (locks.getInodeResolveType()) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
@@ -661,34 +745,34 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           LinkedList<INode> resolvedInodes = acquireInodeLockByPath(locks, params[i]);
           if (resolvedInodes.size() > 0) {
             INode lastINode = resolvedInodes.peekLast();
+            acquireQuotaUpdate(lastINode);
             if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
-              resolvedInodes.addAll(findImmediateChildren(lastINode));
+              List<INode> children = findImmediateChildren(lastINode);
+              resolvedInodes.addAll(children);
+              acquireQuotaUpdate(children);
             } else if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
-              resolvedInodes.addAll(findChildrenRecursively(lastINode));
+              List<INode> children = findChildrenRecursively(lastINode);
+              resolvedInodes.addAll(children);
+              acquireQuotaUpdate(children);
             }
           }
           allResolvedINodes.add(resolvedInodes);
         }
         break;
-      // e.g. mkdir -d /opt/long/path which creates subdirs.
-      // That is, the HEAD and some ancestor inodes might not exist yet.
-      case PATH_WITH_UNKNOWN_HEAD: // Can try and use memcached for this case.
-        for (int i = 0; i < params.length; i++) {
-          String fullPath = params[i];
-          checkPathIsResolved();
-          int resolvedSize = locks.getPreTxResolvedInodes().size();
-          String existingPath = buildPath(fullPath, resolvedSize);
-          acquireInodeLocksByPreTxResolvedIDs(locks);
-          INode baseDir = locks.getPreTxResolvedInodes().peekLast();
-          LinkedList<INode> rest = acquireLockOnRestOfPath(locks.getInodeLock(), baseDir,
-                  fullPath, existingPath, locks.isResolveLink());
-          locks.getPreTxResolvedInodes().addAll(rest);
-          allResolvedINodes.add(locks.getPreTxResolvedInodes());
-        }
-        break;
-
       default:
         throw new IllegalArgumentException("Unknown type " + locks.getInodeLock().name());
+    }
+  }
+
+  private void acquireQuotaUpdate(List<INode> nodes) throws PersistanceException {
+    for (INode node : nodes) {
+      acquireQuotaUpdate(node);
+    }
+  }
+
+  private void acquireQuotaUpdate(INode node) throws PersistanceException {
+    if (getLocks().getQuotaUpdatesLockSubtree() != null) {
+      EntityManager.findList(QuotaUpdate.Finder.ByInodeId, node.getId());
     }
   }
 
@@ -727,24 +811,36 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return blocks;
   }
 
+  private void acquireOutstandingQuotaUpdates() throws PersistanceException {
+    Integer inodeId = getLocks().getQuotaUpdatesInodeId();
+    if (getLocks().getQuotaUpdatesLock() != null && inodeId != null) {
+      acquireLockList(getLocks().getQuotaUpdatesLock(), QuotaUpdate.Finder.ByInodeId, inodeId);
+    }
+  }
+
   private INode takeLocksFromRootToLeaf(LinkedList<INode> inodes, INodeLockType inodeLock) throws PersistanceException {
-    LOG.debug("Taking lock on preresolved path. Path Components are "+inodes.size());
+    LOG.debug("Taking lock on preresolved path. Path Components are " + inodes.size());
     StringBuilder msg = new StringBuilder();
     msg.append("Took Lock on the entire path ");
     INode lockedLeafINode = null;
+    
     for (int i = 0; i < inodes.size(); i++) {
       if (i == (inodes.size() - 1)) // take specified lock
       {
         lockedLeafINode = pkINodeLookUpByNameAndPid(inodeLock, inodes.get(i).getLocalName(),inodes.get(i).getParentId(), locks);
       } else // take read commited lock
       {
-        lockedLeafINode = pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITED, inodes.get(i).getLocalName(), inodes.get(i).getParentId(), locks);
+        lockedLeafINode = pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITTED, inodes.get(i).getLocalName(), inodes.get(i).getParentId(), locks);
       }
 
-      if (!lockedLeafINode.getLocalName().equals("")) {
+      if(lockedLeafINode == null){
+        throw new StorageException("Abort the transaction because INode doesn't exists for " + inodes.get(i).getLocalName()+inodes.get(i).getParentId());
+      }
+      else if (!lockedLeafINode.getLocalName().equals("")) {
         msg.append("/");
         msg.append(lockedLeafINode.getLocalName());
       }
+      
     }
     LOG.debug(msg.toString());
     return lockedLeafINode;
@@ -757,16 +853,19 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     byte[][] prefixComps = INode.getPathComponents(prefix);
     int[] count = new int[]{prefixComps.length - 1};
     boolean lastComp;
-    lockINode(lock);
     INode[] curInode = new INode[]{baseInode};
     while (count[0] < fullComps.length && curInode[0] != null) {
+      setINodeLockType(lock);
       lastComp = INodeUtil.getNextChild(
               curInode,
               fullComps,
               count,
-              resolved,
               resolveLink,
               true);
+      if (curInode[0] != null) {
+         locks.addLockedINodes(curInode[0], lock);
+         resolved.add(curInode[0]);
+      }
       if (lastComp) {
         break;
       }
@@ -775,7 +874,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return resolved;
   }
 
-  private  LinkedList<INode> acquireInodeLockByPath(HDFSTransactionLocks locks, String path) throws UnresolvedPathException, PersistanceException {
+  private  LinkedList<INode> acquireInodeLockByPath(HDFSTransactionLocks locks, String path)
+      throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
     LinkedList<INode> resolvedInodes = new LinkedList<INode>();
 
     if (path == null) {
@@ -787,60 +887,76 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     int[] count = new int[]{0};
     boolean lastComp = (count[0] == components.length - 1);
-    if (lastComp) // if root is the last directory, we should acquire the write lock over the root
-    {
+    if (lastComp) { // if root is the last directory, we should acquire the write lock over the root
       resolvedInodes.add(acquireLockOnRoot(locks.getInodeLock(), locks));
       return resolvedInodes;
-    } else if ((count[0] == components.length - 2) && locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) // if Root is the parent
-    {
+    } else if ((count[0] == components.length - 2) && locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) { // if Root is the parent
       curNode[0] = acquireLockOnRoot(locks.getInodeLock(), locks);
     } else {
-      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITED, locks);
+      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITTED, locks);
     }
     resolvedInodes.add(curNode[0]);
     
     while (count[0] < components.length && curNode[0] != null) {
 
       INodeLockType curInodeLock = null;
-      // TODO - memcached - primary key lookup for the row.
       if (((locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
               || (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
-        EntityManager.writeLock(); // if the next p-component is the last one or is the parent (in case of write on parent), acquire the write lock
         curInodeLock = INodeLockType.WRITE;
-      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        EntityManager.readCommited();
-        curInodeLock = INodeLockType.READ_COMMITED;
+      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITTED) {
+        curInodeLock = INodeLockType.READ_COMMITTED;
       } else {
-        EntityManager.readLock();
-        curInodeLock = INodeLockType.READ;
+        curInodeLock = locks.getPrecedingPathLockType();  
       }
+      setINodeLockType(curInodeLock);
 
       lastComp = INodeUtil.getNextChild(
               curNode,
               components,
               count,
-              resolvedInodes,
               locks.isResolveLink(),
               true);
+
       if (curNode[0] != null) {
         locks.addLockedINodes(curNode[0], curInodeLock);
+        if (curNode[0].isSubtreeLocked() && isNameNodeAlive(curNode[0].getSubtreeLockOwner())) {
+          if (!locks.getIgnoreLocalSubtreeLocks()
+              || locks.getIgnoreLocalSubtreeLocks() && locks.getNamenodeId() != curNode[0].getSubtreeLockOwner()) {
+            throw new SubtreeLockedException();
+          }
+        }
+        resolvedInodes.add(curNode[0]);
       }
+
       if (lastComp) {
         break;
       }
     }
 
-    // TODO - put invalidated cache values in memcached.
+    // lock upgrade if the path was not fully resolved
+    if(resolvedInodes.size() != components.length){ // path was not fully resolved
+      INode inodeToReread = null;
+      if(locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT){
+        if(resolvedInodes.size() <= components.length-2){
+          inodeToReread = resolvedInodes.peekLast();
+        }
+      }else if(locks.getInodeLock() == INodeLockType.WRITE){
+        inodeToReread = resolvedInodes.peekLast();
+      }
 
+      if(inodeToReread!=null){
+        INode inode = pkINodeLookUpByNameAndPid(locks.getInodeLock(), inodeToReread.getLocalName(), inodeToReread.getParentId(), locks);
+        if(inode != null){ // re-read after taking write lock to make sure that no one has created the same inode. 
+          locks.addLockedINodes(inode, locks.getInodeLock());
+          String existingPath = buildPath(path, resolvedInodes.size());  
+          LinkedList<INode> rest = acquireLockOnRestOfPath(locks.getInodeLock(), inode,
+                  path, existingPath, false);
+          resolvedInodes.addAll(rest);
+        }
+      }
+    }
     return resolvedInodes;
   }
-
-//  private  INode pruneScanINodeById(INodeLockType lock, long id, HDFSTransactionLocks locks) throws PersistanceException {
-//    lockINode(lock);
-//    INode inode = EntityManager.find(INode.Finder.ByINodeID, id);
-//    locks.addLockedINodes(inode, lock);
-//    return inode;
-//  }
 
   private  INode pkINodeLookUpByNameAndPid(
           INodeLockType lock,
@@ -848,7 +964,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           int parentId,
           HDFSTransactionLocks locks)
           throws PersistanceException {
-    lockINode(lock);
+    setINodeLockType(lock);
     INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId);
     locks.addLockedINodes(inode, lock);
     return inode;
@@ -859,14 +975,14 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           int id,
           HDFSTransactionLocks locks)
           throws PersistanceException {
-    lockINode(lock);
+    setINodeLockType(lock);
     INode inode = EntityManager.find(INode.Finder.ByINodeID, id);
     locks.addLockedINodes(inode, lock);
     return inode;
   }
   
   
-  private  void lockINode(INodeLockType lock) {
+  private  void setINodeLockType(INodeLockType lock) throws StorageException {
     switch (lock) {
       case WRITE:
       case WRITE_ON_PARENT:
@@ -875,7 +991,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       case READ:
         EntityManager.readLock();
         break;
-      case READ_COMMITED:
+      case READ_COMMITTED:
         EntityManager.readCommited();
         break;
     }
@@ -884,38 +1000,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private  INode acquireLockOnRoot(INodeLockType lock, HDFSTransactionLocks locks) throws PersistanceException {
     LOG.debug("Acquring " + lock + " on the root node");
     return pkINodeLookUpByNameAndPid(lock, INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID, locks);
-  }
-  
-  //if path is already resolved then take locks based on primarny keys
-  private  void acquireInodeLocksByPreTxResolvedIDs(HDFSTransactionLocks locks) throws PersistanceException {
-    LinkedList<INode> resolvedInodes = locks.getPreTxResolvedInodes();
-    int palthLength = resolvedInodes.size();
-    int count = 0;
-    boolean lastComp = (count == palthLength - 1);
-
-    if (lastComp) { // if root is the last directory, we should acquire the write lock over the root
-      acquireLockOnRoot(locks.getInodeLock(), locks);
-      return;
-    }
-
-    boolean canTakeParentLock = locks.isPreTxPathFullyResolved(); //if the path is not fully resolved then there is no point in taking strong lock on the penultimate inode
-    while (count < palthLength) {
-      if ( // take write lock on the element if needed
-              ((count == (palthLength - 1)) && (locks.getInodeLock() == INodeLockType.WRITE || locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT))
-              || ((count == (palthLength - 2)) && (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) && canTakeParentLock)) {
-        pkINodeLookUpByNameAndPid(INodeLockType.WRITE, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
-      } else if (locks.getInodeLock() == INodeLockType.READ_COMMITED) {
-        pkINodeLookUpByNameAndPid(INodeLockType.READ_COMMITED, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
-      } else {
-        pkINodeLookUpByNameAndPid(INodeLockType.READ, resolvedInodes.get(count).getLocalName(), resolvedInodes.get(count).getParentId(), locks);
-      }
-
-      lastComp = (count == (palthLength - 1));
-      count++;
-      if (lastComp) {
-        break;
-      }
-    }
   }
 
   private void readINodeAttributes() throws PersistanceException {
@@ -945,27 +1029,61 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-  private void setPartitioningKey(Integer inodeId){
-    if(inodeId == null){
-      LOG.warn("Transaction Partition Key is not Set");
-    }
-    else{
+  private void setPartitioningKey(Integer inodeId) throws StorageException {
+    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+    if (inodeId == null || !isSetPartitionKeyEnabled) {
+      LOG.debug("Transaction Partition Key is not Set");
+    } else {
       //set partitioning key
       Object[] key = new Object[2];
       key[0] = inodeId; //pid
       key[1] = new Long(0);
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-        LOG.debug("Setting Partitioning Key to be "+ inodeId);
+        LOG.debug("Setting Partitioning Key to be " + inodeId);
     }
   }
   
-    private void setPartitioningKeyForLeader(){
+  private void setPartitioningKeyForLeader() throws StorageException{
+    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+    if (isSetPartitionKeyEnabled) {
       //set partitioning key
       Object[] key = new Object[2];
       key[0] = LeaderElection.LEADER_INITIALIZATION_ID; //pid
       key[1] = HopLeader.DEFAULT_PARTITION_VALUE;
       EntityManager.setPartitionKey(LeaderDataAccess.class, key);
       //LOG.debug("Setting Partitioning for Leader Election ");
+    }
+  }
+
+  private void acquireIndividualInodeLock() throws PersistanceException {
+    if (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) {
+      throw new UnsupportedOperationException("Write on parent is not supported for individual inodes.");
+    }
+
+    setINodeLockType(locks.getInodeLock());
+    INode inode = EntityManager.find(INode.Finder.ByINodeID, locks.getInodeId());
+    LinkedList<INode> resolvedNodes = new LinkedList<INode>();
+    resolvedNodes.add(inode);
+    allResolvedINodes.add(resolvedNodes);
+    locks.addLockedINodes(inode, locks.getInodeLock());
+  }
+
+  private boolean isNameNodeAlive(long namenodeId) {
+    if (activeNamenodes == null) {
+      // We do not know yet, be conservative
+      return true;
+    }
+
+    for (ActiveNamenode namenode : activeNamenodes) {
+      if (namenode.getId() == namenodeId) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  public static void setActiveNamenodes(Collection<ActiveNamenode> activeNamenodes) {
+    HDFSTransactionLockAcquirer.activeNamenodes = activeNamenodes;
   }
 }

@@ -43,6 +43,11 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     return dataAccess.countAll();
   }
 
+   @Override
+  public int countAllCompleteBlocks() throws StorageException {
+    return dataAccess.countAllCompleteBlocks();
+  }
+  
   @Override
   public BlockInfo findById(long blockId, int inodeId) throws StorageException {
     return convertDALtoHDFS(dataAccess.findById(blockId, inodeId));

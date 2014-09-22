@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
@@ -81,10 +83,10 @@ public class TestLock {
   INodeFile file1, file2, file3;
 
   @Before
-  public void init() throws StorageException, PersistanceException, StorageInitializtionException {
+  public void init() throws IOException {
     conf = new HdfsConfiguration();
     StorageFactory.setConfiguration(conf);
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
     insertData();
 
   }
@@ -124,10 +126,10 @@ public class TestLock {
       protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
       protected boolean[] isPreTxPathFullyResolved = new boolean[1];
 
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, resolveLink);
         tla.getLocks().
-                addINode(INodeResolveType.PATH_WITH_UNKNOWN_HEAD, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
+                addINode(INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
                 addBlock().
                 addReplica().
                 addExcess().
@@ -325,7 +327,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 //   handler.handle();
    
    HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addUnderReplicatedBlockFindAll();
         return tla.acquire();

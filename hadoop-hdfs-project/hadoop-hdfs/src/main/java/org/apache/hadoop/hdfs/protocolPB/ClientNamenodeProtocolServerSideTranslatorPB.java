@@ -225,6 +225,9 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       VOID_SETBALANCERBANDWIDTH_RESPONSE = 
         SetBalancerBandwidthResponseProto.newBuilder().build();
 
+  //HOP
+  private static final ClientNamenodeProtocolProtos.ChangeConfResponseProto VOID_CHANGECONF_RESPONSE =
+          ClientNamenodeProtocolProtos.ChangeConfResponseProto.newBuilder().build();
   /**
    * Constructor
    * 
@@ -996,6 +999,15 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     anp.setIpAddress(p.getIpAddress());
     anp.setPort(p.getPort());
     return anp.build();
+  }
+  @Override
+  public ClientNamenodeProtocolProtos.ChangeConfResponseProto changeConf(RpcController controller, ClientNamenodeProtocolProtos.ChangeConfProto request) throws ServiceException {
+    try {
+      server.changeConf(request.getPropsList(), request.getNewValsList());
+      return VOID_CHANGECONF_RESPONSE;
+    } catch (IOException ex) {
+      throw new ServiceException(ex);
+    }
   }
   //END_HOP_CODE
 }

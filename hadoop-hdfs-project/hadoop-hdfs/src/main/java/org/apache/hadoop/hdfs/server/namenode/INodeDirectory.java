@@ -423,7 +423,8 @@ public class INodeDirectory extends INode {
       // Warn if the cached and computed diskspace values differ
       INodeDirectoryWithQuota node = (INodeDirectoryWithQuota)this;
       long space = node.diskspaceConsumed();
-      assert -1 == node.getDsQuota() || space == subtreeSummary[3];
+      // HOP - Eventually consistent quota
+//      assert -1 == node.getDsQuota() || space == subtreeSummary[3];
       if (-1 != node.getDsQuota() && space != subtreeSummary[3]) {
         NameNode.LOG.warn("Inconsistent diskspace for directory "
             +getLocalName()+". Cached: "+space+" Computed: "+subtreeSummary[3]);

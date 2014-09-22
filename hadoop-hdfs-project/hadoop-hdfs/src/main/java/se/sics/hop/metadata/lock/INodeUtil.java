@@ -15,7 +15,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
@@ -51,7 +51,6 @@ public class INodeUtil {
           INode[] curInode,
           byte[][] components,
           int[] count,
-          LinkedList<INode> resolvedInodes,
           boolean resolveLink,
           boolean transactional) throws UnresolvedPathException, PersistanceException {
 
@@ -80,9 +79,6 @@ public class INodeUtil {
             components[count[0] + 1],
             curInode[0].getId(),
             transactional);
-    if (curInode[0] != null) {
-      resolvedInodes.add(curInode[0]);
-    }
     count[0] = count[0] + 1;
     lastComp = (count[0] == components.length - 1);
     return lastComp;
@@ -106,8 +102,6 @@ public class INodeUtil {
           throws PersistanceException {
     String nameString = DFSUtil.bytes2String(name);
     if (transactional) {
-      // TODO - Memcache success check - do primary key instead.
-      LOG.debug("about to acquire lock on " + DFSUtil.bytes2String(name));
       return EntityManager.find(INode.Finder.ByPK_NameAndParentId, nameString, parentId);
     } else {
       return findINodeWithNoTransaction(nameString, parentId);
@@ -118,7 +112,7 @@ public class INodeUtil {
           String name,
           int parentId)
           throws StorageException {
-    LOG.info(String.format(
+    LOG.debug(String.format(
             "Read inode with no transaction by parent-id=%d, name=%s",
             parentId,
             name));
@@ -160,9 +154,11 @@ public class INodeUtil {
               curNode,
               components,
               count,
-              preTxResolvedINodes,
               resolveLink,
               false);
+      if(curNode[0] != null){
+        preTxResolvedINodes.add(curNode[0]);
+      }
       if (lastComp) {
         break;
       }
@@ -270,7 +266,7 @@ public class INodeUtil {
   }
 
   public static INode indexINodeScanById(int id) throws StorageException {
-    LOG.info(String.format(
+    LOG.debug(String.format(
             "Read inode with no transaction by id=%d",
             id));
     INodeDataAccess<INode> da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
@@ -334,7 +330,7 @@ public class INodeUtil {
   }
   
   public static int[] resolveINodesFromBlockIds(final long[] blockIds) throws StorageException {
-    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.TEST) {
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_INODEIDS_FOR_BLKS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockLookUpDataAccess<HopBlockLookUp> da = (BlockLookUpDataAccess) StorageFactory.getDataAccess(BlockLookUpDataAccess.class);
@@ -348,4 +344,29 @@ public class INodeUtil {
     }
   }
 
+  public static INodeIdentifier resolveINodeFromId(final int id) throws StorageException {
+    INodeIdentifier inodeIdentifier;
+
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.RESOLVE_INODE_FROM_ID) {
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDALAdaptor ida = (INodeDALAdaptor) StorageFactory.getDataAccess(INodeDataAccess.class);
+        INode inode = ida.indexScanfindInodeById(id);
+        INodeIdentifier inodeIdent = new INodeIdentifier(id);
+        if(inode != null){
+          inodeIdent.setName(inode.getLocalName());
+          inodeIdent.setPid(inode.getParentId());
+        }
+        return inodeIdent;
+      }
+    };
+
+    try {
+      inodeIdentifier = (INodeIdentifier) handler.handle();
+    } catch (IOException ex) {
+      throw new StorageException(ex.getMessage());
+    }
+    return inodeIdentifier;
+  }
 }

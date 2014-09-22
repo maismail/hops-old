@@ -67,21 +67,24 @@ CREATE TABLE `inodes` (
   `id` int(11) NOT NULL,
   `parent_id` int(11) NOT NULL DEFAULT '0',
   `name` varchar(3000) NOT NULL DEFAULT '',
-  `is_dir` int(11) NOT NULL,
   `modification_time` bigint(20) DEFAULT NULL,
   `access_time` bigint(20) DEFAULT NULL,
   `permission` varbinary(128) DEFAULT NULL,
-  `is_under_construction` int(11) NOT NULL,
-  `client_name` varchar(200) DEFAULT NULL,
-  `client_machine` varchar(200) DEFAULT NULL,
-  `client_node` varchar(200) DEFAULT NULL,
+  `client_name` varchar(100) DEFAULT NULL,
+  `client_machine` varchar(100) DEFAULT NULL,
+  `client_node` varchar(100) DEFAULT NULL,
   `generation_stamp` int(11) DEFAULT NULL,
   `header` bigint(20) DEFAULT NULL,
-  `is_dir_with_quota` int(11) NOT NULL,
   `symlink` varchar(3000) DEFAULT NULL,
+  `dir` bit(1) NOT NULL,
+  `quota_enabled` bit(1) NOT NULL,
+  `under_construction` bit(1) NOT NULL,
+  `subtree_locked` bit(1) DEFAULT NULL,
+  `subtree_lock_owner` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`parent_id`,`name`),
   KEY `inode_idx` (`id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (parent_id) */$$
 
 
 delimiter $$
@@ -117,20 +120,33 @@ delimiter $$
 CREATE TABLE `lease_paths` (
   `holder_id` int(11) NOT NULL,
   `path` varchar(256) NOT NULL,
-  PRIMARY KEY (`path`),
-  KEY `id_idx` (`holder_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+  `part_key` int(11) NOT NULL,
+  PRIMARY KEY (`path`,`part_key`),
+  KEY `holder_idx` (`holder_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (part_key) */$$
 
 
 delimiter $$
 
 CREATE TABLE `leases` (
   `holder` varchar(255) NOT NULL,
+  `part_key` int(11) NOT NULL,
   `last_update` bigint(20) DEFAULT NULL,
   `holder_id` int(11) DEFAULT NULL,
-  PRIMARY KEY (`holder`),
+  PRIMARY KEY (`holder`,`part_key`),
   KEY `holderid_idx` (`holder_id`),
   KEY `update_idx` (`last_update`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (part_key) */$$
+
+
+delimiter $$
+
+CREATE TABLE `path_memcached` (
+  `path` varchar(128) NOT NULL,
+  `inodeids` varbinary(13500) NOT NULL,
+  PRIMARY KEY (`path`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
@@ -205,6 +221,18 @@ CREATE TABLE `variables` (
 
 delimiter $$
 
+CREATE TABLE `quota_update` (
+  `id` int(11) NOT NULL,
+  `inode_id` int(11) NOT NULL,
+  `namespace_delta` bigint(20) DEFAULT NULL,
+  `diskspace_delta` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`id`,`inode_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
+
+
+delimiter $$
+
 CREATE TABLE `encoding_status` (
   `inode_id` int(11) NOT NULL,
   `status` int(11) DEFAULT NULL,
@@ -220,4 +248,4 @@ CREATE TABLE `encoding_status` (
   `revoked` bit(1) DEFAULT 0,
   PRIMARY KEY (`inode_id`),
   UNIQUE KEY `parity_inode_id` (`parity_inode_id`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1;
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$

@@ -86,12 +86,12 @@ public class INodeAttributes {
   public Long getDiskspace() {
     return diskspace;
   }
-  
+
   public void setInodeId(Integer inodeId) throws PersistanceException {
     setInodeIdNoPersistance(inodeId);
     saveAttributes();
   }
-  
+
   public void setNsQuota(Long nsQuota) throws PersistanceException {
     setNsQuotaNoPersistance(nsQuota);
     saveAttributes();
@@ -131,11 +131,11 @@ public class INodeAttributes {
   public void setInodeIdNoPersistance(Integer inodeId) {
     this.inodeId = inodeId;
   }
-  
+
   protected void saveAttributes() throws PersistanceException {
     EntityManager.update(this);
   }
-  
+
   protected void removeAttributes() throws PersistanceException {
     EntityManager.remove(this);
   }

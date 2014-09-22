@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.metadata.INodeIdentifier;
 import static org.apache.hadoop.hdfs.DFSUtil.percent2String;
 
 import java.io.IOException;
@@ -32,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +47,6 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
@@ -66,7 +67,6 @@ import org.znerd.xmlenc.XMLOutputter;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -139,7 +139,7 @@ class NamenodeJspHelper {
   }
 
   /** Return a table containing version information. */
-  static String getVersionTable(FSNamesystem fsn) {
+  static String getVersionTable(FSNamesystem fsn, NameNode nn) {
     return "<div class='dfstable'><table>"
         + "\n  <tr><td class='col1'>Started:</td><td>" + fsn.getStartTime()
         + "</td></tr>\n" + "\n  <tr><td class='col1'>Version:</td><td>"
@@ -148,6 +148,8 @@ class NamenodeJspHelper {
         + " by " + VersionInfo.getUser() + " from " + VersionInfo.getBranch()
         + "</td></tr>\n  <tr><td class='col1'>Cluster ID:</td><td>" + fsn.getClusterId()
         + "</td></tr>\n  <tr><td class='col1'>Block Pool ID:</td><td>" + fsn.getBlockPoolId()
+        + "</td></tr>\n  <tr><td class='col1'>Path Ancestor Lock Type:</td><td>" + fsn.getFilePathAncestorLockType()   
+        + "</td></tr>\n  <tr><td class='col1'>NNs:</td><td>" + nn.getActiveNamenodes().toString()
         + "</td></tr>\n</table></div>";
   }
 
@@ -805,7 +807,7 @@ class NamenodeJspHelper {
           }
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.READ).

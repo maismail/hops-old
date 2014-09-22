@@ -17,7 +17,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem.Statistics;
-import static org.apache.hadoop.hdfs.NamenodeSelector.rrIndex;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
@@ -99,6 +98,8 @@ public class NamenodeSelector extends Thread {
     private boolean periodicNNListUpdate = true;
     private final Object wiatObjectForUpdate = new Object();
     private final int namenodeListUpdateTimePeriod;
+    Random rand = new Random();
+    
 
     //only for testing
     NamenodeSelector(Configuration conf, ClientProtocol namenode) throws IOException {
@@ -113,6 +114,8 @@ public class NamenodeSelector extends Thread {
     NamenodeSelector(Configuration conf, URI defaultUri) throws IOException {
         this.defaultUri = defaultUri;
         this.conf = conf;
+        rand.setSeed(System.currentTimeMillis());
+        
         namenodeListUpdateTimePeriod = conf.getInt(DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY, DFSConfigKeys.DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT);
 
         // Getting appropriate policy
@@ -176,12 +179,26 @@ public class NamenodeSelector extends Thread {
             wiatObjectForUpdate.notify();
         }
     }
+    
+  public List<NamenodeSelector.NamenodeHandle> getAllNameNode() throws IOException {
+    if (nnList == null || nnList.isEmpty()) {
+      asyncNNListUpdate();
+      throw new NoAliveNamenodeException();
+    }
+    return nnList;
+  }
+
+  public NamenodeHandle getLeadingNameNode() throws IOException {
+    // The first one is supposed to be the leader. An exception is thrown if none is available.
+    return getAllNameNode().get(0);
+  }
+       
     /**
      * Gets the appropriate namenode for a read/write operation
      *
      * @return DFSClient
      */
-    static int rrIndex = 0;
+    int rrIndex = 0;
 
     public NamenodeSelector.NamenodeHandle getNextNamenode() throws IOException {
         if (nnList == null || nnList.isEmpty()) {
@@ -203,8 +220,6 @@ public class NamenodeSelector extends Thread {
     private synchronized NamenodeSelector.NamenodeHandle getNextNNBasedOnPolicy() {
         if (policy == NamenodeSelector.NNSelectionPolicy.RANDOM) {
             for (int i = 0; i < 10; i++) {
-                Random rand = new Random();
-                rand.setSeed(System.currentTimeMillis());
                 int index = rand.nextInt(nnList.size());
                 NamenodeSelector.NamenodeHandle handle = nnList.get(index);
                 if (!this.blackListedNamenodes.contains(handle)) {

@@ -655,7 +655,7 @@ public class MiniDFSCluster {
     if (format) {
       try {
         // this should be done before creating namenodes
-        assert (StorageFactory.getConnector().formatStorage());
+        assert (StorageFactory.formatStorage());
       } catch (StorageException ex) {
         throw new IOException(ex);
       }
@@ -2390,7 +2390,7 @@ public class MiniDFSCluster {
         }
         if (activeNameNodes == 0) {
             try {
-              StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+              StorageFactory.formatStorage(/*ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class,*/
                       UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
                       InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);   
               

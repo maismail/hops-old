@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.NavigableMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -75,7 +76,7 @@ import org.apache.hadoop.util.Time;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
@@ -373,6 +374,8 @@ public class DatanodeManager {
     assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     if(namesystem.isLeader()){
+       NameNode.stateChangeLog.info(
+              "DataNode is dead. Removing all replicas for datanode " + nodeInfo +" StorageID "+nodeInfo.getStorageID()+" index "+nodeInfo.getSId());
       blockManager.removeBlocksAssociatedTo(nodeInfo);
     }
     networktopology.remove(nodeInfo);
@@ -405,8 +408,10 @@ public class DatanodeManager {
 
   /** Remove a dead datanode. */
   void removeDeadDatanode(final DatanodeID nodeID) throws IOException {
+      DatanodeDescriptor d;
+      boolean removeDatanode = false;
       synchronized(datanodeMap) {
-        DatanodeDescriptor d;
+        
         try {
           d = getDatanode(nodeID);
         } catch(IOException e) {
@@ -415,8 +420,12 @@ public class DatanodeManager {
         if (d != null && isDatanodeDead(d)) {
           NameNode.stateChangeLog.info(
               "BLOCK* removeDeadDatanode: lost heartbeat from " + d);
-            removeDatanode(d);
+          removeDatanode = true;      
         }
+      }
+      //HOP removeDatanode might take verylong time. taking it out of the synchronized section. 
+      if(removeDatanode){
+        removeDatanode(d);
       }
   }
 
@@ -1234,7 +1243,7 @@ public class DatanodeManager {
       }
       
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(TransactionLockTypes.INodeLockType.WRITE).

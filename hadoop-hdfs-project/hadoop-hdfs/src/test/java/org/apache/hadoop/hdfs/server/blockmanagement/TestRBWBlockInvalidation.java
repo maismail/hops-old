@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataOutputStream;
@@ -37,7 +38,7 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -57,7 +58,7 @@ public class TestRBWBlockInvalidation {
           final ExtendedBlock block) throws IOException {
     return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),

@@ -12,17 +12,21 @@ import se.sics.hop.DALStorageFactory;
 import se.sics.hop.StorageConnector;
 import se.sics.hop.common.IDsMonitor;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.adaptor.*;
 import se.sics.hop.metadata.context.*;
 import se.sics.hop.metadata.hdfs.dal.*;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hop.*;
 import se.sics.hop.metadata.hdfs.entity.hop.var.*;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.ContextInitializer;
 import se.sics.hop.transaction.EntityManager;
 
 import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -46,12 +50,10 @@ public class StorageFactory {
     return dStorageFactory.getConnector();
   }
 
-  public static void setConfiguration(Configuration conf) throws StorageInitializtionException {
-    IDsMonitor.getInstance().setConfiguration(conf.getInt(DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT),
-            conf.getInt(DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE, DFSConfigKeys.DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT),
-            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT),
-            conf.getFloat(DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD, DFSConfigKeys.DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT),
-            conf.getInt(DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS, DFSConfigKeys.DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT));
+  public static void setConfiguration(Configuration conf) throws IOException {
+    IDsMonitor.getInstance().setConfiguration(conf);
+    PathMemcache.getInstance().setConfiguration(conf);
+    HDFSTransactionLockAcquirer.setConfiguration(conf);
     if (!isDALInitialized) {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
@@ -137,7 +139,7 @@ public class StorageFactory {
         entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
 
         entityContexts.put(EncodingStatus.class, new EncodingStatusContext((EncodingStatusDataAccess) getDataAccess(EncodingStatusDataAccess.class)));
-
+        entityContexts.put(QuotaUpdate.class, new QuotaUpdateContext((QuotaUpdateDataAccess) getDataAccess(QuotaUpdateDataAccess.class)));
 
         return entityContexts;
       }
@@ -154,5 +156,15 @@ public class StorageFactory {
       return dataAccessAdaptors.get(type);
     }
     return dStorageFactory.getDataAccess(type);
+  }
+  
+  public static boolean formatStorage() throws StorageException{
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorage();
+  }
+  
+  public static boolean formatStorage(Class<? extends EntityDataAccess>... das) throws StorageException{
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorage(das);
   }
 }

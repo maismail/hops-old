@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -70,7 +71,7 @@ public class TestFsLimits {
   
   private void initFS() throws StorageException, IOException{
         StorageFactory.setConfiguration(conf);
-    assert (StorageFactory.getConnector().formatStorage());
+    assert (StorageFactory.formatStorage());
     rootInode = FSDirectory.createRootInode(perms,true);
     inodes = new INode[]{ rootInode, null };
     fs = null;
@@ -173,7 +174,7 @@ public class TestFsLimits {
   HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
 
     @Override
-    public TransactionLocks acquireLock() throws PersistanceException, IOException {
+    public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
       HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
       tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
       return tla.acquire();

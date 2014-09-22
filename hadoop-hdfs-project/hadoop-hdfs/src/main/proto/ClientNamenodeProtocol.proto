@@ -511,6 +511,12 @@ message GetRepairedBlockLocationsResponseProto {
     required LocatedBlockProto locatedBlocks = 1;
 }
 
+message ChangeConfProto{
+  repeated string props = 1;
+  repeated string newVals = 2;
+}
+message ChangeConfResponseProto{
+}
 //END_HOP_CODE
 
 service ClientNamenodeProtocol {
@@ -599,6 +605,7 @@ service ClientNamenodeProtocol {
     returns(RevokeEncodingResponseProto);
   rpc getRepairedBlockLocations(GetRepairedBlockLocationsRequsestProto)
     returns(GetRepairedBlockLocationsResponseProto);
+  rpc changeConf (ChangeConfProto) returns (ChangeConfResponseProto);
   //END_HOP_CODE
 
 }

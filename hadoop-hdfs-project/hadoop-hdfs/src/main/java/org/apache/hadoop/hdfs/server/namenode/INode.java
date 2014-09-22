@@ -105,6 +105,9 @@ public abstract class INode implements Comparable<byte[]> {
   public static final int NON_EXISTING_ID = 0;
   protected int id = NON_EXISTING_ID;
   protected int parentId = NON_EXISTING_ID;
+
+  protected boolean subtreeLocked;
+  protected long subtreeLockOwner;
   //END_HOP_CODE
 
   /** Simple wrapper for two counters : 
@@ -441,7 +444,7 @@ public abstract class INode implements Comparable<byte[]> {
    * @throws AssertionError if the given path is invalid.
    * @return array of path components.
    */
-  static String[] getPathNames(String path) {
+  public static String[] getPathNames(String path) {
     if (path == null || !path.startsWith(Path.SEPARATOR)) {
       throw new AssertionError("Absolute path required");
     }
@@ -661,6 +664,31 @@ public abstract class INode implements Comparable<byte[]> {
         return;
       }
     }
+  }
+
+  public boolean isSubtreeLocked() {
+    return subtreeLocked;
+  }
+
+  public void setSubtreeLocked(boolean subtreeLocked) {
+    this.subtreeLocked = subtreeLocked;
+  }
+
+  public long getSubtreeLockOwner() {
+    return subtreeLockOwner;
+  }
+
+  public void setSubtreeLockOwner(long subtreeLockOwner) {
+    this.subtreeLockOwner = subtreeLockOwner;
+  }
+
+  public void lockSubtree(long subtreeLockOwner) {
+    setSubtreeLocked(true);
+    setSubtreeLockOwner(subtreeLockOwner);
+  }
+
+  public void unlockSubtree() {
+    setSubtreeLocked(false);
   }
   //END_HOP_CODE:
 }

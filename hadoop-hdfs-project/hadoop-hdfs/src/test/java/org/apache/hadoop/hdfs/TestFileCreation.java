@@ -3,7 +3,7 @@
  * or more contributor license agreements.  See the NOTICE file
  * distributed with this work for additional information
  * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
+ * to you under the cd Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
  *
@@ -45,11 +45,13 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
+import org.apache.commons.math.stat.inference.TestUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
 import org.apache.hadoop.fs.CreateFlag;
@@ -58,10 +60,12 @@ import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.InvalidPathException;
+import org.apache.hadoop.fs.LocatedFileStatus;
 import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Options.Rename;
 import org.apache.hadoop.fs.ParentNotDirectoryException;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -92,6 +96,7 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
+import org.junit.Assert;
 import org.junit.Test;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -1176,8 +1181,115 @@ public class TestFileCreation {
     }
   }
 
-  
   //START_HOP_CODE
+  @Test
+  public void testIncrementalDelete() throws Exception {
+
+    Configuration conf = new HdfsConfiguration();
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
+    FileSystem fs = cluster.getFileSystem();
+    DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
+
+    try {
+    fs.mkdirs(new Path("/A/B/C"));
+    
+    createSmallFile(fs, new Path("/A/af1"), 1);        
+    createSmallFile(fs, new Path("/A/B/bf2"), 1);    
+    createSmallFile(fs, new Path("/A/B/bf3"), 1);    
+    createSmallFile(fs, new Path("/A/B/C/cf1"), 1);
+    createSmallFile(fs, new Path("/A/B/C/cf2"), 1);
+    
+    
+    fs.mkdirs(new Path("/A/D"));
+    fs.mkdirs(new Path("/A/D/E"));
+    fs.mkdirs(new Path("/A/D/F"));
+    fs.mkdirs(new Path("/A/D/F/G"));
+    fs.mkdirs(new Path("/A/D/F/H"));
+    
+    createSmallFile(fs, new Path("/A/D/E/ef1"),1);
+    createSmallFile(fs, new Path("/A/D/F/ff1"),1);
+    createSmallFile(fs, new Path("/A/D/F/H/hf1"),1);
+    createSmallFile(fs, new Path("/A/D/F/G/gf1"),1);
+      
+    
+    System.out.println("_________________________TestX Deleting /A/B/C/cf1_______________________________________________");
+    assertTrue(fs.delete(new Path("/A/B/C/cf1"), true));
+    
+    System.out.println("_________________________TestX Deleting /A/D_______________________________________________");
+    assertTrue(fs.delete(new Path("/A/D"), true));
+    
+    System.out.println("_________________________TestX Deleting /A/B/C_______________________________________________");
+    assertTrue(fs.delete(new Path("/A/B/C"), true));
+    } finally {
+       cluster.shutdown();
+    }
+  }
+  private void createSmallFile(FileSystem fs, Path path, int replication) throws IOException{
+    FSDataOutputStream stm = createFile(fs, path, replication);
+    writeFile(stm);
+    stm.close();
+  }  
+    
+  @Test
+  public void testRename() throws Exception {
+
+     Configuration conf = new HdfsConfiguration(); 
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
+    FileSystem fs = cluster.getFileSystem();
+    DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
+    try{
+    
+    fs.mkdirs(new Path("/dir"));
+    fs.mkdirs(new Path("/test"));
+    
+    FSDataOutputStream stm = createFile(fs, new Path("/dir/file1"), 1);
+    writeFile(stm);
+    stm.close();
+    
+    fs.rename(new Path("/dir"), new Path("/test"));
+    
+    
+    
+    fs.mkdirs(new Path("/dir"));
+    stm = createFile(fs, new Path("/dir/file2"), 1);
+    writeFile(stm);
+    stm.close();
+    
+    if(!fs.rename(new Path("/dir"), new Path("/test"))){
+      try{
+        dfs.rename(new Path("/dir"), new Path("/test"), Options.Rename.OVERWRITE);
+        fail("rename should have failed");
+      }catch(Exception e){
+        // it should fail
+      }
+    }
+
+//    
+//    // overrite empty dir
+//    dfs.delete(new Path("/test"),true);
+//    
+//    dfs.mkdirs(new Path("/test/dir"));
+//    try{
+//        dfs.rename(new Path("/dir"), new Path("/test"), Options.Rename.OVERWRITE);
+//      }catch(Exception e){
+//        fail("overriting empty folder should pass");
+//      }
+    
+    
+    RemoteIterator<LocatedFileStatus>  itr = fs.listFiles(new Path("/test"), true);
+    while(itr.hasNext()){
+      LocatedFileStatus status = itr.next();
+      System.out.println("FILE LISTING: "+status.getPath());
+    }
+    
+    }finally{
+       cluster.shutdown();
+    }
+    
+   
+  }
+  
+  
   @Test
   public void testFileCreationSimple() throws IOException {
     Configuration conf = new HdfsConfiguration();
@@ -1193,34 +1305,36 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      Path p1 = new Path("/f1");
+      dfs.mkdirs(new Path("/f1/f2"));
+      dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
+      Path p1 = new Path("/f1/test.txt");
       Path p2 = new Path("/f2"); 
       
       int blocks  = 1;
-      FSDataOutputStream out = dfs.create(p1);
-      int i = 0;
-      for (; i < blocks; i++) {
-        out.write(i);
-      }
-      out.close();
+//      FSDataOutputStream out = dfs.create(p1);
+//      int i = 0;
+//      for (; i < blocks; i++) {
+//        out.write(i);
+//      }
+//      out.close();
       
       
       
-      FSDataInputStream in = fs.open(p1);
-      for (i = 0; i < blocks; i++) {
-        assertEquals(i, in.read());
-      }
-
-      out = dfs.create(p2);
-      i = 0;
-      for (; i < blocks; i++) {
-        out.write(i);
-      }
-      out.close();  
-      
-      dfs.concat(p1, new Path[]{p2});
-      
-      dfs.rename(p1, p2);
+//      FSDataInputStream in = fs.open(p1);
+//      for (i = 0; i < blocks; i++) {
+//        assertEquals(i, in.read());
+//      }
+//
+//      out = dfs.create(p2);
+//      i = 0;
+//      for (; i < blocks; i++) {
+//        out.write(i);
+//      }
+//      out.close();  
+//      
+//      dfs.concat(p1, new Path[]{p2});
+//      
+//      dfs.rename(p1, p2);
 //// 
 //      
 //      cluster.restartNameNode();
@@ -1233,7 +1347,7 @@ public class TestFileCreation {
     } catch (Exception e) {
       e.printStackTrace();
     } finally {
-      cluster.shutdown();
+      //cluster.shutdown();
     }
   }
 
@@ -1277,7 +1391,7 @@ public class TestFileCreation {
       HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException {
+          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               lockType = (TransactionLockTypes.LockType)getParams()[0];
               tla.getLocks().addLease(lockType, holder);

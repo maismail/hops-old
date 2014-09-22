@@ -18,6 +18,7 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.concurrent.ExecutionException;
 
 public class TestEncodingStatus extends TestCase {
 
@@ -32,6 +33,8 @@ public class TestEncodingStatus extends TestCase {
     try {
       StorageFactory.setConfiguration(new Configuration());
     } catch (StorageInitializtionException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
       e.printStackTrace();
     }
   }
@@ -58,7 +61,7 @@ public class TestEncodingStatus extends TestCase {
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -123,7 +126,7 @@ public class TestEncodingStatus extends TestCase {
     TransactionalRequestHandler updateReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.UPDATE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -143,7 +146,7 @@ public class TestEncodingStatus extends TestCase {
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -270,7 +273,7 @@ public class TestEncodingStatus extends TestCase {
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);

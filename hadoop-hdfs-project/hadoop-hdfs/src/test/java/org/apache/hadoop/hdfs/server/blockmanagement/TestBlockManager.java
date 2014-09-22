@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
@@ -50,7 +51,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -371,7 +372,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
@@ -403,7 +404,7 @@ public class TestBlockManager {
   private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
     return (BlockInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(blkId,
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
@@ -454,7 +455,7 @@ public class TestBlockManager {
     final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
     new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
        @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
          tla.getLocks().
                  addBlock(blockId,
@@ -486,7 +487,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).

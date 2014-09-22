@@ -163,7 +163,7 @@ public class TestPathData {
         fs.makeQualified(new Path(item.toString())), item.path
     );
     assertTrue("checking exist", item.stat != null);
-    assertTrue("checking isDir", item.stat.isDirectory());
+    assertTrue("checking setDir", item.stat.isDirectory());
   }
   
   /* junit does a lousy job of comparing arrays

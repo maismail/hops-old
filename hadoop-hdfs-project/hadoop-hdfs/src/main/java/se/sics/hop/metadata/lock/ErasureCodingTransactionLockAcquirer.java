@@ -2,14 +2,15 @@ package se.sics.hop.metadata.lock;
 
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeIdentifier;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcquirer {
 
@@ -22,7 +23,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   }
 
   public TransactionLocks acquireForDelete(boolean isErasureCodingEnabled)
-        throws PersistanceException, UnresolvedPathException {
+      throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     super.acquire();
     if (isErasureCodingEnabled) {
       for (List<INode> list : allResolvedINodes) {
@@ -35,7 +36,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   }
 
   @Override
-  public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException {
+  public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     super.acquire();
     acquireEncodingLock();
     return getLocks();
@@ -46,24 +47,24 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     if (locks.getEncodingStatusLock() != null) {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
-      if (acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getInodeId()) != null) {
+      if (acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByInodeId, locks.getEncodingStatusInodeId()) != null) {
         // Cannot be both
         return;
       }
       EncodingStatus status = acquireLock(TransactionLockTypes.LockType.READ, EncodingStatus.Finder.ByParityInodeId,
-          locks.getInodeId());
+          locks.getEncodingStatusInodeId());
       if (status == null) {
         return;
       }
       // The inode was not locked as the locked inode is form the parity file. Lock the proper one.
       iNodeScanLookUpByID(TransactionLockTypes.INodeLockType.WRITE, status.getInodeId(), getLocks());
       // We didn't have a lock on it when reading it. So read it again.
-      acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getInodeId());
+      acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getEncodingStatusInodeId());
     }
   }
 
   @Override
-  public ErasureCodingTransactionLocks acquireByBlock(INodeIdentifier iNodeIdentifier) throws PersistanceException, UnresolvedPathException {
+  public ErasureCodingTransactionLocks acquireByBlock(INodeIdentifier iNodeIdentifier) throws PersistanceException, UnresolvedPathException, ExecutionException {
     super.acquireByBlock(iNodeIdentifier);
     acquireEncodingLock();
     return getLocks();

@@ -110,7 +110,7 @@ public class TestBlockToken {
   ExtendedBlock block3 = new ExtendedBlock("-10", -108L);
   
   @Before
-  public void disableKerberos() throws StorageException, StorageInitializtionException {
+  public void disableKerberos() throws IOException {
     Configuration conf = new Configuration();
     conf.set(HADOOP_SECURITY_AUTHENTICATION, "simple");
     UserGroupInformation.setConfiguration(conf);
@@ -417,6 +417,6 @@ public class TestBlockToken {
   }
   
   private void resetStorage() throws StorageException{
-    StorageFactory.getConnector().formatStorage();
+    StorageFactory.formatStorage();
   }
 }

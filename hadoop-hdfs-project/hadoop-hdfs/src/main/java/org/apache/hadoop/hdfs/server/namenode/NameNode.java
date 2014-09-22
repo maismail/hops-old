@@ -22,9 +22,8 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
@@ -75,12 +74,22 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.base.Joiner;
-import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 
 /**
  * ********************************************************
@@ -208,7 +217,8 @@ public class NameNode {
             + StartupOption.BACKUP.getName() + "] | ["
             + StartupOption.CHECKPOINT.getName() + "] | ["
             + StartupOption.FORMAT.getName() + " ["
-            + StartupOption.CLUSTERID.getName() + " cid ] ["
+            + StartupOption.CLUSTERID.getName() + " cid ] | ["
+            + StartupOption.SAFEMODE_FIX.getName() + "] | ["
             + StartupOption.FORCE.getName() + "] ["
             + StartupOption.NONINTERACTIVE.getName() + "] ] | ["
             + StartupOption.UPGRADE.getName() + "] | ["
@@ -278,6 +288,7 @@ public class NameNode {
 
     //START_HOP_CODE
     private long id = LeaderElection.LEADER_INITIALIZATION_ID;
+    private Object leaderSyncObj = new Object();
     protected LeaderElection leaderElection;
     private SortedActiveNamenodeList nnList = null;
     //END_HOP_CODE
@@ -819,7 +830,7 @@ public class NameNode {
         //START_HOP_CODE
         try {
             StorageFactory.setConfiguration(conf);
-            StorageFactory.getConnector().formatStorage();
+            StorageFactory.formatStorage();
             StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
         } catch (PersistanceException e) {
             throw new RuntimeException(e.getMessage());
@@ -1065,6 +1076,8 @@ public class NameNode {
                         startOpt.setInteractiveFormat(false);
                     }
                 }
+            } else if (StartupOption.SAFEMODE_FIX.getName().equalsIgnoreCase(cmd)) {
+                startOpt = StartupOption.SAFEMODE_FIX;
             } else if (StartupOption.GENCLUSTERID.getName().equalsIgnoreCase(cmd)) {
                 startOpt = StartupOption.GENCLUSTERID;
             } else if (StartupOption.REGULAR.getName().equalsIgnoreCase(cmd)) {
@@ -1192,6 +1205,11 @@ public class NameNode {
         }
 
         switch (startOpt) {
+            //HOP
+          case SAFEMODE_FIX:{ //delete everything other than inode and blocks table. this is tmp fix for safe mode 
+            safeModeTmpFix(conf);
+            return null;
+          }
             case FORMAT: {
                 boolean aborted = format(conf, startOpt.getForceFormat(),
                         startOpt.getInteractiveFormat());
@@ -1573,55 +1591,48 @@ public class NameNode {
     /**
      * Set the role for Namenode
      */
-    public synchronized void setRole(NamenodeRole role) {
+    public  void setRole(NamenodeRole role) {
+      synchronized(leaderSyncObj){
         this.role = role;
         roleSince = System.currentTimeMillis();
         namesystem.setNameNodeRole(role);
+      }
     }
 
-    public synchronized void setNameNodeList(SortedActiveNamenodeList list) {
+    public void setNameNodeList(SortedActiveNamenodeList list) {
+      synchronized(leaderSyncObj){
         this.nnList = list;
+        HDFSTransactionLockAcquirer.setActiveNamenodes(Collections.unmodifiableCollection(list.getActiveNamenodes()));
+      }
     }
 
     public boolean isLeader() {
+      synchronized(leaderSyncObj){
         if (role.equals(NamenodeRole.LEADER)) {
             long elapsedTime = System.currentTimeMillis() - roleSince;
             if( elapsedTime < leaderWindow){
                 return true;
             }else{
-//                LOG.debug(id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
+                LOG.error("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
                 return false;
             }
         } else {
             return false;
         }
+      }
     }
-//HOP the code is optimized. now when ever there is request for fresh list of 
-//namenodes in the system we return nnList. nnList is periodically updated by the leader
-//election algorith 
-//    TransactionalRequestHandler selectAllNameNodesHandler = new TransactionalRequestHandler(RequestHandler.OperationType.SELECT_ALL_NAMENODES) {
-//    @Override
-//    public TransactionLocks acquireLock() throws PersistanceException, IOException {
-//      TransactionLockAcquirer tla = new TransactionLockAcquirer();
-//      tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.READ_COMMITTED);
-//      return tla.acquire();
-//    }
-//
-//    @Override
-//    public Object performTask() throws PersistanceException, IOException {
-//      return getLeaderElectionInstance().selectAll();
-//    }
-//  };
 
-    public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+    public SortedActiveNamenodeList getActiveNamenodes(){
         // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle();
+      synchronized(leaderSyncObj){
         return nnList;
+      }
     }
 
     protected volatile int nnIndex = 0;
 
     public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
-        List<ActiveNamenode> allNodes = nnList.getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
+        List<ActiveNamenode> allNodes = getActiveNamenodes().getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
         if (this.isLeader()) {
             // Use the modulo to roundrobin b/w namenodes
             nnIndex = ++nnIndex % allNodes.size();
@@ -1636,6 +1647,13 @@ public class NameNode {
             LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
             return ann;
         }
+    }
+    
+    private static void safeModeTmpFix(Configuration conf) throws StorageInitializtionException, StorageException, IOException{
+            StorageFactory.setConfiguration(conf);
+            StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
+                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);  
     }
   //END_HOP_CODE
 }

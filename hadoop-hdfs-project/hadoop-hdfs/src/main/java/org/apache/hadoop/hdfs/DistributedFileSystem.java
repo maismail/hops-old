@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -1043,4 +1044,26 @@ public class DistributedFileSystem extends FileSystem {
   public void revokeEncoding(final String filePath, final int replication) throws IOException {
     dfs.revokeEncoding(filePath, replication);
   }
+
+  //START_HOP_CODE
+  public void enableMemcached() throws IOException {
+    changeConf(DFSConfigKeys.DFS_MEMCACHE_ENABLED, String.valueOf(true));
+  }
+
+  public void disableMemcached() throws IOException {
+    changeConf(DFSConfigKeys.DFS_MEMCACHE_ENABLED, String.valueOf(false));
+  }
+
+  public void enableSetPartitionKey() throws IOException{
+    changeConf(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, String.valueOf(true));
+  }
+  
+  public void disableSetPartitionKey() throws IOException {
+    changeConf(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, String.valueOf(false));
+  }
+    
+  private void changeConf(String prop, String value) throws IOException {
+    dfs.changeConf(Arrays.asList(prop), Arrays.asList(value));
+  }
+  //STOP_HOP_CODE
 }
