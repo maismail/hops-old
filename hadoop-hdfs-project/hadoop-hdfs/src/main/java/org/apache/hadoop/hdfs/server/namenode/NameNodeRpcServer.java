@@ -167,8 +167,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
     this.namesystem = nn.getNamesystem();
     this.metrics = NameNode.getNameNodeMetrics();
 
-    parityFolder = conf.get(ErasureCodingManager.PARITY_FOLDER,
-        ErasureCodingManager.DEFAULT_PARITY_FOLDER);
+    parityFolder = conf.get(DFSConfigKeys.PARITY_FOLDER,
+        DFSConfigKeys.DEFAULT_PARITY_FOLDER);
 
     int handlerCount = 
       conf.getInt(DFS_NAMENODE_HANDLER_COUNT_KEY, 
