@@ -810,7 +810,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private void acquireOutstandingQuotaUpdates() throws PersistanceException {
     Integer inodeId = getLocks().getQuotaUpdatesInodeId();
     if (getLocks().getQuotaUpdatesLock() != null && inodeId != null) {
-      EntityManager.findList(QuotaUpdate.Finder.ByInodeId, inodeId);
+      acquireLockList(getLocks().getQuotaUpdatesLock(), QuotaUpdate.Finder.ByInodeId, inodeId);
     }
   }
 
