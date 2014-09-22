@@ -138,6 +138,27 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
   public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
 
+  public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
+  public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = false;
+  public static final String PARITY_FOLDER = "se.sics.hop.erasure_coding.parity_folder";
+  public static final String DEFAULT_PARITY_FOLDER = "/parity";
+  public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
+  public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
+  public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
+  public static final int DEFAULT_RECHECK_INTERVAL = 5 * 60 * 1000;
+  public static final String ACTIVE_ENCODING_LIMIT_KEY = "se.sics.hop.erasure_coding.active_encoding_limit";
+  public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
+  public static final String ACTIVE_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
+  public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
+  public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.repair_delay";
+  public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
+  public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_parity_repair_limit";
+  public static final int DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT = 10;
+  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.parity_repair_delay";
+  public static final int DEFAULT_PARITY_REPAIR_DELAY = 30 * 60 * 1000;
+  public static final String DELETION_LIMIT_KEY = "se.sics.hop.erasure_coding.deletion_limit";
+  public static final int DEFAULT_DELETION_LIMIT = 100;
+
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

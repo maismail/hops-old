@@ -5,7 +5,7 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
@@ -16,7 +16,6 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -31,31 +30,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static org.apache.hadoop.util.ExitUtil.terminate;
-
 public class ErasureCodingManager extends Configured{
 
   static final Log LOG = LogFactory.getLog(ErasureCodingManager.class);
-
-  public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
-  public static final String PARITY_FOLDER = "se.sics.hop.erasure_coding.parity_folder";
-  public static final String DEFAULT_PARITY_FOLDER = "/parity";
-  public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
-  public static final String BLOCK_REPAIR_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.block_rapair_manager";
-  public static final String RECHECK_INTERVAL_KEY = "se.sics.hop.erasure_coding.recheck_interval";
-  public static final int DEFAULT_RECHECK_INTERVAL = 5 * 60 * 1000;
-  public static final String ACTIVE_ENCODING_LIMIT_KEY = "se.sics.hop.erasure_coding.active_encoding_limit";
-  public static final int DEFAULT_ACTIVE_ENCODING_LIMIT = 10;
-  public static final String ACTIVE_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_repair_limit";
-  public static final int DEFAULT_ACTIVE_REPAIR_LIMIT = 10;
-  public static final String REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.repair_delay";
-  public static final int DEFAULT_REPAIR_DELAY_KEY = 30 * 60 * 1000;
-  public static final String ACTIVE_PARITY_REPAIR_LIMIT_KEY = "se.sics.hop.erasure_coding.active_parity_repair_limit";
-  public static final int DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT = 10;
-  public static final String PARITY_REPAIR_DELAY_KEY = "se.sics.hop.erasure_coding.parity_repair_delay";
-  public static final int DEFAULT_PARITY_REPAIR_DELAY = 30 * 60 * 1000;
-  public static final String DELETION_LIMIT_KEY = "se.sics.hop.erasure_coding.deletion_limit";
-  public static final int DEFAULT_DELETION_LIMIT = 100;
 
   private final FSNamesystem namesystem;
   private final Daemon erasureCodingMonitorThread = new Daemon(new ErasureCodingMonitor());
@@ -78,20 +55,20 @@ public class ErasureCodingManager extends Configured{
   public ErasureCodingManager(FSNamesystem namesystem, Configuration conf) {
     super(conf);
     this.namesystem = namesystem;
-    this.parityFolder = conf.get(PARITY_FOLDER, DEFAULT_PARITY_FOLDER);
-    this.recheckInterval = conf.getInt(RECHECK_INTERVAL_KEY, DEFAULT_RECHECK_INTERVAL);
-    this.activeEncodingLimit = conf.getInt(ACTIVE_ENCODING_LIMIT_KEY, DEFAULT_ACTIVE_ENCODING_LIMIT);
-    this.activeRepairLimit = conf.getInt(ACTIVE_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_REPAIR_LIMIT);
-    this.activeParityRepairLimit = conf.getInt(ACTIVE_PARITY_REPAIR_LIMIT_KEY, DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT);
-    this.repairDelay = conf.getInt(REPAIR_DELAY_KEY, DEFAULT_REPAIR_DELAY_KEY);
-    this.parityRepairDelay = conf.getInt(PARITY_REPAIR_DELAY_KEY, DEFAULT_PARITY_REPAIR_DELAY);
-    this.deletionLimit = conf.getInt(DELETION_LIMIT_KEY, DEFAULT_DELETION_LIMIT);
-    enabled = conf.getBoolean(ERASURE_CODING_ENABLED_KEY, false);
+    this.parityFolder = conf.get(DFSConfigKeys.PARITY_FOLDER, DFSConfigKeys.DEFAULT_PARITY_FOLDER);
+    this.recheckInterval = conf.getInt(DFSConfigKeys.RECHECK_INTERVAL_KEY, DFSConfigKeys.DEFAULT_RECHECK_INTERVAL);
+    this.activeEncodingLimit = conf.getInt(DFSConfigKeys.ACTIVE_ENCODING_LIMIT_KEY, DFSConfigKeys.DEFAULT_ACTIVE_ENCODING_LIMIT);
+    this.activeRepairLimit = conf.getInt(DFSConfigKeys.ACTIVE_REPAIR_LIMIT_KEY, DFSConfigKeys.DEFAULT_ACTIVE_REPAIR_LIMIT);
+    this.activeParityRepairLimit = conf.getInt(DFSConfigKeys.ACTIVE_PARITY_REPAIR_LIMIT_KEY, DFSConfigKeys.DEFAULT_ACTIVE_PARITY_REPAIR_LIMIT);
+    this.repairDelay = conf.getInt(DFSConfigKeys.REPAIR_DELAY_KEY, DFSConfigKeys.DEFAULT_REPAIR_DELAY_KEY);
+    this.parityRepairDelay = conf.getInt(DFSConfigKeys.PARITY_REPAIR_DELAY_KEY, DFSConfigKeys.DEFAULT_PARITY_REPAIR_DELAY);
+    this.deletionLimit = conf.getInt(DFSConfigKeys.DELETION_LIMIT_KEY, DFSConfigKeys.DEFAULT_DELETION_LIMIT);
+    enabled = conf.getBoolean(DFSConfigKeys.ERASURE_CODING_ENABLED_KEY, DFSConfigKeys.DEFAULT_ERASURE_CODING_ENABLED_KEY);
   }
 
   private boolean loadRaidNodeClasses() {
     try {
-      Class<?> encodingManagerClass = getConf().getClass(ENCODING_MANAGER_CLASSNAME_KEY, null);
+      Class<?> encodingManagerClass = getConf().getClass(DFSConfigKeys.ENCODING_MANAGER_CLASSNAME_KEY, null);
       if (encodingManagerClass == null || !EncodingManager.class.isAssignableFrom(encodingManagerClass)) {
         throw new ClassNotFoundException(encodingManagerClass + " is not an implementation of " + EncodingManager.class.getCanonicalName());
       }
@@ -99,7 +76,7 @@ public class ErasureCodingManager extends Configured{
           new Class[] {Configuration.class} );
       encodingManager = (EncodingManager) encodingManagerConstructor.newInstance(getConf());
 
-      Class<?> blockRepairManagerClass = getConf().getClass(BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
+      Class<?> blockRepairManagerClass = getConf().getClass(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
       if (blockRepairManagerClass == null || !BlockRepairManager.class.isAssignableFrom(blockRepairManagerClass)) {
         throw new ClassNotFoundException(blockRepairManagerClass + " is not an implementation of " + BlockRepairManager.class.getCanonicalName());
       }
@@ -136,7 +113,7 @@ public class ErasureCodingManager extends Configured{
   }
 
   public static boolean isErasureCodingEnabled(Configuration conf) {
-    return conf.getBoolean(ERASURE_CODING_ENABLED_KEY, false);
+    return conf.getBoolean(DFSConfigKeys.ERASURE_CODING_ENABLED_KEY, DFSConfigKeys.DEFAULT_ERASURE_CODING_ENABLED_KEY);
   }
 
   private class ErasureCodingMonitor implements Runnable {
