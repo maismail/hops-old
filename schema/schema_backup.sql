@@ -225,7 +225,7 @@ CREATE TABLE `quota_update` (
   `inode_id` int(11) NOT NULL,
   `namespace_delta` bigint(20) DEFAULT NULL,
   `diskspace_delta` bigint(20) DEFAULT NULL,
-  PRIMARY KEY (`id`,`inode_id`)
+  PRIMARY KEY (`inode_id`,`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (inode_id) */$$
 

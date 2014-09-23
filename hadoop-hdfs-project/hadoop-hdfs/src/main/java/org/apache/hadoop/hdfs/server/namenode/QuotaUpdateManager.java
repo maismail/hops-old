@@ -179,7 +179,7 @@ public class QuotaUpdateManager {
       public TransactionLocks acquireLock() throws IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
-            addIndividualInode(TransactionLockTypes.INodeLockType.WRITE, updates.get(0).getInodeId());
+            addIndividualInode(TransactionLockTypes.INodeLockType.READ, updates.get(0).getInodeId());
         return tla.acquire();
       }
 

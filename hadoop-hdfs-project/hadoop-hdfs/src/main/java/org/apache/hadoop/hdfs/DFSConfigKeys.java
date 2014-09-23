@@ -57,7 +57,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT = 1000;
 
   public static final String DFS_NAMENODE_QUOTA_UPDATE_LIMIT_KEY = "dfs.namenode.quota.update.limit";
-  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 10000;
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 100000;
 
   public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZE = "dfs.namenode.quota.update.id.batchsize";
   public static final int DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZ_DEFAULT = 100000;
