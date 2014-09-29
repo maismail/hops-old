@@ -1381,6 +1381,7 @@ public class PBHelper {
     anp.setHostname(p.getHostname());
     anp.setIpAddress(p.getRpcIpAddress());
     anp.setPort(p.getRpcPort());
+    anp.setHttpAddress(p.getHttpAddress());
     return anp.build();
   }
   
