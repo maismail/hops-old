@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
@@ -104,7 +105,7 @@ public class NamenodeSelector extends Thread {
     //only for testing
     NamenodeSelector(Configuration conf, ClientProtocol namenode) throws IOException {
         this.defaultUri = null;
-        ActiveNamenode dummyActiveNamenode = new ActiveNamenode(1,"localhost","127.0.0.1",9999);
+        ActiveNamenode dummyActiveNamenode = new ActiveNamenode(1,"localhost","127.0.0.1",9999, "0.0.0.0:50070");
         this.nnList.add(new NamenodeSelector.NamenodeHandle(namenode, dummyActiveNamenode));
         this.conf = conf;
         this.policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
@@ -278,9 +279,11 @@ public class NamenodeSelector extends Thread {
 
         if (anl == null) { // default failed, now try the list of NNs from the config file
             String[] namenodes = getNamenodesFromConfigFile(conf);
+            LOG.debug("Trying to the list of NN from the config file  " + Arrays.toString(namenodes));
             if (namenodes.length > 0) {
                 for (int i = 0; i < namenodes.length; i++) {
                     try {
+                        LOG.debug("Trying to connect to  " + namenodes[i]);
                         URI uri = new URI(namenodes[i]);
                         NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
                         handle = proxyInfo.getProxy();
@@ -289,16 +292,24 @@ public class NamenodeSelector extends Thread {
                             RPC.stopProxy(handle);
                         }
                         if (anl != null && !anl.getActiveNamenodes().isEmpty()) {
+                            
                             break; // we got the list
                         }
                     } catch (Exception e) {
-                        RPC.stopProxy(handle);
+                        LOG.error(e);
+                        e.printStackTrace();
+                        if(handle!=null){
+                            RPC.stopProxy(handle);
+                        }
                     }
                 }
             }
         }
         if (anl != null) {
+            LOG.debug("Refreshing the Namenode handles");
             refreshNamenodeList(anl);
+        }else{
+            LOG.debug("No new namenodes were found");   
         }
     }
 

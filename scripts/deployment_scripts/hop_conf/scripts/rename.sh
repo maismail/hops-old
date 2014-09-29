@@ -11,6 +11,10 @@ yarn_site_xml=$HOP_Dist_Folder/hop_conf/hdfs_configs/yarn-site.xml
 hadoop_env_sh=$HOP_Dist_Folder/hop_conf/hdfs_configs/hadoop-env.sh
 yarn_env_sh=$HOP_Dist_Folder/hop_conf/hdfs_configs/yarn-env.sh
 
+#All Unique Namenodes
+All_NNs=${HOP_Default_NN[*]}" "${HOP_NN_List[*]}
+All_Unique_NNs=$(echo "${All_NNs[@]}" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
 #making changes in core-site.xml
 sed -i 's|NN_MACHINE_NAME|'$namenode'|g' $core_site_xml
 
@@ -22,7 +26,21 @@ port=$Dfs_Port_Param
 sed -i 's|Dfs_Namenode_Http_Address_Config_Param|'$port'|g' $hdfs_site_xml
 port=$((port + 1))
 sed -i 's|Dfs_Namenode_Rpc_Address_Config_Param|'$port'|g' $hdfs_site_xml
+
+namenode_rpc_addresses=""
+for i in ${All_Unique_NNs[@]}
+do
+        if [ "$namenode_rpc_addresses" == "" ]; then
+                namenode_rpc_addresses="hdfs://$i:$port"
+        else
+                namenode_rpc_addresses="$namenode_rpc_addresses,hdfs://$i:$port"
+        fi
+	
+done
+sed -i 's|NN_RPC_ADDRESS_LIST|'$namenode_rpc_addresses'|g' $core_site_xml
 sed -i 's|Dfs_Namenode_Rpc_Address_Config_Param|'$port'|g' $core_site_xml
+
+
 port=$((port + 1))
 sed -i 's|Dfs_Namenode_Servicerpc_Address_Config_Param|'$port'|g' $hdfs_site_xml
 port=$((port + 1))

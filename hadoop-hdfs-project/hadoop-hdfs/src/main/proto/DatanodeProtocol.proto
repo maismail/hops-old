@@ -329,7 +329,8 @@ message ActiveNamenodeProto {
   required uint64 id = 1;    
   required string hostname = 2;    
   required string ipAddress = 3;    
-  required int32 port = 4;    
+  required int32 port = 4; 
+  required string httpAddress = 5;
 }
 
 /**

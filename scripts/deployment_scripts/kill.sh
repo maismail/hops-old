@@ -23,6 +23,6 @@ do
 	echo "Killing  $1 on $i"
         pids=`ssh $connectStr pgrep -u $HOP_User $1`
         echo "PIDS to kill "$pids
-	ssh $connectStr  kill -9 $pids
+	ssh $connectStr  kill -9 $pids 
 done
 

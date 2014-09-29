@@ -83,7 +83,6 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
 
   @Override
   public void clear() {
-    log("CLEARING THE INODE ATTRIBUTES CONTEXT");
     storageCallPrevented = false;
     cachedRows.clear();
   }

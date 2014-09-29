@@ -432,7 +432,8 @@ message ActiveNamenodeProto {
   required uint64 id = 1;    
   required string hostname = 2;    
   required string ipAddress = 3;    
-  required int32 port = 4;    
+  required int32 port = 4;
+  required string httpAddress = 5;    
 }
 message ActiveNamenodeListRequestProto {
 }
@@ -445,6 +446,13 @@ message ChangeConfProto{
 }
 message ChangeConfResponseProto{
 }
+
+message DBLockingProto{
+  repeated string params = 1;
+}
+message DBLockingResponseProto{
+}
+
 //END_HOP_CODE
 
 service ClientNamenodeProtocol {
@@ -524,6 +532,7 @@ service ClientNamenodeProtocol {
   rpc getActiveNamenodesForClient (ActiveNamenodeListRequestProto) returns (ActiveNamenodeListResponseProto);
   rpc ping (PingRequestProto) returns (PingResponseProto);
   rpc changeConf (ChangeConfProto) returns (ChangeConfResponseProto);
+  rpc testDBLocking(DBLockingProto) returns (DBLockingResponseProto);
   //END_HOP_CODE
 
 }

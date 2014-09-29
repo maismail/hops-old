@@ -1644,7 +1644,7 @@ public class NameNode {
             Random rand = new Random();
             rand.setSeed(System.currentTimeMillis());
             ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
-            LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
+            LOG.debug("XXX Returning " + ann.getRpcIpAddress() + " for Next Block report");
             return ann;
         }
     }

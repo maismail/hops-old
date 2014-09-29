@@ -71,7 +71,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType leaderTocken = null;
   private static Configuration conf;
   
-  HDFSTransactionLocks(){
+  public HDFSTransactionLocks(){
   }
 
   HDFSTransactionLocks(LinkedList<INode> resolvedInodes, boolean preTxPathFullyResolved) {

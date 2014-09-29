@@ -131,7 +131,7 @@
 
 <property>
    <name>dfs.namenode.handler.count</name>
-  <value>2000</value>
+  <value>3000</value>
   <description>The RPC server that listens to requests from clients</description>
 </property>
 
@@ -169,7 +169,7 @@
 
 <property>
    <name>dfs.namenode.selector-policy</name>
-  <value>RANDOM</value>
+  <value>ROUND_ROBIN</value>
   <description>Used by clients. Possible values ROUND_ROBIN, RANDOM</description>
 </property>
 

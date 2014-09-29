@@ -162,6 +162,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.LinkedList;
+import java.util.Random;
+import java.util.StringTokenizer;
 
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
@@ -185,6 +187,8 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.memcache.PathMemcache;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 
 /***************************************************
@@ -7433,6 +7437,69 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       builder.insert(0, subtreeRootPath);
       return builder.toString();
     }
+  }
+  static int count = 0;
+  public void testDBLocking(final List<String> parameters) throws IOException{
+      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          
+          
+          for(int i = 0; i < parameters.size()-1; i++){
+              EntityManager.writeLock();
+              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+          }
+          
+//          EntityManager.writeLock();
+//          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+//          EntityManager.writeLock();
+//          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+//          
+          HDFSTransactionLocks lcks = new HDFSTransactionLocks();
+          lcks.addINode(INodeLockType.WRITE);
+          lcks.addLease(LockType.WRITE);
+          lcks.addLeasePath(LockType.WRITE);
+        return lcks;
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        for(int i = 0; i < parameters.size()-1; i++){
+              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+              INodeFile file =new INodeFile(new PermissionStatus("asf", "asdf", new FsPermission("777")), null, (short) 1 , 1L, 1L, 1L);
+              file.setIdNoPersistance(pid(parameters.get(i)));
+              file.setParentIdNoPersistance(pid(parameters.get(i)));
+              file.setLocalNameNoPersistance(pname(parameters.get(i)));
+              EntityManager.add(file); count++;
+          }
+          //LOG.error("Total new Inodes are "+count);
+          
+        
+//          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+//          Lease lease =new Lease(parameters.get(parameters.size()-1), Integer.parseInt(parameters.get(parameters.size()-1)),0);  
+//          EntityManager.add(lease);
+//          
+//                    
+//          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+//          HopLeasePath path = new HopLeasePath(parameters.get(parameters.size()-1),Integer.parseInt(parameters.get(parameters.size()-1)));
+//          path.setPath(parameters.get(parameters.size()-1));
+//          EntityManager.add(path);
+          
+   
+          return null;
+      }
+    }.handle(this);
+      
+  }
+  private int pid(String param){
+      StringTokenizer tok = new StringTokenizer(param);
+      tok.nextElement();
+      return Integer.parseInt((String)tok.nextElement());
+  }
+  
+  private String pname(String param){
+      StringTokenizer tok = new StringTokenizer(param);
+      return (String)tok.nextElement();
   }
   //END_HOP_CODE
 }

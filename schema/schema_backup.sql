@@ -108,7 +108,7 @@ CREATE TABLE `leader` (
   `counter` bigint(20) NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `hostname` varchar(25) NOT NULL,
-  `avg_request_processing_latency` int(11) DEFAULT NULL,
+  `httpAddress` varchar(100) DEFAULT NULL,
   `partition_val` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`,`partition_val`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
@@ -217,6 +217,8 @@ CREATE TABLE `variables` (
   `value` varbinary(500) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
 
 
 

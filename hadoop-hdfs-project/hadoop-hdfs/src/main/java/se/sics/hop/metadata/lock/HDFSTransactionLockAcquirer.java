@@ -40,6 +40,8 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
@@ -92,10 +94,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
-    List<Future> futures = acquireBlockRelatedInfoASync();;
+    List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
-    readINodeAttributes();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -168,10 +169,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
-    List<Future> futures = acquireBlockRelatedInfoASync();;
+    List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
-    readINodeAttributes();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -263,10 +263,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
 
     // read-committed block is the same as block found by inode-file so everything is fine and continue the rest.
-    List<Future> futures = acquireBlockRelatedInfoASync();;
+    List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
-    readINodeAttributes();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -283,7 +282,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
     blockResults.addAll(acquireBlockLock());
     
-    List<Future> futures = acquireBlockRelatedInfoASync();;
+    List<Future> futures = startNonLockingAsyncReadThreads();
 
     Lease nnLease = acquireNameNodeLease(); // NameNode lease is always acquired first.
     if (nnLease != null) {
@@ -300,7 +299,6 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       return locks; // TODO: It should retry again, cause there are new lease-paths for this lease which we have not acquired their inodes locks.
     }
     acquireLocksOnVariablesTable();
-    readINodeAttributes();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -364,10 +362,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       blockResults.addAll(acquireBlockLock());
     }
 
-    List<Future> futures = acquireBlockRelatedInfoASync();;
+    List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
-    readINodeAttributes();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -587,9 +584,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       acquireLock(locks.getStorageInfo(), HopVariable.Finder.StorageInfo);
     }
     
-    if (locks.getUrbLock() != null) {
-      acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
-    }else if(locks.getReplicationIndexLock() != null){
+    if(locks.getReplicationIndexLock() != null){
        acquireLock(locks.getReplicationIndexLock(), HopVariable.Finder.ReplicationIndex);
     }
     
@@ -988,23 +983,49 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return pkINodeLookUpByNameAndPid(lock, INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID, locks);
   }
 
-  private void readINodeAttributes() throws PersistanceException {
-    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
-    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
-      for (INode inode : resolvedINodes) {
-        if (inode instanceof INodeDirectoryWithQuota) {
-          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
-          pks.add(pk);
-        }
-      }
+    private Future readINodeAttributesAsync() throws PersistanceException {
+        final String threadName = getTransactionName();
+        final Long parentThreadId = Thread.currentThread().getId();
+        ParallelReadThread pThread = new ParallelReadThread(Thread.currentThread().getId(), null) {
+            @Override
+            public void run() {
+                try {
+                    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
+                    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
+                        for (INode inode : resolvedINodes) {
+                            if (inode instanceof INodeDirectoryWithQuota) {
+                                HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
+                                pks.add(pk);
+                            }
+                        }
+                    }
+                    if (!pks.isEmpty()) {
+                        EntityManager.begin();
+                        concurrentAcquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, parentThreadId, pks);
+                        EntityManager.commit(locks);
+                    }
+                } catch (Exception ex) {
+                    exceptionList.add(ex); //after join all exceptions will be thrown
+                    try {
+                        EntityManager.rollback(locks);
+                    } catch (StorageException ex1) {
+                        exceptionList.add(ex1);
+                    }
+                }
+            }
+        };
+        Future future = GlobalThreadPool.getExecutorService().submit(pThread);
+        return future;
     }
-    if(!pks.isEmpty()){
-      acquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, pks);
-    }
-  }
   
   private String getTransactionName(){
     return NDC.peek()+" Async";
+  }
+  
+  private List<Future> startNonLockingAsyncReadThreads() throws PersistanceException, ExecutionException{
+      List<Future> futures = acquireBlockRelatedInfoASync();
+      futures.add(readINodeAttributesAsync());
+      return futures;
   }
   
 //  private void setPartitioningKey(String path){

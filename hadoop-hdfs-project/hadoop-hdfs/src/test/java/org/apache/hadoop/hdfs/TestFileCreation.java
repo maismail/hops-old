@@ -45,6 +45,9 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
@@ -1305,19 +1308,25 @@ public class TestFileCreation {
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
 
-      dfs.mkdirs(new Path("/f1/f2"));
-      dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
-      Path p1 = new Path("/f1/test.txt");
-      Path p2 = new Path("/f2"); 
-      
-      int blocks  = 1;
+    //  dfs.mkdirs(new Path("/f1/f2"));
+   //   dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
+     // Path p1 = new Path("/f1/test.txt");
+     // Path p2 = new Path("/f2"); 
+      List<String> list = new LinkedList<String>();
+      for(int i = 0 ; i < 5; i ++){
+          list.add(4+" "+i);
+      }
+      Random rand = new Random(23);
+      list.add(rand.nextInt()+""+rand.nextInt());
+      dfs.testDBLocking(list);
+//      int blocks  = 1;
 //      FSDataOutputStream out = dfs.create(p1);
-//      int i = 0;
-//      for (; i < blocks; i++) {
-//        out.write(i);
-//      }
+////      int i = 0;cd ..
+////      for (; i < blocks; i++) {
+////        out.write(i);
+////      }
 //      out.close();
-      
+//      
       
       
 //      FSDataInputStream in = fs.open(p1);

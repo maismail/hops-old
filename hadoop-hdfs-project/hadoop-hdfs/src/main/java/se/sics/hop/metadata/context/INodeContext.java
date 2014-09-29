@@ -67,7 +67,6 @@ public class INodeContext extends EntityContext<INode> {
 
   @Override
   public void clear() {
-    log("CLEARING THE INODE CONTEXT");
     storageCallPrevented = false;
     inodesIdIndex.clear();
     inodesNameParentIndex.clear();

@@ -893,7 +893,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
   
   private ActiveNamenode convertProtoANToAN(ClientNamenodeProtocolProtos.ActiveNamenodeProto p)
   {
-    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
+    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
     return an;
   }
   
@@ -909,6 +909,17 @@ public class ClientNamenodeProtocolTranslatorPB implements
     }
   }
   //END_HOP_CODE
+
+    @Override
+    public void testDBLocking(List<String> params) throws IOException {
+        try {
+            ClientNamenodeProtocolProtos.DBLockingProto.Builder req = ClientNamenodeProtocolProtos.DBLockingProto.newBuilder();
+            req.addAllParams(params);
+            rpcProxy.testDBLocking(null,req.build());
+        } catch (ServiceException ex) {
+            throw ProtobufHelper.getRemoteException(ex);
+        }
+    }
 
 
 }
