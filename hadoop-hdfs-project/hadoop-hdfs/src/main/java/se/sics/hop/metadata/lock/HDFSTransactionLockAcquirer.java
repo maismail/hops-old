@@ -82,7 +82,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
       
-      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
+      setRandomPartitioningKey();
     
       acquireInodeLocks(locks.getInodeParam());
     }
@@ -105,7 +105,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   public HDFSTransactionLocks acquire(INodeIdentifier inodeIdentifer) throws PersistanceException, UnresolvedPathException, ExecutionException {
     INode inode = null;
     if (inode == null && inodeIdentifer != null) {
-      setPartitioningKey(inodeIdentifer.getInodeId());
+      setRandomPartitioningKey();
       // dangling block
       // take lock on the indeId basically bring null in the cache
       if (inodeIdentifer.getName() != null && inodeIdentifer.getPid() != null) {
@@ -190,7 +190,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       if (!locks.getPreTxResolvedInodes().isEmpty()) {
         if(!isPartKeySet){
           isPartKeySet = true;
-          setPartitioningKey(locks.getPreTxResolvedInodes().peekLast().getId());
+          setRandomPartitioningKey();
         }
         inode = takeLocksFromRootToLeaf(locks.getPreTxResolvedInodes(), locks.getInodeLock());
         allResolvedINodes.add(locks.getPreTxResolvedInodes());
@@ -199,7 +199,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     
     if (inode == null && inodeIdentifer != null) {
       if(!isPartKeySet){
-          setPartitioningKey(inodeIdentifer.getInodeId());
+          setRandomPartitioningKey();
         }
       
       if(inodeIdentifer.getName()!=null&& inodeIdentifer.getPid()!=null){
@@ -276,7 +276,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       return locks;
     }
     
-    setPartitioningKey(null);
+    setRandomPartitioningKey();
       
     acquireInodeLocks(sortedPaths.toArray(new String[sortedPaths.size()]));
 
@@ -333,7 +333,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       //during the acquire lock of dst write lock on the root will be acquired but the snapshot 
       //layer will not let the request go to the db as it has already cached the root inode
       //one simple solution is that to acquire lock on the short path first
-      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
+      setRandomPartitioningKey();
       if (srcComponents.length <= dstComponents.length) {
         acquireInodeLocks(locks.getInodeParam()[0]);
         acquireInodeLocks(locks.getInodeParam()[1]);
@@ -1036,19 +1036,33 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-  private void setPartitioningKey(Integer inodeId) throws StorageException {
-    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
-    if (inodeId == null || !isSetPartitionKeyEnabled) {
-      LOG.debug("Transaction Partition Key is not Set");
-    } else {
+//  private void setPartitioningKey(Integer inodeId) throws StorageException {
+//    boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
+//    if (inodeId == null || !isSetPartitionKeyEnabled) {
+//      LOG.debug("Transaction Partition Key is not Set");
+//    } else {
+//      //set partitioning key
+//      Object[] key = new Object[2];
+//      key[0] = inodeId; //pid
+//      key[1] = new Long(0);
+//
+//      EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
+//        LOG.debug("Setting Partitioning Key to be " + inodeId);
+//    }
+//  }
+  
+    private void setRandomPartitioningKey() throws StorageException {
+    
+      Random rand =new Random(System.currentTimeMillis());
+      Integer partKey = new Integer(rand.nextInt());
       //set partitioning key
       Object[] key = new Object[2];
-      key[0] = inodeId; //pid
+      key[0] = partKey;
       key[1] = new Long(0);
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-        LOG.debug("Setting Partitioning Key to be " + inodeId);
-    }
+      LOG.debug("Setting Partitioning Key to be " + partKey);
+    
   }
   
   private void setPartitioningKeyForLeader() throws StorageException{
