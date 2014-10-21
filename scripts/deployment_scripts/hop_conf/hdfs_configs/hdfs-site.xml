@@ -59,7 +59,7 @@
   </description>
 </property>
 
-<property>
+<!--property>
   <name>dfs.namenode.servicerpc-address</name>
   <value>NN_MACHINE_NAME:Dfs_Namenode_Servicerpc_Address_Config_Param</value>
   <description>
@@ -70,7 +70,7 @@
     The value of this property will take the form of hdfs://nn-host1:rpc-port.
     If the value of this property is unset the value of dfs.namenode.rpc-address will be used as the default.
   </description>
-</property>
+</property-->
 
 <property>
   <name>dfs.datanode.address</name>
@@ -131,15 +131,15 @@
 
 <property>
    <name>dfs.namenode.handler.count</name>
-  <value>3000</value>
+  <value>200</value>
   <description>The RPC server that listens to requests from clients</description>
 </property>
 
-<property>
+<!--property>
    <name>dfs.namenode.service.handler.count</name>
-  <value>1000</value>
+  <value>10</value>
   <description>The RPC server threads that listens to requests from DataNodes</description>
-</property>
+</property-->
 
 <property>
    <name>dfs.storage.ansestor.lock.type</name>

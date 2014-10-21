@@ -12,17 +12,14 @@ import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.*;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.log4j.NDC;
 import se.sics.hop.common.GlobalThreadPool;
 import se.sics.hop.exception.AcquireLockInterruptedException;
 import se.sics.hop.exception.INodeResolveException;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.context.BlockPK;
-import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
@@ -40,8 +37,8 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import se.sics.hop.log.NDCWrapper;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 
 /**
  *
@@ -58,6 +55,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   private boolean terminateAsyncThread = false;
   private static Configuration conf;
   private static Collection<ActiveNamenode> activeNamenodes;
+  private static boolean isAsyncReadingEnabled  = false;
 
   public HDFSTransactionLockAcquirer() {
     this.locks = new HDFSTransactionLocks();
@@ -440,7 +438,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       @Override
        public void run() {
          try {
-           NDC.push(threadName);
+           if(isAsyncReadingEnabled){  
+             NDCWrapper.push(threadName);
+           }
            if(parallelReadParams.getInodeIds() != null && !parallelReadParams.getInodeIds().isEmpty() && parallelReadParams.getInodeFinder() != null ){
              for(HopINodeCandidatePK inodeParam : parallelReadParams.getInodeIds()){
                if (!terminateAsyncThread) {
@@ -462,19 +462,26 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
            else if (parallelReadParams.getDefaultFinder()!=null && !terminateAsyncThread) {
              concurrentAcquireLockList(LockType.READ_COMMITTED, parallelReadParams.getDefaultFinder(), parentThreadId);
            }else{
-              LOG.debug(NDC.peek()+ " SOM THN WONG CULD NOT TAKE LAKS "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
+              LOG.debug("Could not take locks for "+" "+ (parallelReadParams.getBlockFinder() != null?parallelReadParams.getBlockFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getInodeFinder()!= null?parallelReadParams.getInodeFinder().getClass().getName():"")
                             + " "+ (parallelReadParams.getDefaultFinder()!= null?parallelReadParams.getDefaultFinder().getClass().getName():""));
            }
          } catch (Exception ex) {
            exceptionList.add(ex); //after join all exceptions will be thrown
          }
-         NDC.pop();
-         NDC.remove();
+         if(isAsyncReadingEnabled){
+           NDCWrapper.pop();
+           NDCWrapper.remove();
+         }
        }
      };
-    Future future = GlobalThreadPool.getExecutorService().submit(pThread);
-    return future;
+    if(isAsyncReadingEnabled){
+        Future future = GlobalThreadPool.getExecutorService().submit(pThread);
+        return future;
+    }else{
+        pThread.run();
+        return null;
+    }
   }
   
   List<Exception> exceptionList = new ArrayList<Exception>();
@@ -607,49 +614,80 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     List<Future> futures = new ArrayList<Future>();
     if (locks.getReplicaLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopIndexedReplica.Finder.ByBlockId, true, HopIndexedReplica.Finder.ByINodeId, null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
 
     if (locks.getCrLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopCorruptReplica.Finder.ByBlockId, true, HopCorruptReplica.Finder.ByINodeId, null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
 
     if (locks.getErLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopExcessReplica.Finder.ByBlockId, true, HopExcessReplica.Finder.ByINodeId, null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
 
     if (locks.getRucLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(ReplicaUnderConstruction.Finder.ByBlockId, true, ReplicaUnderConstruction.Finder.ByINodeId , null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
 
     if (locks.getInvLocks() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(HopInvalidatedBlock.Finder.ByBlockId, true, HopInvalidatedBlock.Finder.ByINodeId, null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
 
     if (locks.getUrbLock() != null) {
       if(locks.isUrbLockFindAll()){
         ParallelReadParams parallelReadParams = new ParallelReadParams(null, null, false, null, null,HopUnderReplicatedBlock.Finder.All );
-        futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+        Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
       }else{
         ParallelReadParams parallelReadParams = getBlockParameters(HopUnderReplicatedBlock.Finder.ByBlockId, false, HopUnderReplicatedBlock.Finder.ByINodeId, null);
-        futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+        Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
       }
     }
 
     if (locks.getPbLock() != null) {
       ParallelReadParams parallelReadParams = getBlockParameters(PendingBlockInfo.Finder.ByBlockId, false,PendingBlockInfo.Finder.ByInodeId,null);
-      futures.add(acquireBlockRelatedTableLocksASync(parallelReadParams));
+      Future future = acquireBlockRelatedTableLocksASync(parallelReadParams);
+      if(future != null){
+        futures.add(future);
+      }
     }
     
    return futures;
   }
   
   private void checkTerminationOfAsyncThreads(List<Future> futures) throws PersistanceException, ExecutionException {
-       InterruptedException intrException = null;
+    
+    if(!isAsyncReadingEnabled){
+       assert futures.size() == 0 : " Futures list should have been empty ";
+       return;
+    }
+    
+    
+    InterruptedException intrException = null;
     try {
       for (int i = 0; i < futures.size(); i++) {
         Future f = futures.get(i);
@@ -675,12 +713,12 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       // problem is which exception is the hardest. 
       Exception exception = exceptionList.get(0);
       exceptionList.clear();
-      LOG.debug("Throwing the exception "+NDC.peek()+" - "+exception.getClass().getCanonicalName()+" Message: " + exception.getMessage());
+      LOG.debug("Throwing the exception "+NDCWrapper.peek()+" - "+exception.getClass().getCanonicalName()+" Message: " + exception.getMessage());
       if(exception instanceof PersistanceException){
         throw (PersistanceException)exception;
       }else{
         exception.printStackTrace();
-        throw new StorageException(NDC.peek()+" - "+exception.getClass().getCanonicalName()+" Message: " + exception.getMessage());
+        throw new StorageException(NDCWrapper.peek()+" - "+exception.getClass().getCanonicalName()+" Message: " + exception.getMessage());
       }
     }
   }
@@ -1000,31 +1038,45 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
                         }
                     }
                     if (!pks.isEmpty()) {
-                        EntityManager.begin();
+                        if(isAsyncReadingEnabled){
+                            EntityManager.begin();
+                        }
                         concurrentAcquireLockList(LockType.READ_COMMITTED, INodeAttributes.Finder.ByPKList, parentThreadId, pks);
-                        EntityManager.commit(locks);
+                        if(isAsyncReadingEnabled){
+                            EntityManager.commit(locks);
+                        }
                     }
                 } catch (Exception ex) {
                     exceptionList.add(ex); //after join all exceptions will be thrown
                     try {
-                        EntityManager.rollback(locks);
+                        if(isAsyncReadingEnabled){
+                            EntityManager.rollback(locks);
+                        }
                     } catch (StorageException ex1) {
                         exceptionList.add(ex1);
                     }
                 }
             }
         };
-        Future future = GlobalThreadPool.getExecutorService().submit(pThread);
-        return future;
+        if(isAsyncReadingEnabled){
+            Future future = GlobalThreadPool.getExecutorService().submit(pThread);
+            return future;
+        }else{
+            pThread.run();
+            return null;
+        }
     }
   
   private String getTransactionName(){
-    return NDC.peek()+" Async";
+    return NDCWrapper.peek()+" Async";
   }
   
   private List<Future> startNonLockingAsyncReadThreads() throws PersistanceException, ExecutionException{
       List<Future> futures = acquireBlockRelatedInfoASync();
-      futures.add(readINodeAttributesAsync());
+      Future future = readINodeAttributesAsync();
+      if(future != null){
+        futures.add(future);
+      }
       return futures;
   }
   
@@ -1051,17 +1103,20 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    }
 //  }
   
-    private void setRandomPartitioningKey() throws StorageException {
+    private void setRandomPartitioningKey() throws StorageException, PersistanceException {
     
-      Random rand =new Random(System.currentTimeMillis());
-      Integer partKey = new Integer(rand.nextInt());
-      //set partitioning key
-      Object[] key = new Object[2];
-      key[0] = partKey;
-      key[1] = new Long(0);
-
-      EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-      LOG.debug("Setting Partitioning Key to be " + partKey);
+//      Random rand =new Random(System.currentTimeMillis());
+//      Integer partKey = new Integer(rand.nextInt());
+//      //set partitioning key
+//      Object[] pk = new Object[2];
+//      pk[0] = partKey;
+//      pk[1] = Integer.toString(partKey);
+//
+//      EntityManager.setPartitionKey(INodeDataAccess.class, pk);
+//      
+//      EntityManager.readCommited();
+//      EntityManager.find(INode.Finder.ByPK_NameAndParentId, "", partKey);
+//      LOG.debug("Setting Partitioning Key to be " + partKey);
     
   }
   

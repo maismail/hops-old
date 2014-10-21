@@ -69,6 +69,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopStringVariable;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.log.NDCWrapper;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
@@ -94,6 +95,7 @@ public class StorageFactory {
     IDsMonitor.getInstance().setConfiguration(conf);
     PathMemcache.getInstance().setConfiguration(conf);
     HDFSTransactionLockAcquirer.setConfiguration(conf);
+    NDCWrapper.enableNDC(conf.getBoolean(DFSConfigKeys.DFS_NDC_ENABLED_KEY, DFSConfigKeys.DFS_NDC_ENABLED_DEFAULT));
     if (!isDALInitialized) {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));

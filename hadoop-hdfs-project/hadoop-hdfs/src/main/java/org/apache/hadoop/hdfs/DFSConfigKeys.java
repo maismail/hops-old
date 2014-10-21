@@ -122,6 +122,9 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY = "dfs.namenode.legacy-content-summary.enable";
   public static final boolean DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT = false;
+  
+  public static final String DFS_NDC_ENABLED_KEY = "dfs.ndc.enable";
+  public static final boolean DFS_NDC_ENABLED_DEFAULT = false;
 
   //END_HOP_CODE
 

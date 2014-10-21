@@ -164,6 +164,8 @@ import com.google.common.collect.Lists;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
@@ -7438,57 +7440,124 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       return builder.toString();
     }
   }
-  static int count = 0;
+
+//  public void testDBLocking(final List<String> parameters) throws IOException{
+//      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+//      @Override
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+//          
+//          
+//          for(int i = 0; i < parameters.size()-1; i++){
+//              EntityManager.writeLock();
+//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//          }
+//          
+////          EntityManager.writeLock();
+////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          EntityManager.writeLock();
+////          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+////          
+//          HDFSTransactionLocks lcks = new HDFSTransactionLocks();
+//          lcks.addINode(INodeLockType.WRITE);
+//          lcks.addLease(LockType.WRITE);
+//          lcks.addLeasePath(LockType.WRITE);
+//        return lcks;
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        for(int i = 0; i < parameters.size()-1; i++){
+//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//              INodeFile file =new INodeFile(new PermissionStatus("asf", "asdf", new FsPermission("777")), null, (short) 1 , 1L, 1L, 1L);
+//              file.setIdNoPersistance(pid(parameters.get(i)));
+//              file.setParentIdNoPersistance(pid(parameters.get(i)));
+//              file.setLocalNameNoPersistance(pname(parameters.get(i)));
+//              EntityManager.add(file); 
+//          }
+//          //LOG.error("Total new Inodes are "+count);
+//          
+//        
+////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          Lease lease =new Lease(parameters.get(parameters.size()-1), Integer.parseInt(parameters.get(parameters.size()-1)),0);  
+////          EntityManager.add(lease);
+////          
+////                    
+////          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+////          HopLeasePath path = new HopLeasePath(parameters.get(parameters.size()-1),Integer.parseInt(parameters.get(parameters.size()-1)));
+////          path.setPath(parameters.get(parameters.size()-1));
+////          EntityManager.add(path);
+//          
+//   
+//          return null;
+//      }
+//    }.handle(this);
+//      
+//  }
+  
   public void testDBLocking(final List<String> parameters) throws IOException{
-      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+      new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          
-          
-          for(int i = 0; i < parameters.size()-1; i++){
-              EntityManager.writeLock();
-              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
-          }
-          
-//          EntityManager.writeLock();
-//          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
-//          EntityManager.writeLock();
-//          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
-//          
-          HDFSTransactionLocks lcks = new HDFSTransactionLocks();
-          lcks.addINode(INodeLockType.WRITE);
-          lcks.addLease(LockType.WRITE);
-          lcks.addLeasePath(LockType.WRITE);
-        return lcks;
+           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{parameters.get(0)}).
+                    addBlock().
+                    addLease(LockType.WRITE, "holder").
+                    addLeasePath(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addPendingBlock().
+                    addInvalidatedBlock();
+            return tla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        for(int i = 0; i < parameters.size()-1; i++){
-              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
-              INodeFile file =new INodeFile(new PermissionStatus("asf", "asdf", new FsPermission("777")), null, (short) 1 , 1L, 1L, 1L);
-              file.setIdNoPersistance(pid(parameters.get(i)));
-              file.setParentIdNoPersistance(pid(parameters.get(i)));
-              file.setLocalNameNoPersistance(pname(parameters.get(i)));
-              EntityManager.add(file); count++;
+          try {
+              Thread.sleep(20);
+              return null;
+          } catch (InterruptedException ex) {
+              Logger.getLogger(FSNamesystem.class.getName()).log(Level.SEVERE, null, ex);
           }
-          //LOG.error("Total new Inodes are "+count);
-          
-        
-//          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
-//          Lease lease =new Lease(parameters.get(parameters.size()-1), Integer.parseInt(parameters.get(parameters.size()-1)),0);  
-//          EntityManager.add(lease);
-//          
-//                    
-//          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
-//          HopLeasePath path = new HopLeasePath(parameters.get(parameters.size()-1),Integer.parseInt(parameters.get(parameters.size()-1)));
-//          path.setPath(parameters.get(parameters.size()-1));
-//          EntityManager.add(path);
-          
-   
           return null;
       }
     }.handle(this);
+      
+      
+      HDFSTransactionalRequestHandler completeFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE, parameters.get(0)) {
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{parameters.get(0)}).
+                    addBlock().
+                    addLease(LockType.WRITE, "holder").
+                    addLeasePath(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addInvalidatedBlock();
+            return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+             
+              try {
+              Thread.sleep(20);
+              return null;
+          } catch (InterruptedException ex) {
+              Logger.getLogger(FSNamesystem.class.getName()).log(Level.SEVERE, null, ex);
+          }
+          return null;
+          }
+      };
+      completeFileHandler.handle(this);
       
   }
   private int pid(String param){
