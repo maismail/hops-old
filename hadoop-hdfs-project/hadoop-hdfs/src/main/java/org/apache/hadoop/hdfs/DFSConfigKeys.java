@@ -49,9 +49,21 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
-  
-  public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = false;
+
+  public static final String DFS_NAMENODE_QUOTA_ENABLED_KEY = "dfs.namenode.quota.enabled";
+  public static final boolean DFS_NAMENODE_QUOTA_ENABLED_DEFAULT = true;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY = "dfs.namenode.quota.update.interval";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT = 1000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_LIMIT_KEY = "dfs.namenode.quota.update.limit";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 100000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZE = "dfs.namenode.quota.update.id.batchsize";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZ_DEFAULT = 100000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD = "dfs.namenode.quota.update.updateThreshold";
+  public static final float DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
   
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
   public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 1000;
@@ -125,6 +137,9 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String DFS_NDC_ENABLED_KEY = "dfs.ndc.enable";
   public static final boolean DFS_NDC_ENABLED_DEFAULT = true;
+
+  public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
+  public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
 
   //END_HOP_CODE
 

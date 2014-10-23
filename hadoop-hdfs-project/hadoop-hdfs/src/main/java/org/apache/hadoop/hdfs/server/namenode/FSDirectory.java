@@ -64,6 +64,8 @@ import com.google.common.base.Preconditions;
 import java.util.Arrays;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+
+import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -142,8 +144,8 @@ public class FSDirectory implements Closeable {
 
   FSDirectory(FSNamesystem ns, Configuration conf) throws IOException {
      //START_HOP_CODE
-     this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_QUOTA_ENABLED_KEY,
-                DFSConfigKeys.DFS_QUOTA_ENABLED_DEFAULT);  
+     this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_NAMENODE_QUOTA_ENABLED_KEY,
+                DFSConfigKeys.DFS_NAMENODE_QUOTA_ENABLED_DEFAULT);
      //END_HOP_CODE
       
 //    this.dirLock = new ReentrantReadWriteLock(true); // fair
@@ -1699,12 +1701,15 @@ public class FSDirectory implements Closeable {
     if (checkQuota) {
       verifyQuota(inodes, numOfINodes, nsDelta, dsDelta, null);
     }
-    for(int i = 0; i < numOfINodes; i++) {
-      if (inodes[i].isQuotaSet()) { // a directory with quota
-        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
-        node.updateNumItemsInTree(nsDelta, dsDelta);
-      }
-    }
+    // HOP
+//    for(int i = 0; i < numOfINodes; i++) {
+//      if (inodes[i].isQuotaSet()) { // a directory with quota
+//        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i];
+//        node.updateNumItemsInTree(nsDelta, dsDelta);
+//      }
+//    }
+    INode iNode = inodes[numOfINodes - 1];
+    namesystem.getQuotaUpdateManager().addUpdate(iNode.getId(), nsDelta, dsDelta);
   }
   
   /** 
@@ -1732,14 +1737,17 @@ public class FSDirectory implements Closeable {
    void unprotectedUpdateCount(INode[] inodes, int numOfINodes, 
                                       long nsDelta, long dsDelta) throws PersistanceException {
      if(!isQuotaEnabled()) return;    //HOP
-     
-     assert hasWriteLock();
-    for(int i=0; i < numOfINodes; i++) {
-      if (inodes[i].isQuotaSet()) { // a directory with quota
-        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
-        node.unprotectedUpdateNumItemsInTree(nsDelta, dsDelta);
-      }
-    }
+
+     // HOP
+//     assert hasWriteLock();
+//    for(int i=0; i < numOfINodes; i++) {
+//      if (inodes[i].isQuotaSet()) { // a directory with quota
+//        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i];
+//        node.unprotectedUpdateNumItemsInTree(nsDelta, dsDelta);
+//      }
+//    }
+     INode iNode = inodes[numOfINodes - 1];
+     namesystem.getQuotaUpdateManager().addUpdate(iNode.getId(), nsDelta, dsDelta);
   }
   
   /** Return the name of the path represented by inodes at [0, pos] */
@@ -2192,18 +2200,24 @@ public class FSDirectory implements Closeable {
    */
   INode removeChild(INode[] pathComponents, int pos, boolean forRename) throws PersistanceException {
     INode removedNode = null;
-    if(forRename){
+    if (forRename) {
       removedNode = pathComponents[pos];
-    }else{
+    } else {
       removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
     }
-    if (removedNode != null) {
-      INode.DirCounts counts = new INode.DirCounts();
-      if(isQuotaEnabled()){     //HOP
-        removedNode.spaceConsumedInTree(counts);
+    if (removedNode != null && isQuotaEnabled()) {
+      List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
+          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+      long nsDelta = 0;
+      long dsDelta = 0;
+      for (QuotaUpdate update : outstandingUpdates) {
+        nsDelta += update.getNamespaceDelta();
+        dsDelta += update.getDiskspaceDelta();
       }
+      INode.DirCounts counts = new INode.DirCounts();
+      removedNode.spaceConsumedInTree(counts);
       updateCountNoQuotaCheck(pathComponents, pos,
-                  -counts.getNsCount(), -counts.getDsCount());
+                  -counts.getNsCount() + nsDelta, -counts.getDsCount() + dsDelta);
     }
     return removedNode;
   }
@@ -2211,12 +2225,20 @@ public class FSDirectory implements Closeable {
   INode removeChildNonRecursively(INode[] pathComponents, int pos) throws PersistanceException {
     INode removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
     if (removedNode != null && isQuotaEnabled()) {
+      List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
+          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+      long nsDelta = 0;
+      long dsDelta = 0;
+      for (QuotaUpdate update : outstandingUpdates) {
+        nsDelta += update.getNamespaceDelta();
+        dsDelta += update.getDiskspaceDelta();
+      }
       if (removedNode.isDirectory()) {
-        updateCountNoQuotaCheck(pathComponents, pos, -1, -0);
+        updateCountNoQuotaCheck(pathComponents, pos, -1 + nsDelta, dsDelta);
       } else {
         INode.DirCounts counts = new INode.DirCounts();
         removedNode.spaceConsumedInTree(counts);
-        updateCountNoQuotaCheck(pathComponents, pos, -counts.getNsCount(), -counts.getDsCount());
+        updateCountNoQuotaCheck(pathComponents, pos, -counts.getNsCount() + nsDelta, -counts.getDsCount() + dsDelta);
       }
     }
     return removedNode;
@@ -2281,6 +2303,7 @@ public class FSDirectory implements Closeable {
    * throw QuotaExceededException.
    */
   void updateCountForINodeWithQuota() throws PersistanceException {
+    // HOP If this one is used for something then we need to modify it to use the QuotaUpdateManager
     updateCountForINodeWithQuota(getRootDir(), new INode.DirCounts(), 
                                  new ArrayList<INode>(50));
   }
@@ -2433,10 +2456,84 @@ public class FSDirectory implements Closeable {
     try {
       INodeDirectory dir = unprotectedSetQuota(src, nsQuota, dsQuota);
       if (dir != null) {
-
+        // Some audit log code is missing here
       }
     } finally {
       writeUnlock();
+    }
+  }
+
+  void setQuota(String src, long nsQuota, long dsQuota, long nsCount, long dsCount)
+      throws FileNotFoundException, QuotaExceededException,
+      UnresolvedLinkException,
+      PersistanceException {
+    writeLock();
+    try {
+      INodeDirectory dir = unprotectedSetQuota(src, nsQuota, dsQuota, nsCount, dsCount);
+      if (dir != null) {
+        // Some audit log code is missing here
+      }
+    } finally {
+      writeUnlock();
+    }
+  }
+
+  INodeDirectory unprotectedSetQuota(String src, long nsQuota, long dsQuota, long nsCount, long dsCount)
+      throws FileNotFoundException, QuotaExceededException,
+      UnresolvedLinkException, PersistanceException {
+    if(!isQuotaEnabled()) return null;    //HOP
+
+    assert hasWriteLock();
+    // sanity check
+    if ((nsQuota < 0 && nsQuota != HdfsConstants.QUOTA_DONT_SET &&
+        nsQuota < HdfsConstants.QUOTA_RESET) ||
+        (dsQuota < 0 && dsQuota != HdfsConstants.QUOTA_DONT_SET &&
+            dsQuota < HdfsConstants.QUOTA_RESET)) {
+      throw new IllegalArgumentException("Illegal value for nsQuota or " +
+          "dsQuota : " + nsQuota + " and " +
+          dsQuota);
+    }
+
+    String srcs = normalizePath(src);
+
+    INode[] inodes = getRootDir().getExistingPathINodes(src, true);
+    INode targetNode = inodes[inodes.length-1];
+    if (targetNode == null) {
+      throw new FileNotFoundException("Directory does not exist: " + srcs);
+    } else if (!targetNode.isDirectory()) {
+      throw new FileNotFoundException("Cannot set quota on a file: " + srcs);
+    } else if (targetNode.isRoot() && nsQuota == HdfsConstants.QUOTA_RESET) {
+      throw new IllegalArgumentException("Cannot clear namespace quota on root.");
+    } else { // a directory inode
+      INodeDirectory dirNode = (INodeDirectory)targetNode;
+      long oldNsQuota = dirNode.getNsQuota();
+      long oldDsQuota = dirNode.getDsQuota();
+      if (nsQuota == HdfsConstants.QUOTA_DONT_SET) {
+        nsQuota = oldNsQuota;
+      }
+      if (dsQuota == HdfsConstants.QUOTA_DONT_SET) {
+        dsQuota = oldDsQuota;
+      }
+
+      if (dirNode instanceof INodeDirectoryWithQuota) {
+        // a directory with quota; so set the quota to the new value
+        ((INodeDirectoryWithQuota)dirNode).setQuota(nsQuota, dsQuota);
+        if (!dirNode.isQuotaSet()) {
+          // will not come here for root because root's nsQuota is always set
+          INodeDirectory newNode = new INodeDirectory(dirNode);
+          INodeDirectory parent = (INodeDirectory)inodes[inodes.length-2];
+          dirNode = newNode;
+          parent.replaceChild(newNode);
+        }
+      } else {
+        // a non-quota directory; so replace it with a directory with quota
+        INodeDirectoryWithQuota newNode = new INodeDirectoryWithQuota(nsQuota, dsQuota, nsCount, dsCount, dirNode);
+        // non-root directory node; parent != null
+        INodeDirectory parent = (INodeDirectory)inodes[inodes.length-2];
+        dirNode = newNode;
+        parent.replaceChild(newNode);
+      }
+      return (oldNsQuota != nsQuota || oldDsQuota != dsQuota) ? dirNode : null;
     }
   }
   

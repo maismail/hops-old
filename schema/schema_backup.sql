@@ -218,7 +218,16 @@ CREATE TABLE `variables` (
   PRIMARY KEY (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
+delimiter $$
 
+CREATE TABLE `quota_update` (
+  `id` int(11) NOT NULL,
+  `inode_id` int(11) NOT NULL,
+  `namespace_delta` bigint(20) DEFAULT NULL,
+  `diskspace_delta` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`inode_id`,`id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 

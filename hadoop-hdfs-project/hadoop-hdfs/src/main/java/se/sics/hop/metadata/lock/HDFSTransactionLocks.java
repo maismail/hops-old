@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.lock;
 
+import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -62,6 +63,12 @@ public class HDFSTransactionLocks implements TransactionLocks{
   private LockType sidCounterLock = null;
   //replicationIndex 
   private LockType replicationIndexLock = null;
+  // individual inode lock
+  private Integer inodeId = null;
+  // outstanding quota updates
+  private LockType quotaUpdatesLock = null;
+  private Integer quotaUpdatesInodeId = null;
+  private LockType quotaUpdatesLockSubtree = null;
   
   private long[] blocksParam = null;
   private int[] inodesParam = null;
@@ -135,6 +142,12 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public HDFSTransactionLocks addINode(INodeResolveType resolveType, INodeLockType lock) {
     return addINode(resolveType, lock, true, null);
+  }
+
+  public HDFSTransactionLocks addIndividualInode(INodeLockType lock, Integer inodeId) {
+    this.inodeLock = lock;
+    this.inodeId = inodeId;
+    return this;
   }
 
   public HDFSTransactionLocks addBlock(Long param, Integer blockInodeId) {
@@ -236,11 +249,22 @@ public class HDFSTransactionLocks implements TransactionLocks{
     return this;
   }
 
-    public HDFSTransactionLocks addLeaderTocken(LockType lock) {
+  public HDFSTransactionLocks addLeaderTocken(LockType lock) {
     this.leaderTocken = lock;
     return this;
   }
-    
+
+  public HDFSTransactionLocks addQuotaUpdates(Integer inodeId) {
+    this.quotaUpdatesLock = LockType.READ_COMMITTED;
+    this.quotaUpdatesInodeId = inodeId;
+    return this;
+  }
+
+  public HDFSTransactionLocks addQuotaUpdateOnSubtree() {
+    this.quotaUpdatesLockSubtree = LockType.READ_COMMITTED;
+    return this;
+  }
+
   public INodeLockType getInodeLock() {
     return inodeLock;
   }
@@ -335,6 +359,22 @@ public class HDFSTransactionLocks implements TransactionLocks{
 
   public LinkedList<INode> getPreTxResolvedInodes() {
     return preTxResolvedInodes;
+  }
+
+  public Integer getInodeId() {
+    return inodeId;
+  }
+
+  public LockType getQuotaUpdatesLock() {
+    return quotaUpdatesLock;
+  }
+
+  public LockType getQuotaUpdatesLockSubtree() {
+    return quotaUpdatesLockSubtree;
+  }
+
+  public Integer getQuotaUpdatesInodeId() {
+    return quotaUpdatesInodeId;
   }
 
   public void addLockedINodes(INode inode, INodeLockType lock) {

@@ -85,6 +85,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
     
       acquireInodeLocks(locks.getInodeParam());
+    } else if (locks.getInodeLock() != null && locks.getInodeId() != null) {
+      acquireIndividualInodeLock();
     }
 
     if (locks.getBlockLock() != null) {
@@ -97,6 +99,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
+    acquireOutstandingQuotaUpdates();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -365,6 +368,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     List<Future> futures = startNonLockingAsyncReadThreads();
     acquireLeaseAndLpathLockNormal();
     acquireLocksOnVariablesTable();
+    acquireOutstandingQuotaUpdates();
     checkTerminationOfAsyncThreads(futures);
     return locks;
   }
@@ -478,8 +482,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
        }
      };
     if(isAsyncReadingEnabled){
-        Future future = GlobalThreadPool.getExecutorService().submit(pThread);
-        return future;
+    Future future = GlobalThreadPool.getExecutorService().submit(pThread);
+    return future;
     }else{
         pThread.run();
         return null;
@@ -689,7 +693,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     }
     
     
-    InterruptedException intrException = null;
+       InterruptedException intrException = null;
     try {
       for (int i = 0; i < futures.size(); i++) {
         Future f = futures.get(i);
@@ -772,10 +776,15 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
           LinkedList<INode> resolvedInodes = acquireInodeLockByPath(locks, params[i]);
           if (resolvedInodes.size() > 0) {
             INode lastINode = resolvedInodes.peekLast();
+            acquireQuotaUpdate(lastINode);
             if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
-              resolvedInodes.addAll(findImmediateChildren(lastINode));
+              List<INode> children = findImmediateChildren(lastINode);
+              resolvedInodes.addAll(children);
+              acquireQuotaUpdate(children);
             } else if (locks.getInodeResolveType() == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
-              resolvedInodes.addAll(findChildrenRecursively(lastINode));
+              List<INode> children = findChildrenRecursively(lastINode);
+              resolvedInodes.addAll(children);
+              acquireQuotaUpdate(children);
             }
           }
           allResolvedINodes.add(resolvedInodes);
@@ -783,6 +792,18 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         break;
       default:
         throw new IllegalArgumentException("Unknown type " + locks.getInodeLock().name());
+    }
+  }
+
+  private void acquireQuotaUpdate(List<INode> nodes) throws PersistanceException {
+    for (INode node : nodes) {
+      acquireQuotaUpdate(node);
+    }
+  }
+
+  private void acquireQuotaUpdate(INode node) throws PersistanceException {
+    if (getLocks().getQuotaUpdatesLockSubtree() != null) {
+      EntityManager.findList(QuotaUpdate.Finder.ByInodeId, node.getId());
     }
   }
 
@@ -819,6 +840,13 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     Collections.sort(blocks, BlockInfo.Order.ByBlockId);
 
     return blocks;
+  }
+
+  private void acquireOutstandingQuotaUpdates() throws PersistanceException {
+    Integer inodeId = getLocks().getQuotaUpdatesInodeId();
+    if (getLocks().getQuotaUpdatesLock() != null && inodeId != null) {
+      acquireLockList(getLocks().getQuotaUpdatesLock(), QuotaUpdate.Finder.ByInodeId, inodeId);
+    }
   }
 
   private INode takeLocksFromRootToLeaf(LinkedList<INode> inodes, INodeLockType inodeLock) throws PersistanceException {
@@ -1030,16 +1058,16 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
             @Override
             public void run() {
                 try {
-                    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
-                    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
-                        for (INode inode : resolvedINodes) {
-                            if (inode instanceof INodeDirectoryWithQuota) {
-                                HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
-                                pks.add(pk);
-                            }
-                        }
-                    }
-                    if (!pks.isEmpty()) {
+    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
+    for (LinkedList<INode> resolvedINodes : allResolvedINodes) {
+      for (INode inode : resolvedINodes) {
+        if (inode instanceof INodeDirectoryWithQuota) {
+          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
+          pks.add(pk);
+        }
+      }
+    }
+    if(!pks.isEmpty()){
                         if(isAsyncReadingEnabled){
                             EntityManager.begin();
                         }
@@ -1066,8 +1094,8 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
         }else{
             pThread.run();
             return null;
-        }
     }
+  }
   
   private String getTransactionName(){
     return NDCWrapper.peek()+" Async";
@@ -1090,7 +1118,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 //    setPartitioningKey(inodeId, false);
 //    
 //  }
-private void setPartitioningKey(Integer inodeId) throws StorageException {
+  private void setPartitioningKey(Integer inodeId) throws StorageException {
     boolean isSetPartitionKeyEnabled = conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT);
     if (inodeId == null || !isSetPartitionKeyEnabled) {
       LOG.warn("Transaction Partition Key is not Set");
@@ -1101,7 +1129,7 @@ private void setPartitioningKey(Integer inodeId) throws StorageException {
       key[1] = new Long(0);
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
-        LOG.debug("Setting Partitioning Key to be "+ inodeId);
+        LOG.debug("Setting Partitioning Key to be " + inodeId);
     }
   }
   
@@ -1115,6 +1143,19 @@ private void setPartitioningKey(Integer inodeId) throws StorageException {
       EntityManager.setPartitionKey(LeaderDataAccess.class, key);
       //LOG.debug("Setting Partitioning for Leader Election ");
     }
+  }
+
+  private void acquireIndividualInodeLock() throws PersistanceException {
+    if (locks.getInodeLock() == INodeLockType.WRITE_ON_PARENT) {
+      throw new UnsupportedOperationException("Write on parent is not supported for individual inodes.");
+    }
+
+    setINodeLockType(locks.getInodeLock());
+    INode inode = EntityManager.find(INode.Finder.ByINodeID, locks.getInodeId());
+    LinkedList<INode> resolvedNodes = new LinkedList<INode>();
+    resolvedNodes.add(inode);
+    allResolvedINodes.add(resolvedNodes);
+    locks.addLockedINodes(inode, locks.getInodeLock());
   }
 
   private boolean isNameNodeAlive(long namenodeId) {

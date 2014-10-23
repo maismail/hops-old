@@ -324,7 +324,7 @@ public class TestFcHdfsSymlink extends FileContextSymlinkBaseTest {
 
   @Test
   /** Test craeteSymlink(..) with quota. */  
-  public void testQuota() throws IOException {
+  public void testQuota() throws IOException, InterruptedException {
     final Path dir = new Path(testBaseDir1());
     dfs.setQuota(dir, 3, HdfsConstants.QUOTA_DONT_SET);
 
@@ -335,6 +335,8 @@ public class TestFcHdfsSymlink extends FileContextSymlinkBaseTest {
     final Path link1 = new Path(dir, "link1");
     fc.createSymlink(file, link1, false);
 
+    // HOP - Wait for asynchronous quota updates to be applied
+    Thread.sleep(5000);
     try {
       //creating the second link should fail with QuotaExceededException.
       final Path link2 = new Path(dir, "link2");
