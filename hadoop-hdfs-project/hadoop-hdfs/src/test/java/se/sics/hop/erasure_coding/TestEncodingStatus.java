@@ -274,19 +274,17 @@ public class TestEncodingStatus extends TestCase {
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(id);
         return ctla.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        Integer limit = (Integer) getParams()[0];
+        Long limit = (Long) getParams()[0];
         return EntityManager.findList(EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
       }
     };
-    findReq.setParams(Integer.MAX_VALUE);
+    findReq.setParams(Long.MAX_VALUE);
     Collection<EncodingStatus> foundStatus = (Collection<EncodingStatus>) findReq.handle();
     assertEquals(count(statusToAdd, EncodingStatus.Status.ENCODING_REQUESTED),
         count(foundStatus, EncodingStatus.Status.ENCODING_REQUESTED));

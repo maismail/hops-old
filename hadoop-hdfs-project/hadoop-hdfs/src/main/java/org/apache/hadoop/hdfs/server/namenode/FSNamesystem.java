@@ -1906,7 +1906,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
           @Override
           public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
                     addBlock().
@@ -1922,6 +1922,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
               tla.getLocks().addQuotaUpdateOnSubtree();
             }
+            if (flag.contains(CreateFlag.OVERWRITE)) {
+              return tla.acquireForDelete(erasureCodingEnabled);
+            }
             return tla.acquire();
           }
 
@@ -1936,13 +1939,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                   throw e;
               }
           }
-
-          @Override
-          public void setUp() throws PersistanceException, IOException {
-          }
       };
       startFileHanlder.handle(this);
-    
   }
 
   private void startFileInt(String src, PermissionStatus permissions, String holder,
@@ -3104,7 +3102,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
             addINode(
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3121,7 +3119,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         if (dir.isQuotaEnabled()) {
           tla.getLocks().addQuotaUpdateOnSubtree();
         }
-        return tla.acquire();
+        return tla.acquireForDelete(erasureCodingEnabled);
       }
 
       @Override
@@ -3137,7 +3135,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
             addINode(
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3154,7 +3152,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         if (dir.isQuotaEnabled()) {
           tla.getLocks().addQuotaUpdateOnSubtree();
         }
-        return tla.acquire();
+        return tla.acquireForDelete(erasureCodingEnabled);
       }
 
       @Override
