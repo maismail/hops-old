@@ -70,6 +70,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   public static void setConfiguration(Configuration c) {
     conf = c;
     HDFSTransactionLocks.setConfiguration(conf);
+
   }
 
   public HDFSTransactionLocks getLocks() {
@@ -796,6 +797,10 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   private void acquireQuotaUpdate(List<INode> nodes) throws PersistanceException {
+    if (getLocks().getQuotaUpdatesLockSubtree() == null) {
+      return;
+    }
+
     for (INode node : nodes) {
       acquireQuotaUpdate(node);
     }

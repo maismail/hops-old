@@ -712,7 +712,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       setBlockTotal();
       performPendingSafeModeOperation();
       blockManager.activate(conf);
-      quotaUpdateManager.activate();
+      if (dir.isQuotaEnabled()) {
+        quotaUpdateManager.activate();
+      }
     } finally {
       writeUnlock();
     }
@@ -1956,7 +1958,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addUnderReplicatedBlock().
                     addPendingBlock().
                     addInvalidatedBlock();
-            if (flag.contains(CreateFlag.OVERWRITE)) {
+            if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
               tla.getLocks().addQuotaUpdateOnSubtree();
             }
             return tla.acquire();
@@ -2970,19 +2972,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
-                    addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                    INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                    addLease(LockType.WRITE).
-                    addLeasePath(LockType.WRITE).
-                    addBlock().
-                    addReplica().
-                    addReplicaUc().
-                  addInvalidatedBlock().
-                  addCorrupt().
-                  addExcess().
-                  addPendingBlock().
-                  addUnderReplicatedBlock().
-                addQuotaUpdateOnSubtree();
+                addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
+                addLease(LockType.WRITE).
+                addLeasePath(LockType.WRITE).
+                addBlock().
+                addReplica().
+                addReplicaUc().
+                addInvalidatedBlock().
+                addCorrupt().
+                addExcess().
+                addPendingBlock().
+                addUnderReplicatedBlock();
+            if (dir.isQuotaEnabled()) {
+              tla.getLocks().addQuotaUpdateOnSubtree();
+            }
             return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
 
@@ -3063,19 +3067,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
-                      addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                      INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                      addLease(LockType.WRITE).
-                      addLeasePath(LockType.WRITE).
-                      addBlock().
-                      addReplica().
-                      addCorrupt().
-                      addReplicaUc().
-                      addUnderReplicatedBlock().
-                      addInvalidatedBlock().
+                  addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                  INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
+                  addLease(LockType.WRITE).
+                  addLeasePath(LockType.WRITE).
+                  addBlock().
+                  addReplica().
+                  addCorrupt().
+                  addReplicaUc().
+                  addUnderReplicatedBlock().
+                  addInvalidatedBlock().
                   addPendingBlock().
-                  addExcess().
-                  addQuotaUpdateOnSubtree();
+                  addExcess();
+              if (dir.isQuotaEnabled()) {
+                tla.getLocks().addQuotaUpdateOnSubtree();
+              }
               return tla.acquireForRename();
             }
 
@@ -3151,8 +3157,43 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             addReplicaUc().
             addUnderReplicatedBlock().
             addPendingBlock().
-            addInvalidatedBlock().
-            addQuotaUpdateOnSubtree();
+            addInvalidatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return delete(src, recursive);
+      }
+    };
+    return (Boolean) deleteHandler.handle(this);
+  }
+
+  boolean deleteWithTransactionIgnoreLocalSubtreeLock(final String src, final boolean recursive)
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}, true, getNamenodeId()).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addCorrupt().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addPendingBlock().
+            addInvalidatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
         return tla.acquire();
       }
 
@@ -6888,8 +6929,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             addUnderReplicatedBlock().
             addInvalidatedBlock().
             addPendingBlock().
-            addExcess().
-            addQuotaUpdateOnSubtree();
+            addExcess();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
         return tla.acquireForRename();
       }
 
@@ -7009,8 +7052,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             addCorrupt().
             addExcess().
             addPendingBlock().
-            addUnderReplicatedBlock().
-            addQuotaUpdateOnSubtree();
+            addUnderReplicatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
         return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
       }
 
@@ -7117,8 +7162,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                   addReplicaUc().
                   addUnderReplicatedBlock().
                   addPendingBlock().
-                  addInvalidatedBlock().
-                  addQuotaUpdates(inode.getId());
+                  addInvalidatedBlock();
+              if (dir.isQuotaEnabled()) {
+                tla.getLocks().addQuotaUpdates(inode.getId());
+              }
               return tla.acquire();
             }
 
