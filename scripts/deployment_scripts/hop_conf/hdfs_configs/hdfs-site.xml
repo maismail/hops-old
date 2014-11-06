@@ -173,5 +173,37 @@
   <description>Used by clients. Possible values ROUND_ROBIN, RANDOM</description>
 </property>
 
+<property>
+  <name>dfs.namenode.safemode.extension</name>
+  <value>30000</value>
+  <description>
+    Determines extension of safe mode in milliseconds
+    after the threshold level is reached.
+  </description>
+</property>
+
+<property>
+  <name>dfs.namenode.processReport.batchsize</name>
+  <value>10000</value>
+  <description>
+    
+  </description>
+</property>
+
+<property>
+  <name>dfs.namenode.misreplicated.batchsize</name>
+  <value>500</value>
+  <description>
+    
+  </description>
+</property>
+
+<property>
+  <name>dfs.namenode.misreplicated.noofbatches</name>
+  <value>10</value>
+  <description>
+
+  </description>
+</property>
 
 </configuration>
