@@ -968,7 +968,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
 
       if (curNode[0] != null) {
         locks.addLockedINodes(curNode[0], curInodeLock);
-        if (curNode[0].isSubtreeLocked() && isNameNodeAlive(curNode[0].getSubtreeLockOwner())) {
+        if (SubtreeLockHelper.isSubtreeLocked(curNode[0].isSubtreeLocked(), curNode[0].getSubtreeLockOwner(), activeNamenodes)) {
           if (!locks.getIgnoreLocalSubtreeLocks()
               || locks.getIgnoreLocalSubtreeLocks() && locks.getNamenodeId() != curNode[0].getSubtreeLockOwner()) {
             throw new SubtreeLockedException();
@@ -1158,20 +1158,15 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     locks.addLockedINodes(inode, locks.getInodeLock());
   }
 
-  private boolean isNameNodeAlive(long namenodeId) {
-    if (activeNamenodes == null) {
-      // We do not know yet, be conservative
-      return true;
-    }
-
-    for (ActiveNamenode namenode : activeNamenodes) {
-      if (namenode.getId() == namenodeId) {
-        return true;
-      }
-    }
-    return false;
-  }
-
+  /**
+   * TODO HOP Replace the use of the static field for activeNamenodes as it can be overwritten by multiple NameNode instances in a test environment
+   * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   * This function is called by the NameNode as it is difficult to get a reference to the NameNode in here.
+   * This is fine in a production environment as each JVM has only a single instance but in a test case with multiple
+   * NameNodes, this may lead to unpredictable behavior. Especially if the view of the NameNodes differs.
+   * !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   * @param activeNamenodes
+   */
   public static void setActiveNamenodes(Collection<ActiveNamenode> activeNamenodes) {
     HDFSTransactionLockAcquirer.activeNamenodes = activeNamenodes;
   }

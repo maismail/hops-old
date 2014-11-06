@@ -12,6 +12,7 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -186,7 +187,10 @@ public class QuotaUpdateManager {
       @Override
       public Object performTask() throws IOException {
         INodeDirectory dir = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeID, updates.get(0).getInodeId());
-        if (dir != null && dir.isSubtreeLocked()) {
+        if (dir != null && SubtreeLockHelper.isSubtreeLocked(
+            dir.isSubtreeLocked(),
+            dir.getSubtreeLockOwner(),
+            namesystem.getNameNode().getActiveNamenodes().getActiveNamenodes())) {
           /*
            * We cannot process updates to keep move operations consistent. Otherwise the calculated size of the subtree
            * could differ from the view of the parent if outstanding quota updates are applied after being considered

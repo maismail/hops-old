@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
+import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.hop.common.GlobalThreadPool;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.common.HopBlockIdGen;
@@ -171,8 +172,10 @@ import se.sics.hop.common.IDsMonitor;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.SubtreeLockHelper;
 import se.sics.hop.metadata.lock.SubtreeLockedException;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -362,6 +365,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * HOP specific variables go here
    */
+  private NameNode nameNode;
   private NamenodeRole nameNodeRole; // role of the name node set by the NameNode instance
   private long nameNodeId;   // id of the name node. set by the NameNode instance
   private static boolean systemLevelLockEnabled = false;
@@ -372,6 +376,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private final boolean legacyRenameEnabled;
   private final boolean legacyContentSummaryEnabled;
   private final boolean legacySetQuotaEnabled;
+  private final ExecutorService subtreeOperationsExecutor;
   //END_HOP_CODE
     
   /**
@@ -514,6 +519,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       legacyRenameEnabled = conf.getBoolean(DFS_LEGACY_RENAME_ENABLE_KEY, DFS_LEGACY_RENAME_ENABLE_DEFAULT);
       legacyContentSummaryEnabled = conf.getBoolean(DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY, DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT);
       legacySetQuotaEnabled = conf.getBoolean(DFS_LEGACY_SET_QUOTA_ENABLE_KEY, DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT);
+      subtreeOperationsExecutor = Executors.newFixedThreadPool(
+          conf.getInt(DFS_SUBTREE_EXECUTOR_LIMIT_KEY,
+          DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT));
       //END_HOP_CODE
       
       LOG.info("fsOwner             = " + fsOwner);
@@ -3135,6 +3143,37 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             addINode(
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
                 INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addCorrupt().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addPendingBlock().
+            addInvalidatedBlock().
+            addQuotaUpdateOnSubtree();
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return delete(src, recursive);
+      }
+    };
+    return (Boolean) deleteHandler.handle(this);
+  }
+
+  boolean deleteWithTransactionIgnoreLocalSubtreeLock(final String src, final boolean recursive)
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}, true, getNamenodeId()).
             addLease(LockType.WRITE).
             addLeasePath(LockType.WRITE).
             addBlock().
@@ -7016,6 +7055,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throw new SafeModeException("Cannot delete " + path, safeMode);
     }
 
+    if (!recursive) {
+      // It is safe to do this as it will only delete a single file or an empty directory
+      return deleteWithTransaction(path, recursive);
+    }
+
     try {
       INode subtreeRoot = lockSubtreeAndCheckPathPermission(path, false, null, FsAction.WRITE, null, null);
       if (subtreeRoot == null) {
@@ -7024,6 +7068,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       } else if (subtreeRoot.isRoot()) {
         NameNode.stateChangeLog.warn("Failed to remove " + path + " because the root is not allowed to be deleted");
         return false;
+      }
+
+      if (subtreeRoot.isFile()) {
+        // We safe one transaction and a few round trips by doing so
+        return deleteWithTransactionIgnoreLocalSubtreeLock(path, recursive);
       }
 
       FileTree fileTree = new FileTree(subtreeRoot.getId(), FsAction.ALL);
@@ -7046,10 +7095,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private boolean deleteTreeLevel(final String subtreeRootPath, final FileTree fileTree, int level) {
     ArrayList<Future> barrier = new ArrayList<Future>();
 
-    for (final INode inode : fileTree.getInodesByLevel(level)) {
+    for (final ProjectedINode inode : fileTree.getInodesByLevel(level)) {
       final String path = fileTree.createAbsolutePath(subtreeRootPath, inode);
 
-      Future f = GlobalThreadPool.getExecutorService().submit(new Callable<Boolean>() {
+      Future f = subtreeOperationsExecutor.submit(new Callable<Boolean>() {
         @Override
         public Boolean call() throws Exception {
           HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE) {
@@ -7076,13 +7125,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             @Override
             public Object performTask() throws PersistanceException, IOException {
               INode[] pathComponents = dir.getRootDir().getExistingPathINodes(path, false);
-              INode inode = pathComponents[pathComponents.length-1];
+              INode inode = pathComponents[pathComponents.length - 1];
               if (inode == null) {
                 LOG.error("INode disappeared during deletion");
                 return false;
               }
-              INodeDirectory parent = (INodeDirectory) pathComponents[pathComponents.length-2];
-              dir.removeChildNonRecursively(pathComponents, pathComponents.length-1);
+              INodeDirectory parent = (INodeDirectory) pathComponents[pathComponents.length - 2];
+              dir.removeChildNonRecursively(pathComponents, pathComponents.length - 1);
               parent.setModificationTime(now());
 
               NameNode.getNameNodeMetrics().incrFilesDeleted(1);
@@ -7160,6 +7209,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
 
+  private void checkAccess(ProjectedINode node, FsAction action) throws IOException {
+    FSPermissionChecker pc = getPermissionChecker();
+    if (!pc.isSuperUser() && node.isDirectory()) {
+      pc.check(node, action);
+    }
+  }
+
   @VisibleForTesting
   void unlockSubtree(final String path) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.RESET_SUBTREE_LOCK) {
@@ -7228,9 +7284,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public Object performTask() throws PersistanceException, IOException {
             INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-            StorageFactory.getConnector().readLock(); // Prevent ongoing operations in the subtree
-            List<INode> children = dataAccess.indexScanFindInodesByParentId(parentId);
-            for (INode child : children) {
+            List<ProjectedINode> children = dataAccess.findInodesForSubtreeOperationsWithReadLock(parentId);
+            for (ProjectedINode child : children) {
               if (isPermissionEnabled && subAccess != null) {
                 checkAccess(child, subAccess);
               }
@@ -7241,15 +7296,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               return null;
             }
 
-            for (INode inode : children) {
-              if (inode.isSubtreeLocked()) {
+            for (ProjectedINode inode : children) {
+              if (SubtreeLockHelper.isSubtreeLocked(
+                  inode.isSubtreeLocked(),
+                  inode.getSubtreeLockOwner(),
+                  nameNode.getActiveNamenodes().getActiveNamenodes())) {
                 exception = new SubtreeLockedException();
                 return null;
               }
-              boolean quotaEnabled = quotaEnabledBranch || inode instanceof INodeDirectoryWithQuota? true : false;
               if (inode.isDirectory()) {
                 synchronized (activeCollectors) {
-                  collectChildren(inode.getId(), level + 1, quotaEnabled);
+                  collectChildren(inode.getId(), level + 1, inode.isDirWithQuota());
                 }
               }
             }
@@ -7315,8 +7372,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     }
 
-    protected abstract void addSubtreeRoot(INode node);
-    protected abstract void addChildNode(int level, INode node, boolean quotaEnabledBranch);
+    protected abstract void addSubtreeRoot(ProjectedINode node);
+    protected abstract void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch);
 
     private INode readSubtreeRoot() throws IOException {
       return (INode) new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ROOT) {
@@ -7333,14 +7390,28 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             checkAccess(subtreeRoot, subAccess);
           }
 
-          addSubtreeRoot(subtreeRoot);
+          DataOutputBuffer permissions = new DataOutputBuffer();
+          subtreeRoot.getPermissionStatus().write(permissions);
+
+          addSubtreeRoot(new ProjectedINode(
+              subtreeRoot.getId(),
+              subtreeRoot.getParentId(),
+              subtreeRoot.getLocalName(),
+              permissions.getData(),
+              subtreeRoot instanceof INodeFile ? ((INodeFile) subtreeRoot).getHeader() : 0,
+              subtreeRoot.isSymlink(),
+              subtreeRoot.isDirectory(),
+              subtreeRoot instanceof INodeDirectoryWithQuota ? true : false,
+              subtreeRoot.isUnderConstruction(),
+              subtreeRoot.isSubtreeLocked(),
+              subtreeRoot.getSubtreeLockOwner()));
           return subtreeRoot;
         }
       }.handle(this);
     }
 
     private void collectChildren(int parentId, int level, boolean quotaEnabledBranch) {
-      activeCollectors.add(GlobalThreadPool.getExecutorService().submit(new ChildCollector(parentId, level, quotaEnabledBranch)));
+      activeCollectors.add(subtreeOperationsExecutor.submit(new ChildCollector(parentId, level, quotaEnabledBranch)));
     }
   }
 
@@ -7375,31 +7446,31 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
 
     @Override
-    protected void addSubtreeRoot(INode node) {
+    protected void addSubtreeRoot(ProjectedINode node) {
       addNode(node);
     }
 
     @Override
-    protected void addChildNode(int level, INode node, boolean quotaEnabledBranch) {
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
       addNode(node);
     }
 
-    protected void addNode(final INode node) {
+    protected void addNode(final ProjectedINode node) {
       if (node.isDirectory()) {
         directoryCount.addAndGet(1);
       } else if (node.isSymlink()) {
         fileCount.addAndGet(1);
       } else {
         fileCount.addAndGet(1);
-        final INodeFile file = (INodeFile) node;
         LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
           @Override
           public Object performTask() throws PersistanceException, IOException {
             BlockInfoDataAccess<BlockInfo> dataAccess = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-            List<BlockInfo> children = dataAccess.findByInodeId(node.getId());
-            BlockInfo[] blocks = children.toArray(new BlockInfo[children.size()]);
-            diskspaceCount.addAndGet(file.diskspaceConsumed(blocks));
-            fileSizeSummary.addAndGet(file.computeFileSize(true, blocks));
+            List<BlockInfo> blockInfos = dataAccess.findByInodeId(node.getId());
+            BlockInfo[] blocks = blockInfos.toArray(new BlockInfo[blockInfos.size()]);
+            diskspaceCount.addAndGet(INodeFile.diskspaceConsumed(blocks, node.isUnderConstruction(),
+                INodeFile.extractBlockSize(node.getHeader()), INodeFile.extractBlockReplication(node.getHeader())));
+            fileSizeSummary.addAndGet(INodeFile.computeFileSize(true, blocks));
             return null;
           }
         };
@@ -7447,20 +7518,19 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
 
     @Override
-    protected void addSubtreeRoot(INode node) {
+    protected void addSubtreeRoot(ProjectedINode node) {
       addNode(node);
     }
 
     @Override
-    protected void addChildNode(int level, INode node, boolean quotaEnabledBranch) {
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
       if (!quotaEnabledBranch) {
         addNode(node);
       }
     }
 
-    protected void addNode(final INode node) {
-      boolean quotaEnabled = node instanceof INodeDirectoryWithQuota? true : false;
-      if (quotaEnabled) {
+    protected void addNode(final ProjectedINode node) {
+      if (node.isDirWithQuota()) {
         LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ATTRIBUTES) {
           @Override
           public Object performTask() throws PersistanceException, IOException {
@@ -7481,7 +7551,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       } else {
         namespaceCount.addAndGet(1);
         if (!node.isDirectory() && !node.isSymlink()) {
-          final INodeFile file = (INodeFile) node;
           LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
             @Override
             public Object performTask() throws PersistanceException, IOException {
@@ -7489,7 +7558,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                   (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
               List<BlockInfo> children = dataAccess.findByInodeId(node.getId());
               BlockInfo[] blocks = children.toArray(new BlockInfo[children.size()]);
-              diskspaceCount.addAndGet(file.diskspaceConsumed(blocks));
+              diskspaceCount.addAndGet(INodeFile.diskspaceConsumed(blocks, node.isUnderConstruction(),
+                  INodeFile.extractBlockSize(node.getHeader()), INodeFile.extractBlockReplication(node.getHeader())));
               return null;
             }
           };
@@ -7531,9 +7601,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   class FileTree extends AbstractFileTree {
     public static final int ROOT_LEVEL = 1;
 
-    private final SetMultimap<Integer, INode> inodesByParent;
-    private final SetMultimap<Integer, INode> inodesByLevel;
-    private final ConcurrentHashMap<Integer, INode> inodesById = new ConcurrentHashMap<Integer, INode>();
+    private final SetMultimap<Integer, ProjectedINode> inodesByParent;
+    private final SetMultimap<Integer, ProjectedINode> inodesByLevel;
+    private final ConcurrentHashMap<Integer, ProjectedINode> inodesById = new ConcurrentHashMap<Integer, ProjectedINode>();
 
     public FileTree(int subtreeRootId) {
       this(subtreeRootId, null);
@@ -7541,34 +7611,34 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     public FileTree(int subtreeRootId, FsAction subAccess) {
       super(subtreeRootId, subAccess);
-      HashMultimap<Integer, INode> parentMap = HashMultimap.create();
+      HashMultimap<Integer, ProjectedINode> parentMap = HashMultimap.create();
       inodesByParent =  Multimaps.synchronizedSetMultimap(parentMap);
-      HashMultimap<Integer, INode> levelMap = HashMultimap.create();
+      HashMultimap<Integer, ProjectedINode> levelMap = HashMultimap.create();
       inodesByLevel =  Multimaps.synchronizedSetMultimap(levelMap);
     }
 
     @Override
-    protected void addSubtreeRoot(INode node) {
+    protected void addSubtreeRoot(ProjectedINode node) {
       inodesByLevel.put(ROOT_LEVEL, node);
       inodesById.put(node.getId(), node);
     }
 
     @Override
-    protected void addChildNode(int level, INode node, boolean quotaEnabledBranch) {
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
       inodesByParent.put(node.getParentId(), node);
       inodesByLevel.put(level, node);
       inodesById.put(node.getId(), node);
     }
 
-    public Collection<INode> getAll() {
+    public Collection<ProjectedINode> getAll() {
       return inodesByLevel.values();
     }
 
-    public Collection<INode> getAllChildren() {
+    public Collection<ProjectedINode> getAllChildren() {
       return inodesByParent.values();
     }
 
-    public INode getSubtreeRoot() {
+    public ProjectedINode getSubtreeRoot() {
       return inodesByLevel.get(ROOT_LEVEL).iterator().next();
     }
 
@@ -7576,15 +7646,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       return inodesByLevel.keySet().size();
     }
 
-    public Collection<INode> getChildren(int inodeId) {
+    public Collection<ProjectedINode> getChildren(int inodeId) {
       return inodesByParent.get(inodeId);
     }
 
-    public Collection<INode> getInodesByLevel(int level) {
+    public Collection<ProjectedINode> getInodesByLevel(int level) {
       return inodesByLevel.get(level);
     }
 
-    public INode getInodeById(int id) {
+    public ProjectedINode getInodeById(int id) {
       return inodesById.get(id);
     }
 
@@ -7592,10 +7662,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       return getSubtreeRoot().isDirectory() && !getChildren(getSubtreeRoot().getId()).isEmpty();
     }
 
-    public String createAbsolutePath(String subtreeRootPath, INode inode) {
+    public String createAbsolutePath(String subtreeRootPath, ProjectedINode inode) {
       StringBuilder builder = new StringBuilder();
       while (inode.equals(getSubtreeRoot()) == false) {
-        builder.insert(0, inode.getLocalName());
+        builder.insert(0, inode.getName());
         builder.insert(0, "/");
         inode = getInodeById(inode.getParentId());
       }
@@ -7617,13 +7687,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
 
     @Override
-    protected void addSubtreeRoot(INode node) {
+    protected void addSubtreeRoot(ProjectedINode node) {
       synchronizedList.add(node.getId());
       super.addSubtreeRoot(node);
     }
 
     @Override
-    protected void addChildNode(int level, INode node, boolean quotaEnabledBranch) {
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
       synchronizedList.add(node.getId());
       super.addChildNode(level, node, quotaEnabledBranch);
     }
@@ -7764,6 +7834,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private String pname(String param){
       StringTokenizer tok = new StringTokenizer(param);
       return (String)tok.nextElement();
+  }
+
+  public NameNode getNameNode() {
+    return nameNode;
+  }
+
+  public void setNameNode(NameNode nameNode) {
+    this.nameNode = nameNode;
   }
   //END_HOP_CODE
 }
