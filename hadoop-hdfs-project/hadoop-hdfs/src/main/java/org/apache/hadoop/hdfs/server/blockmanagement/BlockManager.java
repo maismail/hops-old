@@ -1942,12 +1942,11 @@ public class BlockManager {
             allMachineBlocks.remove(storedBlock.getBlockId());
           }
         }      
-        toRemove.addAll(allMachineBlocks);
-        if(namesystem.isInStartupSafeMode()){
+        
+        if(namesystem.isInStartupSafeMode() && isLast){
+          toRemove.addAll(allMachineBlocks);
           safeBlocks.removeAll(toRemove);
-          if (isLast) {
-            namesystem.adjustSafeModeBlocks(safeBlocks);
-          }
+          namesystem.adjustSafeModeBlocks(safeBlocks);
         }
         return null;
       }
