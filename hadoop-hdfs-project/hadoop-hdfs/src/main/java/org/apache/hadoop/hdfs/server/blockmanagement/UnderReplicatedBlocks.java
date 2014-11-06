@@ -347,6 +347,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     List<List<Block>> priorityQueuestmp = createPrioriryQueue();
     
     int blockCount = 0;
+    blocksToProcess = Math.min(blocksToProcess, size());
+    
     for (int priority = 0; priority < LEVEL; priority++) { 
       // Go through all blocks that need replications with current priority.
       Integer replIndex = priorityToReplIdx.get(priority);
@@ -354,8 +356,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       if (blockCount == blocksToProcess) {
         break;  // break if already expected blocks are obtained
       }
-      
-      blocksToProcess = Math.min(blocksToProcess, size());
       
       int remainingblksToProcess = blocksToProcess - blockCount;
       List<HopUnderReplicatedBlock> urbs = getUnderReplicatedBlocks(priority, replIndex, remainingblksToProcess);
@@ -365,7 +365,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       blocksToReplicate.get(priority).addAll(blks);
       blockCount += blks.size();
       replIndex += blks.size();
-      
       
       if (count(priority) <= remainingblksToProcess && priority == LEVEL - 1) {
         // reset all priorities replication index to 0 because there is no
@@ -382,9 +381,19 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** returns an iterator of all blocks in a given priority queue */
-  BlockIterator iterator(int level) {
+  BlockIterator iterator(final int level) {
      try {
-      return new BlockIterator(fillPriorityQueues(level), level);
+       return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
+         @Override
+         public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+           return null;
+         }
+
+         @Override
+         public Object performTask() throws PersistanceException, IOException {
+           return new BlockIterator(fillPriorityQueues(level), level);
+         }
+       }.handle();
     } catch (IOException ex) {
       BlockManager.LOG.error("Error while filling the priorityQueues from db", ex);
       return null;
@@ -395,7 +404,17 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   @Override
   public BlockIterator iterator() {
     try {
-      return new BlockIterator(fillPriorityQueues());
+      return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
+        @Override
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          return null;
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          return new BlockIterator(fillPriorityQueues());
+        }
+      }.handle();
     } catch (IOException ex) {
       BlockManager.LOG.error("Error while filling the priorityQueues from db", ex);
       return null;
@@ -497,7 +516,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   public void decrementReplicationIndex(int priority) throws PersistanceException {
     List<Integer> priorityToReplIdx = getReplicationIndex();
     Integer replIdx = priorityToReplIdx.get(priority);
-    priorityToReplIdx.set(priority, --replIdx);
+    replIdx = replIdx <= 0 ? 0 :  (replIdx-1);
+    priorityToReplIdx.set(priority, replIdx);
     setReplicationIndex(priorityToReplIdx);
   }
   
@@ -613,7 +633,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        List<BlockInfo> blks = bda.findByIdsNoCommit(blockIds, inodeIds);
+        List<BlockInfo> blks = bda.findByIds(blockIds, inodeIds);
         for(BlockInfo blk : blks){
           HopUnderReplicatedBlock urb = allUrbHashMap.remove(blk.getBlockId());
           assert urb.getInodeId() == blk.getInodeId();

@@ -382,20 +382,21 @@ public class DatanodeDescriptor extends DatanodeInfo {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        StorageFactory.getConnector().beginTransaction();
         List<BlockInfo> list = da.findByStorageId(getSId());
+        StorageFactory.getConnector().commit();
         return list;
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();
   }
-
+  
   public Set<Long> getAllMachineBlocks() throws IOException {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS_IDS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        Set<Long> list = da.findByStorageIdOnlyIds(getSId());
-        return list;
+        return da.findByStorageIdOnlyIds(getSId());
       }
     };
     return (Set<Long>) findBlocksHandler.handle();

@@ -39,6 +39,7 @@ public class Variables {
         long oldValue = ((HopLongVariable) vd.getVariable(HopVariable.Finder.BlockID)).getValue();
         long newValue = oldValue + increment;
         vd.setVariable(new HopLongVariable(HopVariable.Finder.BlockID, newValue));
+        StorageFactory.getConnector().readCommitted();
         return new CountersQueue.Counter(oldValue, newValue);
       }
     }.handle();
@@ -53,11 +54,72 @@ public class Variables {
         int oldValue = ((HopIntVariable) vd.getVariable(HopVariable.Finder.INodeID)).getValue();
         int newValue = oldValue + increment;
         vd.setVariable(new HopIntVariable(HopVariable.Finder.INodeID, newValue));
+        StorageFactory.getConnector().readCommitted();
         return new CountersQueue.Counter(oldValue, newValue);
       }
     }.handle();
   }
 
+  public static void resetMisReplicatedIndex() throws IOException{
+    incrementMisReplicatedIndex(0);
+  }
+  
+  public static Long incrementMisReplicatedIndex(final int increment) throws IOException {
+    return (Long) new LightWeightRequestHandler(HDFSOperationType.INCREMENT_MIS_REPLICATED_FILES_INDEX) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        HopLongVariable var = (HopLongVariable) vd.getVariable(HopVariable.Finder.MisReplicatedFilesIndex);
+        long oldValue = var == null ? 0 : var.getValue();
+        long newValue = increment == 0 ? 0 : oldValue + increment;
+        vd.setVariable(new HopLongVariable(HopVariable.Finder.MisReplicatedFilesIndex, newValue));
+        StorageFactory.getConnector().readCommitted();
+        return newValue;
+      }
+    }.handle();
+  }
+  
+  public static void enterClusterSafeMode() throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.ENTER_CLUSTER_SAFE_MODE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        vd.setVariable(new HopIntVariable(HopVariable.Finder.ClusterInSafeMode, 1));
+        StorageFactory.getConnector().readCommitted();
+        return null;
+      }
+    }.handle();
+  }
+  
+    public static void exitClusterSafeMode() throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.EXIT_CLUSTER_SAFE_MODE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().writeLock();
+        vd.setVariable(new HopIntVariable(HopVariable.Finder.ClusterInSafeMode, 0));
+        StorageFactory.getConnector().readCommitted();
+        return null;
+      }
+    }.handle();
+  }
+    
+  public static boolean isClusterInSafeMode() throws IOException {
+    Boolean safemode = (Boolean) new LightWeightRequestHandler(HDFSOperationType.GET_CLUSTER_SAFE_MODE) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
+        StorageFactory.getConnector().readLock();
+        HopIntVariable var = (HopIntVariable) vd.getVariable(HopVariable.Finder.ClusterInSafeMode);
+        StorageFactory.getConnector().readCommitted();
+        return var.getValue() == 1;
+      }
+    }.handle();
+    return safemode;
+  }
+  
   public static void setReplicationIndex(List<Integer> indeces) throws PersistanceException {
     updateVariable(new HopArrayVariable(HopVariable.Finder.ReplicationIndex, indeces));
   }
@@ -191,5 +253,7 @@ public class Variables {
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.ReplicationIndex, new HopArrayVariable(Arrays.asList(0, 0, 0, 0, 0)).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.SIdCounter, new HopIntVariable(0).getBytes());
     HopVariable.registerVariableDefaultValue(HopVariable.Finder.MaxNNID, new HopLongVariable(0).getBytes());
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.MisReplicatedFilesIndex, new HopLongVariable(0).getBytes());
+    HopVariable.registerVariableDefaultValue(HopVariable.Finder.ClusterInSafeMode, new HopIntVariable(1).getBytes());
   }
 }

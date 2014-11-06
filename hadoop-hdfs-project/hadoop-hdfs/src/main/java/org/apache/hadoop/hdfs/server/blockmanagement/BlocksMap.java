@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -182,12 +181,52 @@ class BlocksMap {
     return newBlock;
   }
   
-  List<INodeIdentifier> getAllINodeFiles() throws IOException {
+  List<INodeIdentifier> getAllINodeFiles(final long offset, final long count) throws IOException {
     return (List<INodeIdentifier>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INODES) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-        return ida.getAllINodeFiles();
+        return ida.getAllINodeFiles(offset, count);
+      }
+    }.handle();
+  }
+  
+  boolean haveFilesWithIdGreaterThan(final long id) throws IOException {
+    return (Boolean) new LightWeightRequestHandler(HDFSOperationType.HAVE_FILES_WITH_IDS_GREATER_THAN) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.haveFilesWithIdsGreaterThan(id);
+      }
+    }.handle();
+  }
+  
+   boolean haveFilesWithIdBetween(final long startId, final long endId) throws IOException {
+    return (Boolean) new LightWeightRequestHandler(HDFSOperationType.HAVE_FILES_WITH_IDS_BETWEEN) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.haveFilesWithIdsBetween(startId, endId);
+      }
+    }.handle();
+  }
+   
+  long getMinFileId() throws IOException {
+    return (Long) new LightWeightRequestHandler(HDFSOperationType.GET_MIN_FILE_ID) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.getMinFileId();
+      }
+    }.handle();
+  }
+
+  int countAllFiles() throws IOException {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNTALL_FILES) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+        return ida.countAllFiles();
       }
     }.handle();
   }

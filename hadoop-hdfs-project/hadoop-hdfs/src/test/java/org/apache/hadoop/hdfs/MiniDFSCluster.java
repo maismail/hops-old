@@ -108,6 +108,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.BlockLookUpDataAccess;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
@@ -2244,7 +2245,7 @@ public class MiniDFSCluster {
    * Shut down a cluster if it is not null
    * @param cluster cluster reference or null
    */
-  public static void shutdownCluster(MiniDFSCluster cluster) {
+  public static void shutdownCluster(MiniDFSCluster cluster) throws IOException {
     if (cluster != null) {
       cluster.shutdown();
     }
@@ -2390,6 +2391,8 @@ public class MiniDFSCluster {
         }
         if (activeNameNodes == 0) {
             try {
+              Variables.resetMisReplicatedIndex();
+              Variables.enterClusterSafeMode();
               StorageFactory.formatStorage(/*ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class,*/
                       UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
                       InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);   
@@ -2405,7 +2408,7 @@ public class MiniDFSCluster {
 //                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
 //                session.deletePersistentAll(INodeAttributesClusterj.INodeAttributesDTO.class);
 //                session.flush();
-            } catch (StorageException e) {
+            } catch (Exception e) {
                 LOG.error(e);
             }
         }

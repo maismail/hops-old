@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
@@ -430,20 +431,20 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return locks;
   }
 
-  public TransactionLocks acquireBatch() throws PersistanceException {
+  public TransactionLocks acquireBatchForBlockReporting() throws PersistanceException {
     int[] inodeIds = locks.getInodesParam();
     if (locks.getBlockLock() != null && locks.getBlocksParam() != null) {
       if (inodeIds == null) {
         inodeIds = INodeUtil.resolveINodesFromBlockIds(locks.getBlocksParam());
       }
-      acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByIds, locks.getBlocksParam(), inodeIds);
+     acquireLockList(locks.getBlockLock(), BlockInfo.Finder.ByIds, locks.getBlocksParam(), inodeIds);
     }
     if (locks.getInvLocks() != null && locks.getBlocksParam() != null && locks.getInvalidatedBlocksDatanode() != null && inodeIds != null) {
       acquireLockList(locks.getInvLocks(), HopInvalidatedBlock.Finder.ByPKS, locks.getBlocksParam(), inodeIds, locks.getInvalidatedBlocksDatanode());
     }
 
     if (locks.getReplicaLock() != null && locks.getBlocksParam() != null && locks.getReplicasDatanode() != null && inodeIds != null) {
-      acquireLockList(locks.getReplicaLock(), HopIndexedReplica.Finder.ByPKS, locks.getBlocksParam(), inodeIds, locks.getReplicasDatanode());
+     acquireLockList(locks.getReplicaLock(), HopIndexedReplica.Finder.ByPKS, locks.getBlocksParam(), inodeIds, locks.getReplicasDatanode());
     }
     return locks;
   }
@@ -644,9 +645,9 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
       acquireLock(locks.getStorageInfo(), HopVariable.Finder.StorageInfo);
     }
     
-    if (locks.getUrbLock() != null) {
+    /*if (locks.getUrbLock() != null) {
       acquireLock(locks.getUrbLock(), HopVariable.Finder.ReplicationIndex);
-    }else if(locks.getReplicationIndexLock() != null){
+    }else*/ if(locks.getReplicationIndexLock() != null){
        acquireLock(locks.getReplicationIndexLock(), HopVariable.Finder.ReplicationIndex);
     }
     

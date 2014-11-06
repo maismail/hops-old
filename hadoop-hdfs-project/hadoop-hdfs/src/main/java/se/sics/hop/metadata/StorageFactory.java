@@ -5,6 +5,7 @@ import se.sics.hop.DALStorageFactory;
 import se.sics.hop.StorageConnector;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -18,6 +19,7 @@ import se.sics.hop.metadata.context.LeaseContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.*;
@@ -98,13 +100,24 @@ public class StorageFactory {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
       dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
-      dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+      dStorageFactory.setConfiguration(getMetadataClusterConfiguration(conf));
       initDataAccessWrappers();
       EntityManager.setContextInitializer(getContextInitializer());
       isDALInitialized = true;
     }
   }
 
+  private static Properties getMetadataClusterConfiguration(Configuration conf) throws IOException{
+      String configFile = conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT);
+      Properties clusterConf = new Properties();
+      InputStream inStream = StorageConnector.class.getClassLoader().getResourceAsStream(configFile);
+      clusterConf.load(inStream);
+//      if(conf.get(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE) != null){
+//        clusterConf.setProperty(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE, conf.get(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE));
+//      }
+      return clusterConf;
+  }
+  
   //[M]: just for testing purposes
   private static void addToClassPath(String s) throws StorageInitializtionException {
     try {

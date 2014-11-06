@@ -18,7 +18,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
@@ -161,7 +160,6 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeStatistics;
-import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
@@ -208,11 +206,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.LinkedList;
-import java.util.SortedSet;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import se.sics.hop.Common;
 import se.sics.hop.common.IDsMonitor;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
@@ -226,8 +222,9 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.memcache.PathMemcache;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
@@ -732,10 +729,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //HOP   nnResourceChecker = new NameNodeResourceChecker(conf);
 //      checkAvailableResources();
       IDsMonitor.getInstance().start();
-      assert safeMode != null &&
-        !safeMode.isPopulatingReplQueues();
-      setBlockTotal();
-      performPendingSafeModeOperation();
+      if (isClusterInSafeMode()) {
+        assert safeMode != null
+                && !safeMode.isPopulatingReplQueues();
+        setBlockTotal();
+        performPendingSafeModeOperation();
+      }
       blockManager.activate(conf);
     } finally {
       writeUnlock();
@@ -780,14 +779,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         
 //        blockManager.setPostponeBlocksFromFuture(false);
         blockManager.getDatanodeManager().markAllDatanodesStale();
-        blockManager.clearQueues();
+        //blockManager.clearQueues();
 //        blockManager.processAllPendingDNMessages();
         
-        if (!isInSafeMode() ||
-            (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
+      if (isClusterInSafeMode()) {
+        if (!isInSafeMode()
+                || (isInSafeMode() && safeMode.isPopulatingReplQueues())) {
           LOG.info("Reprocessing replication and invalidation queues");
           blockManager.processMisReplicatedBlocks();
         }
+      }
         
 //        if (LOG.isDebugEnabled()) {
 //          LOG.debug("NameNode metadata after re-processing " +
@@ -4395,7 +4396,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#setSafeMode(HdfsConstants.SafeModeAction)
    * @see SafeModeMonitor
    */
-  class SafeModeInfo {
+    class SafeModeInfo {
     
     // configuration fields
     /** Safe mode threshold condition %.*/
@@ -4419,7 +4420,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /** Total number of blocks. */
     int blockTotal; 
     /** Number of safe blocks. */
-    int blockSafe;
+    //int blockSafe;
     /** Number of blocks needed to satisfy safe mode threshold condition */
     private int blockThreshold;
     /** Number of blocks needed before populating replication queues */
@@ -4435,7 +4436,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
     //HOP_START_CODE
     public ThreadLocal<Boolean> safeModePendingOperation = new ThreadLocal<Boolean>();
-    private final Set<Long> safeBlocks = new HashSet<Long>();
+   // private final Set<Long> safeBlocks = new HashSet<Long>();
     //HOP_END_CODE
     
     /**
@@ -4456,6 +4457,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       this.extension = conf.getInt(DFS_NAMENODE_SAFEMODE_EXTENSION_KEY, 0);
       this.safeReplication = conf.getInt(DFS_NAMENODE_REPLICATION_MIN_KEY, 
                                          DFS_NAMENODE_REPLICATION_MIN_DEFAULT);
+      if(this.safeReplication > 1){
+        LOG.warn("Only safe replication 1 is supported");
+        this.safeReplication = 1; 
+      }
       
       LOG.info(DFS_NAMENODE_SAFEMODE_THRESHOLD_PCT_KEY + " = " + threshold);
       LOG.info(DFS_NAMENODE_SAFEMODE_MIN_DATANODES_KEY + " = " + datanodeThreshold);
@@ -4466,7 +4471,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         conf.getFloat(DFS_NAMENODE_REPL_QUEUE_THRESHOLD_PCT_KEY,
                       (float) threshold);
       this.blockTotal = 0; 
-      this.blockSafe = 0;
+      //this.blockSafe = 0;
     }
 
     /**
@@ -4490,14 +4495,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * 
      * @see SafeModeInfo
      */
-    private SafeModeInfo(boolean resourcesLow) {
+    private SafeModeInfo(boolean resourcesLow) throws IOException {
       this.threshold = 1.5f;  // this threshold can never be reached
       this.datanodeThreshold = Integer.MAX_VALUE;
       this.extension = Integer.MAX_VALUE;
       this.safeReplication = Short.MAX_VALUE + 1; // more than maxReplication
       this.replQueueThreshold = 1.5f; // can never be reached
       this.blockTotal = -1;
-      this.blockSafe = -1;
+      //this.blockSafe = -1;
       this.reached = -1;
       this.resourcesLow = resourcesLow;
       enter();
@@ -4508,15 +4513,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check if safe mode is on.
      * @return true if in safe mode
      */
-    private synchronized boolean isOn() throws IOException {
+    private boolean isOn() throws IOException {
       doConsistencyCheck();
-      return this.reached >= 0;
+      return this.reached >= 0 && isClusterInSafeMode();
     }
       
     /**
      * Check if we are populating replication queues.
      */
-    private synchronized boolean isPopulatingReplQueues() {
+    private boolean isPopulatingReplQueues() {
       return initializedReplQueues;
     }
 
@@ -4532,12 +4537,22 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * <p>
      * Check for invalid, under- & over-replicated blocks in the end of startup.
      */
-    private synchronized void leave() throws IOException {
+    private void leave() throws IOException {
       // if not done yet, initialize replication queues.
       // In the standby, do not populate repl queues
       if (!isPopulatingReplQueues() && shouldPopulateReplQueues()) {
         initializeReplQueues();
       }
+      
+      leaveInternal();
+      
+      Variables.exitClusterSafeMode();
+      Variables.resetMisReplicatedIndex();
+      //safeBlocks.clear();
+      clearSafeBlocks();
+    }
+    
+    private void leaveInternal() throws IOException{
       long timeInSafemode = now() - startTime;
       NameNode.stateChangeLog.info("STATE* Leaving safe mode after " 
                                     + timeInSafemode/1000 + " secs");
@@ -4554,16 +4569,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           + nt.getNumOfLeaves() + " datanodes");
       NameNode.stateChangeLog.info("STATE* UnderReplicatedBlocks has "
           + blockManager.numOfUnderReplicatedBlocks() + " blocks");
-
-      startSecretManagerIfNecessary();
       
-      safeBlocks.clear();
+      startSecretManagerIfNecessary();
     }
-
     /**
      * Initialize replication queues.
      */
-    private synchronized void initializeReplQueues() throws IOException {
+    private void initializeReplQueues() throws IOException {
       LOG.info("initializing replication queues");
       assert !isPopulatingReplQueues() : "Already initialized repl queues";
       long startTimeMisReplicatedScan = now();
@@ -4579,9 +4591,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check whether we have reached the threshold for 
      * initializing replication queues.
      */
-    private synchronized boolean canInitializeReplQueues() {
+    private boolean canInitializeReplQueues() throws IOException {
       return shouldPopulateReplQueues()
-          && blockSafe >= blockReplQueueThreshold;
+          && blockSafe() >= blockReplQueueThreshold;
     }
       
     /** 
@@ -4590,8 +4602,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * the extension time have passed.
      * @return true if can leave or false otherwise.
      */
-    private synchronized boolean canLeave() {
-      if (reached == 0)
+    private boolean canLeave() throws IOException {
+      if (reached == 0 && isClusterInSafeMode())
         return false;
       if (now() - reached < extension) {
         reportStatus("STATE* Safe mode ON.", false);
@@ -4599,13 +4611,28 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       return !needEnter();
     }
+   
+    private void tryToHelpToGetout() throws IOException{
+      if(isManual())
+        return;
       
+      if (smmthread == null) {
+        smmthread = new Daemon(new SafeModeMonitor());
+        smmthread.start();
+      }
+    }
+    
+    private void clusterLeftSafeModeAlready() throws IOException{
+      leaveInternal();
+    }
     /** 
      * There is no need to enter safe mode 
      * if DFS is empty or {@link #threshold} == 0
      */
-    private boolean needEnter() {
-      return (threshold != 0 && blockSafe < blockThreshold) ||
+    private boolean needEnter() throws IOException {
+      if(!isClusterInSafeMode())
+        return false;
+      return (threshold != 0 && blockSafe() < blockThreshold) ||
         (getNumLiveDataNodes() < datanodeThreshold) ||
         (!nameNodeHasResourcesAvailable());
     }
@@ -4614,7 +4641,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * Check and trigger safe mode if needed. 
      */
     
-    private synchronized void checkMode() throws IOException {
+    private void checkMode() throws IOException {
       // Have to have write-lock since leaving safemode initializes
       // repl queues, which requires write lock
       assert hasWriteLock();
@@ -4639,8 +4666,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       // start monitor
       reached = now();
-      smmthread = new Daemon(new SafeModeMonitor());
-      smmthread.start();
+      if (smmthread == null) {
+        smmthread = new Daemon(new SafeModeMonitor());
+        smmthread.start();
+      }
       reportStatus("STATE* Safe mode extension entered.", true);
 
       // check if we are ready to initialize replication queues
@@ -4663,8 +4692,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         // of the number of total blocks in the system.
         this.shouldIncrementallyTrackBlocks = true;
       }
-      if(blockSafe < 0)
-        this.blockSafe = 0;
+//      if(blockSafe < 0)
+//        this.blockSafe = 0;
 //HOP      checkMode();
         setSafeModePendingOperation(true);
     }
@@ -4674,12 +4703,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * reached minimal replication.
      * @param replication current replication 
      */
-    private synchronized void incrementSafeBlockCount(short replication) throws IOException {
-      if (replication == safeReplication) {
-        this.blockSafe++;
+    private synchronized void incrementSafeBlockCount(Block blk) throws IOException {
+//      if (replication == safeReplication) {
+//        this.blockSafe++;
 //HOP        checkMode();
+        addSafeBlock(blk.getBlockId());
         setSafeModePendingOperation(true);
-      }
+     // }
     }
       
     /**
@@ -4687,13 +4717,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * fallen below minimal replication.
      * @param replication current replication 
      */
-    private synchronized void decrementSafeBlockCount(short replication) throws IOException {
-      if (replication == safeReplication-1) {
-        this.blockSafe--;
-        assert blockSafe >= 0 || isManual();
+    private synchronized void decrementSafeBlockCount(Block blk) throws IOException {
+//      if (replication == safeReplication-1) {
+//        this.blockSafe--;
+//        assert blockSafe >= 0 || isManual();
 //HOP        checkMode();
+        removeSafeBlock(blk.getBlockId());
         setSafeModePendingOperation(true);
-      }
+//      }
     }
 
     /**
@@ -4749,6 +4780,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       int numLive = getNumLiveDataNodes();
       String msg = "";
+      
+      long blockSafe;
+      try {
+        blockSafe = blockSafe();
+      } catch (IOException ex) {
+        LOG.error(ex);
+        return "got exception " + ex.getMessage();
+      }
       if (reached == 0) {
         if (blockSafe < blockThreshold) {
           msg += String.format(
@@ -4789,16 +4828,22 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     /**
      * Print status every 20 seconds.
      */
-    private void reportStatus(String msg, boolean rightNow) {
+    private void reportStatus(String msg, boolean rightNow) throws IOException {
       long curTime = now();
       if(!rightNow && (curTime - lastStatusReport < 20 * 1000))
         return;
-      NameNode.stateChangeLog.info(msg + " \n" + getTurnOffTip());
+      NameNode.stateChangeLog.error(msg + " \n" + getTurnOffTip());
       lastStatusReport = curTime;
     }
 
     @Override
     public String toString() {
+      String blockSafe;
+      try{
+        blockSafe = "" + blockSafe();
+      }catch(IOException ex){
+        blockSafe = ex.getMessage();
+      }
       String resText = "Current safe blocks = " 
         + blockSafe 
         + ". Target blocks = " + blockThreshold + " for threshold = %" + threshold
@@ -4817,9 +4862,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       assert assertsOn = true; // set to true if asserts are on
       if (!assertsOn) return;
       
-      if (blockTotal == -1 && blockSafe == -1) {
+      if (blockTotal == -1 /*&& blockSafe == -1*/) {
         return; // manual safe mode
       }
+      long blockSafe = blockSafe();
       int activeBlocks = blockManager.getActiveBlockCount();
       if ((blockTotal != activeBlocks) &&
           !(blockSafe >= 0 && blockSafe <= blockTotal)) {
@@ -4831,24 +4877,24 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
     }
 
-    private synchronized void adjustBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
+    private  void adjustBlockTotals(int deltaSafe, int deltaTotal) throws IOException {
       if (!shouldIncrementallyTrackBlocks) {
         return;
       }
       assert haEnabled;
       
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Adjusting block totals from " +
-            blockSafe + "/" + blockTotal + " to " +
-            (blockSafe + deltaSafe) + "/" + (blockTotal + deltaTotal));
-      }
-      assert blockSafe + deltaSafe >= 0 : "Can't reduce blockSafe " +
-        blockSafe + " by " + deltaSafe + ": would be negative";
-      assert blockTotal + deltaTotal >= 0 : "Can't reduce blockTotal " +
-        blockTotal + " by " + deltaTotal + ": would be negative";
-      
-      blockSafe += deltaSafe;
-      setBlockTotal(blockTotal + deltaTotal);
+//      //if (LOG.isDebugEnabled()) {
+//        LOG.error("xxx: Adjusting block totals from " +
+//            blockSafe + "/" + blockTotal + " to " +
+//            (blockSafe + deltaSafe) + "/" + (blockTotal + deltaTotal));
+//     // }
+//      assert blockSafe + deltaSafe >= 0 : "Can't reduce blockSafe " +
+//        blockSafe + " by " + deltaSafe + ": would be negative";
+//      assert blockTotal + deltaTotal >= 0 : "Can't reduce blockTotal " +
+//        blockTotal + " by " + deltaTotal + ": would be negative";
+//      
+//      blockSafe += deltaSafe;
+//      setBlockTotal(blockTotal + deltaTotal);
     }
     
     private void setSafeModePendingOperation(Boolean val){
@@ -4857,20 +4903,19 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
     
     //HOP
-    private synchronized void adjustSafeBlocks(Set<Long> safeBlocks) {
-      int lastSafeBlockSize = this.safeBlocks.size();
-      this.safeBlocks.addAll(safeBlocks);
-      int newSafeBlockSize = this.safeBlocks.size();
-      int deltaSafe = (newSafeBlockSize - lastSafeBlockSize);
-      if (LOG.isDebugEnabled()) {
-        LOG.debug("Adjusting safe blocks from "
-                + blockSafe + "/" + blockTotal + " to "
-                + (blockSafe + deltaSafe) + "/" + blockTotal);
-      }
-      assert blockSafe + deltaSafe >= 0 : "Can't reduce blockSafe "
-              + blockSafe + " by " + deltaSafe + ": would be negative";
+    private void adjustSafeBlocks(Set<Long> safeBlocks) throws IOException {
+      int lastSafeBlockSize = blockSafe();
+      addSafeBlocks(safeBlocks);
+      int newSafeBlockSize = blockSafe();
+      //if (LOG.isDebugEnabled()) {
+        LOG.error("xxx: Adjusting safe blocks from "
+                + lastSafeBlockSize + "/" + blockTotal + " to "
+                + newSafeBlockSize + "/" + blockTotal);
+     // }
+//      assert blockSafe + deltaSafe >= 0 : "Can't reduce blockSafe "
+//              + blockSafe + " by " + deltaSafe + ": would be negative";
 
-      blockSafe += deltaSafe;
+//      blockSafe += deltaSafe;
       setSafeModePendingOperation(true);
     }
     
@@ -4878,11 +4923,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if(safeModePendingOperation.get() != null){
         if(safeModePendingOperation.get().booleanValue() == true)
         {
-          LOG.debug("SafeMode about to perfom pending safemode operation");
+          LOG.error("xxx: SafeMode about to perfom pending safemode operation");
           safeModePendingOperation.set(false);
           checkMode();
         }
       }
+    }
+    
+    int blockSafe() throws IOException{
+      return getBlockSafe();
     }
   }
     
@@ -4894,28 +4943,33 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   class SafeModeMonitor implements Runnable {
     /** interval in msec for checking safe mode: {@value} */
     private static final long recheckInterval = 1000;
-      
+    
     /**
      */
     @Override
     public void run() {
-      while (fsRunning && (safeMode != null && !safeMode.canLeave())) {
-        try {
-          Thread.sleep(recheckInterval);
-        } catch (InterruptedException ie) {
+      try {
+        while (fsRunning && (safeMode != null && !safeMode.canLeave())) {
+          safeMode.checkMode();
+          try {
+            Thread.sleep(recheckInterval);
+          } catch (InterruptedException ie) {
+          }
         }
-      }
-      if (!fsRunning) {
-        LOG.info("NameNode is being shutdown, exit SafeModeMonitor thread");
-      } else {
-        try {
-          // leave safe mode and stop the monitor
-          leaveSafeMode();
-        } catch (IOException ex) {
-          LOG.error(ex);
+        if (!fsRunning) {
+          LOG.info("NameNode is being shutdown, exit SafeModeMonitor thread");
+        } else {
+          try {
+            // leave safe mode and stop the monitor
+            leaveSafeMode();
+          } catch (IOException ex) {
+            LOG.error(ex);
+          }
         }
+        smmthread = null;
+      } catch (IOException ex) {
+        LOG.error(ex);
       }
-      smmthread = null;
     }
   }
     
@@ -4951,6 +5005,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
       return false;
+    if (!isClusterInSafeMode()) {
+      safeMode.clusterLeftSafeModeAlready();
+      return false;
+    }else{
+      safeMode.tryToHelpToGetout();
+    }
     return safeMode.isOn();
   }
 
@@ -4982,23 +5042,23 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public void incrementSafeBlockCount(int replication) throws IOException {
+  public void incrementSafeBlockCount(BlockInfo blk) throws IOException {
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
       return;
-    safeMode.incrementSafeBlockCount((short)replication);
+    safeMode.incrementSafeBlockCount(blk);
   }
 
   @Override
-  public void decrementSafeBlockCount(Block b) throws PersistanceException, IOException{
+  public void decrementSafeBlockCount(BlockInfo b) throws PersistanceException, IOException{
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null) // mostly true
       return;
-    BlockInfo storedBlock = blockManager.getStoredBlock(b);
-    if (storedBlock.isComplete()) {
-      safeMode.decrementSafeBlockCount((short)blockManager.countNodes(b).liveReplicas());
+    //BlockInfo storedBlock = blockManager.getStoredBlock(b);
+    if (b.isComplete()) {
+      safeMode.decrementSafeBlockCount(b/*(short)blockManager.countNodes(b).liveReplicas()*/);
     }
   }
   
@@ -5127,6 +5187,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //HOP      }
       if (!isInSafeMode()) {
         safeMode = new SafeModeInfo(resourcesLow);
+        Variables.enterClusterSafeMode();
         return;
       }
       if (resourcesLow) {
@@ -6721,7 +6782,57 @@ public class FNode implements Comparable<FNode>{
     return conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
   }
   
-  //END_HOP_CODE
+   private void addSafeBlock(final Long safeBlock) throws IOException {
+     Set<Long> safeBlocks = new HashSet<Long>();
+     safeBlocks.add(safeBlock);
+     addSafeBlocks(safeBlocks);
+  }
   
+  private void removeSafeBlock(final Long safeBlock) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.REMOVE_SAFE_BLOCKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
+        da.remove(safeBlock);
+        return null;
+      }
+    };
+  }
+   
+  private void addSafeBlocks(final Set<Long> safeBlocks) throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.ADD_SAFE_BLOCKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
+        da.insert(safeBlocks);
+        return null;
+      }
+    }.handle();
+  }
 
+  private int getBlockSafe() throws IOException {
+    return (Integer) new LightWeightRequestHandler(HDFSOperationType.GET_SAFE_BLOCKS_COUNT) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
+        return da.countAll();
+      }
+    }.handle();
+  }
+  
+  private void clearSafeBlocks() throws IOException {
+    new LightWeightRequestHandler(HDFSOperationType.CLEAR_SAFE_BLOCKS) {
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
+        da.removeAll();
+        return null;
+      }
+    }.handle();
+  }
+
+  private boolean isClusterInSafeMode() throws IOException {
+    return Variables.isClusterInSafeMode();
+  }
+  //END_HOP_CODE
 }
