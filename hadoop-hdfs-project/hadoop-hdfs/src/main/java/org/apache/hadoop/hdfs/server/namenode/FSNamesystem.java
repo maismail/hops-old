@@ -3204,37 +3204,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     };
     return (Boolean) deleteHandler.handle(this);
   }
-
-  boolean deleteWithTransactionIgnoreLocalSubtreeLock(final String src, final boolean recursive)
-      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-            addINode(
-                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}, true, getNamenodeId()).
-            addLease(LockType.WRITE).
-            addLeasePath(LockType.WRITE).
-            addBlock().
-            addReplica().
-            addCorrupt().
-            addReplicaUc().
-            addUnderReplicatedBlock().
-            addPendingBlock().
-            addInvalidatedBlock().
-            addQuotaUpdateOnSubtree();
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return delete(src, recursive);
-      }
-    };
-    return (Boolean) deleteHandler.handle(this);
-  }
     
   boolean delete(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
