@@ -45,6 +45,9 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
@@ -1309,14 +1312,13 @@ public class TestFileCreation {
       dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
       Path p1 = new Path("/f1/test.txt");
       Path p2 = new Path("/f2"); 
-      
       int blocks  = 1;
-//      FSDataOutputStream out = dfs.create(p1);
-//      int i = 0;
-//      for (; i < blocks; i++) {
-//        out.write(i);
-//      }
-//      out.close();
+      FSDataOutputStream out = dfs.create(p1);
+      int i = 0;
+      for (; i < blocks; i++) {
+        out.write(i);
+      }
+      out.close();
       
       
       

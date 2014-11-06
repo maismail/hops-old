@@ -40,7 +40,6 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   @Override
   public void clear() {
-    log("CLEARING THE VARIABLES CONTEXT");
     storageCallPrevented = false;
     variables.clear();
     modifiedVariables.clear();

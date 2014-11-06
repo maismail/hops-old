@@ -445,6 +445,7 @@ public class NameNode {
 
     protected void loadNamesystem(Configuration conf) throws IOException {
         this.namesystem = FSNamesystem.loadFromDisk(conf);
+        this.namesystem.setNameNode(this);
     }
 
     NamenodeRegistration getRegistration() {
@@ -1644,7 +1645,7 @@ public class NameNode {
             Random rand = new Random();
             rand.setSeed(System.currentTimeMillis());
             ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
-            LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
+            LOG.debug("XXX Returning " + ann.getRpcIpAddress() + " for Next Block report");
             return ann;
         }
     }
@@ -1654,6 +1655,25 @@ public class NameNode {
             StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
                       UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
                       InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);  
+    }
+
+    public boolean isNameNodeAlive(long namenodeId) {
+      List<ActiveNamenode> activeNamenodes = getActiveNamenodes().getActiveNamenodes();
+      return isNameNodeAlive(activeNamenodes, namenodeId);
+    }
+
+    public static boolean isNameNodeAlive(Collection<ActiveNamenode> activeNamenodes, long namenodeId) {
+      if (activeNamenodes == null) {
+        // We do not know yet, be conservative
+        return true;
+      }
+
+      for (ActiveNamenode namenode : activeNamenodes) {
+        if (namenode.getId() == namenodeId) {
+          return true;
+        }
+      }
+      return false;
     }
   //END_HOP_CODE
 }

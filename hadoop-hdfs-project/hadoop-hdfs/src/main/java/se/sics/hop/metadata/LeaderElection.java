@@ -43,6 +43,7 @@ public class LeaderElection extends Thread {
     protected List<Long> nnList = new ArrayList<Long>();
     private int missedHeartBeatThreshold = 2;
     String hostname;
+    String httpAddress;
 
     private Map<Integer, List<HopLeader>> history = new HashMap<Integer, List<HopLeader>>();
     private int historyCounter = 0;
@@ -55,6 +56,7 @@ public class LeaderElection extends Thread {
         this.leadercheckInterval = conf.getInt(DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY, DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT);
         this.missedHeartBeatThreshold = conf.getInt(DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY, DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT);
         hostname = nn.getNameNodeAddress().getAddress().getHostAddress() + ":" + nn.getNameNodeAddress().getPort();
+        httpAddress = conf.get(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY,DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_DEFAULT );
         initialize();
     }
 
@@ -234,7 +236,8 @@ public class LeaderElection extends Thread {
 
         // store updated counter in [COUNTER] table
         // hostname is in "ip:port" format
-        updateCounter(counter, nn.getId(), hostname);
+        
+        updateCounter(counter, nn.getId(), hostname, httpAddress);
 
         historyCounter++;
         List<HopLeader> leaders = getAllNameNodes();
@@ -279,12 +282,12 @@ public class LeaderElection extends Thread {
         return newId;
     }
 
-    private void updateCounter(long counter, long id, String hostname) throws IOException, PersistanceException {
+    private void updateCounter(long counter, long id, String hostname, String httpAddress) throws IOException, PersistanceException {
         // update the counter in [Leader]
         // insert the row. if it exists then update it
         // otherwise create a new row
 
-        HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname);
+        HopLeader leader = new HopLeader(id, counter, System.currentTimeMillis(), hostname, httpAddress);
         LOG.debug(hostname + ") Adding/updating row " + leader.toString() + " history counter " + historyCounter);
         EntityManager.add(leader);
     }
@@ -359,7 +362,8 @@ public class LeaderElection extends Thread {
             StringTokenizer st = new StringTokenizer(hostNameNPort, ":");
             String hostName = st.nextToken();
             int port = Integer.parseInt(st.nextToken());
-            ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port);
+            String httpAddress = l.getHttpAddress();
+            ActiveNamenode ann = new ActiveNamenode(l.getId(), l.getHostName(), hostName, port, httpAddress);
             activeNameNodeList.add(ann);
         }
 

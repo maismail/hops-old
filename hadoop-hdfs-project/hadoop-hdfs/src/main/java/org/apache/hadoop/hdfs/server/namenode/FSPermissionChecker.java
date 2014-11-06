@@ -29,9 +29,13 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.io.DataInputBuffer;
+import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.hop.exception.PersistanceException;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
+import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 
 /** 
  * Class that helps in checking file system permission.
@@ -203,24 +207,40 @@ class FSPermissionChecker {
   }
 
   /** Guarded by {@link FSNamesystem#readLock()} */
-  void check(INode inode, FsAction access
-      ) throws AccessControlException {
+  void check(INode inode, FsAction access) throws AccessControlException {
     if (inode == null) {
       return;
     }
     FsPermission mode = inode.getFsPermission();
+    check(inode.getId(), access, mode, inode.getUserName(), inode.getGroupName());
+  }
 
-    if (user.equals(inode.getUserName())) { //user class
+  void check(ProjectedINode inode, FsAction access) throws IOException {
+    if (inode == null) {
+      return;
+    }
+
+    DataInputBuffer buffer = new DataInputBuffer();
+    buffer.reset(inode.getPermission(), inode.getPermission().length);
+    PermissionStatus ps = PermissionStatus.read(buffer);
+    FsPermission mode = ps.getPermission();
+
+    check(inode.getId(), access, mode, ps.getUserName(), ps.getGroupName());
+  }
+
+  void check(int inodeId, FsAction access, FsPermission mode, String userName, String groupName)
+      throws AccessControlException {
+    if (user.equals(userName)) { //user class
       if (mode.getUserAction().implies(access)) { return; }
     }
-    else if (groups.contains(inode.getGroupName())) { //group class
+    else if (groups.contains(groupName)) { //group class
       if (mode.getGroupAction().implies(access)) { return; }
     }
     else { //other class
       if (mode.getOtherAction().implies(access)) { return; }
     }
     throw new AccessControlException("Permission denied: user=" + user
-        + ", access=" + access + ", inode=" + inode.getId());
+        + ", access=" + access + ", inode=" + inodeId);
   }
 
   /** Guarded by {@link FSNamesystem#readLock()} */

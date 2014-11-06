@@ -3721,6 +3721,7 @@ assert storedBlock.findDatanode(dn) < 0 : "Block " + block
                 addCorrupt().
                 addPendingBlock().
                 addUnderReplicatedBlock().
+                addReplicationIndex(TransactionLockTypes.LockType.WRITE).
                 addReplicaUc();
         return tla.acquireByBlock(inodeIdentifier);
       }

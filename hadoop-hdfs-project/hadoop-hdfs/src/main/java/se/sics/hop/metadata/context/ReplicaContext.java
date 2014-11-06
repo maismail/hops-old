@@ -93,7 +93,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
 //            throw new LockUpgradeException("Trying to upgrade replica locks");
 //        }
       
-      log("prepare-replica", CacheHitState.NA, new String[]{"removed size",Integer.toString(removedReplicas.size()),"new Size", Integer.toString(newReplicas.size()), "modified size", Integer.toString(modifiedReplicas.size())});
+      //log("prepare-replica", CacheHitState.NA, new String[]{"removed size",Integer.toString(removedReplicas.size()),"new Size", Integer.toString(newReplicas.size()), "modified size", Integer.toString(modifiedReplicas.size())});
       dataAccess.prepare(removedReplicas.values(), newReplicas.values(), modifiedReplicas.values());
     }
 

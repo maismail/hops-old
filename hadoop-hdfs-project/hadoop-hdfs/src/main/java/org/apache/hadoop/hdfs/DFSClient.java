@@ -3030,5 +3030,17 @@ public class DFSClient implements java.io.Closeable {
     }
     return null;
   }
+ 
+  public void testDBLocking(final List<String> params) throws IOException{
+      ClientActionHandler handler = new ClientActionHandler() {
+
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.testDBLocking(params);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler, "testDBLocking");
+    }
   //END_HOP_CODE
 }

@@ -742,7 +742,7 @@ public class FSDirectory implements Closeable {
     if (isDir(dst)) {
       dst += Path.SEPARATOR + new Path(src).getName();
     }
-
+    
     // check the validity of the destination
     if (dst.equals(src)) {
       return true;
@@ -752,9 +752,9 @@ public class FSDirectory implements Closeable {
       throw new FileAlreadyExistsException(
           "Cannot rename symlink "+src+" to its target "+dst);
     }
-
+    
     // dst cannot be directory or a file under src
-    if (dst.startsWith(src) &&
+    if (dst.startsWith(src) && 
         dst.charAt(src.length()) == Path.SEPARATOR_CHAR) {
       NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
           + "failed to rename " + src + " to " + dst
@@ -2019,7 +2019,7 @@ public class FSDirectory implements Closeable {
     verifyQuota(dstInodes, dstInodes.length - 1, nsDelta, dsDelta,
         commonAncestor);
   }
-
+  
   private void verifyQuotaForRename(INode[] srcInodes, INode[]dstInodes, long srcNsCount, long srcDsCount,
       long dstNsCount, long dstDsCount)
       throws QuotaExceededException, PersistanceException {
@@ -2181,7 +2181,7 @@ public class FSDirectory implements Closeable {
     }
     return inode;
   }
-
+  
   private <T extends INode> T addChildNoQuotaCheck(INode[] pathComponents,
       int pos, T child, long childNamespace, long childDiskspace) throws PersistanceException {
     T inode = null;
@@ -2384,7 +2384,7 @@ public class FSDirectory implements Closeable {
    * @throws UnresolvedLinkException if a symlink is encountered in src.
    */
   INodeDirectory unprotectedSetQuota(String src, long nsQuota, long dsQuota)
-    throws FileNotFoundException, QuotaExceededException,
+    throws FileNotFoundException, QuotaExceededException, 
       UnresolvedLinkException, PersistanceException {
     if(!isQuotaEnabled()) return null;    //HOP
     

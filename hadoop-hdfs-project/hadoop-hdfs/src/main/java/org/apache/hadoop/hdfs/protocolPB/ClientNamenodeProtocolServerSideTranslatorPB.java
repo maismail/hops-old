@@ -996,8 +996,9 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     ClientNamenodeProtocolProtos.ActiveNamenodeProto.Builder anp = ClientNamenodeProtocolProtos.ActiveNamenodeProto.newBuilder();
     anp.setId(p.getId());
     anp.setHostname(p.getHostname());
-    anp.setIpAddress(p.getIpAddress());
-    anp.setPort(p.getPort());
+    anp.setIpAddress(p.getRpcIpAddress());
+    anp.setPort(p.getRpcPort());
+    anp.setHttpAddress(p.getHttpAddress());
     return anp.build();
   }
   @Override
@@ -1009,5 +1010,18 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(ex);
     }
   }
+  
+  @Override
+    public ClientNamenodeProtocolProtos.DBLockingResponseProto testDBLocking(RpcController controller, ClientNamenodeProtocolProtos.DBLockingProto request) throws ServiceException {
+        try {
+          server.testDBLocking(request.getParamsList());
+          ClientNamenodeProtocolProtos.DBLockingResponseProto response = ClientNamenodeProtocolProtos.DBLockingResponseProto.newBuilder().build();
+          return response;
+      } catch (IOException ex) {
+          throw new ServiceException(ex);
+      }
+    }
   //END_HOP_CODE
+
+    
 }

@@ -21,8 +21,8 @@ for i in ${All_Unique_Hosts[@]}
 do
 	connectStr="$HOP_User@$i"
 	echo "Killing  $1 on $i"
-        pids=`ssh $connectStr pgrep $1`
+        pids=`ssh $connectStr pgrep -u $HOP_User $1`
         echo "PIDS to kill "$pids
-	ssh $connectStr  kill -9 $pids
+	ssh $connectStr  kill -9 $pids 
 done
 

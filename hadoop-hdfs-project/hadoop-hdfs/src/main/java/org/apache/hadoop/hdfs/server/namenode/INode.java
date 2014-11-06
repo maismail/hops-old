@@ -17,10 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.ContentSummary;
@@ -29,10 +26,11 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.primitives.SignedBytes;
-import java.util.Comparator;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import se.sics.hop.Common;
@@ -689,6 +687,14 @@ public abstract class INode implements Comparable<byte[]> {
 
   public void unlockSubtree() {
     setSubtreeLocked(false);
+  }
+
+  public boolean isFile() {
+    return !isDirectory() && !isSymlink();
+  }
+
+  long getPermission() {
+    return permission;
   }
   //END_HOP_CODE:
 }

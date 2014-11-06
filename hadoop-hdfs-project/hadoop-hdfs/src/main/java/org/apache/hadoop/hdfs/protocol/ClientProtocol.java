@@ -1018,6 +1018,7 @@ public interface ClientProtocol {
   public void ping() throws IOException ;   // client checks if the NN is alive
   public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
   public void changeConf(List<String> props, List<String> newVals) throws IOException;
+  public void testDBLocking(final List<String> params) throws IOException;
   //END_HOP_CODE
 
   ///////////////////////////////////////

@@ -12,7 +12,6 @@ import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
-import org.apache.log4j.NDC;
 import se.sics.hop.Common;
 import se.sics.hop.exception.StorageCallPreventedException;
 import static se.sics.hop.metadata.hdfs.entity.EntityContext.currentLockMode;
@@ -67,7 +66,6 @@ public class INodeContext extends EntityContext<INode> {
 
   @Override
   public void clear() {
-    log("CLEARING THE INODE CONTEXT");
     storageCallPrevented = false;
     inodesIdIndex.clear();
     inodesNameParentIndex.clear();
@@ -215,7 +213,7 @@ public class INodeContext extends EntityContext<INode> {
   public void update(INode inode) throws PersistanceException {
 
     if (removedInodes.containsKey(inode.getId())) {
-      throw new TransactionContextException("Removed  inode passed to be persisted. NDC peek " + NDC.peek());
+      throw new TransactionContextException("Removed  inode passed to be persisted.");
     }
 
     inodesIdIndex.put(inode.getId(), inode);

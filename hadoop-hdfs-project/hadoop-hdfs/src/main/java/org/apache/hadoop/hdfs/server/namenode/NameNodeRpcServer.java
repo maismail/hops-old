@@ -1163,6 +1163,11 @@ class NameNodeRpcServer implements NamenodeProtocols {
   public void changeConf(List<String> props, List<String> newVals) throws IOException {
     namesystem.changeConf(props, newVals);
   }
+  
+  @Override
+  public void testDBLocking(final List<String> params) throws IOException {
+   namesystem.testDBLocking(params);   
+  }
 
   @Override // ClientProtocol
   public void create(

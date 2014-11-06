@@ -32,8 +32,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   //START_HOP_CODE  
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
-  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
- // public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
+ // public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
+  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
@@ -57,7 +57,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT = 1000;
 
   public static final String DFS_NAMENODE_QUOTA_UPDATE_LIMIT_KEY = "dfs.namenode.quota.update.limit";
-  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 10000;
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 100000;
 
   public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZE = "dfs.namenode.quota.update.id.batchsize";
   public static final int DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZ_DEFAULT = 100000;
@@ -81,7 +81,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
   
   /*for client failover api*/
-  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
+  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.addresses";  // format {ip:port, ip:port, ip:port} comma separated
   public static final String  DFS_NAMENODES_RPC_ADDRESS_DEFAULT = "";
   
   public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
@@ -100,7 +100,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_NAME_SPACE_ID_DEFAULT = 911; // :) 
   
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
-  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 5; //min value is 0. Better set it >= 1
+  public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 2; //min value is 0. Better set it >= 1
   
   public static final String  DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.initial.wait.on.retry";
   public static final int     DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
@@ -134,9 +134,15 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY = "dfs.namenode.legacy-content-summary.enable";
   public static final boolean DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT = false;
+  
+  public static final String DFS_NDC_ENABLED_KEY = "dfs.ndc.enable";
+  public static final boolean DFS_NDC_ENABLED_DEFAULT = true;
 
   public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
   public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
+
+  public static final String DFS_SUBTREE_EXECUTOR_LIMIT_KEY = "dfs.namenode.subtree-executor-limit";
+  public static final int DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT = 20;
 
   public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
   public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = false;

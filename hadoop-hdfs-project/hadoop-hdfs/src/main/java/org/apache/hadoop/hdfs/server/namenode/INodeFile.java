@@ -98,6 +98,10 @@ public class INodeFile extends INode implements BlockCollection {
   /** @return the replication factor of the file. */
   @Override
   public short getBlockReplication() {
+    return extractBlockReplication(header);
+  }
+
+  static short extractBlockReplication(long header) {
     return (short) ((header & HEADERMASK) >> BLOCKBITS);
   }
 
@@ -110,6 +114,10 @@ public class INodeFile extends INode implements BlockCollection {
   /** @return preferred block size (in bytes) of the file. */
   @Override
   public long getPreferredBlockSize() {
+    return extractBlockSize(header);
+  }
+
+  static long extractBlockSize (long header) {
     return header & ~HEADERMASK;
   }
 
@@ -204,7 +212,8 @@ public class INodeFile extends INode implements BlockCollection {
     return computeFileSize(includesBlockInfoUnderConstruction, getBlocks());
   }
 
-  long computeFileSize(boolean includesBlockInfoUnderConstruction, BlockInfo[] blocks) throws PersistanceException {
+  static long computeFileSize(boolean includesBlockInfoUnderConstruction, BlockInfo[] blocks)
+      throws PersistanceException {
     if (blocks == null || blocks.length == 0) {
       return 0;
     }
@@ -231,10 +240,15 @@ public class INodeFile extends INode implements BlockCollection {
   }
   
   long diskspaceConsumed(Block[] blkArr) {
+    return diskspaceConsumed(blkArr, isUnderConstruction(), getPreferredBlockSize(), getBlockReplication());
+  }
+
+  static long diskspaceConsumed(Block[] blkArr, boolean underConstruction,
+        long preferredBlockSize, short blockReplication) {
     long size = 0;
-    if(blkArr == null) 
+    if(blkArr == null)
       return 0;
-    
+
     for (Block blk : blkArr) {
       if (blk != null) {
         size += blk.getNumBytes();
@@ -243,11 +257,11 @@ public class INodeFile extends INode implements BlockCollection {
     /* If the last block is being written to, use prefferedBlockSize
      * rather than the actual block size.
      */
-    if (blkArr.length > 0 && blkArr[blkArr.length-1] != null && 
-        isUnderConstruction()) {
-      size += getPreferredBlockSize() - blkArr[blkArr.length-1].getNumBytes();
+    if (blkArr.length > 0 && blkArr[blkArr.length-1] != null &&
+        underConstruction) {
+      size += preferredBlockSize - blkArr[blkArr.length-1].getNumBytes();
     }
-    return size * getBlockReplication();
+    return size * blockReplication;
   }
   
   /**

@@ -36,6 +36,7 @@ import se.sics.hop.metadata.hdfs.entity.hdfs.HopINode;
 import se.sics.hop.exception.HopEnitityInitializationError;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 
 /**
  *
@@ -58,6 +59,13 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
   public List<INode> indexScanFindInodesByParentId(int parentId) throws StorageException {
     List<INode> list = (List) convertDALtoHDFS(dataAccess.indexScanFindInodesByParentId(parentId));
     Collections.sort(list, INode.Order.ByName);
+    return list;
+  }
+
+  @Override
+  public List<ProjectedINode> findInodesForSubtreeOperationsWithReadLock(int parentId) throws StorageException {
+    List<ProjectedINode> list = dataAccess.findInodesForSubtreeOperationsWithReadLock(parentId);
+    Collections.sort(list);
     return list;
   }
 

@@ -94,7 +94,7 @@ public class TestSubtreeLock extends TestCase {
 
       FSNamesystem.FileTree fileTree = cluster.getNamesystem().createFileTreeFromPath(path0.toUri().getPath());
       fileTree.buildUp();
-      assertEquals(path0.getName(), fileTree.getSubtreeRoot().getLocalName());
+      assertEquals(path0.getName(), fileTree.getSubtreeRoot().getName());
       assertEquals(7, fileTree.getAll().size());
       assertEquals(4, fileTree.getHeight());
       assertEquals(file3.toUri().getPath(), fileTree.createAbsolutePath(path0.toUri().getPath(), fileTree.getInodeById(8 /*file3*/)));
@@ -290,9 +290,22 @@ public class TestSubtreeLock extends TestCase {
       cluster.waitActive();
       DistributedFileSystem fs = cluster.getFileSystem();
       assertTrue(fs.mkdir(new Path("/foo"), FsPermission.getDefault()));
+
+      TestFileCreation.createFile(fs, new Path("/foo/bar"), 1).close();
+      assertTrue(fs.delete(new Path("/foo/bar"), false));
+      assertFalse(fs.exists(new Path("/foo/bar")));
+
       TestFileCreation.createFile(fs, new Path("/foo/bar"), 1).close();
       assertTrue(fs.delete(new Path("/foo/bar"), true));
       assertFalse(fs.exists(new Path("/foo/bar")));
+
+      assertTrue(fs.mkdir(new Path("/foo/bar"), FsPermission.getDefault()));
+      TestFileCreation.createFile(fs, new Path("/foo/bar/foo"), 1).close();
+      assertTrue(fs.delete(new Path("/foo"), true));
+      assertFalse(fs.exists(new Path("/foo/bar/foo")));
+      assertFalse(fs.exists(new Path("/foo/bar/foo")));
+      assertFalse(fs.exists(new Path("/foo/bar")));
+      assertFalse(fs.exists(new Path("/foo")));
     } finally {
       if (cluster != null) {
         cluster.shutdown();
