@@ -39,6 +39,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     super.acquire();
     acquireEncodingLock();
+    acquireEncodingLockOnPathLeaf();
     return getLocks();
   }
 
@@ -60,6 +61,22 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
       iNodeScanLookUpByID(TransactionLockTypes.INodeLockType.WRITE, status.getInodeId(), getLocks());
       // We didn't have a lock on it when reading it. So read it again.
       acquireLock(locks.getEncodingStatusLock(), EncodingStatus.Finder.ByParityInodeId, locks.getEncodingStatusInodeId());
+    }
+  }
+
+  private void acquireEncodingLockOnPathLeaf() throws PersistanceException {
+    ErasureCodingTransactionLocks locks = getLocks();
+    if (locks.getEncodingStatusLockOnPathLeaf() != null) {
+      INode target = allResolvedINodes.getFirst().getLast();
+      acquireLock(locks.getEncodingStatusLockOnPathLeaf(), EncodingStatus.Finder.ByInodeId, target.getId());
+    }
+  }
+
+  private void acquireEncodingLockByParityPathLeaf() throws PersistanceException {
+    ErasureCodingTransactionLocks locks = getLocks();
+    if (locks.getEncodingStatusLockByParityFilePathLeaf() != null) {
+      INode target = allResolvedINodes.getFirst().getLast();
+      acquireLock(locks.getEncodingStatusLockOnPathLeaf(), EncodingStatus.Finder.ByParityInodeId, target.getId());
     }
   }
 

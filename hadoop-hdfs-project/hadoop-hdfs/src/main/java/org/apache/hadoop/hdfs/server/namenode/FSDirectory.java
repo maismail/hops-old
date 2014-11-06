@@ -1589,7 +1589,7 @@ public class FSDirectory implements Closeable {
    *         
    * @see INodeDirectory#getExistingPathINodes(byte[][], INode[])
    */
-  INode[] getExistingPathINodes(String path) 
+  INode[] getExistingPathINodes(String path)
     throws UnresolvedLinkException, PersistanceException {
     readLock();
     try {

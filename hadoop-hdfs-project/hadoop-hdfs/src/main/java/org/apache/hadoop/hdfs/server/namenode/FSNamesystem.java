@@ -1879,8 +1879,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     assert hasReadOrWriteLock();
     Path parent = new Path(src).getParent();
     if (parent != null) {
-      INode[] pathINodes = dir.getExistingPathINodes(parent.toString());
-      INode parentNode = pathINodes[pathINodes.length - 1];
+      INode parentNode = getINode(parent.toString());
       if (parentNode == null) {
         throw new FileNotFoundException("Parent directory doesn't exist: "
             + parent.toString());
@@ -7819,8 +7818,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
-    final int inodeId = findInodeId(filePath);
-
     TransactionalRequestHandler findReq = new TransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
@@ -7828,13 +7825,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
-        lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
+        lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
         return lockAcquirer.acquire();
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        return EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+        INode targetNode = getINode(filePath);
+        return EntityManager.find(EncodingStatus.Finder.ByInodeId, targetNode.getId());
       }
     };
     Object result = findReq.handle();
@@ -7872,21 +7870,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return (EncodingStatus) result;
   }
 
-  public String getPath(int inodeId) throws IOException {
-    INode iNode = findInode(inodeId);
-    if (iNode == null) {
-      return null;
-    }
-    return getPath(iNode);
-  }
-
-  public String getPath(INode iNode) throws IOException {
+  public String getPath(int id) throws IOException {
     LinkedList<INode> resolvedInodes = new LinkedList<INode>();
     boolean resovled[] = new boolean[1];
-    INodeUtil.findPathINodesById(iNode.getId(), resolvedInodes, resovled);
+    INodeUtil.findPathINodesById(id, resolvedInodes, resovled);
 
     if (resovled[0] == false) {
-      throw new IOException("Path could not be resolved for " + iNode);
+      throw new IOException("Path could not be resolved for inode with id " + id);
     }
 
     StringBuilder builder = new StringBuilder();
@@ -7987,7 +7977,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
-            lockAcquirer.getLocks().addEncodingStatusLock(encodingStatus.getInodeId());
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
             return lockAcquirer.acquire();
           }
 
@@ -8002,7 +7992,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   public void revokeEncoding(final String filePath, short replication) throws IOException {
     setReplication(filePath, replication);
-    final int inodeId = findInodeId(filePath);
     HDFSTransactionalRequestHandler updateEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
@@ -8011,13 +8000,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{filePath});
-            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
             return lockAcquirer.acquire();
           }
 
           @Override
           public Object performTask() throws PersistanceException, IOException {
-            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
+            INode targetNode = getINode(filePath);
+            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, targetNode.getId());
             encodingStatus.setRevoked(true);
             EntityManager.update(encodingStatus);
             return null;
@@ -8026,12 +8016,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     updateEncodingStatusHandler.handle();
   }
 
-  public void updateEncodingStatus(String sourceFile, int inodeId, EncodingStatus.Status status) throws IOException {
-    updateEncodingStatus(sourceFile, inodeId, status, null);
+  public void updateEncodingStatus(String sourceFile, EncodingStatus.Status status) throws IOException {
+    updateEncodingStatus(sourceFile, status, null, null);
   }
 
-  public void updateEncodingStatus(final String sourceFile, final int inodeId,
-                                   final EncodingStatus.Status status, final String parityFile) throws IOException {
+  public void updateEncodingStatus(String sourceFile, EncodingStatus.ParityStatus status) throws IOException {
+    updateEncodingStatus(sourceFile, null, status, null);
+  }
+
+  public void updateEncodingStatus(String sourceFile, EncodingStatus.Status status, String parityFile)
+      throws IOException {
+    updateEncodingStatus(sourceFile, status, null, parityFile);
+  }
+
+  public void updateEncodingStatus(final String sourceFile, final EncodingStatus.Status status,
+      final EncodingStatus.ParityStatus parityStatus, final String parityFile) throws IOException {
     HDFSTransactionalRequestHandler updateEncodingStatusHandler =
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
@@ -8040,18 +8039,26 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
             return lockAcquirer.acquire();
           }
 
           @Override
           public Object performTask() throws PersistanceException, IOException {
-            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
-            encodingStatus.setStatus(status);
+            INode targetNode = getINode(sourceFile);
+            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, targetNode.getId());
+            if (status != null) {
+              encodingStatus.setStatus(status);
+              encodingStatus.setStatusModificationTime(System.currentTimeMillis());
+            }
             if (parityFile != null) {
               encodingStatus.setParityFileName(parityFile);
+              // Should be updated together with the status so the modification time is already set
             }
-            encodingStatus.setStatusModificationTime(System.currentTimeMillis());
+            if (parityStatus != null) {
+              encodingStatus.setParityStatus(parityStatus);
+              encodingStatus.setStatusModificationTime(System.currentTimeMillis());
+            }
             EntityManager.update(encodingStatus);
             return null;
           }
@@ -8059,30 +8066,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     updateEncodingStatusHandler.handle();
   }
 
-  public void updateEncodingStatus(final String sourceFile, final int inodeId,
-                                   final EncodingStatus.ParityStatus status) throws IOException {
-    HDFSTransactionalRequestHandler updateEncodingStatusHandler =
-        new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-
-          @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLock(inodeId);
-            return lockAcquirer.acquire();
-          }
-
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-            EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, inodeId);
-            encodingStatus.setParityStatus(status);
-            encodingStatus.setStatusModificationTime(System.currentTimeMillis());
-            EntityManager.update(encodingStatus);
-            return null;
-          }
-        };
-    updateEncodingStatusHandler.handle();
+  public INode getINode(String path) throws UnresolvedLinkException, PersistanceException {
+    INode[] inodes =  dir.getExistingPathINodes(path);
+    return inodes[inodes.length-1];
   }
 
   public boolean isErasureCodingEnabled() {
