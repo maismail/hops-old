@@ -1180,8 +1180,8 @@ class NameNodeRpcServer implements NamenodeProtocols {
       long blockSize,
       EncodingPolicy policy) throws IOException {
     create(src, masked, clientName, flag, createParent, replication, blockSize);
-    LOG.info("Create file " + src + " with policy " + policy.toString());
     if (policy != null && namesystem.isErasureCodingEnabled()) {
+      LOG.info("Create file " + src + " with policy " + policy.toString());
       namesystem.addEncodingStatus(src, policy);
     }
   }
