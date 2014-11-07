@@ -2706,11 +2706,11 @@ public class DFSClient implements java.io.Closeable {
           //black list the namenode 
           //so that it is not used again
           if (handle != null) {
-            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN used was " + handle.getNamenode() + ", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN used was " + handle.getNamenode() + ", retries left (" + (MAX_RPC_RETRIES - (i)) + ")", e);
             namenodeSelector.blackListNamenode(handle);
             blackListedNamenodes.add(handle.getNamenode());
           } else {
-            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")", e);
           }
 
           try {
@@ -2722,7 +2722,7 @@ public class DFSClient implements java.io.Closeable {
           continue;
         } else if (e instanceof RemoteException
             && ((RemoteException) e).unwrapRemoteException() instanceof SubtreeLockedException) {
-          LOG.debug(thisFnID+") " + callerID + " RPC failed. Subtree was locked, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          LOG.debug(thisFnID+") " + callerID + " RPC failed. Subtree was locked, retries left (" + (MAX_RPC_RETRIES - (i)) + ")", e);
           try {
             LOG.debug(thisFnID + ") RPC failed. Sleep " + waitTime);
             Thread.sleep(waitTime);
@@ -2740,7 +2740,7 @@ public class DFSClient implements java.io.Closeable {
         LOG.warn(thisFnID+") " + callerID + " Failed RPC Trace, " + Thread.currentThread().getStackTrace()[j]);
       }
 
-      LOG.warn(thisFnID+") "+callerID+" Exception was "+exception);
+      LOG.warn(thisFnID+") "+callerID+" Exception was ", exception);
       exception.printStackTrace();
       if (exception != null) {
         if (exception instanceof RemoteException) {
