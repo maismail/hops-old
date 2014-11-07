@@ -4703,7 +4703,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * reached minimal replication.
      * @param replication current replication 
      */
-    private synchronized void incrementSafeBlockCount(Block blk) throws IOException {
+    private void incrementSafeBlockCount(Block blk) throws IOException {
 //      if (replication == safeReplication) {
 //        this.blockSafe++;
 //HOP        checkMode();
@@ -4717,14 +4717,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
      * fallen below minimal replication.
      * @param replication current replication 
      */
-    private synchronized void decrementSafeBlockCount(Block blk) throws IOException {
-//      if (replication == safeReplication-1) {
+    private void decrementSafeBlockCount(Block blk, short replication) throws IOException {
+      if (replication == safeReplication-1) {
 //        this.blockSafe--;
 //        assert blockSafe >= 0 || isManual();
 //HOP        checkMode();
         removeSafeBlock(blk.getBlockId());
         setSafeModePendingOperation(true);
-//      }
+      }
     }
 
     /**
@@ -4916,7 +4916,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //              + blockSafe + " by " + deltaSafe + ": would be negative";
 
 //      blockSafe += deltaSafe;
-      setSafeModePendingOperation(true);
+      //setSafeModePendingOperation(true);
+        checkMode();
     }
     
     private void performSafeModePendingOperation() throws IOException {
@@ -5058,7 +5059,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       return;
     //BlockInfo storedBlock = blockManager.getStoredBlock(b);
     if (b.isComplete()) {
-      safeMode.decrementSafeBlockCount(b/*(short)blockManager.countNodes(b).liveReplicas()*/);
+      safeMode.decrementSafeBlockCount(b, (short)blockManager.countNodes(b).liveReplicas());
     }
   }
   

@@ -1930,7 +1930,6 @@ public class BlockManager {
       public Object performTask() throws PersistanceException, IOException {
         Block[] blks = (Block[]) getParams()[1];
         ReplicaState[] blksStates = (ReplicaState[]) getParams()[2];
-        boolean isLast = (Boolean) getParams()[3];
         
         // scan the report and process newly reported blocks
         for (int index=0; index< blks.length; index++) {
@@ -1943,11 +1942,6 @@ public class BlockManager {
           }
         }      
         
-        if(namesystem.isInStartupSafeMode() && isLast){
-          toRemove.addAll(allMachineBlocks);
-          safeBlocks.removeAll(toRemove);
-          namesystem.adjustSafeModeBlocks(safeBlocks);
-        }
         return null;
       }
     };
@@ -1959,11 +1953,16 @@ public class BlockManager {
         public void handle(int startIndex, int endIndex) throws Exception {
           //blksIds, blks, states
           Object[] blksData = newReport.getBlocksAndIdsAndStates(startIndex, endIndex);
-          boolean isLastSlice = endIndex == numOfReportedBlks;
-          processReportHandler.setParams(blksData[0], blksData[1], blksData[2], isLastSlice);
-          processReportHandler.handle(isLastSlice ? namesystem : null);
+          processReportHandler.setParams(blksData[0], blksData[1], blksData[2]);
+          processReportHandler.handle(null);
         }
       });
+      
+      toRemove.addAll(allMachineBlocks);
+      if (namesystem.isInStartupSafeMode()) {
+        safeBlocks.removeAll(toRemove);
+        namesystem.adjustSafeModeBlocks(safeBlocks);
+      }
     } catch (Exception ex) {
       throw new IOException(ex);
     }
