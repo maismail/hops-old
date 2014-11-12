@@ -4615,11 +4615,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     private void tryToHelpToGetout() throws IOException{
       if(isManual())
         return;
-      
-      if (smmthread == null) {
-        smmthread = new Daemon(new SafeModeMonitor());
-        smmthread.start();
-      }
+      startSafeModeMonitor();
     }
     
     private void clusterLeftSafeModeAlready() throws IOException{
@@ -4666,10 +4662,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
       // start monitor
       reached = now();
-      if (smmthread == null) {
-        smmthread = new Daemon(new SafeModeMonitor());
-        smmthread.start();
-      }
+      startSafeModeMonitor();
+      
       reportStatus("STATE* Safe mode extension entered.", true);
 
       // check if we are ready to initialize replication queues
@@ -4677,7 +4671,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         initializeReplQueues();
       }
     }
-      
+     
+   private synchronized void startSafeModeMonitor(){
+     if (smmthread == null) {
+       smmthread = new Daemon(new SafeModeMonitor());
+       smmthread.start();
+     }
+   }
     /**
      * Set total number of blocks.
      */
