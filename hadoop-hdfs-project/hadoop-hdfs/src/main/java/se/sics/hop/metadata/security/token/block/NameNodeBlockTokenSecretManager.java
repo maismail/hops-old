@@ -110,7 +110,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     }
     if (isLeader) {
       LOG.info("Updating block keys");
-      updateBlockKeys();
+      return updateBlockKeys();
     } else {
       retrieveBlockKeys();
     }
@@ -179,6 +179,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   public void updateLeaderState(boolean isLeader) {
+    LOG.debug("update leader state from " + this.isLeader + " to " + isLeader);
     this.isLeader = isLeader;
   }
 
@@ -232,8 +233,8 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
     return Variables.getAllBlockTokenKeysByIDLW().values();
   }
 
-  private void updateBlockKeys() throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
+  private boolean updateBlockKeys() throws IOException {
+    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
@@ -244,6 +245,10 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByType();
+        if(keys.isEmpty()){
+          log.debug("keys is not generated yet to be updated");
+          return false;
+        }
         // set final expiry date of retiring currentKey
         // also modifying this key to mark it as 'simple key' instead of 'current key'
         BlockKey currentKeyFromDB = keys.get(BlockKey.KeyType.CurrKey.ordinal());
@@ -265,7 +270,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
         nextKey.setKeyType(BlockKey.KeyType.NextKey);
 
         Variables.updateBlockTokenKeys(currentKey, nextKey, currentKeyFromDB);
-        return null;
+        return true;
       }
     }.handle();
   }

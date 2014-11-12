@@ -64,6 +64,8 @@ import com.google.common.base.Preconditions;
 import java.util.Arrays;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+
+import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
@@ -99,36 +101,39 @@ public class FSDirectory implements Closeable {
   private final int lsLimit;  // max list limit
 
   // lock to protect the directory and BlockMap
-  private ReentrantReadWriteLock dirLock;
-  private Condition cond;
+//  private ReentrantReadWriteLock dirLock;
+//  private Condition cond;
   
   //START_HOP_CODE
   private boolean quotaEnabled;
   //END_HOP_CODE
 
   // utility methods to acquire and release read lock and write lock
+  // TODO HOP Should remove these functins completely
   void readLock() {
-    this.dirLock.readLock().lock();
+//    this.dirLock.readLock().lock();
   }
 
   void readUnlock() {
-    this.dirLock.readLock().unlock();
+//    this.dirLock.readLock().unlock();
   }
 
   void writeLock() {
-    this.dirLock.writeLock().lock();
+//    this.dirLock.writeLock().lock();
   }
 
   void writeUnlock() {
-    this.dirLock.writeLock().unlock();
+//    this.dirLock.writeLock().unlock();
   }
 
   boolean hasWriteLock() {
-    return this.dirLock.isWriteLockedByCurrentThread();
+//    return this.dirLock.isWriteLockedByCurrentThread();
+    return true;
   }
 
   boolean hasReadLock() {
-    return this.dirLock.getReadHoldCount() > 0;
+//    return this.dirLock.getReadHoldCount() > 0;
+    return true;
   }
 
   /**
@@ -139,12 +144,12 @@ public class FSDirectory implements Closeable {
 
   FSDirectory(FSNamesystem ns, Configuration conf) throws IOException {
      //START_HOP_CODE
-     this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_QUOTA_ENABLED_KEY,
-                DFSConfigKeys.DFS_QUOTA_ENABLED_DEFAULT);  
+     this.quotaEnabled = conf.getBoolean(DFSConfigKeys.DFS_NAMENODE_QUOTA_ENABLED_KEY,
+                DFSConfigKeys.DFS_NAMENODE_QUOTA_ENABLED_DEFAULT);
      //END_HOP_CODE
       
-    this.dirLock = new ReentrantReadWriteLock(true); // fair
-    this.cond = dirLock.writeLock().newCondition();
+//    this.dirLock = new ReentrantReadWriteLock(true); // fair
+//    this.cond = dirLock.writeLock().newCondition();
 //HOP     rootDir = new INodeDirectoryWithQuota(INodeDirectory.ROOT_NAME,
 //        ns.createFsOwnerPermissions(new FsPermission((short)0755)),
 //        Integer.MAX_VALUE, UNKNOWN_DISK_SPACE);
@@ -195,7 +200,7 @@ public class FSDirectory implements Closeable {
     try {
       setReady(true);
       this.nameCache.initialized();
-      cond.signalAll();
+//      cond.signalAll(); HOP
     } finally {
       writeUnlock();
     }
@@ -229,19 +234,20 @@ public class FSDirectory implements Closeable {
    * Block until the object is ready to be used.
    */
   void waitForReady() {
-    if (!ready) {
-      writeLock();
-      try {
-        while (!ready) {
-          try {
-            cond.await(5000, TimeUnit.MILLISECONDS);
-          } catch (InterruptedException ie) {
-          }
-        }
-      } finally {
-        writeUnlock();
-      }
-    }
+    // TODO HOP remove that code
+//    if (!ready) {
+//      writeLock();
+//      try {
+//        while (!ready) {
+//          try {
+//            cond.await(5000, TimeUnit.MILLISECONDS);
+//          } catch (InterruptedException ie) {
+//          }
+//        }
+//      } finally {
+//        writeUnlock();
+//      }
+//    }
   }
 
   /**
@@ -499,6 +505,17 @@ public class FSDirectory implements Closeable {
     return true;
   }
 
+  @Deprecated
+  boolean renameTo(String src, String dst, long srcNsCount, long srcDsCount, long dstNsCount, long dstDsCount)
+      throws QuotaExceededException, UnresolvedLinkException,
+      FileAlreadyExistsException, PersistanceException {
+    if (NameNode.stateChangeLog.isDebugEnabled()) {
+      NameNode.stateChangeLog.debug("DIR* FSDirectory.renameTo: "
+          +src+" to "+dst);
+    }
+    return unprotectedRenameTo(src, dst, now(), srcNsCount, srcDsCount, dstNsCount, dstDsCount);
+  }
+
   /**
    * @see #unprotectedRenameTo(String, String, long, Options.Rename...)
    */
@@ -521,6 +538,174 @@ public class FSDirectory implements Closeable {
       writeUnlock();
     }
 
+  }
+
+  void renameTo(String src, String dst, long srcNsCount, long srcDsCount, long dstNsCount, long dstDsCount, Options.Rename... options)
+      throws FileAlreadyExistsException, FileNotFoundException,
+      ParentNotDirectoryException, QuotaExceededException,
+      UnresolvedLinkException, IOException, PersistanceException {
+    if (NameNode.stateChangeLog.isDebugEnabled()) {
+      NameNode.stateChangeLog.debug("DIR* FSDirectory.renameTo: " + src
+          + " to " + dst);
+    }
+    if (unprotectedRenameTo(src, dst, now(), srcNsCount, srcDsCount, dstNsCount, dstDsCount, options)) {
+      incrDeletedFileCount(1);
+    }
+  }
+
+  boolean unprotectedRenameTo(String src, String dst, long timestamp, long srcNsCount, long srcDsCount,
+      long dstNsCount, long dstDsCount, Options.Rename... options)
+      throws FileAlreadyExistsException, FileNotFoundException, ParentNotDirectoryException,
+      QuotaExceededException, UnresolvedLinkException, IOException, PersistanceException {
+    boolean overwrite = false;
+    if (null != options) {
+      for (Rename option : options) {
+        if (option == Rename.OVERWRITE) {
+          overwrite = true;
+        }
+      }
+    }
+    String error = null;
+    final INode[] srcInodes = getRootDir().getExistingPathINodes(src, false);
+    final INode srcInode = srcInodes[srcInodes.length - 1];
+    // validate source
+    if (srcInode == null) {
+      error = "rename source " + src + " is not found.";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new FileNotFoundException(error);
+    }
+    if (srcInodes.length == 1) {
+      error = "rename source cannot be the root";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new IOException(error);
+    }
+
+    if (srcInode.isSymlink() &&
+        dst.equals(((INodeSymlink)srcInode).getLinkValue())) {
+      throw new FileAlreadyExistsException(
+          "Cannot rename symlink "+src+" to its target "+dst);
+    }
+    final byte[][] dstComponents = INode.getPathComponents(dst);
+    final INode[] dstInodes = new INode[dstComponents.length];
+    getRootDir().getExistingPathINodes(dstComponents, dstInodes, false);
+    INode dstInode = dstInodes[dstInodes.length - 1];
+    if (dstInodes.length == 1) {
+      error = "rename destination cannot be the root";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new IOException(error);
+    }
+    if (dstInode != null) { // Destination exists
+      // It's OK to rename a file to a symlink and vice versa
+      if (dstInode.isDirectory() != srcInode.isDirectory()) {
+        error = "Source " + src + " and destination " + dst
+            + " must both be directories";
+        NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+            + error);
+        throw new IOException(error);
+      }
+      if (!overwrite) { // If destination exists, overwrite flag must be true
+        error = "rename destination " + dst + " already exists";
+        NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+            + error);
+        throw new FileAlreadyExistsException(error);
+      }
+      List<INode> children = dstInode.isDirectory() ?
+          ((INodeDirectory) dstInode).getChildren() : null;
+      if (children != null && children.size() != 0) {
+        error = "rename cannot overwrite non empty destination directory "
+            + dst;
+        NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+            + error);
+        throw new IOException(error);
+      }
+    }
+    if (dstInodes[dstInodes.length - 2] == null) {
+      error = "rename destination parent " + dst + " not found.";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new FileNotFoundException(error);
+    }
+    if (!dstInodes[dstInodes.length - 2].isDirectory()) {
+      error = "rename destination parent " + dst + " is a file.";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new ParentNotDirectoryException(error);
+    }
+
+    // Ensure dst has quota to accommodate rename
+    verifyQuotaForRename(srcInodes, dstInodes, srcNsCount, srcDsCount, dstNsCount, dstDsCount);
+    INode removedSrc = removeChildForRename(srcInodes, srcInodes.length - 1, srcNsCount, srcDsCount);
+    if (removedSrc == null) {
+      error = "Failed to rename " + src + " to " + dst
+          + " because the source can not be removed";
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new IOException(error);
+    }
+    //HOP_START_CODE
+    INode srcClone = cloneINode(removedSrc);
+    //HOP_END_CODE
+    final String srcChildName = removedSrc.getLocalName();
+    String dstChildName = null;
+    INode removedDst = null;
+    try {
+      if (dstInode != null) { // dst exists remove it
+        removedDst = removeChild(dstInodes, dstInodes.length - 1);
+        dstChildName = removedDst.getLocalName();
+      }
+
+      INode dstChild = null;
+      removedSrc.setLocalNameNoPersistance(dstComponents[dstInodes.length - 1]);
+      // add src as dst to complete rename
+      dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
+          removedSrc, srcNsCount, srcDsCount);
+
+      int filesDeleted = 0;
+      if (dstChild != null) {
+        removedSrc = null;
+        if (NameNode.stateChangeLog.isDebugEnabled()) {
+          NameNode.stateChangeLog.debug(
+              "DIR* FSDirectory.unprotectedRenameTo: " + src
+                  + " is renamed to " + dst);
+        }
+        srcInodes[srcInodes.length - 2].setModificationTime(timestamp);
+        dstInodes[dstInodes.length - 2].setModificationTime(timestamp);
+        // update moved lease with new filename
+        getFSNamesystem().unprotectedChangeLease(src, dst);
+
+        // Collect the blocks and remove the lease for previous dst
+        if (removedDst != null) {
+          INode rmdst = removedDst;
+          removedDst = null;
+          List<Block> collectedBlocks = new ArrayList<Block>();
+          filesDeleted = rmdst.collectSubtreeBlocksAndClear(collectedBlocks);
+          getFSNamesystem().removePathAndBlocks(src, collectedBlocks);
+        }
+        //HOP_START_CODE
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
+        //HOP_END_CODE
+        return filesDeleted >0;
+      }
+    } finally {
+      if (removedSrc != null) {
+        // Rename failed - restore src
+        removedSrc.setLocalNameNoPersistance(srcChildName);
+        addChildNoQuotaCheck(srcInodes, srcInodes.length - 1, removedSrc,
+            srcNsCount, srcDsCount);
+      }
+      if (removedDst != null) {
+        // Rename failed - restore dst
+        removedDst.setLocalNameNoPersistance(dstChildName);
+        addChildNoQuotaCheck(dstInodes, dstInodes.length - 1, removedDst,
+            dstNsCount, dstDsCount);
+      }
+    }
+    NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+        + "failed to rename " + src + " to " + dst);
+    throw new IOException("rename from " + src + " to " + dst + " failed.");
   }
 
   /**
@@ -642,6 +827,110 @@ public class FSDirectory implements Closeable {
         srcChild.setLocalNameNoPersistance(srcChildName);
         addChildNoQuotaCheck(srcInodes, srcInodes.length - 1, srcChild, 
             UNKNOWN_DISK_SPACE);
+      }
+    }
+    NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+        +"failed to rename "+src+" to "+dst);
+    return false;
+  }
+
+  @Deprecated
+  boolean unprotectedRenameTo(String src, String dst, long timestamp, long srcNsCount, long srcDsCount,
+      long dstNsCount, long dstDsCount)
+      throws QuotaExceededException, UnresolvedLinkException,
+      FileAlreadyExistsException,
+      PersistanceException {
+    assert hasWriteLock();
+    INode[] srcInodes = getRootDir().getExistingPathINodes(src, false);
+    INode srcInode = srcInodes[srcInodes.length-1];
+
+    // check the validation of the source
+    if (srcInode == null) {
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + "failed to rename " + src + " to " + dst
+          + " because source does not exist");
+      return false;
+    }
+    if (srcInodes.length == 1) {
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          +"failed to rename "+src+" to "+dst+ " because source is the root");
+      return false;
+    }
+    if (isDir(dst)) {
+      dst += Path.SEPARATOR + new Path(src).getName();
+    }
+
+    if (srcInode.isSymlink() &&
+        dst.equals(((INodeSymlink)srcInode).getLinkValue())) {
+      throw new FileAlreadyExistsException(
+          "Cannot rename symlink "+src+" to its target "+dst);
+    }
+
+    byte[][] dstComponents = INode.getPathComponents(dst);
+    LOG.debug("destination is "+dst);
+    INode[] dstInodes = new INode[dstComponents.length];
+    getRootDir().getExistingPathINodes(dstComponents, dstInodes, false);
+    if (dstInodes[dstInodes.length-1] != null) {
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          +"failed to rename "+src+" to "+dst+
+          " because destination exists");
+      return false;
+    }
+    if (dstInodes[dstInodes.length-2] == null) {
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          +"failed to rename "+src+" to "+dst+
+          " because destination's parent does not exist");
+      return false;
+    }
+
+    // Ensure dst has quota to accommodate rename
+    verifyQuotaForRename(srcInodes, dstInodes, srcNsCount, srcDsCount, dstNsCount, dstDsCount);
+
+    INode dstChild = null;
+    INode srcChild = null;
+    String srcChildName = null;
+    try {
+      // remove src
+      srcChild = removeChildForRename(srcInodes, srcInodes.length-1, srcNsCount, srcDsCount);
+      if (srcChild == null) {
+        NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+            + "failed to rename " + src + " to " + dst
+            + " because the source can not be removed");
+        return false;
+      }
+
+      //HOP_START_CODE
+      INode srcClone = cloneINode(srcChild);
+      //HOP_END_CODE
+      srcChildName = srcChild.getLocalName();
+      srcChild.setLocalNameNoPersistance(dstComponents[dstInodes.length-1]);
+
+      // add src to the destination
+      dstChild = addChildNoQuotaCheck(dstInodes, dstInodes.length - 1,
+          srcChild, srcNsCount, srcDsCount);
+      if (dstChild != null) {
+        srcChild = null;
+        if (NameNode.stateChangeLog.isDebugEnabled()) {
+          NameNode.stateChangeLog.debug("DIR* FSDirectory.unprotectedRenameTo: "
+              + src + " is renamed to " + dst);
+        }
+        // update modification time of dst and the parent of src
+        srcInodes[srcInodes.length-2].setModificationTime(timestamp);
+        dstInodes[dstInodes.length-2].setModificationTime(timestamp);
+        // update moved leases with new filename
+        getFSNamesystem().unprotectedChangeLease(src, dst);
+        //HOP_START_CODE
+
+        EntityManager.snapshotMaintenance(HOPTransactionContextMaintenanceCmds.INodePKChanged, srcClone, dstChild);
+        //HOP_END_CODE
+        return true;
+      }
+    } finally {
+      if (dstChild == null && srcChild != null) {
+        // put it back
+        srcChild.setLocalNameNoPersistance(srcChildName);
+        addChildNoQuotaCheck(srcInodes, srcInodes.length - 1,
+            srcChild, srcNsCount, srcDsCount);
       }
     }
     NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
@@ -1412,12 +1701,15 @@ public class FSDirectory implements Closeable {
     if (checkQuota) {
       verifyQuota(inodes, numOfINodes, nsDelta, dsDelta, null);
     }
-    for(int i = 0; i < numOfINodes; i++) {
-      if (inodes[i].isQuotaSet()) { // a directory with quota
-        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
-        node.updateNumItemsInTree(nsDelta, dsDelta);
-      }
-    }
+    // HOP
+//    for(int i = 0; i < numOfINodes; i++) {
+//      if (inodes[i].isQuotaSet()) { // a directory with quota
+//        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i];
+//        node.updateNumItemsInTree(nsDelta, dsDelta);
+//      }
+//    }
+    INode iNode = inodes[numOfINodes - 1];
+    namesystem.getQuotaUpdateManager().addUpdate(iNode.getId(), nsDelta, dsDelta);
   }
   
   /** 
@@ -1445,14 +1737,17 @@ public class FSDirectory implements Closeable {
    void unprotectedUpdateCount(INode[] inodes, int numOfINodes, 
                                       long nsDelta, long dsDelta) throws PersistanceException {
      if(!isQuotaEnabled()) return;    //HOP
-     
-     assert hasWriteLock();
-    for(int i=0; i < numOfINodes; i++) {
-      if (inodes[i].isQuotaSet()) { // a directory with quota
-        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i]; 
-        node.unprotectedUpdateNumItemsInTree(nsDelta, dsDelta);
-      }
-    }
+
+     // HOP
+//     assert hasWriteLock();
+//    for(int i=0; i < numOfINodes; i++) {
+//      if (inodes[i].isQuotaSet()) { // a directory with quota
+//        INodeDirectoryWithQuota node =(INodeDirectoryWithQuota)inodes[i];
+//        node.unprotectedUpdateNumItemsInTree(nsDelta, dsDelta);
+//      }
+//    }
+     INode iNode = inodes[numOfINodes - 1];
+     namesystem.getQuotaUpdateManager().addUpdate(iNode.getId(), nsDelta, dsDelta);
   }
   
   /** Return the name of the path represented by inodes at [0, pos] */
@@ -1725,6 +2020,33 @@ public class FSDirectory implements Closeable {
         commonAncestor);
   }
   
+  private void verifyQuotaForRename(INode[] srcInodes, INode[]dstInodes, long srcNsCount, long srcDsCount,
+      long dstNsCount, long dstDsCount)
+      throws QuotaExceededException, PersistanceException {
+
+    if(!isQuotaEnabled()) return;    //HOP
+
+    if (!ready) {
+      // Do not check quota if edits log is still being processed
+      return;
+    }
+    INode commonAncestor = null;
+    for(int i = 0; srcInodes[i] == dstInodes[i]; i++) {
+      commonAncestor = srcInodes[i];
+    }
+
+    // Reduce the required quota by dst that is being removed
+    INode dstInode = dstInodes[dstInodes.length - 1];
+    long nsDelta = srcNsCount;
+    long dsDelta = srcDsCount;
+    if (dstInode != null) {
+      nsDelta -= dstNsCount;
+      dsDelta -= dstDsCount;
+    }
+    verifyQuota(dstInodes, dstInodes.length - 1, nsDelta, dsDelta,
+        commonAncestor);
+  }
+  
   /**
    * Verify that filesystem limit constraints are not violated
    * @throws PathComponentTooLongException child's name is too long
@@ -1809,6 +2131,40 @@ public class FSDirectory implements Closeable {
     return addedNode;
   }
 
+  private <T extends INode> T addChild(INode[] pathComponents, int pos, T child,
+      long childNamespace, long childDiskspace, boolean checkQuota)
+      throws QuotaExceededException, PersistanceException {
+    // The filesystem limits are not really quotas, so this check may appear
+    // odd.  It's because a rename operation deletes the src, tries to add
+    // to the dest, if that fails, re-adds the src from whence it came.
+    // The rename code disables the quota when it's restoring to the
+    // original location becase a quota violation would cause the the item
+    // to go "poof".  The fs limits must be bypassed for the same reason.
+    if (checkQuota) {
+      verifyFsLimits(pathComponents, pos, child);
+    }
+
+    updateCount(pathComponents, pos, childNamespace, childDiskspace, checkQuota);
+    if (pathComponents[pos-1] == null) {
+      throw new NullPointerException("Panic: parent does not exist");
+    }
+    T addedNode = ((INodeDirectory) pathComponents[pos-1]).addChild(child, true);
+    if (addedNode == null) {
+      updateCount(pathComponents, pos, -childNamespace, -childDiskspace, true);
+    }
+    //START_HOP_CODE
+    if(addedNode != null){
+      if(!addedNode.isDirectory()){
+        INode[] pc = Arrays.copyOf(pathComponents, pathComponents.length);
+        pc[pc.length -1] = addedNode;
+        String path = getFullPathName(pc, pc.length - 1);
+        PathMemcache.getInstance().set(path, pc);
+      }
+    }
+    //
+    return addedNode;
+  }
+
   private <T extends INode> T addChild(INode[] pathComponents, int pos,
       T child, long childDiskspace)
       throws QuotaExceededException, PersistanceException {
@@ -1826,25 +2182,77 @@ public class FSDirectory implements Closeable {
     return inode;
   }
   
+  private <T extends INode> T addChildNoQuotaCheck(INode[] pathComponents,
+      int pos, T child, long childNamespace, long childDiskspace) throws PersistanceException {
+    T inode = null;
+    try {
+      inode = addChild(pathComponents, pos, child, childNamespace, childDiskspace, false);
+    } catch (QuotaExceededException e) {
+      NameNode.LOG.warn("FSDirectory.addChildNoQuotaCheck - unexpected", e);
+    }
+    return inode;
+  }
+  
   /** Remove an inode at index pos from the namespace.
    * Its ancestors are stored at [0, pos-1].
    * Count of each ancestor with quota is also updated.
    * Return the removed node; null if the removal fails.
    */
-  private INode removeChild(INode[] pathComponents, int pos, boolean forRename) throws PersistanceException {
+  INode removeChild(INode[] pathComponents, int pos, boolean forRename) throws PersistanceException {
     INode removedNode = null;
-    if(forRename){
+    if (forRename) {
       removedNode = pathComponents[pos];
-    }else{
+    } else {
       removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
     }
-    if (removedNode != null) {
-      INode.DirCounts counts = new INode.DirCounts();
-      if(isQuotaEnabled()){     //HOP
-        removedNode.spaceConsumedInTree(counts);
+    if (removedNode != null && isQuotaEnabled()) {
+      List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
+          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+      long nsDelta = 0;
+      long dsDelta = 0;
+      for (QuotaUpdate update : outstandingUpdates) {
+        nsDelta += update.getNamespaceDelta();
+        dsDelta += update.getDiskspaceDelta();
       }
+      INode.DirCounts counts = new INode.DirCounts();
+      removedNode.spaceConsumedInTree(counts);
       updateCountNoQuotaCheck(pathComponents, pos,
-                  -counts.getNsCount(), -counts.getDsCount());
+                  -counts.getNsCount() + nsDelta, -counts.getDsCount() + dsDelta);
+    }
+    return removedNode;
+  }
+
+  INode removeChildNonRecursively(INode[] pathComponents, int pos) throws PersistanceException {
+    INode removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
+    if (removedNode != null && isQuotaEnabled()) {
+      List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
+          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+      long nsDelta = 0;
+      long dsDelta = 0;
+      for (QuotaUpdate update : outstandingUpdates) {
+        nsDelta += update.getNamespaceDelta();
+        dsDelta += update.getDiskspaceDelta();
+      }
+      if (removedNode.isDirectory()) {
+        updateCountNoQuotaCheck(pathComponents, pos, -1 + nsDelta, dsDelta);
+      } else {
+        INode.DirCounts counts = new INode.DirCounts();
+        removedNode.spaceConsumedInTree(counts);
+        updateCountNoQuotaCheck(pathComponents, pos, -counts.getNsCount() + nsDelta, -counts.getDsCount() + dsDelta);
+      }
+    }
+    return removedNode;
+  }
+
+  private INode removeChild(INode[] pathComponents, int pos, boolean forRename, long nsCount, long dsCount) throws PersistanceException {
+    INode removedNode = null;
+    if (forRename) {
+      removedNode = pathComponents[pos];
+    } else {
+      removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
+    }
+    if (removedNode != null && isQuotaEnabled()) {
+      updateCountNoQuotaCheck(pathComponents, pos, -nsCount, -dsCount);
     }
     return removedNode;
   }
@@ -1855,6 +2263,10 @@ public class FSDirectory implements Closeable {
    
   private INode removeChildForRename(INode[] pathComponents, int pos) throws PersistanceException {
     return removeChild(pathComponents, pos, true);
+  }
+
+  private INode removeChildForRename(INode[] pathComponents, int pos, long nsCount, long dsCount) throws PersistanceException {
+    return removeChild(pathComponents, pos, true, nsCount, dsCount);
   }
   
   /**
@@ -1891,6 +2303,7 @@ public class FSDirectory implements Closeable {
    * throw QuotaExceededException.
    */
   void updateCountForINodeWithQuota() throws PersistanceException {
+    // HOP If this one is used for something then we need to modify it to use the QuotaUpdateManager
     updateCountForINodeWithQuota(getRootDir(), new INode.DirCounts(), 
                                  new ArrayList<INode>(50));
   }
@@ -2043,10 +2456,84 @@ public class FSDirectory implements Closeable {
     try {
       INodeDirectory dir = unprotectedSetQuota(src, nsQuota, dsQuota);
       if (dir != null) {
-
+        // Some audit log code is missing here
       }
     } finally {
       writeUnlock();
+    }
+  }
+
+  void setQuota(String src, long nsQuota, long dsQuota, long nsCount, long dsCount)
+      throws FileNotFoundException, QuotaExceededException,
+      UnresolvedLinkException,
+      PersistanceException {
+    writeLock();
+    try {
+      INodeDirectory dir = unprotectedSetQuota(src, nsQuota, dsQuota, nsCount, dsCount);
+      if (dir != null) {
+        // Some audit log code is missing here
+      }
+    } finally {
+      writeUnlock();
+    }
+  }
+
+  INodeDirectory unprotectedSetQuota(String src, long nsQuota, long dsQuota, long nsCount, long dsCount)
+      throws FileNotFoundException, QuotaExceededException,
+      UnresolvedLinkException, PersistanceException {
+    if(!isQuotaEnabled()) return null;    //HOP
+
+    assert hasWriteLock();
+    // sanity check
+    if ((nsQuota < 0 && nsQuota != HdfsConstants.QUOTA_DONT_SET &&
+        nsQuota < HdfsConstants.QUOTA_RESET) ||
+        (dsQuota < 0 && dsQuota != HdfsConstants.QUOTA_DONT_SET &&
+            dsQuota < HdfsConstants.QUOTA_RESET)) {
+      throw new IllegalArgumentException("Illegal value for nsQuota or " +
+          "dsQuota : " + nsQuota + " and " +
+          dsQuota);
+    }
+
+    String srcs = normalizePath(src);
+
+    INode[] inodes = getRootDir().getExistingPathINodes(src, true);
+    INode targetNode = inodes[inodes.length-1];
+    if (targetNode == null) {
+      throw new FileNotFoundException("Directory does not exist: " + srcs);
+    } else if (!targetNode.isDirectory()) {
+      throw new FileNotFoundException("Cannot set quota on a file: " + srcs);
+    } else if (targetNode.isRoot() && nsQuota == HdfsConstants.QUOTA_RESET) {
+      throw new IllegalArgumentException("Cannot clear namespace quota on root.");
+    } else { // a directory inode
+      INodeDirectory dirNode = (INodeDirectory)targetNode;
+      long oldNsQuota = dirNode.getNsQuota();
+      long oldDsQuota = dirNode.getDsQuota();
+      if (nsQuota == HdfsConstants.QUOTA_DONT_SET) {
+        nsQuota = oldNsQuota;
+      }
+      if (dsQuota == HdfsConstants.QUOTA_DONT_SET) {
+        dsQuota = oldDsQuota;
+      }
+
+      if (dirNode instanceof INodeDirectoryWithQuota) {
+        // a directory with quota; so set the quota to the new value
+        ((INodeDirectoryWithQuota)dirNode).setQuota(nsQuota, dsQuota);
+        if (!dirNode.isQuotaSet()) {
+          // will not come here for root because root's nsQuota is always set
+          INodeDirectory newNode = new INodeDirectory(dirNode);
+          INodeDirectory parent = (INodeDirectory)inodes[inodes.length-2];
+          dirNode = newNode;
+          parent.replaceChild(newNode);
+        }
+      } else {
+        // a non-quota directory; so replace it with a directory with quota
+        INodeDirectoryWithQuota newNode = new INodeDirectoryWithQuota(nsQuota, dsQuota, nsCount, dsCount, dirNode);
+        // non-root directory node; parent != null
+        INodeDirectory parent = (INodeDirectory)inodes[inodes.length-2];
+        dirNode = newNode;
+        parent.replaceChild(newNode);
+      }
+      return (oldNsQuota != nsQuota || oldDsQuota != dsQuota) ? dirNode : null;
     }
   }
   

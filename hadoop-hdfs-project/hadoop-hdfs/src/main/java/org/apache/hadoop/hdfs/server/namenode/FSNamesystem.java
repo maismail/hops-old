@@ -17,62 +17,14 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.collect.SetMultimap;
+import org.apache.hadoop.io.DataOutputBuffer;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.FS_TRASH_INTERVAL_KEY;
-import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.FS_TRASH_INTERVAL_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BLOCK_SIZE_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BLOCK_SIZE_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CHECKSUM_TYPE_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CHECKSUM_TYPE_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_ENCRYPT_DATA_TRANSFER_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_ENCRYPT_DATA_TRANSFER_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_STANDBY_CHECKPOINTS_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_STANDBY_CHECKPOINTS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_ACCESSTIME_PRECISION_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_AUDIT_LOGGERS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DEFAULT_AUDIT_LOGGER_NAME;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_KEY_UPDATE_INTERVAL_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_KEY_UPDATE_INTERVAL_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_ALWAYS_USE_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_ALWAYS_USE_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_MAX_LIFETIME_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_MAX_LIFETIME_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_RENEW_INTERVAL_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DELEGATION_TOKEN_RENEW_INTERVAL_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_REQUIRED_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_MAX_OBJECTS_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_MAX_OBJECTS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_REPLICATION_MIN_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_REPLICATION_MIN_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_REPL_QUEUE_THRESHOLD_PCT_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RESOURCE_CHECK_INTERVAL_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_EXTENSION_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_MIN_DATANODES_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_MIN_DATANODES_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_THRESHOLD_PCT_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_THRESHOLD_PCT_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SHARED_EDITS_DIR_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERMISSIONS_ENABLED_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERMISSIONS_ENABLED_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERMISSIONS_SUPERUSERGROUP_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERMISSIONS_SUPERUSERGROUP_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERSIST_BLOCKS_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_PERSIST_BLOCKS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_REPLICATION_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_REPLICATION_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_DEFAULT;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_KEY;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 import static org.apache.hadoop.util.Time.now;
 
 import java.io.BufferedWriter;
@@ -102,8 +54,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.management.NotCompliantMBeanException;
@@ -206,12 +158,20 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 import java.util.LinkedList;
+import java.util.StringTokenizer;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.common.IDsMonitor;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.lock.SubtreeLockHelper;
+import se.sics.hop.metadata.lock.SubtreeLockedException;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -226,7 +186,6 @@ import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -402,11 +361,18 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * HOP specific variables go here
    */
-   private NamenodeRole nameNodeRole; // role of the name node set by the NameNode instance
-   private long nameNodeId;   // id of the name node. set by the NameNode instance
-   private static boolean systemLevelLockEnabled = false;
-   private static boolean rowLevelLockEnabled = true;
-   private final Configuration conf;
+  private NameNode nameNode;
+  private NamenodeRole nameNodeRole; // role of the name node set by the NameNode instance
+  private long nameNodeId;   // id of the name node. set by the NameNode instance
+  private static boolean systemLevelLockEnabled = false;
+  private static boolean rowLevelLockEnabled = true;
+  private final Configuration conf;
+  private final QuotaUpdateManager quotaUpdateManager;
+  private final boolean legacyDeleteEnabled;
+  private final boolean legacyRenameEnabled;
+  private final boolean legacyContentSummaryEnabled;
+  private final boolean legacySetQuotaEnabled;
+  private final ExecutorService subtreeOperationsExecutor;
   //END_HOP_CODE
     
   /**
@@ -544,6 +510,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       blockPoolId = StorageInfo.getStorageInfoFromDB().getBlockPoolId();
       blockManager.setBlockPoolId(blockPoolId);
       hopSpecificInitialization(conf);
+      this.quotaUpdateManager = new QuotaUpdateManager(this, conf);
+      legacyDeleteEnabled = conf.getBoolean(DFS_LEGACY_DELETE_ENABLE_KEY, DFS_LEGACY_DELETE_ENABLE_DEFAULT);
+      legacyRenameEnabled = conf.getBoolean(DFS_LEGACY_RENAME_ENABLE_KEY, DFS_LEGACY_RENAME_ENABLE_DEFAULT);
+      legacyContentSummaryEnabled = conf.getBoolean(DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY, DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT);
+      legacySetQuotaEnabled = conf.getBoolean(DFS_LEGACY_SET_QUOTA_ENABLE_KEY, DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT);
+      subtreeOperationsExecutor = Executors.newFixedThreadPool(
+          conf.getInt(DFS_SUBTREE_EXECUTOR_LIMIT_KEY,
+          DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT));
       //END_HOP_CODE
       
       LOG.info("fsOwner             = " + fsOwner);
@@ -736,6 +710,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         performPendingSafeModeOperation();
       }
       blockManager.activate(conf);
+      if (dir.isQuotaEnabled()) {
+        quotaUpdateManager.activate();
+      }
     } finally {
       writeUnlock();
     }
@@ -752,6 +729,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     writeLock();
     try {
       if (blockManager != null) blockManager.close();
+      if (quotaUpdateManager != null) quotaUpdateManager.close();
     } finally {
       writeUnlock();
     }
@@ -1980,6 +1958,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     addUnderReplicatedBlock().
                     addPendingBlock().
                     addInvalidatedBlock();
+            if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
+              tla.getLocks().addQuotaUpdateOnSubtree();
+            }
             return tla.acquire();
           }
 
@@ -2991,14 +2972,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
-                    addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
-                    INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                    addLease(LockType.WRITE).
-                    addLeasePath(LockType.WRITE).
-                    addBlock().
-                    addReplica().
-                    addReplicaUc().
-                    addInvalidatedBlock().addCorrupt().addExcess().addPendingBlock().addUnderReplicatedBlock();
+                addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
+                addLease(LockType.WRITE).
+                addLeasePath(LockType.WRITE).
+                addBlock().
+                addReplica().
+                addReplicaUc().
+                addInvalidatedBlock().
+                addCorrupt().
+                addExcess().
+                addPendingBlock().
+                addUnderReplicatedBlock();
+            if (dir.isQuotaEnabled()) {
+              tla.getLocks().addQuotaUpdateOnSubtree();
+            }
             return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
 
@@ -3079,17 +3067,21 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
-                      addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
-                      INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                      addLease(LockType.WRITE).
-                      addLeasePath(LockType.WRITE).
-                      addBlock().
-                      addReplica().
-                      addCorrupt().
-                      addReplicaUc().
-                      addUnderReplicatedBlock().
-                      addInvalidatedBlock().
-                      addPendingBlock().addExcess();
+                  addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                  INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
+                  addLease(LockType.WRITE).
+                  addLeasePath(LockType.WRITE).
+                  addBlock().
+                  addReplica().
+                  addCorrupt().
+                  addReplicaUc().
+                  addUnderReplicatedBlock().
+                  addInvalidatedBlock().
+                  addPendingBlock().
+                  addExcess();
+              if (dir.isQuotaEnabled()) {
+                tla.getLocks().addQuotaUpdateOnSubtree();
+              }
               return tla.acquireForRename();
             }
 
@@ -3146,37 +3138,72 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#delete(String, boolean) for detailed descriptoin and 
    * description of exceptions
    */
-  
-    boolean deleteWithTransaction(final String src, final boolean recursive)
-            throws AccessControlException, SafeModeException,
-            UnresolvedLinkException, IOException {
-        HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
-            @Override
-            public Object performTask() throws PersistanceException, IOException {
-                return delete(src, recursive);
-            }
 
-            @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              tla.getLocks().
-                      addINode(
-                      INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                      INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
-                      addLease(LockType.WRITE).
-                      addLeasePath(LockType.WRITE).
-                      addBlock().
-                      addReplica().
-                      addCorrupt().
-                      addReplicaUc().
-                      addUnderReplicatedBlock().
-                      addPendingBlock().
-                      addInvalidatedBlock();
-              return tla.acquire();
-            }
-        };
-        return (Boolean) deleteHandler.handle(this);
-    }
+  boolean deleteWithTransaction(final String src, final boolean recursive)
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addCorrupt().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addPendingBlock().
+            addInvalidatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return delete(src, recursive);
+      }
+    };
+    return (Boolean) deleteHandler.handle(this);
+  }
+
+  boolean deleteWithTransactionIgnoreLocalSubtreeLock(final String src, final boolean recursive)
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}, true, getNamenodeId()).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addCorrupt().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addPendingBlock().
+            addInvalidatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return delete(src, recursive);
+      }
+    };
+    return (Boolean) deleteHandler.handle(this);
+  }
     
   boolean delete(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
@@ -3474,6 +3501,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   ContentSummary getContentSummary(final String src) throws AccessControlException,
       FileNotFoundException, UnresolvedLinkException, StandbyException, IOException {
+    if (isLegacyConentSummaryEnabled()) {
+      return getContentSummaryLegacy(src);
+    } else {
+      return multiTransactionalGetContentSummary(src);
+    }
+  }
+
+  ContentSummary getContentSummaryLegacy(final String src) throws AccessControlException,
+      FileNotFoundException, UnresolvedLinkException, StandbyException, IOException {
     HDFSTransactionalRequestHandler getContentSummaryHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_CONTENT_SUMMARY, src) {
       @Override
       public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
@@ -3524,17 +3560,17 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-    checkSuperuserPrivilege();
-    writeLock();
-    try {
-      checkOperation(OperationCategory.WRITE);
-      if (isInSafeMode()) {
-        throw new SafeModeException("Cannot set quota on " + path, safeMode);
-      }
-      dir.setQuota(path, nsQuota, dsQuota);
-    } finally {
-      writeUnlock();
-    }
+        checkSuperuserPrivilege();
+        writeLock();
+        try {
+          checkOperation(OperationCategory.WRITE);
+          if (isInSafeMode()) {
+            throw new SafeModeException("Cannot set quota on " + path, safeMode);
+          }
+          dir.setQuota(path, nsQuota, dsQuota);
+        } finally {
+          writeUnlock();
+        }
 //HOP    getEditLog().logSync();
         return null;
       }
@@ -3954,8 +3990,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @throws UnresolvedLinkException if symbolic link is encountered
    * @throws IOException if other I/O error occurred
    */
-  DirectoryListing getListing(final String src, final byte[] startAfter,
-      final boolean needLocation) 
+  DirectoryListing getListing(final String src, final byte[] startAfter, final boolean needLocation)
       throws AccessControlException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler getListingHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_LISTING, src) {
       @Override
@@ -3973,13 +4008,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-    try {
-      return getListingInt(src, startAfter, needLocation);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "listStatus", src);
-      throw e;
-    }
-  }
+        try {
+          return getListingInt(src, startAfter, needLocation);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "listStatus", src);
+          throw e;
+        }
+      }
     };
     return (DirectoryListing) getListingHandler.handle(this);
   }
@@ -6588,14 +6623,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         if (prop.equals(DFSConfigKeys.DFS_MEMCACHE_ENABLED)) {
           PathMemcache.getInstance().enableOrDisable(Boolean.parseBoolean(value));
         }
-      }else{
+      } else {
         LOG.info("change configuration for  " + prop + " to " + value + " is not applicable");
       }
-
     }
   }
 
-public class FNode implements Comparable<FNode>{
+  public class FNode implements Comparable<FNode> {
     private String parentPath;
     private INode inode;
 
@@ -6604,19 +6638,19 @@ public class FNode implements Comparable<FNode>{
       this.inode = inode;
     }
     
-    public String getPath(){
-      if(parentPath.endsWith("/")){
+    public String getPath() {
+      if (parentPath.endsWith("/")) {
         return parentPath+inode.getLocalName();
-      }else{
+      } else {
         return parentPath +"/"+ inode.getLocalName();
       }
     }
     
-    public INode getINode(){
+    public INode getINode() {
       return inode;
     }
     
-    public String getParentPath(){
+    public String getParentPath() {
       return parentPath;
     }
 
@@ -6627,9 +6661,9 @@ public class FNode implements Comparable<FNode>{
       if(obj1Length == obj2Length){
         return 0;
       }
-      else if( obj1Length < obj2Length){
+      else if( obj1Length < obj2Length) {
         return 1;
-      }else{
+      } else {
         return -1;
       }
     }
@@ -6637,9 +6671,16 @@ public class FNode implements Comparable<FNode>{
   
   
   public LinkedList<FNode> checkPermissionRecursively(final String src, final boolean recursive)
-          throws AccessControlException, SafeModeException,
-          UnresolvedLinkException, IOException {
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PRE_DELETE_CHECK) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+            INodeLockType.READ_COMMITTED, false, new String[]{src});
+        return tla.acquire();
+      }
+
       @Override
       public Object performTask() throws PersistanceException, IOException {
         boolean enforcePermission = true;
@@ -6656,8 +6697,7 @@ public class FNode implements Comparable<FNode>{
         if (enforcePermission && isPermissionEnabled) {
           checkPermission(pc, src, false, null, FsAction.WRITE, null, FsAction.ALL);
         }
-        
-        
+
         LinkedList<FNode> processedFiles = new LinkedList<FNode>();
         LinkedList<FNode> processedDirs = new LinkedList<FNode>();
         LinkedList<FNode> unProcessedNodes = new LinkedList<FNode>();
@@ -6665,22 +6705,21 @@ public class FNode implements Comparable<FNode>{
         byte [][] pathComponent = INode.getPathComponents(src);
         INode[] existingPath = dir.getExistingPathINodes(src);
         
-        if(existingPath.length != pathComponent.length){
+        if(existingPath.length != pathComponent.length) {
           return null;
         }
         
-        String parentPath = INode.constructPath(pathComponent,0,pathComponent.length-1);
-        if(parentPath.compareToIgnoreCase("") == 0){
+        String parentPath = INode.constructPath(pathComponent, 0, pathComponent.length - 1);
+        if(parentPath.compareToIgnoreCase("") == 0) {
           parentPath = "/";
         }
         
-        FNode node = new FNode(parentPath, existingPath[existingPath.length-1]);
+        FNode node = new FNode(parentPath, existingPath[existingPath.length - 1]);
         
         if (node != null) {
           if (node.getINode() instanceof INodeDirectory) {
             unProcessedNodes.add(node);
-          }
-          else if(node.getINode() instanceof INodeFile) {
+          } else if(node.getINode() instanceof INodeFile) {
             processedFiles.add(node);
           }
         }
@@ -6691,95 +6730,67 @@ public class FNode implements Comparable<FNode>{
           if (next.getINode() instanceof INodeDirectory) {
             processedDirs.add(next);
             List<INode> clist = ((INodeDirectory) next.getINode()).getChildren(); 
-            for(INode inode : clist){
-              if(inode instanceof INodeDirectory){
+            for (INode inode : clist){
+              if (inode instanceof INodeDirectory) {
                 unProcessedNodes.add(new FNode(next.getPath(), inode));
-              }
-              else{
+              } else {
                 processedFiles.add( new FNode(next.getPath(),inode));
               }
             }
           } 
         }
     
-      Collections.sort(processedDirs);
-      Collections.sort(processedFiles);
-    
-      //First Delete Files and then the Dirs
-      LinkedList<FNode> all = new LinkedList<FNode>();
-      all.addAll(processedFiles);
-      all.addAll(processedDirs);
-      return all;
-      
-      }
+        Collections.sort(processedDirs);
+        Collections.sort(processedFiles);
 
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(
-                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.READ_COMMITTED, false, new String[]{src});
-        return tla.acquire();
+        //First Delete Files and then the Dirs
+        LinkedList<FNode> all = new LinkedList<FNode>();
+        all.addAll(processedFiles);
+        all.addAll(processedDirs);
+        return all;
       }
     };
     return (LinkedList<FNode>) deleteHandler.handle();
   }
 
-  public boolean IncrementalDelete(final String src, final boolean recursive)
-          throws AccessControlException, SafeModeException,
-            UnresolvedLinkException, IOException
-   {
-   
-    LOG.debug("Deleting "+src+" isRecursive "+recursive);
-    LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
+  public boolean incrementalDelete(final String src, final boolean recursive)
+      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    LOG.debug("Deleting " + src + " isRecursive " + recursive);
+    // For the operations requires to have inodes before starting transactions.
+    LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>();
     boolean[] isPreTxPathFullyResolved = new boolean[1];
-    INodeUtil.resolvePathWithNoTransaction(src,false,preTxResolvedInodes,isPreTxPathFullyResolved);   
-    if(isPreTxPathFullyResolved[0] == true && preTxResolvedInodes.getLast() instanceof  INodeDirectory){
-      byte[][] components = INode.getPathComponents(src);
-      String parentPath = INode.constructPath(components,0,components.length-1);
-      if(parentPath.compareToIgnoreCase("") == 0){
-        parentPath = "/";
-      }
+    INodeUtil.resolvePathWithNoTransaction(src, false, preTxResolvedInodes, isPreTxPathFullyResolved);
+    if (isPreTxPathFullyResolved[0] == true && preTxResolvedInodes.getLast().isDirectory()) {
       LinkedList<FNode> toBeDeleted = checkPermissionRecursively(src, recursive);
-      return deleteChildrenIncremently(toBeDeleted, recursive);
-    }
-    else{
-      
+      return deleteChildrenIncrementally(toBeDeleted, recursive);
+    } else {
       return deleteWithTransaction(src, recursive);
     }
-    
   }
-  
-  private boolean deleteChildrenIncremently(LinkedList<FNode> toBeDeleted, final boolean recursive) throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
-    
-//    for(FNode fnode : toBeDeleted){
-//      if(fnode.getINode().isDirectory())
-//      {
-//        System.out.println("TestX dir to delete "+fnode.getPath());
-//      }else{
-//        System.out.println("TestX file to delete "+fnode.getPath());
-//      }
-//    }
-    
-    for(FNode fnode : toBeDeleted){
-      if(!deleteWithTransaction(fnode.getPath(), recursive))
+
+  private boolean deleteChildrenIncrementally(LinkedList<FNode> toBeDeleted, final boolean recursive)
+      throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+    for (FNode fnode : toBeDeleted) {
+      if (!deleteWithTransaction(fnode.getPath(), recursive))
         return false;
     }
-    
     return true;
   }
   
   @Override
   public void adjustSafeModeBlocks(Set<Long> safeBlocks) throws IOException {
-        // safeMode is volatile, and may be set to null at any time
+    // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null)
       return;
     safeMode.adjustSafeBlocks(safeBlocks);
   }
 
- public String getFilePathAncestorLockType(){
+  QuotaUpdateManager getQuotaUpdateManager() {
+    return quotaUpdateManager;
+  }
+
+  public String getFilePathAncestorLockType(){
     return conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
   }
   
@@ -6834,6 +6845,1133 @@ public class FNode implements Comparable<FNode>{
 
   private boolean isClusterInSafeMode() throws IOException {
     return Variables.isClusterInSafeMode();
+  }
+  
+  boolean isLegacyDeleteEnabled() {
+    return legacyDeleteEnabled;
+  }
+
+  boolean isLegacyRenameEnabled() {
+    return legacyRenameEnabled;
+  }
+
+  boolean isLegacyConentSummaryEnabled() {
+    return legacyContentSummaryEnabled;
+  }
+
+  boolean isLegacySetQuotaEnabled() {
+    return legacySetQuotaEnabled;
+  }
+
+  void multiTransactionalSetQuota(final String path, final long nsQuota, final long dsQuota)
+      throws IOException, UnresolvedLinkException {
+    checkSuperuserPrivilege();
+    if (isInSafeMode()) {
+      throw new SafeModeException("Cannot set quota on " + path, safeMode);
+    }
+    if (!isLeader()) {
+      throw new RuntimeException("Asked non leading node to setQuota");
+    }
+
+    try {
+      INode subtreeRoot = lockSubtree(path);
+      final IdCollectingCountingFileTree fileTree = new IdCollectingCountingFileTree(subtreeRoot.getId());
+      fileTree.buildUp();
+      Iterator<Integer> idIterator = fileTree.getOrderedIds().descendingIterator();
+      synchronized (idIterator) {
+        quotaUpdateManager.addPrioritizedUpdates(idIterator);
+        try {
+          idIterator.wait();
+        } catch (InterruptedException e) {
+          // Not sure if this can happend if we are not shutting down but we need to abort in case it happens.
+          throw new IOException("Operation failed due to an Interrupt");
+        }
+      }
+
+      HDFSTransactionalRequestHandler setQuotaHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_QUOTA, path) {
+        @Override
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+          tla.getLocks()
+              .addINode(INodeResolveType.PATH, INodeLockType.WRITE, true, new String[]{path}, true, getNamenodeId())
+              .addBlock();
+          return tla.acquire();
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          dir.setQuota(path, nsQuota, dsQuota, fileTree.getNamespaceCount(), fileTree.getDiskspaceCount());
+          return null;
+        }
+      };
+      setQuotaHandler.handle(this);
+    } finally {
+      unlockSubtree(path);
+    }
+  }
+
+  ContentSummary multiTransactionalGetContentSummary(final String path) throws AccessControlException,
+      FileNotFoundException, UnresolvedLinkException, StandbyException, IOException {
+    try {
+      final INode subtreeRoot = lockSubtree(path);
+      if (subtreeRoot == null) {
+        throw new FileNotFoundException("File does not exist: " + path);
+      }
+
+      final CountingFileTree fileTree = new CountingFileTree(subtreeRoot.getId(), FsAction.READ_EXECUTE);
+      fileTree.buildUp();
+      return (ContentSummary) new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ATTRIBUTES) {
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          INodeAttributesDataAccess<INodeAttributes> dataAccess = (INodeAttributesDataAccess<INodeAttributes>)
+              StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
+          INodeAttributes attributes = dataAccess.findAttributesByPk(subtreeRoot.getId());
+          return new ContentSummary(fileTree.getFileSizeSummary(), fileTree.getFileCount(), fileTree.getDirectoryCount(),
+              attributes == null? subtreeRoot.getNsQuota() : attributes.getNsQuota(), fileTree.getDiskspaceCount(),
+              attributes == null? subtreeRoot.getDsQuota() : attributes.getDsQuota());
+        }
+      }.handle(this);
+
+    } finally {
+      unlockSubtree(path);
+    }
+  }
+
+  void multiTransactionalRename(final String src, final String dst, final Options.Rename... options) throws IOException {
+    if (NameNode.stateChangeLog.isDebugEnabled()) {
+      NameNode.stateChangeLog.debug("DIR* NameSystem.multiTransactionalRename: with options - "
+          + src + " to " + dst);
+    }
+
+    if (isInSafeMode()) {
+      throw new SafeModeException("Cannot rename " + src, safeMode);
+    }
+    if (!DFSUtil.isValidName(dst)) {
+      throw new InvalidPathException("Invalid name: " + dst);
+    }
+    if (dst.equals(src)) {
+      throw new FileAlreadyExistsException(
+          "The source " + src + " and destination " + dst + " are the same");
+    }
+    // dst cannot be a directory or a file under src
+    if (dst.startsWith(src) &&
+        dst.charAt(src.length()) == Path.SEPARATOR_CHAR) {
+      String error = "Rename destination " + dst
+          + " is a directory or file under source " + src;
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + error);
+      throw new IOException(error);
+    }
+
+    try {
+      // TODO support audit log
+      INode srcNode = lockSubtreeAndCheckPathPermission(src, false, null, FsAction.WRITE, null, null);
+      INode dstNode = lockSubtreeAndCheckPathPermission(dst, false, FsAction.WRITE, null, null, null);
+
+      long srcNsCount = 0;
+      long srcDsCount = 0;
+      if (srcNode != null) {
+        QuotaCountingFileTree srcFileTree = new QuotaCountingFileTree(srcNode.getId());
+        srcFileTree.buildUp();
+        srcNsCount = srcFileTree.getNamespaceCount();
+        srcDsCount = srcFileTree.getDiskspaceCount();
+      }
+
+      long dstNsCount = 0;
+      long dstDsCount = 0;
+      if (dstNode != null) {
+        QuotaCountingFileTree dstFileTree = new QuotaCountingFileTree(dstNode.getId());
+        dstFileTree.buildUp();
+        dstNsCount = dstFileTree.getNamespaceCount();
+        dstDsCount = dstFileTree.getDiskspaceCount();
+      }
+
+      renameTo(src, dst, srcNsCount, srcDsCount, dstNsCount, dstDsCount, options);
+    } finally {
+      unlockSubtree(src);
+      unlockSubtree(dst);
+    }
+  }
+
+  void renameTo(final String src, final String dst, final long srcNsCount, final long srcDsCount,
+                final long dstNsCount, final long dstDsCount, final Options.Rename... options)
+      throws IOException, UnresolvedLinkException {
+    HDFSTransactionalRequestHandler renameHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SUBTREE_RENAME, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}, true, getNamenodeId()).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addCorrupt().
+            addReplicaUc().
+            addUnderReplicatedBlock().
+            addInvalidatedBlock().
+            addPendingBlock().
+            addExcess();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
+        return tla.acquireForRename();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        if (NameNode.stateChangeLog.isDebugEnabled()) {
+          NameNode.stateChangeLog.debug("DIR* NameSystem.renameTo: with options - "
+              + src + " to " + dst);
+        }
+
+        if (isInSafeMode()) {
+          throw new SafeModeException("Cannot rename " + src, safeMode);
+        }
+        if (!DFSUtil.isValidName(dst)) {
+          throw new InvalidPathException("Invalid name: " + dst);
+        }
+
+        dir.renameTo(src, dst, srcNsCount, srcDsCount, dstNsCount, dstDsCount, options);
+        return null;
+      }
+    };
+    renameHandler.handle(this);
+  }
+
+  @Deprecated
+  boolean multiTransactionalRename(final String src, final String dst) throws IOException {
+    if (NameNode.stateChangeLog.isDebugEnabled()) {
+      NameNode.stateChangeLog.debug("DIR* NameSystem.multiTransactionalRename: with options - "
+          + src + " to " + dst);
+    }
+
+    if (isInSafeMode()) {
+      throw new SafeModeException("Cannot rename " + src, safeMode);
+    }
+    if (!DFSUtil.isValidName(dst)) {
+      throw new InvalidPathException("Invalid name: " + dst);
+    }
+
+    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.IS_DIR) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+            .addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITTED, false, new String[]{dst});
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return dir.isDir(dst)? dst + Path.SEPARATOR + new Path(src).getName(): dst;
+      }
+    };
+    String actualdst = (String) handler.handle(this);
+
+    if (actualdst.equals(src)) {
+      return true;
+    }
+    if (actualdst.startsWith(src) &&
+        actualdst.charAt(src.length()) == Path.SEPARATOR_CHAR) {
+      NameNode.stateChangeLog.warn("DIR* FSDirectory.unprotectedRenameTo: "
+          + "failed to rename " + src + " to " + actualdst
+          + " because destination starts with src");
+      return false;
+    }
+
+    try {
+      // TODO support audit log
+      INode srcNode = lockSubtreeAndCheckPathPermission(src, false, null, FsAction.WRITE, null, null);
+      INode dstNode = lockSubtreeAndCheckPathPermission(actualdst, false, FsAction.WRITE, null, null, null);
+
+      long srcNsCount = 0;
+      long srcDsCount = 0;
+      if (srcNode != null) {
+        QuotaCountingFileTree srcFileTree = new QuotaCountingFileTree(srcNode.getId());
+        srcFileTree.buildUp();
+        srcNsCount = srcFileTree.getNamespaceCount();
+        srcDsCount = srcFileTree.getDiskspaceCount();
+      }
+
+      long dstNsCount = 0;
+      long dstDsCount = 0;
+      if (dstNode != null) {
+        QuotaCountingFileTree dstFileTree = new QuotaCountingFileTree(dstNode.getId());
+        dstFileTree.buildUp();
+        dstNsCount = dstFileTree.getNamespaceCount();
+        dstDsCount = dstFileTree.getDiskspaceCount();
+      }
+
+      return renameTo(src, dst, srcNsCount, srcDsCount, dstNsCount, dstDsCount);
+    } finally {
+      unlockSubtree(src);
+      unlockSubtree(actualdst);
+    }
+  }
+
+  /**
+   * Change the indicated filename.
+   * @deprecated Use {@link #renameTo(String, String, Options.Rename...)} instead.
+   */
+  @Deprecated
+  boolean renameTo(final String src, final String dst, final long srcNsCount, final long srcDsCount,
+      final long dstNsCount, final long dstDsCount)
+      throws IOException, UnresolvedLinkException {
+    HDFSTransactionalRequestHandler renameToHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().
+            addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
+                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}, true, getNamenodeId()).
+            addLease(LockType.WRITE).
+            addLeasePath(LockType.WRITE).
+            addBlock().
+            addReplica().
+            addReplicaUc().
+            addInvalidatedBlock().
+            addCorrupt().
+            addExcess().
+            addPendingBlock().
+            addUnderReplicatedBlock();
+        if (dir.isQuotaEnabled()) {
+          tla.getLocks().addQuotaUpdateOnSubtree();
+        }
+        return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        if (NameNode.stateChangeLog.isDebugEnabled()) {
+          NameNode.stateChangeLog.debug("DIR* NameSystem.renameTo: " + src +
+              " to " + dst);
+        }
+
+        if (isInSafeMode()) {
+          throw new SafeModeException("Cannot rename " + src, safeMode);
+        }
+        if (!DFSUtil.isValidName(dst)) {
+          throw new IOException("Invalid name: " + dst);
+        }
+
+        return dir.renameTo(src, dst, srcNsCount, srcDsCount, dstNsCount, dstDsCount);
+      }
+    };
+    return (Boolean) renameToHandler.handle(this);
+  }
+
+  boolean multiTransactionalDelete(final String path, final boolean recursive) throws IOException {
+    if (NameNode.stateChangeLog.isDebugEnabled()) {
+      NameNode.stateChangeLog.debug("DIR* NameSystem.multiTransactionalDelete: " + path);
+    }
+
+    boolean ret;
+    try {
+      ret = multiTransactionalDeleteInternal(path, recursive);
+      logAuditEvent(ret, "delete", path);
+    } catch (IOException e) {
+      logAuditEvent(false, "delete", path);
+      throw e;
+    }
+    return ret;
+  }
+
+  private boolean multiTransactionalDeleteInternal(final String path, final boolean recursive) throws IOException {
+    if (isInSafeMode()) {
+      throw new SafeModeException("Cannot delete " + path, safeMode);
+    }
+
+    if (!recursive) {
+      // It is safe to do this as it will only delete a single file or an empty directory
+      return deleteWithTransaction(path, recursive);
+    }
+
+    try {
+      INode subtreeRoot = lockSubtreeAndCheckPathPermission(path, false, null, FsAction.WRITE, null, null);
+      if (subtreeRoot == null) {
+        NameNode.stateChangeLog.debug("Failed to remove "+ path +" because it does not exist");
+        return false;
+      } else if (subtreeRoot.isRoot()) {
+        NameNode.stateChangeLog.warn("Failed to remove " + path + " because the root is not allowed to be deleted");
+        return false;
+      }
+
+      if (subtreeRoot.isFile()) {
+        // We safe one transaction and a few round trips by doing so
+        return deleteWithTransactionIgnoreLocalSubtreeLock(path, recursive);
+      }
+
+      FileTree fileTree = new FileTree(subtreeRoot.getId(), FsAction.ALL);
+      fileTree.buildUp();
+      if (!recursive && fileTree.isNonEmptyDirectory()) {
+        throw new IOException(path + " is non empty");
+      }
+
+      for (int i = fileTree.getHeight(); i>0; i--) {
+        if (deleteTreeLevel(path, fileTree, i) == false) {
+          return false;
+        }
+      }
+    } finally {
+      unlockSubtree(path);
+    }
+    return true;
+  }
+
+  private boolean deleteTreeLevel(final String subtreeRootPath, final FileTree fileTree, int level) {
+    ArrayList<Future> barrier = new ArrayList<Future>();
+
+    for (final ProjectedINode inode : fileTree.getInodesByLevel(level)) {
+      final String path = fileTree.createAbsolutePath(subtreeRootPath, inode);
+
+      Future f = subtreeOperationsExecutor.submit(new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE) {
+            @Override
+            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+              tla.getLocks().
+                  addINode(
+                      INodeResolveType.PATH,
+                      INodeLockType.WRITE_ON_PARENT, false, new String[]{path}, true, getNamenodeId()).
+                  addLease(LockType.WRITE).
+                  addLeasePath(LockType.WRITE).
+                  addBlock().
+                  addReplica().
+                  addCorrupt().
+                  addReplicaUc().
+                  addUnderReplicatedBlock().
+                  addPendingBlock().
+                  addInvalidatedBlock();
+              if (dir.isQuotaEnabled()) {
+                tla.getLocks().addQuotaUpdates(inode.getId());
+              }
+              return tla.acquire();
+            }
+
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+              INode[] pathComponents = dir.getRootDir().getExistingPathINodes(path, false);
+              INode inode = pathComponents[pathComponents.length - 1];
+              if (inode == null) {
+                LOG.error("INode disappeared during deletion");
+                return false;
+              }
+              INodeDirectory parent = (INodeDirectory) pathComponents[pathComponents.length - 2];
+              dir.removeChildNonRecursively(pathComponents, pathComponents.length - 1);
+              parent.setModificationTime(now());
+
+              NameNode.getNameNodeMetrics().incrFilesDeleted(1);
+
+              if (inode instanceof INodeFile) {
+                INodeFile file = (INodeFile) inode;
+                ArrayList<Block> collectedBlocks = new ArrayList<Block>();
+                file.collectSubtreeBlocksAndClear(collectedBlocks);
+                removeBlocks(collectedBlocks); // Incremental deletion of blocks
+                collectedBlocks.clear();
+              }
+              return true;
+            }
+          };
+          return (Boolean) deleteHandler.handle(this);
+        }
+      });
+      barrier.add(f);
+    }
+
+    boolean result = true;
+    for (Future f : barrier) {
+      try {
+        if (((Boolean) f.get()) == false) result = false;
+      } catch (Exception e) {
+        result = false;
+        LOG.error("Exception was thrown during partial delete", e);
+      }
+    }
+    return result;
+  }
+
+  @VisibleForTesting
+  INode lockSubtree(final String path) throws IOException {
+    return lockSubtreeAndCheckPathPermission(path, false, null, null, null, null);
+  }
+
+  @VisibleForTesting
+  INode lockSubtreeAndCheckPathPermission(final String path, final boolean doCheckOwner, final FsAction ancestorAccess,
+        final FsAction parentAccess, final FsAction access, final FsAction subAccess) throws IOException {
+    return (INode) new HDFSTransactionalRequestHandler(HDFSOperationType.SET_SUBTREE_LOCK) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+            .addINode(
+                INodeResolveType.PATH,
+                INodeLockType.WRITE, false, new String[]{path});
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        FSPermissionChecker pc = getPermissionChecker();
+        if (isPermissionEnabled && !pc.isSuperUser()) {
+          pc.checkPermission(path, dir.getRootDir(), doCheckOwner, ancestorAccess, parentAccess, access, subAccess);
+        }
+
+        INode[] nodes = dir.getRootDir().getExistingPathINodes(path, false);
+        INode inode = nodes[nodes.length-1];
+        if (inode != null && !inode.isRoot()) { // Do never lock the fs root
+          inode.setSubtreeLocked(true);
+          inode.setSubtreeLockOwner(getNamenodeId());
+          EntityManager.update(inode);
+        }
+        return inode;
+      }
+    }.handle(this);
+  }
+
+  private void checkAccess(INode node, FsAction action) throws AccessControlException {
+    FSPermissionChecker pc = getPermissionChecker();
+    if (!pc.isSuperUser() && node.isDirectory()) {
+      pc.check(node, action);
+    }
+  }
+
+  private void checkAccess(ProjectedINode node, FsAction action) throws IOException {
+    FSPermissionChecker pc = getPermissionChecker();
+    if (!pc.isSuperUser() && node.isDirectory()) {
+      pc.check(node, action);
+    }
+  }
+
+  @VisibleForTesting
+  void unlockSubtree(final String path) throws IOException {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.RESET_SUBTREE_LOCK) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks()
+            .addINode(
+                INodeResolveType.PATH,
+                INodeLockType.WRITE, false, new String[]{path}, true, getNamenodeId());
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INode[] nodes = dir.getRootDir().getExistingPathINodes(path, false);
+        INode inode = nodes[nodes.length-1];
+        if (inode != null && inode.isSubtreeLocked()) {
+          inode.setSubtreeLocked(false);
+          EntityManager.update(inode);
+        }
+        return null;
+      }
+    }.handle(this);
+  }
+
+  public static class BuildingUpFileTreeFailedException extends IOException {
+
+    public BuildingUpFileTreeFailedException() {
+    }
+
+    public BuildingUpFileTreeFailedException(String message) {
+      super(message);
+    }
+
+    public BuildingUpFileTreeFailedException(String message, Throwable cause) {
+      super(message, cause);
+    }
+
+    public BuildingUpFileTreeFailedException(Throwable cause) {
+      super(cause);
+    }
+  }
+
+  @VisibleForTesting
+  abstract class AbstractFileTree {
+    private final int subtreeRootId;
+    private final List<Future> activeCollectors = new ArrayList<Future>();
+    private final FsAction subAccess;
+    private volatile IOException exception;
+
+    private class ChildCollector implements Runnable {
+      private final int parentId;
+      private final int level;
+      private boolean quotaEnabledBranch;
+
+      private ChildCollector(int parentId, int level, boolean quotaEnabledBranch) {
+        this.parentId = parentId;
+        this.level = level;
+        this.quotaEnabledBranch = quotaEnabledBranch;
+      }
+
+      @Override
+      public void run() {
+        LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+            List<ProjectedINode> children = dataAccess.findInodesForSubtreeOperationsWithReadLock(parentId);
+            for (ProjectedINode child : children) {
+              if (isPermissionEnabled && subAccess != null) {
+                checkAccess(child, subAccess);
+              }
+              addChildNode(level, child, quotaEnabledBranch);
+            }
+
+            if (exception != null) {
+              return null;
+            }
+
+            for (ProjectedINode inode : children) {
+              if (SubtreeLockHelper.isSubtreeLocked(
+                  inode.isSubtreeLocked(),
+                  inode.getSubtreeLockOwner(),
+                  nameNode.getActiveNamenodes().getActiveNamenodes())) {
+                exception = new SubtreeLockedException();
+                return null;
+              }
+              if (inode.isDirectory()) {
+                synchronized (activeCollectors) {
+                  collectChildren(inode.getId(), level + 1, inode.isDirWithQuota());
+                }
+              }
+            }
+            return null;
+          }
+        };
+
+        try {
+          handler.handle(this);
+        } catch (IOException e) {
+          setExceptionIfNull(e);
+        }
+      }
+    }
+
+    public AbstractFileTree(int subtreeRootId) {
+      this(subtreeRootId, null);
+    }
+
+    public AbstractFileTree(int subtreeRootId, FsAction subAccess) {
+      this.subtreeRootId = subtreeRootId;
+      this.subAccess = subAccess;
+    }
+
+    public void buildUp() throws IOException {
+      INode subtreeRoot = readSubtreeRoot();
+      if (subtreeRoot.isDirectory() == false) {
+        return;
+      }
+
+      boolean quotaEnabled = subtreeRoot instanceof INodeDirectoryWithQuota? true : false;
+      collectChildren(subtreeRootId, 2, quotaEnabled);
+      while (true) {
+        Future future;
+        synchronized (activeCollectors) {
+          if (activeCollectors.size() == 0) {
+            break;
+          }
+          future = activeCollectors.remove(0);
+        }
+        try {
+          future.get();
+        } catch (InterruptedException e) {
+          LOG.info("FileTree builder was interrupted");
+          throw new BuildingUpFileTreeFailedException("Building the up the file tree was interrupted.");
+        } catch (ExecutionException e) {
+          if (e.getCause() instanceof RuntimeException) {
+            throw new RuntimeException(e.getCause());
+          } else {
+            // This should not happen as it is a Runnable
+            LOG.warn("FileTree.buildUp received an unexpected execution exception", e);
+          }
+        }
+      }
+      if (exception != null) {
+        throw exception;
+      }
+    }
+
+    protected synchronized void setExceptionIfNull(IOException e) {
+      if (exception == null) {
+        exception = e;
+      }
+    }
+
+    protected abstract void addSubtreeRoot(ProjectedINode node);
+    protected abstract void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch);
+
+    private INode readSubtreeRoot() throws IOException {
+      return (INode) new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ROOT) {
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
+          // No need to acquire a lock as the locking flag was already set
+          INode subtreeRoot = dataAccess.indexScanfindInodeById(subtreeRootId);
+          if (subtreeRoot == null) {
+            throw new BuildingUpFileTreeFailedException("Subtree root does not exist");
+          }
+
+          if (isPermissionEnabled && subAccess != null) {
+            checkAccess(subtreeRoot, subAccess);
+          }
+
+          DataOutputBuffer permissions = new DataOutputBuffer();
+          subtreeRoot.getPermissionStatus().write(permissions);
+
+          addSubtreeRoot(new ProjectedINode(
+              subtreeRoot.getId(),
+              subtreeRoot.getParentId(),
+              subtreeRoot.getLocalName(),
+              permissions.getData(),
+              subtreeRoot instanceof INodeFile ? ((INodeFile) subtreeRoot).getHeader() : 0,
+              subtreeRoot.isSymlink(),
+              subtreeRoot.isDirectory(),
+              subtreeRoot instanceof INodeDirectoryWithQuota ? true : false,
+              subtreeRoot.isUnderConstruction(),
+              subtreeRoot.isSubtreeLocked(),
+              subtreeRoot.getSubtreeLockOwner()));
+          return subtreeRoot;
+        }
+      }.handle(this);
+    }
+
+    private void collectChildren(int parentId, int level, boolean quotaEnabledBranch) {
+      activeCollectors.add(subtreeOperationsExecutor.submit(new ChildCollector(parentId, level, quotaEnabledBranch)));
+    }
+  }
+
+  /**
+   * This method id for testing only! Do not rely on it.
+   * @param path The path of the subtree
+   * @return A FileTree instance reprecenting the path
+   * @throws PersistanceException
+   * @throws UnresolvedPathException
+   */
+  @VisibleForTesting
+  CountingFileTree createCountingFileTreeFromPath(String path) throws PersistanceException, UnresolvedPathException {
+    LinkedList<INode> nodes = new LinkedList<INode>();
+    boolean[] fullyResovled = new boolean[1];
+    INodeUtil.resolvePathWithNoTransaction(path, false, nodes,fullyResovled);
+    return new CountingFileTree(nodes.getLast().getId());
+  }
+
+  @VisibleForTesting
+  class CountingFileTree extends AbstractFileTree {
+    private final AtomicLong fileCount = new AtomicLong(0);
+    private final AtomicLong directoryCount = new AtomicLong(0);
+    private final AtomicLong diskspaceCount = new AtomicLong(0);
+    private final AtomicLong fileSizeSummary = new AtomicLong(0);
+
+    public CountingFileTree(int subtreeRootId) {
+      this(subtreeRootId, null);
+    }
+
+    public CountingFileTree(int subtreeRootId, FsAction subAccess) {
+      super(subtreeRootId, subAccess);
+    }
+
+    @Override
+    protected void addSubtreeRoot(ProjectedINode node) {
+      addNode(node);
+    }
+
+    @Override
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
+      addNode(node);
+    }
+
+    protected void addNode(final ProjectedINode node) {
+      if (node.isDirectory()) {
+        directoryCount.addAndGet(1);
+      } else if (node.isSymlink()) {
+        fileCount.addAndGet(1);
+      } else {
+        fileCount.addAndGet(1);
+        LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            BlockInfoDataAccess<BlockInfo> dataAccess = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+            List<BlockInfo> blockInfos = dataAccess.findByInodeId(node.getId());
+            BlockInfo[] blocks = blockInfos.toArray(new BlockInfo[blockInfos.size()]);
+            diskspaceCount.addAndGet(INodeFile.diskspaceConsumed(blocks, node.isUnderConstruction(),
+                INodeFile.extractBlockSize(node.getHeader()), INodeFile.extractBlockReplication(node.getHeader())));
+            fileSizeSummary.addAndGet(INodeFile.computeFileSize(true, blocks));
+            return null;
+          }
+        };
+
+        try {
+          handler.handle();
+        } catch (IOException e) {
+          setExceptionIfNull(e);
+        }
+      }
+    }
+
+    long getNamespaceCount() {
+      return directoryCount.get() + fileCount.get();
+    }
+
+    long getDiskspaceCount() {
+      return diskspaceCount.get();
+    }
+
+    long getFileSizeSummary() {
+      return fileSizeSummary.get();
+    }
+
+    public long getFileCount() {
+      return fileCount.get();
+    }
+
+    public long getDirectoryCount() {
+      return directoryCount.get();
+    }
+  }
+
+  @VisibleForTesting
+  class QuotaCountingFileTree extends AbstractFileTree {
+    private final AtomicLong namespaceCount = new AtomicLong(0);
+    private final AtomicLong diskspaceCount = new AtomicLong(0);
+
+    public QuotaCountingFileTree(int subtreeRootId) {
+      super(subtreeRootId);
+    }
+
+    public QuotaCountingFileTree(int subtreeRootId, FsAction subAccess) {
+      super(subtreeRootId, subAccess);
+    }
+
+    @Override
+    protected void addSubtreeRoot(ProjectedINode node) {
+      addNode(node);
+    }
+
+    @Override
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
+      if (!quotaEnabledBranch) {
+        addNode(node);
+      }
+    }
+
+    protected void addNode(final ProjectedINode node) {
+      if (node.isDirWithQuota()) {
+        LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ATTRIBUTES) {
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            INodeAttributesDataAccess<INodeAttributes> dataAccess =
+                (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
+            INodeAttributes attributes = dataAccess.findAttributesByPk(node.getId());
+            namespaceCount.addAndGet(attributes.getNsCount());
+            diskspaceCount.addAndGet(attributes.getDiskspace());
+            return null;
+          }
+        };
+
+        try {
+          handler.handle();
+        } catch (IOException e) {
+          setExceptionIfNull(e);
+        }
+      } else {
+        namespaceCount.addAndGet(1);
+        if (!node.isDirectory() && !node.isSymlink()) {
+          LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+              BlockInfoDataAccess<BlockInfo> dataAccess =
+                  (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+              List<BlockInfo> children = dataAccess.findByInodeId(node.getId());
+              BlockInfo[] blocks = children.toArray(new BlockInfo[children.size()]);
+              diskspaceCount.addAndGet(INodeFile.diskspaceConsumed(blocks, node.isUnderConstruction(),
+                  INodeFile.extractBlockSize(node.getHeader()), INodeFile.extractBlockReplication(node.getHeader())));
+              return null;
+            }
+          };
+
+          try {
+            handler.handle();
+          } catch (IOException e) {
+            setExceptionIfNull(e);
+          }
+        }
+      }
+    }
+
+    long getNamespaceCount() {
+      return namespaceCount.get();
+    }
+
+    long getDiskspaceCount() {
+      return diskspaceCount.get();
+    }
+  }
+
+  /**
+   * This method id for testing only! Do not rely on it.
+   * @param path The path of the subtree
+   * @return A FileTree instance reprecenting the path
+   * @throws PersistanceException
+   * @throws UnresolvedPathException
+   */
+  @VisibleForTesting
+  FileTree createFileTreeFromPath(String path) throws PersistanceException, UnresolvedPathException {
+    LinkedList<INode> nodes = new LinkedList<INode>();
+    boolean[] fullyResovled = new boolean[1];
+    INodeUtil.resolvePathWithNoTransaction(path, false, nodes,fullyResovled);
+    return new FileTree(nodes.getLast().getId());
+  }
+
+  @VisibleForTesting
+  class FileTree extends AbstractFileTree {
+    public static final int ROOT_LEVEL = 1;
+
+    private final SetMultimap<Integer, ProjectedINode> inodesByParent;
+    private final SetMultimap<Integer, ProjectedINode> inodesByLevel;
+    private final ConcurrentHashMap<Integer, ProjectedINode> inodesById = new ConcurrentHashMap<Integer, ProjectedINode>();
+
+    public FileTree(int subtreeRootId) {
+      this(subtreeRootId, null);
+    }
+
+    public FileTree(int subtreeRootId, FsAction subAccess) {
+      super(subtreeRootId, subAccess);
+      HashMultimap<Integer, ProjectedINode> parentMap = HashMultimap.create();
+      inodesByParent =  Multimaps.synchronizedSetMultimap(parentMap);
+      HashMultimap<Integer, ProjectedINode> levelMap = HashMultimap.create();
+      inodesByLevel =  Multimaps.synchronizedSetMultimap(levelMap);
+    }
+
+    @Override
+    protected void addSubtreeRoot(ProjectedINode node) {
+      inodesByLevel.put(ROOT_LEVEL, node);
+      inodesById.put(node.getId(), node);
+    }
+
+    @Override
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
+      inodesByParent.put(node.getParentId(), node);
+      inodesByLevel.put(level, node);
+      inodesById.put(node.getId(), node);
+    }
+
+    public Collection<ProjectedINode> getAll() {
+      return inodesByLevel.values();
+    }
+
+    public Collection<ProjectedINode> getAllChildren() {
+      return inodesByParent.values();
+    }
+
+    public ProjectedINode getSubtreeRoot() {
+      return inodesByLevel.get(ROOT_LEVEL).iterator().next();
+    }
+
+    public int getHeight() {
+      return inodesByLevel.keySet().size();
+    }
+
+    public Collection<ProjectedINode> getChildren(int inodeId) {
+      return inodesByParent.get(inodeId);
+    }
+
+    public Collection<ProjectedINode> getInodesByLevel(int level) {
+      return inodesByLevel.get(level);
+    }
+
+    public ProjectedINode getInodeById(int id) {
+      return inodesById.get(id);
+    }
+
+    public boolean isNonEmptyDirectory() {
+      return getSubtreeRoot().isDirectory() && !getChildren(getSubtreeRoot().getId()).isEmpty();
+    }
+
+    public String createAbsolutePath(String subtreeRootPath, ProjectedINode inode) {
+      StringBuilder builder = new StringBuilder();
+      while (inode.equals(getSubtreeRoot()) == false) {
+        builder.insert(0, inode.getName());
+        builder.insert(0, "/");
+        inode = getInodeById(inode.getParentId());
+      }
+      builder.insert(0, subtreeRootPath);
+      return builder.toString();
+    }
+  }
+
+  class IdCollectingCountingFileTree extends CountingFileTree {
+    private LinkedList<Integer> ids = new LinkedList<Integer>();
+    private List<Integer> synchronizedList = Collections.synchronizedList(ids);
+
+    public IdCollectingCountingFileTree(int subtreeRootId) {
+      super(subtreeRootId);
+    }
+
+    public IdCollectingCountingFileTree(int subtreeRootId, FsAction subAccess) {
+      super(subtreeRootId, subAccess);
+    }
+
+    @Override
+    protected void addSubtreeRoot(ProjectedINode node) {
+      synchronizedList.add(node.getId());
+      super.addSubtreeRoot(node);
+    }
+
+    @Override
+    protected void addChildNode(int level, ProjectedINode node, boolean quotaEnabledBranch) {
+      synchronizedList.add(node.getId());
+      super.addChildNode(level, node, quotaEnabledBranch);
+    }
+
+    /**
+     *
+     * @return A list that guarantees to includes parents before their children.
+     */
+    public LinkedList<Integer> getOrderedIds() {
+      return ids;
+    }
+  }
+//  public void testDBLocking(final List<String> parameters) throws IOException{
+//      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+//      @Override
+//      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+//          
+//          
+//          for(int i = 0; i < parameters.size()-1; i++){
+//              EntityManager.writeLock();
+//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//          }
+//          
+////          EntityManager.writeLock();
+////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          EntityManager.writeLock();
+////          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+////          
+//          HDFSTransactionLocks lcks = new HDFSTransactionLocks();
+//          lcks.addINode(INodeLockType.WRITE);
+//          lcks.addLease(LockType.WRITE);
+//          lcks.addLeasePath(LockType.WRITE);
+//        return lcks;
+//      }
+//
+//      @Override
+//      public Object performTask() throws PersistanceException, IOException {
+//        for(int i = 0; i < parameters.size()-1; i++){
+//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//              INodeFile file =new INodeFile(new PermissionStatus("asf", "asdf", new FsPermission("777")), null, (short) 1 , 1L, 1L, 1L);
+//              file.setIdNoPersistance(pid(parameters.get(i)));
+//              file.setParentIdNoPersistance(pid(parameters.get(i)));
+//              file.setLocalNameNoPersistance(pname(parameters.get(i)));
+//              EntityManager.add(file); 
+//          }
+//          //LOG.error("Total new Inodes are "+count);
+//          
+//        
+////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          Lease lease =new Lease(parameters.get(parameters.size()-1), Integer.parseInt(parameters.get(parameters.size()-1)),0);  
+////          EntityManager.add(lease);
+////          
+////                    
+////          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
+////          HopLeasePath path = new HopLeasePath(parameters.get(parameters.size()-1),Integer.parseInt(parameters.get(parameters.size()-1)));
+////          path.setPath(parameters.get(parameters.size()-1));
+////          EntityManager.add(path);
+//          
+//   
+//          return null;
+//      }
+//    }.handle(this);
+//      
+//  }
+  
+  public void testDBLocking(final List<String> parameters) throws IOException{
+      new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{parameters.get(0)}).
+                    addBlock().
+                    addLease(LockType.WRITE, "holder").
+                    addLeasePath(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addPendingBlock().
+                    addInvalidatedBlock();
+            return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+          try {
+              Thread.sleep(20);
+              return null;
+          } catch (InterruptedException ex) {
+              //Logger.getLogger(FSNamesystem.class.getName()).log(Level.SEVERE, null, ex);
+          }
+          return null;
+      }
+    }.handle(this);
+      
+      
+      HDFSTransactionalRequestHandler completeFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE, parameters.get(0)) {
+          @Override
+          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+            tla.getLocks().
+                    addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{parameters.get(0)}).
+                    addBlock().
+                    addLease(LockType.WRITE, "holder").
+                    addLeasePath(LockType.WRITE).
+                    addReplica().
+                    addCorrupt().
+                    addExcess().
+                    addReplicaUc().
+                    addUnderReplicatedBlock().
+                    addInvalidatedBlock();
+            return tla.acquire();
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+             
+              try {
+              Thread.sleep(20);
+              return null;
+          } catch (InterruptedException ex) {
+              //Logger.getLogger(FSNamesystem.class.getName()).log(Level.SEVERE, null, ex);
+          }
+          return null;
+          }
+      };
+      completeFileHandler.handle(this);
+      
+  }
+  private int pid(String param){
+      StringTokenizer tok = new StringTokenizer(param);
+      tok.nextElement();
+      return Integer.parseInt((String)tok.nextElement());
+  }
+  
+  private String pname(String param){
+      StringTokenizer tok = new StringTokenizer(param);
+      return (String)tok.nextElement();
+  }
+
+  public NameNode getNameNode() {
+    return nameNode;
+  }
+
+  public void setNameNode(NameNode nameNode) {
+    this.nameNode = nameNode;
   }
   //END_HOP_CODE
 }

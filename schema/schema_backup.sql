@@ -79,6 +79,8 @@ CREATE TABLE `inodes` (
   `dir` bit(1) NOT NULL,
   `quota_enabled` bit(1) NOT NULL,
   `under_construction` bit(1) NOT NULL,
+  `subtree_locked` bit(1) DEFAULT NULL,
+  `subtree_lock_owner` bigint(20) DEFAULT NULL,
   PRIMARY KEY (`parent_id`,`name`),
   KEY `inode_idx` (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
@@ -106,7 +108,7 @@ CREATE TABLE `leader` (
   `counter` bigint(20) NOT NULL,
   `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `hostname` varchar(25) NOT NULL,
-  `avg_request_processing_latency` int(11) DEFAULT NULL,
+  `httpAddress` varchar(100) DEFAULT NULL,
   `partition_val` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`,`partition_val`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
@@ -231,6 +233,17 @@ CREATE TABLE `variables` (
   `value` varbinary(500) NOT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+delimiter $$
+
+CREATE TABLE `quota_update` (
+  `id` int(11) NOT NULL,
+  `inode_id` int(11) NOT NULL,
+  `namespace_delta` bigint(20) DEFAULT NULL,
+  `diskspace_delta` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (`inode_id`,`id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$
 
 
 

@@ -51,8 +51,10 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import org.apache.hadoop.hdfs.server.common.JspHelper;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 //import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;    //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.net.NodeBase;
@@ -149,8 +151,21 @@ class NamenodeJspHelper {
         + "</td></tr>\n  <tr><td class='col1'>Cluster ID:</td><td>" + fsn.getClusterId()
         + "</td></tr>\n  <tr><td class='col1'>Block Pool ID:</td><td>" + fsn.getBlockPoolId()
         + "</td></tr>\n  <tr><td class='col1'>Path Ancestor Lock Type:</td><td>" + fsn.getFilePathAncestorLockType()   
-        + "</td></tr>\n  <tr><td class='col1'>NNs:</td><td>" + nn.getActiveNamenodes().toString()
+        + "</td></tr>\n  <tr><td class='col1'>"+nn.getActiveNamenodes().size()+" NN(s):</td><td>" + getAllActiveNNs(nn.getActiveNamenodes().getActiveNamenodes())
         + "</td></tr>\n</table></div>";
+  }
+  private static String getAllActiveNNs(List<ActiveNamenode> list){
+      StringBuilder sb = new StringBuilder("");
+      for(int i = 0; i<list.size();i++){
+          if(i%3 == 0){
+              sb.append("<br>");
+          }
+          sb.append("<a href=\"http://").append(list.get(i).getHttpAddress()).append("/dfshealth.jsp\">");
+          sb.append(list.get(i));
+          sb.append("</a>");
+          sb.append("\t\t");
+      }
+      return sb.toString();
   }
 
   /**

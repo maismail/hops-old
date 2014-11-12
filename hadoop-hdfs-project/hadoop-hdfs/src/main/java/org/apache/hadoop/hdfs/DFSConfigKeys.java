@@ -48,9 +48,21 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
-  
-  public static final String  DFS_QUOTA_ENABLED_KEY = "dfs.quota.enabled";
-  public static final boolean DFS_QUOTA_ENABLED_DEFAULT = false;
+
+  public static final String DFS_NAMENODE_QUOTA_ENABLED_KEY = "dfs.namenode.quota.enabled";
+  public static final boolean DFS_NAMENODE_QUOTA_ENABLED_DEFAULT = true;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY = "dfs.namenode.quota.update.interval";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT = 1000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_LIMIT_KEY = "dfs.namenode.quota.update.limit";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_LIMIT_DEFAULT = 100000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZE = "dfs.namenode.quota.update.id.batchsize";
+  public static final int DFS_NAMENODE_QUOTA_UPDATE_ID_BATCH_SIZ_DEFAULT = 100000;
+
+  public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD = "dfs.namenode.quota.update.updateThreshold";
+  public static final float DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
   
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
   public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 1000;
@@ -77,7 +89,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_NAMENODE_PROCESS_MISREPLICATED_NO_OF_BATCHS_DEFAULT = 10;
   
   /*for client failover api*/
-  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.address";  // format {ip:port, ip:port, ip:port} comma separated
+  public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.addresses";  // format {ip:port, ip:port, ip:port} comma separated
   public static final String  DFS_NAMENODES_RPC_ADDRESS_DEFAULT = "";
   
   public static final String  DFS_NAMENODE_SELECTOR_POLICY_KEY = "dfs.namenode.selector-policy";
@@ -98,8 +110,8 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_CLIENT_RETRIES_ON_FAILURE_KEY = "dfs.clinet.max.retires.on.failure";
   public static final int     DFS_CLIENT_RETRIES_ON_FAILURE_DEFAULT = 2; //min value is 0. Better set it >= 1
   
-  public static final String  DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.max.random.wait.on.retry";
-  public static final int     DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
+  public static final String  DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY = "dsf.client.initial.wait.on.retry";
+  public static final int     DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_DEFAULT = 1000;
   
   public static final String  DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_KEY = "dsf.client.refresh.namenode.list";
   public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
@@ -120,8 +132,26 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final String  DFS_MEMCACHE_KEY_PREFIX_DEFAULT = "p:"; 
   
   public static final String  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS = "dfs.memcache.key.expiry";  
-  public static final int  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT = 0; 
+  public static final int  DFS_MEMCACHE_KEY_EXPIRY_IN_SECONDS_DEFAULT = 0;
+
+  public static final String DFS_LEGACY_DELETE_ENABLE_KEY = "dfs.namenode.legacy-delete.enable";
+  public static final boolean DFS_LEGACY_DELETE_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_RENAME_ENABLE_KEY = "dfs.namenode.legacy-rename.enable";
+  public static final boolean DFS_LEGACY_RENAME_ENABLE_DEFAULT = false;
+
+  public static final String DFS_LEGACY_CONTENT_SUMMARY_ENABLE_KEY = "dfs.namenode.legacy-content-summary.enable";
+  public static final boolean DFS_LEGACY_CONTENT_SUMMARY_ENABLE_DEFAULT = false;
   
+  public static final String DFS_NDC_ENABLED_KEY = "dfs.ndc.enable";
+  public static final boolean DFS_NDC_ENABLED_DEFAULT = true;
+
+  public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
+  public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
+
+  public static final String DFS_SUBTREE_EXECUTOR_LIMIT_KEY = "dfs.namenode.subtree-executor-limit";
+  public static final int DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT = 20;
+
   //END_HOP_CODE
 
   public static final String  DFS_BLOCK_SIZE_KEY = "dfs.blocksize";

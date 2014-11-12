@@ -26,14 +26,16 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
 
     private final long id;
     private final String hostname;
-    private final String ipAddress;
-    private final int port;
+    private final String rpcIpAddress;
+    private final String httpAddress;
+    private final int rpcPort;
     
-    public ActiveNamenode(long id, String hostname, String ipAddress, int port) {
+    public ActiveNamenode(long id, String hostname, String rpcIpAddress, int rpcPort, String httpAddress) {
         this.id = id;
         this.hostname = hostname;
-        this.ipAddress = ipAddress;
-        this.port = port;
+        this.rpcIpAddress = rpcIpAddress;
+        this.rpcPort = rpcPort;
+        this.httpAddress = httpAddress;
     }
 
     public String getHostname() {
@@ -44,17 +46,21 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
         return id;
     }
 
-    public String getIpAddress() {
-        return ipAddress;
+    public String getRpcIpAddress() {
+        return rpcIpAddress;
     }
 
-    public int getPort() {
-        return port;
+    public int getRpcPort() {
+        return rpcPort;
+    }
+
+    public String getHttpAddress() {
+        return httpAddress;
     }
     
     public InetSocketAddress getInetSocketAddress(){
 //        return new InetSocketAddress(ipAddress, port);
-        return NetUtils.createSocketAddrForHost(ipAddress, port);
+        return NetUtils.createSocketAddrForHost(rpcIpAddress, rpcPort);
     }
 
     @Override
@@ -89,6 +95,6 @@ public class ActiveNamenode implements Comparable<ActiveNamenode> {
 
   @Override
   public String toString() {
-    return "Active NN ("+id+") address "+getInetSocketAddress();
+    return "NN ID : "+id+": RPC Address "+NetUtils.getHostPortString(getInetSocketAddress());
   }   
 }

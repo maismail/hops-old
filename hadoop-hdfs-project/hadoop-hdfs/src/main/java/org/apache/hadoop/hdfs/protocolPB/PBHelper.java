@@ -1370,7 +1370,7 @@ public class PBHelper {
   
   public static ActiveNamenode convert(ActiveNamenodeProto p)
   {
-    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort());
+    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
     return an;
   }
   
@@ -1379,8 +1379,9 @@ public class PBHelper {
     ActiveNamenodeProto.Builder anp = ActiveNamenodeProto.newBuilder();
     anp.setId(p.getId());
     anp.setHostname(p.getHostname());
-    anp.setIpAddress(p.getIpAddress());
-    anp.setPort(p.getPort());
+    anp.setIpAddress(p.getRpcIpAddress());
+    anp.setPort(p.getRpcPort());
+    anp.setHttpAddress(p.getHttpAddress());
     return anp.build();
   }
   

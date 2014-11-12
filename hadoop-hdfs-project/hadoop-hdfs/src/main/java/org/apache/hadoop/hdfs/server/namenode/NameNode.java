@@ -22,9 +22,8 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.HadoopIllegalArgumentException;
@@ -75,7 +74,6 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 
 import com.google.common.base.Joiner;
-import java.util.Random;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
@@ -94,6 +92,7 @@ import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 
 /**
  * ********************************************************
@@ -449,6 +448,7 @@ public class NameNode {
 
     protected void loadNamesystem(Configuration conf) throws IOException {
         this.namesystem = FSNamesystem.loadFromDisk(conf);
+        this.namesystem.setNameNode(this);
     }
 
     NamenodeRegistration getRegistration() {
@@ -1610,6 +1610,7 @@ public class NameNode {
     public void setNameNodeList(SortedActiveNamenodeList list) {
       synchronized(leaderSyncObj){
         this.nnList = list;
+        HDFSTransactionLockAcquirer.setActiveNamenodes(Collections.unmodifiableCollection(list.getActiveNamenodes()));
       }
     }
 
@@ -1651,7 +1652,7 @@ public class NameNode {
             Random rand = new Random();
             rand.setSeed(System.currentTimeMillis());
             ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
-            LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
+            LOG.debug("XXX Returning " + ann.getRpcIpAddress() + " for Next Block report");
             return ann;
         }
     }
@@ -1665,6 +1666,25 @@ public class NameNode {
       Variables.resetMisReplicatedIndex();
       StorageFactory.getConnector().formatStorage(UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class, SafeBlocksDataAccess.class, MisReplicatedRangeQueueDataAccess.class);
+    }
+
+    public boolean isNameNodeAlive(long namenodeId) {
+      List<ActiveNamenode> activeNamenodes = getActiveNamenodes().getActiveNamenodes();
+      return isNameNodeAlive(activeNamenodes, namenodeId);
+    }
+
+    public static boolean isNameNodeAlive(Collection<ActiveNamenode> activeNamenodes, long namenodeId) {
+      if (activeNamenodes == null) {
+        // We do not know yet, be conservative
+        return true;
+      }
+
+      for (ActiveNamenode namenode : activeNamenodes) {
+        if (namenode.getId() == namenodeId) {
+          return true;
+        }
+      }
+      return false;
     }
   //END_HOP_CODE
 }

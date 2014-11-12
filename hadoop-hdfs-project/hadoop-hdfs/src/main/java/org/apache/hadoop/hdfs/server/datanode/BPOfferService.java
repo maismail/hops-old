@@ -136,7 +136,7 @@ class BPOfferService implements Runnable {
 
     for (InetSocketAddress addr : nnAddrs) {
       this.bpServices.add(new BPServiceActor(addr, this)); 
-      nnList.add(new ActiveNamenode(0, "", addr.getAddress().getHostAddress(), addr.getPort()));
+      nnList.add(new ActiveNamenode(0, "", addr.getAddress().getHostAddress(), addr.getPort(), ""));
     }
     //START_HOP_CODE
     dnConf = dn.getDnConf();
@@ -404,7 +404,7 @@ class BPOfferService implements Runnable {
     
     // remove from nnList
     for(ActiveNamenode ann : nnList){
-      if(ann.getIpAddress().equals(actor.getNNSocketAddress())){
+      if(ann.getRpcIpAddress().equals(actor.getNNSocketAddress())){
         nnList.remove(ann);
         break;
       }
@@ -962,7 +962,7 @@ class BPOfferService implements Runnable {
   void updateNNList(SortedActiveNamenodeList list) throws IOException {
     ArrayList<InetSocketAddress> nnAddresses = new ArrayList<InetSocketAddress>();
     for (ActiveNamenode ann : list.getActiveNamenodes()) {
-      InetSocketAddress socketAddress = new InetSocketAddress(ann.getIpAddress(), ann.getPort());
+      InetSocketAddress socketAddress = new InetSocketAddress(ann.getRpcIpAddress(), ann.getRpcPort());
       nnAddresses.add(socketAddress);
     }
 

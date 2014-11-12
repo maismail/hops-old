@@ -45,10 +45,10 @@ export HADOOP_HEAPSIZE=8000
 export HADOOP_NAMENODE_INIT_HEAPSIZE=1000
 
 # Extra Java runtime options.  Empty by default.
-export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
+export HADOOP_OPTS="-XX:MaxDirectMemorySize=1000m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
 
 # Command specific options appended to HADOOP_OPTS when specified
-export HADOOP_NAMENODE_OPTS=" -XX:MaxDirectMemorySize=2048m -Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"
+export HADOOP_NAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"
 export HADOOP_DATANODE_OPTS="-Dhadoop.security.logger=ERROR,RFAS $HADOOP_DATANODE_OPTS"
 
 export HADOOP_SECONDARYNAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_SECONDARYNAMENODE_OPTS"
@@ -78,4 +78,6 @@ export HADOOP_SECURE_DN_PID_DIR=${HADOOP_PID_DIR}
 export HADOOP_IDENT_STRING=$USER
 
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native
-export HADOOP_ROOT_LOGGER=INFO,DRFA 
+export HADOOP_ROOT_LOGGER=WARN,DRFA 
+
+

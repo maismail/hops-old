@@ -969,5 +969,9 @@ public class DistributedFileSystem extends FileSystem {
   private void changeConf(String prop, String value) throws IOException {
     dfs.changeConf(Arrays.asList(prop), Arrays.asList(value));
   }
+  
+  public void testDBLocking(final List<String> params)throws IOException {
+      dfs.testDBLocking(params);
+  }
   //STOP_HOP_CODE
 }

@@ -45,6 +45,9 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.security.PrivilegedExceptionAction;
 import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
@@ -1181,17 +1184,16 @@ public class TestFileCreation {
     }
   }
 
-  
   //START_HOP_CODE
   @Test
   public void testIncrementalDelete() throws Exception {
 
-      Configuration conf = new HdfsConfiguration(); 
+    Configuration conf = new HdfsConfiguration();
     MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
     FileSystem fs = cluster.getFileSystem();
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
-    try{
-    
+
+    try {
     fs.mkdirs(new Path("/A/B/C"));
     
     createSmallFile(fs, new Path("/A/af1"), 1);        
@@ -1214,19 +1216,16 @@ public class TestFileCreation {
       
     
     System.out.println("_________________________TestX Deleting /A/B/C/cf1_______________________________________________");
-    fs.delete(new Path("/A/B/C/cf1"),true);
+    assertTrue(fs.delete(new Path("/A/B/C/cf1"), true));
     
     System.out.println("_________________________TestX Deleting /A/D_______________________________________________");
-    fs.delete(new Path("/A/D"),true);
+    assertTrue(fs.delete(new Path("/A/D"), true));
     
     System.out.println("_________________________TestX Deleting /A/B/C_______________________________________________");
-    fs.delete(new Path("/A/B/C"),true);
-    
-    }finally{
+    assertTrue(fs.delete(new Path("/A/B/C"), true));
+    } finally {
        cluster.shutdown();
     }
-    
-    
   }
   private void createSmallFile(FileSystem fs, Path path, int replication) throws IOException{
     FSDataOutputStream stm = createFile(fs, path, replication);
@@ -1313,14 +1312,13 @@ public class TestFileCreation {
       dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
       Path p1 = new Path("/f1/test.txt");
       Path p2 = new Path("/f2"); 
-      
       int blocks  = 1;
-//      FSDataOutputStream out = dfs.create(p1);
-//      int i = 0;
-//      for (; i < blocks; i++) {
-//        out.write(i);
-//      }
-//      out.close();
+      FSDataOutputStream out = dfs.create(p1);
+      int i = 0;
+      for (; i < blocks; i++) {
+        out.write(i);
+      }
+      out.close();
       
       
       

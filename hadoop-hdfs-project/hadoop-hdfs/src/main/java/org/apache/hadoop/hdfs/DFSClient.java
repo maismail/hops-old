@@ -142,7 +142,6 @@ import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.io.MD5Hash;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.ipc.Client;
-import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.net.NetUtils;
@@ -161,14 +160,14 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 import org.apache.hadoop.hdfs.NamenodeSelector.NamenodeHandle;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.metadata.lock.SubtreeLockedException;
 
 /********************************************************
  * DFSClient can connect to a Hadoop Filesystem and 
@@ -245,7 +244,7 @@ public class DFSClient implements java.io.Closeable {
     final int getFileBlockStorageLocationsNumThreads;
     final int getFileBlockStorageLocationsTimeout;
     //START_HOP_CODE
-    final int dfsClientMaxRandomWaitOnRetry;
+    final int dfsClientInitialWaitOnRetry;
     //END_HOP_CODE
 
     Conf(Configuration conf) {
@@ -309,8 +308,8 @@ public class DFSClient implements java.io.Closeable {
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT,
           DFSConfigKeys.DFS_CLIENT_FILE_BLOCK_STORAGE_LOCATIONS_TIMEOUT_DEFAULT);
       //START_HOP_CODE
-      dfsClientMaxRandomWaitOnRetry = conf.getInt(DFSConfigKeys.DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_KEY, 
-              DFSConfigKeys.DFS_CLIENT_MAX_RANDOM_WAIT_ON_RETRY_IN_MS_DEFAULT);
+      dfsClientInitialWaitOnRetry = conf.getInt(DFSConfigKeys.DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY,
+              DFSConfigKeys.DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_DEFAULT);
       //END_HOP_CODE
     }
 
@@ -2469,7 +2468,7 @@ public class DFSClient implements java.io.Closeable {
           return null;
         }
       };
-      doClientActionWithRetry(handler, "setQuota");
+      doClientActionOnLeader(handler, "setQuota");
     } catch(RemoteException re) {
       throw re.unwrapRemoteException(AccessControlException.class,
                                      FileNotFoundException.class,
@@ -2547,20 +2546,47 @@ public class DFSClient implements java.io.Closeable {
   private interface ClientActionHandler {
     Object doAction(ClientProtocol namenode) throws RemoteException, IOException;
   }
-  
-  private NamenodeHandle getNextNamenode(long thisFnID /*for debugging*/, List<ActiveNamenode> blist) throws IOException{
+
+  private interface NameNodeFetcher {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException;
+  }
+
+  private final NameNodeFetcher defaultNameNodeFetcher = new NameNodeFetcher() {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
       NamenodeSelector.NamenodeHandle handle = null;
-      for(int i = 0; i < 10; i++){
-        handle = namenodeSelector.getNextNamenode();  
-        if(!blist.contains(handle.getNamenode())){
-            return handle;
+      for (int i = 0; i < 10; i++) {
+        handle = namenodeSelector.getNextNamenode();
+        if (!blackList.contains(handle.getNamenode())) {
+          return handle;
         }
-        //LOG.debug(thisFnID+") Black listed descriptor returned");
       }
       return handle;
+    }
+  };
+
+  private final NameNodeFetcher leaderNameNodeFetcher = new NameNodeFetcher() {
+    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
+      NamenodeHandle leader = namenodeSelector.getLeadingNameNode();
+      if (blackList.contains(leader)) {
+        return null;
+      }
+      return leader;
+    }
+  };
+
+  private Object doClientActionOnLeader(ClientActionHandler handler, String callerID)
+      throws RemoteException, IOException {
+    return doClientActionWithRetry(handler, callerID, leaderNameNodeFetcher);
   }
-    private static AtomicLong fnID = new AtomicLong(); // for debuggin purpose
-    private Object doClientActionWithRetry(ClientActionHandler handler, String callerID) throws RemoteException, IOException {
+
+  private Object doClientActionWithRetry(ClientActionHandler handler, String callerID)
+      throws RemoteException, IOException {
+    return doClientActionWithRetry(handler, callerID, defaultNameNodeFetcher);
+  }
+
+  private static AtomicLong fnID = new AtomicLong(); // for debugging purpose
+  private Object doClientActionWithRetry(ClientActionHandler handler, String callerID, NameNodeFetcher nameNodeFetcher)
+      throws RemoteException, IOException {
     callerID = callerID.toUpperCase();
     long thisFnID = fnID.incrementAndGet();
     //When a RPC call to NN fails then the client will put the NamenodeSelector.java
@@ -2570,16 +2596,17 @@ public class DFSClient implements java.io.Closeable {
     //for dead Namenodes (depends on the convergence rate of Leader Election). 
     //To avoid contacting a dead node a list of black listed namenodes is also maintained on the 
     //client side to avoid contacting dead NNs
-    List<ActiveNamenode> blackListedNamenodes = new ArrayList<ActiveNamenode>(); 
-    
+    List<ActiveNamenode> blackListedNamenodes = new ArrayList<ActiveNamenode>();
+
     Exception exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
     boolean success = false;
+    int waitTime = dfsClientConf.dfsClientInitialWaitOnRetry;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
-        handle = getNextNamenode(thisFnID,blackListedNamenodes);
-        
-        LOG.debug(thisFnID+") "+callerID+" sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
+        handle = nameNodeFetcher.getNextNameNode(blackListedNamenodes);
+
+        LOG.debug(thisFnID + ") " + callerID + " sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         Object obj = handler.doAction(handle.getRPCHandle());
         success = true;
         //no exception 
@@ -2589,26 +2616,30 @@ public class DFSClient implements java.io.Closeable {
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
           //so that it is not used again
-          if(handle != null){
-            LOG.debug(thisFnID+") "+callerID+" RPC faild. NN used was "+handle.getNamenode()+", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          if (handle != null) {
+            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN used was " + handle.getNamenode() + ", retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
             namenodeSelector.blackListNamenode(handle);
             blackListedNamenodes.add(handle.getNamenode());
-          }else{
-              LOG.debug(thisFnID+") "+callerID+" RPC faild. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          } else {
+            LOG.debug(thisFnID+") " + callerID + " RPC failed. NN was NULL, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
           }
 
-          //Before retry wait for some random time.
-          if(i <= MAX_RPC_RETRIES ){
-              Random rand = new Random();
-              rand.setSeed(System.currentTimeMillis());
-              int waitTime = rand.nextInt(dfsClientConf.dfsClientMaxRandomWaitOnRetry);
-              try {
-                  LOG.debug(thisFnID+") RPC failed. Rand Sleep "+waitTime);
-                  Thread.sleep(waitTime);
-              } catch (InterruptedException ex) {
-              }
+          try {
+            LOG.debug(thisFnID + ") RPC failed. Sleep " + waitTime);
+            Thread.sleep(waitTime);
+            waitTime *= 2;
+          } catch (InterruptedException ex) {
           }
           continue;
+        } else if (e instanceof RemoteException
+            && ((RemoteException) e).unwrapRemoteException() instanceof SubtreeLockedException) {
+          LOG.debug(thisFnID+") " + callerID + " RPC failed. Subtree was locked, retries left (" + (MAX_RPC_RETRIES - (i)) + ")  Exception " + e);
+          try {
+            LOG.debug(thisFnID + ") RPC failed. Sleep " + waitTime);
+            Thread.sleep(waitTime);
+            waitTime *= 2;
+          } catch (InterruptedException ex) {
+          }
         } else {
           break;
         }
@@ -2617,9 +2648,9 @@ public class DFSClient implements java.io.Closeable {
     if (!success) {
       //print the fn call trace to figure out with RPC failed
       for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-          LOG.warn(thisFnID+") "+callerID+" Failed RPC Trace, "+ Thread.currentThread().getStackTrace()[j]);
+        LOG.warn(thisFnID+") " + callerID + " Failed RPC Trace, " + Thread.currentThread().getStackTrace()[j]);
       }
-      
+
       LOG.warn(thisFnID+") "+callerID+" Exception was "+exception);
       exception.printStackTrace();
       if (exception != null) {
@@ -2834,6 +2865,17 @@ public class DFSClient implements java.io.Closeable {
     }
     return null;
   }
-   
+ 
+  public void testDBLocking(final List<String> params) throws IOException{
+      ClientActionHandler handler = new ClientActionHandler() {
+
+        @Override
+        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
+          namenode.testDBLocking(params);
+          return null;
+        }
+      };
+      doClientActionWithRetry(handler, "testDBLocking");
+    }
   //END_HOP_CODE
 }

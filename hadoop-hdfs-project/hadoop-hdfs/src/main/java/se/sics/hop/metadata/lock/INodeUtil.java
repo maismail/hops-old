@@ -344,4 +344,29 @@ public class INodeUtil {
     }
   }
 
+  public static INodeIdentifier resolveINodeFromId(final int id) throws StorageException {
+    INodeIdentifier inodeIdentifier;
+
+    LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.RESOLVE_INODE_FROM_ID) {
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INodeDALAdaptor ida = (INodeDALAdaptor) StorageFactory.getDataAccess(INodeDataAccess.class);
+        INode inode = ida.indexScanfindInodeById(id);
+        INodeIdentifier inodeIdent = new INodeIdentifier(id);
+        if(inode != null){
+          inodeIdent.setName(inode.getLocalName());
+          inodeIdent.setPid(inode.getParentId());
+        }
+        return inodeIdent;
+      }
+    };
+
+    try {
+      inodeIdentifier = (INodeIdentifier) handler.handle();
+    } catch (IOException ex) {
+      throw new StorageException(ex.getMessage());
+    }
+    return inodeIdentifier;
+  }
 }
