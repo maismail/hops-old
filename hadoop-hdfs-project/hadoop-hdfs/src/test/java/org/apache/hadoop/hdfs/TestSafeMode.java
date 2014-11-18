@@ -209,7 +209,11 @@ public class TestSafeMode {
     GenericTestUtils.waitFor(new Supplier<Boolean>() {
       @Override
       public Boolean get() {
-        return NameNodeAdapter.getSafeModeSafeBlocks(nn) > 0;
+        try {
+          return NameNodeAdapter.getSafeModeSafeBlocks(nn) > 0;
+        } catch (IOException ex) {
+          throw new RuntimeException(ex);
+        }
       }
     }, 10, 10000);
     // SafeMode is fine-grain synchronized, so the processMisReplicatedBlocks

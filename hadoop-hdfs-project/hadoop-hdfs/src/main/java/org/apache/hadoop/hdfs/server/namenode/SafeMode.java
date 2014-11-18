@@ -20,6 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.exception.PersistanceException;
 
 /** SafeMode related operations. */
@@ -48,8 +49,8 @@ public interface SafeMode {
    * Increment number of blocks that reached minimal replication.
    * @param replication current replication 
    */
-  public void incrementSafeBlockCount(int replication) throws IOException;
+  public void incrementSafeBlockCount(BlockInfo blk) throws IOException;
 
   /** Decrement number of blocks that reached minimal replication. */
-  public void decrementSafeBlockCount(Block b) throws PersistanceException, IOException;
+  public void decrementSafeBlockCount(BlockInfo blk) throws PersistanceException, IOException;
 }

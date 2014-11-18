@@ -28,6 +28,7 @@ import se.sics.hop.transaction.EntityManager;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -35,6 +36,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  *
@@ -60,13 +62,24 @@ public class StorageFactory {
       Variables.registerDefaultValues();
       addToClassPath(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT));
       dStorageFactory = DALDriver.load(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS, DFSConfigKeys.DFS_STORAGE_DRIVER_CLASS_DEFAULT));
-      dStorageFactory.setConfiguration(conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT));
+      dStorageFactory.setConfiguration(getMetadataClusterConfiguration(conf));
       initDataAccessWrappers();
       EntityManager.setContextInitializer(getContextInitializer());
       isDALInitialized = true;
     }
   }
 
+  public static Properties getMetadataClusterConfiguration(Configuration conf) throws IOException{
+      String configFile = conf.get(DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE, DFSConfigKeys.DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT);
+      Properties clusterConf = new Properties();
+      InputStream inStream = StorageConnector.class.getClassLoader().getResourceAsStream(configFile);
+      clusterConf.load(inStream);
+//      if(conf.get(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE) != null){
+//        clusterConf.setProperty(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE, conf.get(StorageConnector.PROPERTY_HOP_CLUSTER_BATCHSIZE));
+//      }
+      return clusterConf;
+  }
+  
   //[M]: just for testing purposes
   private static void addToClassPath(String s) throws StorageInitializtionException {
     try {
@@ -166,6 +179,11 @@ public class StorageFactory {
     return dStorageFactory.getConnector().formatStorage();
   }
   
+  public static boolean formatStorageNonTransactional() throws StorageException {
+    PathMemcache.getInstance().flush();
+    return dStorageFactory.getConnector().formatStorageNonTransactional();
+  }
+
   public static boolean formatStorage(Class<? extends EntityDataAccess>... das) throws StorageException{
     PathMemcache.getInstance().flush();
     return dStorageFactory.getConnector().formatStorage(das);

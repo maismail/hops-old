@@ -32,8 +32,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   //START_HOP_CODE  
   public static final String DFS_STORAGE_DRIVER_JAR_FILE = "dfs.storage.driver.jarFile";
- // public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
-  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "/home/salman/NetbeanProjects/hop/hop-metadata-dal-impl-ndb/target/hop-metadata-dal-impl-ndb-1.0-SNAPSHOT-jar-with-dependencies.jar";
+  public static final String DFS_STORAGE_DRIVER_JAR_FILE_DEFAULT = "";
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
@@ -79,6 +78,15 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.id.updateThreshold";
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
+  
+  public static final String DFS_NAMENODE_PROCESS_REPORT_BATCH_SIZE = "dfs.namenode.processReport.batchsize";
+  public static final int DFS_NAMENODE_PROCESS_REPORT_BATCH_SIZE_DEFAULT = 10000;
+  
+  public static final String DFS_NAMENODE_PROCESS_MISREPLICATED_BATCH_SIZE = "dfs.namenode.misreplicated.batchsize";
+  public static final int DFS_NAMENODE_PROCESS_MISREPLICATED_BATCH_SIZE_DEFAULT = 500;
+  
+  public static final String DFS_NAMENODE_PROCESS_MISREPLICATED_NO_OF_BATCHS = "dfs.namenode.misreplicated.noofbatches";
+  public static final int DFS_NAMENODE_PROCESS_MISREPLICATED_NO_OF_BATCHS_DEFAULT = 10;
   
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.addresses";  // format {ip:port, ip:port, ip:port} comma separated

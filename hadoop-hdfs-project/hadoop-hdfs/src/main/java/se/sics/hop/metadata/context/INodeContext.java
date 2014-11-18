@@ -162,6 +162,14 @@ public class INodeContext extends EntityContext<INode> {
           inodesParentIndex.put(parentId, result);
         }
         break;
+      
+      case ByPKS:
+        String[] names = (String[]) params[0];
+        int[] parentIds = (int[]) params[1];
+        log("find-inodes-by-name-parentid", CacheHitState.LOSS, new String[]{"name", Arrays.toString(names), "pid",Arrays.toString(parentIds)});
+        result = syncInodeInstances(dataAccess.getINodesPkBatched(names, parentIds));
+        Collections.sort(result, INode.Order.ByName);
+        break;
     }
     return result;
   }

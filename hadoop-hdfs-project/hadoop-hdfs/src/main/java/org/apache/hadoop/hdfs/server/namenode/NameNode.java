@@ -81,13 +81,16 @@ import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
+import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.dal.MisReplicatedRangeQueueDataAccess;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 
@@ -298,7 +301,7 @@ public class NameNode {
      * at this location.  *
      */
     public static void format(Configuration conf) throws IOException {
-        format(conf, true, true);
+        format(conf, false, true);
     }
 
     static NameNodeMetrics metrics;
@@ -831,7 +834,11 @@ public class NameNode {
         //START_HOP_CODE
         try {
             StorageFactory.setConfiguration(conf);
+          if (force) {
+            StorageFactory.formatStorageNonTransactional();
+          } else {
             StorageFactory.formatStorage();
+          }
             StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
         } catch (PersistanceException e) {
             throw new RuntimeException(e.getMessage());
@@ -1614,7 +1621,7 @@ public class NameNode {
             if( elapsedTime < leaderWindow){
                 return true;
             }else{
-                LOG.error("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
+                LOG.warn("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
                 return false;
             }
         } else {
@@ -1651,10 +1658,14 @@ public class NameNode {
     }
     
     private static void safeModeTmpFix(Configuration conf) throws StorageInitializtionException, StorageException, IOException{
-            StorageFactory.setConfiguration(conf);
-            StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
-                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
-                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);  
+      StorageFactory.setConfiguration(conf);
+//            StorageFactory.getConnector().formatStorage(ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class, 
+//                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
+//                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);
+      Variables.enterClusterSafeMode();
+      Variables.resetMisReplicatedIndex();
+      StorageFactory.getConnector().formatStorage(UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
+                     InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class, SafeBlocksDataAccess.class, MisReplicatedRangeQueueDataAccess.class);
     }
 
     public boolean isNameNodeAlive(long namenodeId) {

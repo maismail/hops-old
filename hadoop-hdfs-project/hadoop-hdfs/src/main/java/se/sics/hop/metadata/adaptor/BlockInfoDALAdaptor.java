@@ -17,6 +17,7 @@ package se.sics.hop.metadata.adaptor;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
@@ -58,6 +59,12 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeId(id));
   }
 
+  
+  @Override
+  public List<BlockInfo> findByInodeIds(int[] inodeIds) throws StorageException {
+    return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByInodeIds(inodeIds));
+  }
+  
   @Override
   public List<BlockInfo> findAllBlocks() throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findAllBlocks());
@@ -69,15 +76,15 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
+  public Set<Long> findByStorageIdOnlyIds(int storageId) throws StorageException {
+    return dataAccess.findByStorageIdOnlyIds(storageId);
+  }
+    
+  @Override
   public List<BlockInfo> findByIds(long[] blockIds, int[] inodeIds) throws StorageException {
     return (List<BlockInfo>) convertDALtoHDFS(dataAccess.findByIds(blockIds, inodeIds));
   }
 
-  @Override
-  public List<Long> findByStorageIdOnlyIds(int storageId) throws StorageException {
-    return dataAccess.findByStorageIdOnlyIds(storageId);
-  }
-  
   @Override
   public void prepare(Collection<BlockInfo> removed, Collection<BlockInfo> newed, Collection<BlockInfo> modified) throws StorageException {
     dataAccess.prepare(convertHDFStoDAL(removed), convertHDFStoDAL(newed), convertHDFStoDAL(modified));

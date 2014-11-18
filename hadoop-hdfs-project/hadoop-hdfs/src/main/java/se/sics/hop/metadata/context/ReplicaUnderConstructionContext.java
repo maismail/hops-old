@@ -1,7 +1,9 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
+import java.util.Arrays;
 import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -108,7 +110,17 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
             saveLists(result);
           }
           return result;
-        }       
+        }
+      case ByINodeIds:
+        int[] inodeIds = (int[]) params[0];
+        log("find-replicaucs-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays.toString(inodeIds)});
+        aboutToAccessStorage();
+        result = dataAccess.findReplicaUnderConstructionByINodeIds(inodeIds);
+        inodesRead.addAll(Ints.asList(inodeIds));
+        if (result != null) {
+          saveLists(result);
+        }
+        return result;
     }
 
     return result;

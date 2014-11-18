@@ -54,6 +54,7 @@ public class StorageInfo {
   public static final Log LOG = LogFactory.getLog(StorageInfo.class);
   public static final int DEFAULT_ROW_ID = 0; // StorageInfo is stored as one row in the database.
   protected String blockpoolID = ""; // id of the block pool. moved it from NNStorage.java to here. This is where it should have been
+  private static StorageInfo storageInfo = null;
   //END_HOP_CODE
   public int   layoutVersion;   // layout version of the storage data
   public int   namespaceID;     // id of the file system
@@ -127,19 +128,22 @@ public class StorageInfo {
   
   //START_HOP_CODE
   public static StorageInfo getStorageInfoFromDB() throws IOException {
-    return (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
-        return tla.acquire();
-      }
+    if (storageInfo == null) {
+      storageInfo = (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
+        @Override
+        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+          tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
+          return tla.acquire();
+        }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return Variables.getStorageInfo();
-      }
-    }.handle();
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          return Variables.getStorageInfo();
+        }
+      }.handle();
+    }
+    return storageInfo;
   }
 
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
@@ -165,6 +169,7 @@ public class StorageInfo {
       }
     };
     formatHandler.handle();
+    storageInfo = null;
   }
   
   public String getBlockPoolId()

@@ -91,10 +91,35 @@ public class INodeDALAdaptor extends DALAdaptor<INode, HopINode> implements INod
   }
 
   @Override
-  public List<INodeIdentifier> getAllINodeFiles() throws StorageException {
-    return dataAccess.getAllINodeFiles();
+  public List<INodeIdentifier> getAllINodeFiles(long startId, long endId) throws StorageException {
+    return dataAccess.getAllINodeFiles(startId, endId);
   }
   
+  @Override
+  public boolean haveFilesWithIdsGreaterThan(long id) throws StorageException {
+    return dataAccess.haveFilesWithIdsGreaterThan(id);
+  }
+  
+  @Override
+  public boolean haveFilesWithIdsBetween(long startId, long endId) throws StorageException {
+    return dataAccess.haveFilesWithIdsBetween(startId, endId);
+  }
+  
+  @Override
+  public long getMinFileId() throws StorageException {
+    return dataAccess.getMinFileId();
+  }
+
+  @Override
+  public long getMaxFileId() throws StorageException {
+    return dataAccess.getMaxFileId();
+  }
+
+  @Override
+  public int countAllFiles() throws StorageException {
+    return dataAccess.countAllFiles();
+  }
+   
   @Override
   public HopINode convertHDFStoDAL(INode inode) throws StorageException {
     HopINode hopINode = null;

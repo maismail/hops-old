@@ -143,6 +143,14 @@ CREATE TABLE `leases` (
 
 delimiter $$
 
+CREATE TABLE `misreplicated_range_queue` (
+  `range` varchar(120) NOT NULL,
+  PRIMARY KEY (`range`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+
+delimiter $$
+
 CREATE TABLE `path_memcached` (
   `path` varchar(128) NOT NULL,
   `inodeids` varbinary(13500) NOT NULL,
@@ -186,6 +194,14 @@ CREATE TABLE `replicas` (
   KEY `storage_idx` (`storage_id`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1
 /*!50100 PARTITION BY KEY (inode_id) */$$
+
+
+delimiter $$
+
+CREATE TABLE `safe_blocks` (
+  `id` bigint(20) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
 
 
 delimiter $$

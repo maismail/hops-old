@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
@@ -103,7 +104,17 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
             saveLists(result);
           }
           return result;
-        }       
+        }
+      case ByInodeIds:
+        int[] inodeIds = (int[]) params[0];
+        log("find-pendings-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays.toString(inodeIds)});
+        aboutToAccessStorage();
+        result = dataAccess.findByINodeIds(inodeIds);
+        inodesRead.addAll(Ints.asList(inodeIds));
+        if (result != null) {
+          saveLists(result);
+        }
+        return result;
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);

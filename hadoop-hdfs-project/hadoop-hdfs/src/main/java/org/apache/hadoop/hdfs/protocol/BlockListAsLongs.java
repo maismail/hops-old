@@ -320,4 +320,32 @@ public class BlockListAsLongs implements Iterable<Block> {
     }
     return maxGs;
   }
+  
+  //HOP
+  public long[] getBlockIds() {
+    int numOfBlocks = getNumberOfBlocks();
+    long[] blkIds = new long[numOfBlocks];
+    for (int index = 0; index < numOfBlocks; index++) {
+      blkIds[index] = blockId(index);
+    }
+    return blkIds;
+  }
+  
+  public Object[] getBlocksAndIdsAndStates(int startIndex, int endIndex) {
+    int size = endIndex - startIndex;
+    Block[] blks = new Block[size];
+    long[] blksIds = new long[size];
+    ReplicaState[] blkStates = new ReplicaState[size];
+    for (int index = startIndex; index < endIndex; index++) {
+      Block blk = new Block();
+      blk.setNoPersistance(blockId(index),
+              blockLength(index),
+              blockGenerationStamp(index));
+      int i = index - startIndex;
+      blks[i] = blk;
+      blksIds[i] = blk.getBlockId();
+      blkStates[i] = blockReplicaState(index);
+    }
+    return new Object[]{blksIds, blks, blkStates};
+  }
 }

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
@@ -381,23 +382,24 @@ public class DatanodeDescriptor extends DatanodeInfo {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
+        StorageFactory.getConnector().beginTransaction();
         List<BlockInfo> list = da.findByStorageId(getSId());
+        StorageFactory.getConnector().commit();
         return list;
       }
     };
     return (List<BlockInfo>) findBlocksHandler.handle();
   }
-
-  public List<Long> getAllMachineBlocks() throws IOException {
+  
+  public Set<Long> getAllMachineBlocks() throws IOException {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS_IDS) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
-        List<Long> list = da.findByStorageIdOnlyIds(getSId());
-        return list;
+        return da.findByStorageIdOnlyIds(getSId());
       }
     };
-    return (List<Long>) findBlocksHandler.handle();
+    return (Set<Long>) findBlocksHandler.handle();
   }
   
   /**

@@ -27,8 +27,11 @@ public class TestEncodingStatus extends TestCase {
   static {
     try {
       final DALStorageFactory sf = DALDriver.load("se.sics.hop.metadata.ndb.NdbStorageFactory");
-      sf.setConfiguration("ndb-config.properties");
+      Configuration.addDefaultResource("ndb-config.properties");
+      sf.setConfiguration(StorageFactory.getMetadataClusterConfiguration(new Configuration()));
     } catch (StorageInitializtionException e) {
+      e.printStackTrace();
+    } catch (IOException e) {
       e.printStackTrace();
     }
 

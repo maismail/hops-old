@@ -1,5 +1,6 @@
 package se.sics.hop.metadata.context;
 
+import com.google.common.primitives.Ints;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -164,14 +165,27 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
           aboutToAccessStorage();
           return syncInstances(dataAccess.findReplicasByINodeId(inodeId), inodeId);
         }
-      case ByPKS:
+      case ByStorageId:
         long[] blockIds = (long[]) params[0];
-        int[] inodeIds = (int[]) params[1];
-        int sid = (Integer) params[2];
+        int sid = (Integer) params[1];
         int[] sids = new int[blockIds.length];
         Arrays.fill(sids, sid);
-        log("find-replicas-by-pks", CacheHitState.NA, new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
-        return syncInstances(dataAccess.findReplicasByPKS(blockIds, inodeIds, sids), blockIds, sid);
+        log("find-replicas-by-sid", CacheHitState.NA, new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
+        //return syncInstances(dataAccess.findReplicasByPKS(blockIds, inodeIds, sids), blockIds, sid);
+        return syncInstances(dataAccess.findReplicasByStorageId(sid), blockIds, sid);
+      case ByPKS:
+        long[] pblockIds = (long[]) params[0];
+        int[] pinodeIds = (int[]) params[1];
+        int psid = (Integer) params[2];
+        int[] psids = new int[pblockIds.length];
+        Arrays.fill(psids,psid);
+        log("find-replicas-by-pks", CacheHitState.NA, new String[]{"Ids", "" + pblockIds, "InodeIds", "" + pinodeIds, " sid", Integer.toString(psid)});
+        return syncInstances(dataAccess.findReplicasByPKS(pblockIds, pinodeIds, psids), pblockIds, psid);
+      case ByINodeIds:
+        int[] ids = (int[]) params[0];
+        log("find-replicas-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays.toString(ids)});
+        aboutToAccessStorage();
+        return syncInstances(dataAccess.findReplicasByINodeIds(ids), ids);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -195,8 +209,16 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     return new ArrayList<HopIndexedReplica>(list);
   }
 
+  private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, int[] inodeIds) {
+    for (HopIndexedReplica r : list) {
+      addReplica(r.getBlockId(), r.getStorageId(), r);
+    }
+    inodesRead.addAll(Ints.asList(inodeIds));
+    return new ArrayList<HopIndexedReplica>(list);
+  }
+   
   private List<HopIndexedReplica> syncInstances(List<HopIndexedReplica> list, long[] blockIds, int sid) {
-    List<Long> nullBlks = new ArrayList<Long>();
+    Set<Long> nullBlks = new HashSet<Long>();
     for (long id : blockIds) {
       nullBlks.add(id);
     }

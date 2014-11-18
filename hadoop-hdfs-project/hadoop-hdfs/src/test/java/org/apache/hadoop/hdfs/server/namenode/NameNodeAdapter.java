@@ -231,12 +231,12 @@ public class NameNodeAdapter {
    * @return the number of blocks marked safe by safemode, or -1
    * if safemode is not running.
    */
-  public static int getSafeModeSafeBlocks(NameNode nn) {
+  public static int getSafeModeSafeBlocks(NameNode nn) throws IOException {
     SafeModeInfo smi = nn.getNamesystem().getSafeModeInfoForTests();
     if (smi == null) {
       return -1;
     }
-    return smi.blockSafe;
+    return smi.blockSafe();
   }
   
   /**
