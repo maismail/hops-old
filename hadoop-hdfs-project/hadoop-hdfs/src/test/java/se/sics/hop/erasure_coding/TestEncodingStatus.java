@@ -17,9 +17,12 @@ import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
 public class TestEncodingStatus extends TestCase {
@@ -27,8 +30,9 @@ public class TestEncodingStatus extends TestCase {
   static {
     try {
       final DALStorageFactory sf = DALDriver.load("se.sics.hop.metadata.ndb.NdbStorageFactory");
-      Configuration.addDefaultResource("ndb-config.properties");
-      sf.setConfiguration(StorageFactory.getMetadataClusterConfiguration(new Configuration()));
+      Properties conf = new Properties();
+      conf.load(ClassLoader.getSystemResourceAsStream("ndb-config.properties"));
+      sf.setConfiguration(conf);
     } catch (StorageInitializtionException e) {
       e.printStackTrace();
     } catch (IOException e) {
