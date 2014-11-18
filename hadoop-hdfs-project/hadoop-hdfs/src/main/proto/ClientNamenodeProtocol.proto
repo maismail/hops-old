@@ -45,11 +45,29 @@ message GetBlockLocationsResponseProto {
 }
 
 message GetMissingBlockLocationsRequestProto {
-    required string filePath = 1;
+  required string filePath = 1;
 }
 
 message GetMissingBlockLocationsResponseProto {
-    optional LocatedBlocksProto locations = 1;
+  optional LocatedBlocksProto locations = 1;
+}
+
+message AddBlockChecksumRequestProto {
+  required string src = 1;
+  required uint32 blockIndex = 2;
+  required uint64 checksum = 3;
+}
+
+message AddBlockChecksumResponseProto {
+}
+
+message GetBlockChecksumRequestProto {
+  required string src = 1;
+  required uint32 blockIndex = 2;
+}
+
+message GetBlockChecksumResponseProto {
+  required uint64 checksum = 1;
 }
 
 message GetServerDefaultsRequestProto { // No parameters
@@ -67,7 +85,7 @@ enum CreateFlagProto {
 
 message EncodingPolicyProto {
   required string codec = 1;
-  required uint32 targetReplication = 2;
+  required uint32 targetReplication = 2; // Short: Only 16 bits used
 }
 
 message CreateRequestProto {
@@ -532,6 +550,10 @@ service ClientNamenodeProtocol {
       returns(GetBlockLocationsResponseProto);
   rpc getMissingBlockLocations(GetMissingBlockLocationsRequestProto)
       returns(GetMissingBlockLocationsResponseProto);
+  rpc addBlockChecksum(AddBlockChecksumRequestProto)
+      returns (AddBlockChecksumResponseProto);
+  rpc getBlockChecksum(GetBlockChecksumRequestProto)
+  returns (GetBlockChecksumResponseProto);
   rpc getServerDefaults(GetServerDefaultsRequestProto)
       returns(GetServerDefaultsResponseProto);
   rpc create(CreateRequestProto)returns(CreateResponseProto);

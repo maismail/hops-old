@@ -1041,7 +1041,7 @@ public class DistributedFileSystem extends FileSystem {
     }
   }
 
-  public void revokeEncoding(final String filePath, final int replication) throws IOException {
+  public void revokeEncoding(final String filePath, final short replication) throws IOException {
     dfs.revokeEncoding(filePath, replication);
   }
 

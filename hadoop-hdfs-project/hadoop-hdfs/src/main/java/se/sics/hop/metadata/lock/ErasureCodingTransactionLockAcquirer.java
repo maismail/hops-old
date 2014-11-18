@@ -5,12 +5,15 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import static se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess.KeyTuple;
 
 public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcquirer {
 
@@ -40,6 +43,8 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     super.acquire();
     acquireEncodingLock();
     acquireEncodingLockOnPathLeaf();
+    acquireEncodingLockByParityPathLeaf();
+    acquireBlockChecksum();
     return getLocks();
   }
 
@@ -76,7 +81,25 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     ErasureCodingTransactionLocks locks = getLocks();
     if (locks.getEncodingStatusLockByParityFilePathLeaf() != null) {
       INode target = allResolvedINodes.getFirst().getLast();
-      acquireLock(locks.getEncodingStatusLockOnPathLeaf(), EncodingStatus.Finder.ByParityInodeId, target.getId());
+      acquireLock(locks.getEncodingStatusLockByParityFilePathLeaf(), EncodingStatus.Finder.ByParityInodeId, target.getId());
+    }
+  }
+
+  private void acquireBlockChecksum() throws PersistanceException {
+    ErasureCodingTransactionLocks locks = getLocks();
+    if (locks.getBlockChecksumLockByKeyTuple() != null) {
+      int i = 0;
+      for (LinkedList<INode> path : allResolvedINodes) {
+        INode target = path.getLast();
+        KeyTuple key = new KeyTuple(target.getId(), locks.getBlockChecksumBlockIndexes()[i++]);
+        acquireLock(locks.getBlockChecksumLockByKeyTuple(), BlockChecksum.Finder.ByKeyTuple, key);
+      }
+    }
+    if (locks.getBlockChecksumLockOnTargets() != null) {
+      for (LinkedList<INode> path : allResolvedINodes) {
+        INode target = path.getLast();
+        acquireLockList(locks.getBlockChecksumLockOnTargets(), BlockChecksum.Finder.ByInodeId, target.getId());
+      }
     }
   }
 

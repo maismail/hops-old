@@ -8,9 +8,15 @@ import java.util.LinkedList;
 public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
 
   private TransactionLockTypes.LockType encodingStatusLock;
-  private int inodeId;
+  private int encodingStatusInodeId;
+
   private TransactionLockTypes.LockType encodingStatusLockOnPathLeaf;
   private TransactionLockTypes.LockType encodingStatusLockByParityFilePathLeaf;
+
+  private TransactionLockTypes.LockType blockChecksumLockOnTargets;
+
+  private TransactionLockTypes.LockType blockChecksumLockByKeyTuple;
+  private Integer[] blockChecksumBlockIndexes;
 
   public ErasureCodingTransactionLocks() {
 
@@ -32,8 +38,19 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
 
   public ErasureCodingTransactionLocks addEncodingStatusLock(int inodeId) {
     this.encodingStatusLock = TransactionLockTypes.LockType.READ_COMMITTED;
-    this.inodeId = inodeId;
+    this.encodingStatusInodeId = inodeId;
 
+    return this;
+  }
+
+  public ErasureCodingTransactionLocks addBlockChecksumLockOnTargets() {
+    this.blockChecksumLockOnTargets = TransactionLockTypes.LockType.READ_COMMITTED;
+    return this;
+  }
+
+  public ErasureCodingTransactionLocks addBlockChecksumLockByBlockIndex(Integer... indexes) {
+    this.blockChecksumLockByKeyTuple = TransactionLockTypes.LockType.READ_COMMITTED;
+    blockChecksumBlockIndexes = indexes;
     return this;
   }
 
@@ -42,7 +59,7 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
   }
 
   public Integer getEncodingStatusInodeId() {
-    return inodeId;
+    return encodingStatusInodeId;
   }
 
   public TransactionLockTypes.LockType getEncodingStatusLockOnPathLeaf() {
@@ -51,5 +68,18 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
 
   public TransactionLockTypes.LockType getEncodingStatusLockByParityFilePathLeaf() {
     return encodingStatusLockByParityFilePathLeaf;
+  }
+
+  public TransactionLockTypes.LockType getBlockChecksumLockOnTargets() {
+    return blockChecksumLockOnTargets;
+  }
+
+  public TransactionLockTypes.LockType getBlockChecksumLockByKeyTuple() {
+    return blockChecksumLockByKeyTuple;
+  }
+
+  public Integer[] getBlockChecksumBlockIndexes() {
+
+    return blockChecksumBlockIndexes;
   }
 }

@@ -125,6 +125,10 @@ public interface ClientProtocol {
       throws AccessControlException, FileNotFoundException,
       UnresolvedLinkException, IOException;
 
+  public void addBlockChecksum(String src, int blockIndex, long checksum) throws IOException;
+
+  public long getBlockChecksum(String src, int blockIndex) throws IOException;
+
   /**
    * Get server default values for a number of configuration params.
    * @return a set of server default configuration values
@@ -1029,7 +1033,7 @@ public interface ClientProtocol {
 
   public void encodeFile(String filePath, EncodingPolicy policy) throws IOException;
 
-  public void revokeEncoding(String filePath, int replication) throws  IOException;
+  public void revokeEncoding(String filePath, short replication) throws  IOException;
 
   public LocatedBlock getRepairedBlockLocations(String sourcePath, String parityPath, LocatedBlock block,
       boolean isParity) throws IOException;

@@ -1188,6 +1188,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override
   public EncodingStatus getEncodingStatus(String filePath) throws IOException {
+    // TODO Check file access rights?
     EncodingStatus status = namesystem.getEncodingStatus(filePath);
 
     if (status.getStatus() == EncodingStatus.Status.DELETED) {
@@ -1199,21 +1200,34 @@ class NameNodeRpcServer implements NamenodeProtocols {
 
   @Override
   public void encodeFile(String filePath, EncodingPolicy policy) throws IOException {
+    // TODO Check file access rights?
     // TODO STEFFEN - Throw error if already encoded
-    // TODO STEFFEN - We need to ensure block placement somehow in this case
     namesystem.addEncodingStatus(filePath, policy);
   }
 
   @Override
-  public void revokeEncoding(String filePath, int replication) throws IOException {
-    // TODO STEFFEN - Dont't cast to short
-    namesystem.revokeEncoding(filePath, (short) replication);
+  public void revokeEncoding(String filePath, short replication) throws IOException {
+    // TODO Check file access rights?
+    namesystem.revokeEncoding(filePath, replication);
   }
 
   @Override // ClientProtocol
   public LocatedBlocks getMissingBlockLocations(String filePath)
       throws IOException {
     return namesystem.getMissingBlockLocations(getClientMachine(), filePath);
+  }
+
+  @Override
+  public void addBlockChecksum(String src, int blockIndex, long checksum) throws IOException {
+    // TODO Throw exception if already existing?
+    // TODO Check file access rights?
+    namesystem.addBlockChecksum(src, blockIndex, checksum);
+  }
+
+  @Override
+  public long getBlockChecksum(String src, int blockIndex) throws IOException {
+    // TODO Check file access rights?
+    return namesystem.getBlockChecksum(src, blockIndex);
   }
 
   @Override

@@ -29,7 +29,7 @@ public class TestRevocation extends BasicClusterTestCase {
     }
 
 //    dfs.create(new Path("test_file"), true);
-    dfs.revokeEncoding(path.toUri().getPath(), 3);
+    dfs.revokeEncoding(path.toUri().getPath(), (short) 3);
     while (true);
   }
 }

@@ -94,12 +94,10 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
-import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
-import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
+import se.sics.hop.metadata.hdfs.dal.*;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
+import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.metadata.lock.*;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
@@ -7959,9 +7957,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         EncodingStatusOperationType.DELETE) {
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        EncodingStatusDataAccess dataAccess = (EncodingStatusDataAccess)
+        BlockChecksumDataAccess blockChecksumDataAccess = (BlockChecksumDataAccess)
+            StorageFactory.getDataAccess(BlockChecksumDataAccess.class);
+        EncodingStatusDataAccess encodingStatusDataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
-        dataAccess.delete(encodingStatus);
+        blockChecksumDataAccess.deleteAll(encodingStatus.getInodeId());
+        blockChecksumDataAccess.deleteAll(encodingStatus.getParityInodeId());
+        encodingStatusDataAccess.delete(encodingStatus);
         return null;
       }
     };
@@ -8073,6 +8075,56 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   public boolean isErasureCodingEnabled() {
     return erasureCodingEnabled;
+  }
+
+  public void addBlockChecksum(final String src, final int blockIndex, final long checksum) throws IOException {
+    new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_CHECKSUM) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
+        tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+            INodeLockType.WRITE, new String[]{src});
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        int inodeId = dir.getINode(src).getId();
+        BlockChecksum blockChecksum = new BlockChecksum(
+            inodeId,
+            blockIndex,
+            checksum);
+        EntityManager.add(blockChecksum);
+        return null;
+      }
+    }.handle();
+  }
+
+  public long getBlockChecksum(final String src, final int blockIndex) throws IOException {
+    return (Long) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_CHECKSUM) {
+      @Override
+      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+        tla.getLocks()
+            .addBlockChecksumLockByBlockIndex(blockIndex)
+            .addINode(TransactionLockTypes.INodeResolveType.PATH, INodeLockType.READ, new String[]{src});
+        return tla.acquire();
+      }
+
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        INode node = dir.getINode(src);
+        BlockChecksumDataAccess.KeyTuple key = new BlockChecksumDataAccess.KeyTuple(node.getId(), blockIndex);
+        BlockChecksum checksum = EntityManager.find(BlockChecksum.Finder.ByKeyTuple, key);
+
+        if (checksum == null) {
+          // TODO Should probably use a specific exception type.
+          throw new IOException("No checksum was found for " + key);
+        }
+
+        return checksum.getChecksum();
+      }
+    }.handle();
   }
   //END_HOP_CODE
 }

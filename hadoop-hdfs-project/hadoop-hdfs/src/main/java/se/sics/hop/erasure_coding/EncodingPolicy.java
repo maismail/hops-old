@@ -2,9 +2,9 @@ package se.sics.hop.erasure_coding;
 
 public class EncodingPolicy {
   private String codec;
-  private int targetReplication;
+  private short targetReplication;
 
-  public EncodingPolicy(String codec, int targetReplication) {
+  public EncodingPolicy(String codec, short targetReplication) {
     setCodec(codec);
     setTargetReplication(targetReplication);
   }
@@ -16,7 +16,7 @@ public class EncodingPolicy {
     this.codec = codec;
   }
 
-  public void setTargetReplication(int targetReplication) {
+  public void setTargetReplication(short targetReplication) {
     this.targetReplication = targetReplication;
   }
 
@@ -24,7 +24,7 @@ public class EncodingPolicy {
     return codec;
   }
 
-  public int getTargetReplication() {
+  public short getTargetReplication() {
     return targetReplication;
   }
 

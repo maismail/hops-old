@@ -1429,7 +1429,7 @@ public class PBHelper {
   }
 
   public static EncodingPolicy convert(ClientNamenodeProtocolProtos.EncodingPolicyProto encodingPolicyProto) {
-    return new EncodingPolicy(encodingPolicyProto.getCodec(), encodingPolicyProto.getTargetReplication());
+    return new EncodingPolicy(encodingPolicyProto.getCodec(), (short) encodingPolicyProto.getTargetReplication());
   }
 
   public static EncodingStatus.Status convert(ClientNamenodeProtocolProtos.EncodingStatusProto.StatusProto status) {

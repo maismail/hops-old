@@ -212,6 +212,38 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
+  public void addBlockChecksum(String src, int blockIndex, long checksum) throws IOException {
+    ClientNamenodeProtocolProtos.AddBlockChecksumRequestProto req =
+        ClientNamenodeProtocolProtos.AddBlockChecksumRequestProto
+          .newBuilder()
+          .setSrc(src)
+          .setBlockIndex(blockIndex)
+          .setChecksum(checksum)
+          .build();
+    try {
+      rpcProxy.addBlockChecksum(null, req);
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
+  public long getBlockChecksum(String src, int blockIndex) throws IOException {
+    ClientNamenodeProtocolProtos.GetBlockChecksumRequestProto req =
+        ClientNamenodeProtocolProtos.GetBlockChecksumRequestProto
+            .newBuilder()
+            .setSrc(src)
+            .setBlockIndex(blockIndex)
+            .build();
+    try {
+      ClientNamenodeProtocolProtos.GetBlockChecksumResponseProto resp = rpcProxy.getBlockChecksum(null, req);
+      return resp.getChecksum();
+    } catch (ServiceException e) {
+      throw ProtobufHelper.getRemoteException(e);
+    }
+  }
+
+  @Override
   public FsServerDefaults getServerDefaults() throws IOException {
     GetServerDefaultsRequestProto req = VOID_GET_SERVER_DEFAULT_REQUEST;
     try {
@@ -963,7 +995,7 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public void revokeEncoding(String filePath, int replication) throws IOException {
+  public void revokeEncoding(String filePath, short replication) throws IOException {
     try {
       ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request =
           ClientNamenodeProtocolProtos.RevokeEncodingRequestProto.newBuilder()

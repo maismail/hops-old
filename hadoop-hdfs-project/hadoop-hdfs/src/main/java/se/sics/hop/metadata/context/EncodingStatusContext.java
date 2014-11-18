@@ -29,11 +29,6 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public void add(EncodingStatus entity) throws PersistanceException {
-     inodeIdToEncodingStatusToAdd.put(entity.getInodeId(), entity);
-  }
-
-  @Override
   public void clear() {
     storageCallPrevented = false;
     inodeIdToEncodingStatus.clear();
@@ -44,21 +39,28 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public int count(CounterType<EncodingStatus> counter, Object... params) throws PersistanceException {
-    EncodingStatus.Counter eCounter = (EncodingStatus.Counter) counter;
-    // TODO STEFFEN - This is not complete but probably unnecessary
-    switch (eCounter) {
-      case RequestedEncodings:
-        return dataAccess.countRequestedEncodings();
-      case ActiveEncodings:
-        return dataAccess.countActiveEncodings();
-      case ActiveRepairs:
-        return dataAccess.countActiveRepairs();
-      case Encoded:
-        return dataAccess.countEncoded();
-      default:
-        throw new RuntimeException(UNSUPPORTED_COUNTER);
-    }
+  public void add(EncodingStatus entity) throws PersistanceException {
+    inodeIdToEncodingStatusToAdd.put(entity.getInodeId(), entity);
+  }
+
+  @Override
+  public void remove(EncodingStatus entity) throws PersistanceException {
+    inodeIdToEncodingStatusToDelete.put(entity.getInodeId(), entity);
+  }
+
+  @Override
+  public void removeAll() throws PersistanceException {
+    throw new UnsupportedOperationException("Not supported yet.");
+  }
+
+  @Override
+  public void update(EncodingStatus entity) throws PersistanceException {
+    inodeIdToEncodingStatusToUpdate.put(entity.getInodeId(), entity);
+  }
+
+  @Override
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params)
+      throws PersistanceException {
   }
 
   @Override
@@ -100,25 +102,8 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public Collection<EncodingStatus> findList(FinderType<EncodingStatus> finder, Object... params)
-      throws PersistanceException {
-    EncodingStatus.Finder eFinder = (EncodingStatus.Finder) finder;
-
-    // TODO STEFFEN - Do I need to synchronize results with the cache to support multiple operations per transaction?
-    switch (eFinder) {
-      case LimitedByStatusRequestedEncodings:
-        return dataAccess.findRequestedEncodings((Long) params[0]);
-      case ByStatusActiveEncodings:
-        return  dataAccess.findActiveEncodings();
-      case ByStatusActiveRepairs:
-        return dataAccess.findActiveRepairs();
-      case LimitedByStatusEncoded:
-        return dataAccess.findEncoded((Long) params[0]);
-      case LimitedByStatusRequestedRepair:
-        return dataAccess.findRequestedRepairs((Long) params[0]);
-      default:
-        throw new RuntimeException(UNSUPPORTED_FINDER);
-    }
+  public Collection<EncodingStatus> findList(FinderType<EncodingStatus> finder, Object... params) throws PersistanceException {
+    return null;
   }
 
   @Override
@@ -137,23 +122,19 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public void remove(EncodingStatus entity) throws PersistanceException {
-    inodeIdToEncodingStatusToDelete.put(entity.getInodeId(), entity);
-  }
-
-  @Override
-  public void removeAll() throws PersistanceException {
-    throw new UnsupportedOperationException("Not supported yet.");
-  }
-
-  @Override
-  public void update(EncodingStatus entity) throws PersistanceException {
-    inodeIdToEncodingStatusToUpdate.put(entity.getInodeId(), entity);
-  }
-
-  @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params)
-      throws PersistanceException {
-
+  public int count(CounterType<EncodingStatus> counter, Object... params) throws PersistanceException {
+    EncodingStatus.Counter eCounter = (EncodingStatus.Counter) counter;
+    switch (eCounter) {
+      case RequestedEncodings:
+        return dataAccess.countRequestedEncodings();
+      case ActiveEncodings:
+        return dataAccess.countActiveEncodings();
+      case ActiveRepairs:
+        return dataAccess.countActiveRepairs();
+      case Encoded:
+        return dataAccess.countEncoded();
+      default:
+        throw new RuntimeException(UNSUPPORTED_COUNTER);
+    }
   }
 }

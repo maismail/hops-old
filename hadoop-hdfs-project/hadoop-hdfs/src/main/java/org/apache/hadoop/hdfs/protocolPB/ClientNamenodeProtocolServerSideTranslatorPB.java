@@ -213,6 +213,9 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   private static final CreateSymlinkResponseProto VOID_CREATESYMLINK_RESPONSE = 
   CreateSymlinkResponseProto.newBuilder().build();
 
+  private static final ClientNamenodeProtocolProtos.AddBlockChecksumResponseProto VOID_ADDBLOCKCHECKSUM_RESPONSE =
+  ClientNamenodeProtocolProtos.AddBlockChecksumResponseProto.newBuilder().build();
+
   private static final UpdatePipelineResponseProto
     VOID_UPDATEPIPELINE_RESPONSE = 
   UpdatePipelineResponseProto.newBuilder().build();
@@ -276,6 +279,34 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
+  public ClientNamenodeProtocolProtos.AddBlockChecksumResponseProto addBlockChecksum(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.AddBlockChecksumRequestProto req) throws ServiceException {
+    try {
+      server.addBlockChecksum(req.getSrc(), req.getBlockIndex(), req.getChecksum());
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+    return VOID_ADDBLOCKCHECKSUM_RESPONSE;
+  }
+
+  @Override
+  public ClientNamenodeProtocolProtos.GetBlockChecksumResponseProto getBlockChecksum(
+      RpcController controller,
+      ClientNamenodeProtocolProtos.GetBlockChecksumRequestProto req) throws ServiceException {
+    try {
+      long checksum = server.getBlockChecksum(req.getSrc(), req.getBlockIndex());
+      ClientNamenodeProtocolProtos.GetBlockChecksumResponseProto.Builder builder =
+          ClientNamenodeProtocolProtos.GetBlockChecksumResponseProto
+              .newBuilder()
+              .setChecksum(checksum);
+      return builder.build();
+    } catch (IOException e) {
+      throw new ServiceException(e);
+    }
+  }
+
+  @Override
   public GetServerDefaultsResponseProto getServerDefaults(
       RpcController controller, GetServerDefaultsRequestProto req)
       throws ServiceException {
@@ -289,7 +320,6 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     }
   }
 
-  
   @Override
   public CreateResponseProto create(RpcController controller,
       CreateRequestProto req) throws ServiceException {
@@ -938,7 +968,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       RpcController controller,
       ClientNamenodeProtocolProtos.RevokeEncodingRequestProto request) throws ServiceException {
     try {
-      server.revokeEncoding(request.getPath(), request.getReplication());
+      server.revokeEncoding(request.getPath(), (short) request.getReplication());
       ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.Builder builder =
           ClientNamenodeProtocolProtos.RevokeEncodingResponseProto.newBuilder();
       return builder.build();

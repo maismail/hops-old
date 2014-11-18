@@ -120,6 +120,7 @@ message LocatedBlockProto {
                                         // their locations are not part of this object
 
   required hadoop.common.TokenProto blockToken = 5;
+  optional uint64 checksum = 6;
 }
 
 message DataEncryptionKeyProto {

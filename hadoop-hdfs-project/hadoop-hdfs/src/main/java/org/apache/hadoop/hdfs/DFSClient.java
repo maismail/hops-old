@@ -1081,6 +1081,36 @@ public class DFSClient implements java.io.Closeable {
     }
   }
 
+  public void addBlockChecksum(final String src, final int blockIndex, final long checksum)
+      throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws IOException {
+        try {
+          namenode.addBlockChecksum(src, blockIndex, checksum);
+        } catch(RemoteException re) {
+          throw re.unwrapRemoteException();
+        }
+        return null;
+      }
+    };
+    doClientActionWithRetry(handler, "addBlockChecksum");
+  }
+
+  public long getBlockChecksum(final String filePath, final int blockIndex) throws IOException {
+    ClientActionHandler handler = new ClientActionHandler() {
+      @Override
+      public Object doAction(ClientProtocol namenode) throws IOException {
+        try {
+          return namenode.getBlockChecksum(filePath, blockIndex);
+        } catch (RemoteException e) {
+          throw e.unwrapRemoteException();
+        }
+      }
+    };
+    return (Long) doClientActionWithRetry(handler, "getBlockChecksum");
+  }
+
   /**
    * Recover a file's lease
    * @param src a file's path
@@ -2936,7 +2966,7 @@ public class DFSClient implements java.io.Closeable {
     doClientActionWithRetry(handler, "encodeFile");
   }
 
-  public void revokeEncoding(final String filePath, final int replication) throws IOException {
+  public void revokeEncoding(final String filePath, final short replication) throws IOException {
     ClientActionHandler handler = new ClientActionHandler() {
       @Override
       public Object doAction(ClientProtocol namenode) throws IOException {

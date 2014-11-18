@@ -8,9 +8,11 @@ import se.sics.hop.DALStorageFactory;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.handler.TransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -41,7 +43,7 @@ public class TestEncodingStatus extends TestCase {
 
   @Test
   public void testAddAndFindEncodingStatus() throws IOException {
-    final EncodingPolicy policy = new EncodingPolicy("codec", 1);
+    final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
@@ -103,7 +105,7 @@ public class TestEncodingStatus extends TestCase {
 
   @Test
   public void testUpdateEncodingStatus() throws IOException {
-    final EncodingPolicy policy = new EncodingPolicy("codec", 1);
+    final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
     TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
@@ -120,7 +122,7 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    final EncodingPolicy policy1 = new EncodingPolicy("codec2", 2);
+    final EncodingPolicy policy1 = new EncodingPolicy("codec2", (short) 2);
     final EncodingStatus updatedStatus = new EncodingStatus(1, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
 
     TransactionalRequestHandler updateReq = new TransactionalRequestHandler(
@@ -188,7 +190,7 @@ public class TestEncodingStatus extends TestCase {
 
   @Test
   public void testCountEncodingRequested() throws IOException {
-    final EncodingPolicy policy = new EncodingPolicy("codec", 1);
+    final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
     statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED,policy, 1L));
     statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1L));
@@ -246,7 +248,7 @@ public class TestEncodingStatus extends TestCase {
 
   @Test
   public void testFindEncodingRequested() throws IOException {
-    final EncodingPolicy policy = new EncodingPolicy("codec", 1);
+    final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final ArrayList<EncodingStatus> statusToAdd = new ArrayList<EncodingStatus>();
     statusToAdd.add(new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
     statusToAdd.add(new EncodingStatus(2, EncodingStatus.Status.ENCODED, policy, 1L));
@@ -270,18 +272,14 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+    LightWeightRequestHandler findReq = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
-      @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        return ctla.acquire();
-      }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
+        EncodingStatusDataAccess dataAccess = (EncodingStatusDataAccess) StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         Long limit = (Long) getParams()[0];
-        return EntityManager.findList(EncodingStatus.Finder.LimitedByStatusRequestedEncodings, limit);
+        return dataAccess.findRequestedEncodings(limit);
       }
     };
     findReq.setParams(Long.MAX_VALUE);

@@ -141,6 +141,7 @@ public class StorageFactory {
         entityContexts.put(INodeAttributes.class, new INodeAttributesContext((INodeAttributesDataAccess) getDataAccess(INodeAttributesDataAccess.class)));
 
         entityContexts.put(EncodingStatus.class, new EncodingStatusContext((EncodingStatusDataAccess) getDataAccess(EncodingStatusDataAccess.class)));
+        entityContexts.put(BlockChecksum.class, new BlockChecksumContext((BlockChecksumDataAccess) getDataAccess(BlockChecksumDataAccess.class)));
         entityContexts.put(QuotaUpdate.class, new QuotaUpdateContext((QuotaUpdateDataAccess) getDataAccess(QuotaUpdateDataAccess.class)));
 
         return entityContexts;

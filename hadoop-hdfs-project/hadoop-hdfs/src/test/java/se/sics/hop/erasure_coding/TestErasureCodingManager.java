@@ -21,7 +21,7 @@ public class TestErasureCodingManager extends BasicClusterTestCase {
   @Test
   public void testGetEncodingStatusIfRequested() throws IOException {
     Codec codec = Codec.getCodec("src");
-    EncodingPolicy policy = new EncodingPolicy(codec.getId(), 1);
+    EncodingPolicy policy = new EncodingPolicy(codec.getId(), (short) 1);
     FSDataOutputStream out = getDfs().create(testFile, policy);
     out.close();
 

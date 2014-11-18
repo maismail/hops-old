@@ -237,7 +237,7 @@ CREATE TABLE `encoding_status` (
   `inode_id` int(11) NOT NULL,
   `status` int(11) DEFAULT NULL,
   `codec` varchar(8) DEFAULT NULL,
-  `target_replication` int(11) DEFAULT NULL,
+  `target_replication` smallint(11) DEFAULT NULL,
   `parity_status` int(11) DEFAULT NULL,
   `status_modification_time` bigint(20) DEFAULT NULL,
   `parity_status_modification_time` bigint(20) DEFAULT NULL,
@@ -248,4 +248,13 @@ CREATE TABLE `encoding_status` (
   `revoked` bit(1) DEFAULT 0,
   PRIMARY KEY (`inode_id`),
   UNIQUE KEY `parity_inode_id` (`parity_inode_id`)
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+
+delimiter $$
+
+CREATE TABLE `block_checksum` (
+  `inode_id` int(11) NOT NULL,
+  `block_index` int(11) NOT NULL,
+  `checksum` bigint(20) NOT NULL,
+  PRIMARY KEY (`inode_id`,`block_index`)
 ) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
