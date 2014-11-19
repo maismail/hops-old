@@ -141,8 +141,7 @@ public class Codec implements Serializable {
       Configuration.addDefaultResource("raid-site.xml");
       initializeCodecs(new Configuration());
     } catch (Exception e) {
-      LOG.fatal("Fail initialize Raid codecs", e);
-      System.exit(-1);
+      throw new RuntimeException("Fail initialize Raid codecs");
     }
   }
 

@@ -87,9 +87,10 @@ public class LeaderElection extends Thread {
             start();
 
         } catch (Throwable t) {
-            LOG.info(hostname + ") LeaderElection thread received Runtime exception. ", t);
+            LOG.fatal(hostname + ") LeaderElection thread received Runtime " +
+                "exception. ", t);
             nn.stop();
-            Runtime.getRuntime().exit(-1);
+            throw new Error(t);
         }
     }
 
@@ -175,7 +176,7 @@ public class LeaderElection extends Thread {
             } catch (Throwable t) {
                 LOG.fatal(hostname + ") LeaderElection thread received Runtime exception. ", t);
                 nn.stop();
-                Runtime.getRuntime().exit(-1);
+                throw new Error(t);
             }
         } // main while loop
     }

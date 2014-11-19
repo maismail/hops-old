@@ -477,7 +477,7 @@ public class TestDFSShell {
     Configuration dstConf = new HdfsConfiguration();
     MiniDFSCluster srcCluster =  null;
     MiniDFSCluster dstCluster = null;
-    String bak = System.getProperty("test.build.data");
+    String bak = System.getProperty("test.build.data", "/tmp");
     try{
       srcCluster = new MiniDFSCluster.Builder(srcConf).numDataNodes(2).build();
       File nameDir = new File(new File(bak), "dfs_tmp_uri/");
