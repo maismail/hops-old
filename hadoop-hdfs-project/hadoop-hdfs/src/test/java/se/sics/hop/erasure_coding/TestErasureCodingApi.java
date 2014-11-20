@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestErasureCodingManager extends BasicClusterTestCase {
+public class TestErasureCodingApi extends BasicClusterTestCase {
 
   private final Path testFile = new Path("/test_file");
 

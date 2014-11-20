@@ -14,7 +14,8 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 public abstract class BasicClusterTestCase extends TestCase {
 
   protected static final int DFS_TEST_BLOCK_SIZE = 4 * 1024;
-  protected static final String ENCODING_MANAGER_CLASSNAME = "se.sics.hop.erasure_coding.MapReduceEncodingManager";
+  protected static final String ENCODING_MANAGER_CLASSNAME = "se.sics.hop" +
+      ".erasure_coding.MockEncodingManager";
   protected static final String BLOCK_REPAIR_MANAGER_CLASSNAME =
       "se.sics.hop.erasure_coding.MapReduceBlockRepairManager";
 
