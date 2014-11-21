@@ -557,6 +557,19 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
   <profiles>
     <profile>
+      <id>ndb</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>se.sics.hop.metadata</groupId>
+          <artifactId>hop-metadata-dal-impl-ndb</artifactId>
+          <version>1.0-SNAPSHOT</version>
+        </dependency>
+      </dependencies>
+    </profile>
+    <profile>
       <id>windows</id>
       <activation>
         <activeByDefault>false</activeByDefault>
