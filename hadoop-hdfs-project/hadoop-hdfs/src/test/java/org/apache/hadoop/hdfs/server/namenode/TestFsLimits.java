@@ -39,7 +39,7 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongExce
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
@@ -174,7 +174,7 @@ public class TestFsLimits {
   HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
 
     @Override
-    public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+    public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
       HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
       tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
       return tla.acquire();

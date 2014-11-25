@@ -70,7 +70,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -126,7 +126,7 @@ public class TestLock {
       protected LinkedList<INode> preTxResolvedInodes = new LinkedList<INode>(); // For the operations requires to have inodes before starting transactions.  
       protected boolean[] isPreTxPathFullyResolved = new boolean[1];
 
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, resolveLink);
         tla.getLocks().
                 addINode(INodeResolveType.PATH, TransactionLockTypes.INodeLockType.WRITE, new String[]{src}).
@@ -327,7 +327,7 @@ INodeUtil.resolvePathWithNoTransaction(src, resolveLink, preTxResolvedInodes, is
 //   handler.handle();
    
    HDFSTransactionalRequestHandler handler2 = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addUnderReplicatedBlockFindAll();
         return tla.acquire();

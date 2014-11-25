@@ -14,7 +14,7 @@ import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -72,10 +72,10 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
-    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+  public void prepare(OldTransactionLocks lks) throws StorageException {
+    /*HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
     checkLockUpgrade(hlks, modifiedVariables);
-    checkLockUpgrade(hlks, newVariables);
+    checkLockUpgrade(hlks, newVariables);*/
     da.prepare(newVariables.values(), modifiedVariables.values(), null);
   }
 

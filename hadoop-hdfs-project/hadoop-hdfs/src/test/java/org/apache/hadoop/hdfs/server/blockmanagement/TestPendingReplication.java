@@ -43,7 +43,7 @@ import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -249,7 +249,7 @@ public class TestPendingReplication {
   private void incrementOrDecrementPendingReplications(final PendingReplicationBlocks pendingReplications, final Block block, final boolean inc, final int numReplicas) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),
@@ -280,7 +280,7 @@ public class TestPendingReplication {
   private int getNumReplicas(final PendingReplicationBlocks pendingReplications, final Block block) throws IOException {
     return (Integer) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PENDING_REPLICATION) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(),
@@ -396,7 +396,7 @@ public class TestPendingReplication {
     final BlockInfo blockInfo = new BlockInfo(block, inodeId);
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 

@@ -16,7 +16,7 @@ import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -68,7 +68,7 @@ public class LeaderElection extends Thread {
             new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
                 @Override
-                public TransactionLocks acquireLock() throws PersistanceException, IOException {
+                public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
                     HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
                     tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
                     tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
@@ -120,7 +120,7 @@ public class LeaderElection extends Thread {
     private HDFSTransactionalRequestHandler leaderElectionHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
             tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);

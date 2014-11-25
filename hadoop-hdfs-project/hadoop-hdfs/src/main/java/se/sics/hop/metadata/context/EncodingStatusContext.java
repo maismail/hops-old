@@ -8,7 +8,7 @@ import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -107,7 +107,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public void prepare(TransactionLocks tlm) throws StorageException {
+  public void prepare(OldTransactionLocks tlm) throws StorageException {
     for (EncodingStatus status : inodeIdToEncodingStatusToAdd.values()) {
       dataAccess.add(status);
     }

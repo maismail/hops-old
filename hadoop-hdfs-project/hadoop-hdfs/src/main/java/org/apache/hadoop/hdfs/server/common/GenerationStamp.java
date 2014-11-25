@@ -25,7 +25,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /****************************************************************

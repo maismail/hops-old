@@ -59,7 +59,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.util.Slicer;
 
 import java.io.IOException;
@@ -1021,7 +1021,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -1694,7 +1694,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Block b = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
@@ -1819,7 +1819,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Block b = (Block) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
@@ -1922,7 +1922,7 @@ public class BlockManager {
    
    final HDFSTransactionalRequestHandler processReportHandler = new HDFSTransactionalRequestHandler(firstBlockReport ? HDFSOperationType.PROCESS_FIRST_BLOCK_REPORT : HDFSOperationType.PROCESS_REPORT) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         long[] partOfreportedBlks = (long[]) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
@@ -2540,7 +2540,7 @@ public class BlockManager {
     // also this could be optimized even more by batching multiple inode files at a time
     final HDFSTransactionalRequestHandler processMisReplicatedBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE_BATCH) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
@@ -2999,7 +2999,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.READ).
@@ -3118,7 +3118,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
@@ -3304,7 +3304,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         final Block block = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
@@ -3366,7 +3366,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         final Block block = (Block) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
@@ -3798,7 +3798,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, UnresolvedPathException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3835,7 +3835,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3915,7 +3915,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -3977,7 +3977,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -4014,7 +4014,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -4055,7 +4055,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -4106,7 +4106,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
                 .addINode(TransactionLockTypes.INodeLockType.WRITE).
@@ -4144,7 +4144,7 @@ public class BlockManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(TransactionLockTypes.INodeLockType.WRITE).

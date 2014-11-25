@@ -1,7 +1,7 @@
 package se.sics.hop.metadata.lock;
 
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import java.util.HashMap;
 import java.util.LinkedList;
 import org.apache.hadoop.conf.Configuration;
@@ -15,7 +15,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HDFSTransactionLocks implements TransactionLocks{
+public class HDFSTransactionLocks implements OldTransactionLocks{
 
   //inode
   private INodeLockType inodeLock = null;
@@ -383,7 +383,7 @@ public class HDFSTransactionLocks implements TransactionLocks{
     }
     boolean insert = true;
     if(allLockedInodesInTx.containsKey(inode)){
-      if(allLockedInodesInTx.get(inode).gt(lock)){
+      if(allLockedInodesInTx.get(inode).compareTo(lock) > 0){
         insert = false;
       }
     }

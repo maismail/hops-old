@@ -7,7 +7,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -25,7 +25,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
     super(new ErasureCodingTransactionLocks(resolvedInodes, preTxPathFullyResolved));
   }
 
-  public TransactionLocks acquireForDelete(boolean isErasureCodingEnabled)
+  public OldTransactionLocks acquireForDelete(boolean isErasureCodingEnabled)
       throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     super.acquire();
     if (isErasureCodingEnabled) {
@@ -39,7 +39,7 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
   }
 
   @Override
-  public TransactionLocks acquire() throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
+  public OldTransactionLocks acquire() throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException {
     super.acquire();
     acquireEncodingLock();
     acquireEncodingLockOnPathLeaf();

@@ -1,27 +1,50 @@
+/*
+ * Copyright 2014 Apache Software Foundation.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package se.sics.hop.transaction.handler;
 
 import java.io.IOException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.TransactionInfo;
+import se.sics.hop.transaction.lock.HopsTransactionalLockAcquirer;
+import se.sics.hop.transaction.lock.TransactionLockAcquirer;
 
 /**
+ *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public abstract class HDFSTransactionalRequestHandler extends OldTransactionalRequestHandler {
+public abstract class HopsTransactionalRequestHandler extends TransactionalRequestHandler{
 
   private final String path;
   
-  public HDFSTransactionalRequestHandler(HDFSOperationType opType){
+  public HopsTransactionalRequestHandler(HDFSOperationType opType) {
     this(opType, null);
   }
   
-  public HDFSTransactionalRequestHandler(HDFSOperationType opType, String path) {
+  public HopsTransactionalRequestHandler(HDFSOperationType opType, String path) {
     super(opType);
     this.path = path;
   }
 
+  @Override
+  protected TransactionLockAcquirer newLockAcquirer() {
+    return new HopsTransactionalLockAcquirer();
+  }
+
+  
   @Override
   protected Object run(final Object namesystem) throws IOException {
 
@@ -45,7 +68,7 @@ public abstract class HDFSTransactionalRequestHandler extends OldTransactionalRe
   }
 
   @Override
-  public void preTransactionSetup() throws PersistanceException, IOException {
+  public void preTransactionSetup() throws IOException {
     super.preTransactionSetup(); 
     if(path != null){
       PathMemcache.getInstance().get(path);
@@ -55,7 +78,7 @@ public abstract class HDFSTransactionalRequestHandler extends OldTransactionalRe
   }
 
   
-  public void setUp() throws PersistanceException, IOException {
+  public void setUp() throws IOException {
     
   }
 }

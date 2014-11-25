@@ -44,7 +44,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -336,7 +336,7 @@ public class TestLeaderElection {
         return (List<ActiveNamenode>) new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
                 HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
                 tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
                 tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);

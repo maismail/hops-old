@@ -43,7 +43,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -259,7 +259,7 @@ class PendingReplicationBlocks {
   private Block getBlock(final PendingBlockInfo pbi) throws IOException {
     return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId());
         return tla.acquire();

@@ -85,7 +85,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -742,7 +742,7 @@ public class TestFsck {
       final MiniDFSCluster clusterFinal = cluster;
         HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).

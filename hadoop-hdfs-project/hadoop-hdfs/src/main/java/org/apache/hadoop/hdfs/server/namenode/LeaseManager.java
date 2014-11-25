@@ -46,7 +46,7 @@ import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -106,7 +106,7 @@ public class LeaseManager {
   SortedSet<Lease> getSortedLeases() throws IOException {
     HDFSTransactionalRequestHandler getSortedLeasesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -415,7 +415,7 @@ public class LeaseManager {
       }
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         // TODO safemode
         return null;
       }
@@ -443,7 +443,7 @@ public class LeaseManager {
 
       private SortedSet<String> leasePaths = null;
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         String holder = (String) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().

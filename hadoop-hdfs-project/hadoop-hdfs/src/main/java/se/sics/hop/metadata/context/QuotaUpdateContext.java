@@ -7,7 +7,7 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
 import se.sics.hop.metadata.hdfs.entity.*;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.util.*;
 
@@ -109,7 +109,7 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
+  public void prepare(OldTransactionLocks lks) throws StorageException {
     List<QuotaUpdate> added = new ArrayList<QuotaUpdate>();
     List<QuotaUpdate> deleted = new ArrayList<QuotaUpdate>();
     for (QuotaUpdateWrapper wrapper : cachedRows.values()) {

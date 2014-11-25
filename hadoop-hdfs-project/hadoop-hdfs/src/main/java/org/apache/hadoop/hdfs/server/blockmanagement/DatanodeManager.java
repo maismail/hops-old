@@ -82,7 +82,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageIdMap;
 import se.sics.hop.metadata.lock.INodeUtil;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -1243,7 +1243,7 @@ public class DatanodeManager {
       }
       
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(TransactionLockTypes.INodeLockType.WRITE).

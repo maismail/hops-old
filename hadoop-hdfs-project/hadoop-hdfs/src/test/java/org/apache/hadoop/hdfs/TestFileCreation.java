@@ -48,7 +48,12 @@ import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 
@@ -77,6 +82,7 @@ import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
@@ -99,9 +105,13 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.test.GenericTestUtils;
 import org.apache.hadoop.util.Time;
 import org.apache.log4j.Level;
+import org.jboss.netty.util.internal.ExecutorUtil;
 import org.junit.Assert;
 import org.junit.Test;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  * This class tests various cases during file creation.
@@ -111,9 +121,9 @@ public class TestFileCreation {
 
   {
     //((Log4JLogger)DataNode.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger)LeaseManager.LOG).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger)LogFactory.getLog(FSNamesystem.class)).getLogger().setLevel(Level.ALL);
-    ((Log4JLogger)DFSClient.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger)LeaseManager.LOG).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger)LogFactory.getLog(FSNamesystem.class)).getLogger().setLevel(Level.ALL);
+//    ((Log4JLogger)DFSClient.LOG).getLogger().setLevel(Level.ALL);
   }
 
   static final long seed = 0xDEADBEEFL;
@@ -1303,14 +1313,13 @@ public class TestFileCreation {
     conf.setLong(DFSConfigKeys.DFS_BLOCK_SIZE_KEY, BLOCK_SIZE);
     conf.setInt(DFSConfigKeys.DFS_CLIENT_WRITE_PACKET_SIZE_KEY, PACKET_SIZE);
     
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).format(true).build();
+    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(1).format(true).build();
     FileSystem fs = cluster.getFileSystem();
     DistributedFileSystem dfs = (DistributedFileSystem) FileSystem.newInstance(fs.getUri(), fs.getConf());
     try {
-
       dfs.mkdirs(new Path("/f1/f2"));
       dfs.mkdirs(new Path("/f1/f2/f3/f4/f5"));
-      Path p1 = new Path("/f1/test.txt");
+      Path p1 = new Path("/f1/f2/test.txt");
       Path p2 = new Path("/f2"); 
       int blocks  = 1;
       FSDataOutputStream out = dfs.create(p1);
@@ -1320,7 +1329,12 @@ public class TestFileCreation {
       }
       out.close();
       
+      int numOfFiles = 25;
+      int numOfBlocks = 10;
+      int numOfThreads = 20;
+
       
+      ExecutorService executor = Executors.newFixedThreadPool(numOfThreads);
       
 //      FSDataInputStream in = fs.open(p1);
 //      for (i = 0; i < blocks; i++) {
@@ -1353,7 +1367,48 @@ public class TestFileCreation {
     }
   }
 
-       
+  
+    @Test
+  public void test2() throws IOException {
+    Configuration conf = new HdfsConfiguration();
+    StorageFactory.setConfiguration(conf);
+    Variables.enterClusterSafeMode();
+    Variables.resetMisReplicatedIndex();
+  }
+    
+  
+  static class Writer implements Runnable {
+    final FileSystem fs;
+    final Path filepath;
+    final int numOfBlocks;
+    final String name;
+    
+    Writer(FileSystem fs, Path filepath, int numOfBlocks) {
+      this.name = Writer.class.getSimpleName() + ":" + filepath;
+      this.fs = fs;
+      this.filepath = filepath;
+      this.numOfBlocks = numOfBlocks;
+    }
+
+    @Override
+    public void run() {
+      FSDataOutputStream out = null;
+      try {
+        out = fs.create(filepath);
+        for(int i=0; i<numOfBlocks; i++) {
+          out.write(i);
+        }
+        FSNamesystem.LOG.error("www: " + name + " done writing");
+      }
+      
+      catch(Exception e) {
+        FSNamesystem.LOG.error("www: " +name + " dies: e=" + e);
+      }
+      finally {
+        IOUtils.closeStream(out);
+      }
+    }        
+  }
 
   @Test
   public void testTx() throws IOException, InterruptedException{
@@ -1393,7 +1448,7 @@ public class TestFileCreation {
       HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               lockType = (TransactionLockTypes.LockType)getParams()[0];
               tla.getLocks().addLease(lockType, holder);

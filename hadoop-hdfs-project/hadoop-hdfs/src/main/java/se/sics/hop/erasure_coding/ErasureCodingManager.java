@@ -19,7 +19,7 @@ import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -195,7 +195,7 @@ public class ErasureCodingManager extends Configured{
             }
 
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
               tla.getLocks().
                   addEncodingStatusLockOnPathLeave().
@@ -345,9 +345,9 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkFixedSource(final String path) throws IOException {
-    TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+    OldTransactionalRequestHandler checkFixedHandler = new OldTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks()
             .addEncodingStatusLockOnPathLeave()
@@ -374,9 +374,9 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkFixedParity(final String path) throws IOException {
-    TransactionalRequestHandler checkFixedHandler = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+    OldTransactionalRequestHandler checkFixedHandler = new OldTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks()
             .addEncodingStatusLockByParityFilePathLeaf()

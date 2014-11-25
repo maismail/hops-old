@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -119,7 +119,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   private BlockInfo add(final BlockInfo block) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -138,7 +138,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
           final int expectedReplicas) throws IOException {
     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addBlock(block.getBlockId(), block.getInodeId()).

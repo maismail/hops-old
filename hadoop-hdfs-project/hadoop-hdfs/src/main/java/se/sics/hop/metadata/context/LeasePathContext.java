@@ -18,7 +18,7 @@ import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -157,7 +157,7 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
 
     @Override
-    public void prepare(TransactionLocks lks) throws StorageException {
+    public void prepare(OldTransactionLocks lks) throws StorageException {
         // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 

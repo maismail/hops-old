@@ -33,7 +33,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -131,7 +131,7 @@ public class StorageInfo {
     if (storageInfo == null) {
       storageInfo = (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
           return tla.acquire();
@@ -151,7 +151,7 @@ public class StorageInfo {
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
     HDFSTransactionalRequestHandler formatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();

@@ -23,7 +23,7 @@ import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -81,7 +81,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
 
     @Override
-    public void prepare(TransactionLocks lks) throws StorageException {
+    public void prepare(OldTransactionLocks lks) throws StorageException {
         // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 

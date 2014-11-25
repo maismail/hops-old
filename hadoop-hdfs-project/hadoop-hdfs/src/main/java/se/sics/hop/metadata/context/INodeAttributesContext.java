@@ -19,7 +19,7 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -157,7 +157,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
+  public void prepare(OldTransactionLocks lks) throws StorageException {
     //there will be no checking for locks
     List<INodeAttributes> modified = new ArrayList<INodeAttributes>();
     List<INodeAttributes> deleted = new ArrayList<INodeAttributes>();

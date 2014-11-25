@@ -38,7 +38,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
@@ -57,7 +57,7 @@ public class TestLease {
     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
 
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         return tla.acquireByLeasePath(src.toString(), LockType.READ, LockType.WRITE);
       }

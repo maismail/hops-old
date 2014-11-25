@@ -10,7 +10,7 @@ import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
@@ -120,7 +120,7 @@ public class BlockChecksumContext extends EntityContext<BlockChecksum> {
   }
 
   @Override
-  public void prepare(TransactionLocks tlm) throws StorageException {
+  public void prepare(OldTransactionLocks tlm) throws StorageException {
     for (BlockChecksum blockChecksum : added.values()) {
       dataAccess.add(blockChecksum);
     }

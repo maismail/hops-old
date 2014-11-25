@@ -37,7 +37,7 @@ import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
@@ -72,7 +72,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).
@@ -112,7 +112,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addINode(INodeLockType.WRITE).

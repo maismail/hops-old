@@ -106,7 +106,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -1076,7 +1076,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     HDFSTransactionalRequestHandler metaSaveHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.META_SAVE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
       }
 
@@ -1150,7 +1150,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler setPermissionHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_PERMISSION, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -1203,7 +1203,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler setOwnerHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_OWNER, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -1264,7 +1264,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           FileNotFoundException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}). /*taking write lock because of access time*/
@@ -1308,7 +1308,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws FileNotFoundException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
@@ -1450,7 +1450,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           throws IOException, UnresolvedLinkException {
     HDFSTransactionalRequestHandler concatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CONCAT) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         String[] paths = new String[srcs.length + 1];
         System.arraycopy(srcs, 0, paths, 0, srcs.length);
         paths[srcs.length] = target;
@@ -1633,7 +1633,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     HDFSTransactionalRequestHandler setTimesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_TIMES, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -1693,7 +1693,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     final boolean resolveLink = false;
     HDFSTransactionalRequestHandler createSymLinkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CREATE_SYM_LINK, link) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE, resolveLink, new String[]{link});
@@ -1787,7 +1787,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException {
     HDFSTransactionalRequestHandler setReplicationHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICATION, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
@@ -1849,7 +1849,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
      HDFSTransactionalRequestHandler getPreferredBlockSizeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_PREFERRED_BLOCK_SIZE, filename) {
        @Override
-       public TransactionLocks acquireLock() throws PersistanceException, IOException {
+       public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
          throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
        }
        
@@ -1904,7 +1904,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final boolean resolveLink = false;
       HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
@@ -2139,7 +2139,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
       HDFSTransactionalRequestHandler recoverLeaseHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RECOVER_LEASE, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -2281,7 +2281,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ParentNotDirectoryException, IOException {
       HDFSTransactionalRequestHandler appendFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.APPEND_FILE, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
@@ -2383,7 +2383,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             IOException {
         HDFSTransactionalRequestHandler additionalBlockHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_ADDITIONAL_BLOCK, src) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                       addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -2588,7 +2588,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       ) throws IOException {
       HDFSTransactionalRequestHandler getAdditionalDatanodeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_ADDITIONAL_DATANODE, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
@@ -2650,7 +2650,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       UnresolvedLinkException, IOException {
       HDFSTransactionalRequestHandler abandonBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ABANDON_BLOCK, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
@@ -2742,7 +2742,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     throws SafeModeException, UnresolvedLinkException, IOException {
       HDFSTransactionalRequestHandler completeFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
@@ -2927,7 +2927,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
       HDFSTransactionalRequestHandler renameToHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3022,7 +3022,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             throws IOException, UnresolvedLinkException {
         HDFSTransactionalRequestHandler renameTo2Handler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO2, src) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                   addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3100,7 +3100,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
             addINode(
@@ -3133,7 +3133,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks().
             addINode(
@@ -3325,7 +3325,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
            StandbyException, IOException {
     HDFSTransactionalRequestHandler getFileInfoHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_FILE_INFO, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH, INodeLockType.READ, resolveLink, new String[]{src}).
@@ -3369,7 +3369,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     final boolean resolvedLink = false;
     HDFSTransactionalRequestHandler mkdirsHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.MKDIRS, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolvedLink, new String[]{src});
         return tla.acquire();
@@ -3469,7 +3469,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       FileNotFoundException, UnresolvedLinkException, StandbyException, IOException {
     HDFSTransactionalRequestHandler getContentSummaryHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_CONTENT_SUMMARY, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
@@ -3506,7 +3506,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     HDFSTransactionalRequestHandler setQuotaHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_QUOTA, path) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, INodeLockType.WRITE, new String[]{path})
@@ -3546,7 +3546,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
       HDFSTransactionalRequestHandler fsyncHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.FSYNC, src) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
@@ -3777,7 +3777,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           private boolean[] isPreTxPathFullyResolved = new boolean[1];
           private INode inode;
           @Override        
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE).
@@ -3909,7 +3909,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void renewLease(final String holder) throws IOException {
       HDFSTransactionalRequestHandler renewLeaseHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENEW_LEASE) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addLease(LockType.WRITE, holder);
@@ -3951,7 +3951,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws AccessControlException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler getListingHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_LISTING, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN, INodeLockType.READ, new String[]{src}).
@@ -5603,7 +5603,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final String clientName) throws IOException {
     HDFSTransactionalRequestHandler updateBlockForPipelineHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_FOR_PIPELINE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
                 addINode(INodeLockType.WRITE).
@@ -5666,7 +5666,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeLockType.WRITE).
@@ -5891,7 +5891,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
 
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           Block blk = (Block) getParams()[0];
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer(preTxResolvedInodes, isPreTxPathFullyResolved[0]);
           tla.getLocks().
@@ -5987,7 +5987,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException {
     HDFSTransactionalRequestHandler getDelegationTokenHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_DELEGATION_TOKEN) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         //FIXME
           return null;
       }
@@ -6045,7 +6045,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws InvalidToken, IOException {
     HDFSTransactionalRequestHandler renewDelegationTokenHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENEW_DELEGATION_TOKEN) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
           //FIXME
           return null;
       }
@@ -6090,7 +6090,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException {
     HDFSTransactionalRequestHandler cancelDelegationTokenHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CANCEL_DELEGATION_TOKEN) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         //FIXME
           return null;
       }
@@ -6631,7 +6631,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PRE_DELETE_CHECK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
             INodeLockType.READ_COMMITTED, false, new String[]{src});
@@ -6847,7 +6847,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       HDFSTransactionalRequestHandler setQuotaHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_QUOTA, path) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks()
               .addINode(INodeResolveType.PATH, INodeLockType.WRITE, true, new String[]{path}, true, getNamenodeId())
@@ -6955,7 +6955,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     HDFSTransactionalRequestHandler renameHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SUBTREE_RENAME, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
             addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
@@ -7013,7 +7013,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
     HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.IS_DIR) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
             .addINode(INodeResolveType.PATH, INodeLockType.READ_COMMITTED, false, new String[]{dst});
@@ -7078,7 +7078,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       throws IOException, UnresolvedLinkException {
     HDFSTransactionalRequestHandler renameToHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
             addINode(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN,
@@ -7188,7 +7188,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         public Boolean call() throws Exception {
           HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE) {
             @Override
-            public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
               tla.getLocks().
                   addINode(
@@ -7261,7 +7261,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         final FsAction parentAccess, final FsAction access, final FsAction subAccess) throws IOException {
     return (INode) new HDFSTransactionalRequestHandler(HDFSOperationType.SET_SUBTREE_LOCK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
             .addINode(
@@ -7307,7 +7307,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void unlockSubtree(final String path) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.RESET_SUBTREE_LOCK) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks()
             .addINode(
@@ -7849,7 +7849,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public void testDBLocking(final List<String> parameters) throws IOException{
       new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{parameters.get(0)}).
@@ -7881,7 +7881,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
       HDFSTransactionalRequestHandler completeFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE, parameters.get(0)) {
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().
                     addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{parameters.get(0)}).
@@ -7932,10 +7932,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   public EncodingStatus getEncodingStatus(final String filePath) throws IOException {
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
@@ -8005,9 +8005,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   public int findInodeId (final String filePath) throws IOException {
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();
         lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
@@ -8045,7 +8045,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
             tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 INodeLockType.WRITE, new String[]{sourcePath});
@@ -8091,7 +8091,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
@@ -8114,7 +8114,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{filePath});
@@ -8153,7 +8153,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
 
           @Override
-          public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
@@ -8196,7 +8196,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public void addBlockChecksum(final String src, final int blockIndex, final long checksum) throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_CHECKSUM) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             INodeLockType.WRITE, new String[]{src});
@@ -8219,7 +8219,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   public long getBlockChecksum(final String src, final int blockIndex) throws IOException {
     return (Long) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_CHECKSUM) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks()
             .addBlockChecksumLockByBlockIndex(blockIndex)

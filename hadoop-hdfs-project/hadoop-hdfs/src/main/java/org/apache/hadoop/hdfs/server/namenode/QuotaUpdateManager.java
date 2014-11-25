@@ -18,7 +18,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.io.IOException;
 import java.util.*;
@@ -177,7 +177,7 @@ public class QuotaUpdateManager {
     }
     new HDFSTransactionalRequestHandler(HDFSOperationType.APPLY_QUOTA_UPDATE) {
       @Override
-      public TransactionLocks acquireLock() throws IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().
             addIndividualInode(TransactionLockTypes.INodeLockType.READ, updates.get(0).getInodeId());

@@ -17,7 +17,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /**
@@ -191,7 +191,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private void addBlockKeys() throws IOException {
     new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();
@@ -236,7 +236,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   private boolean updateBlockKeys() throws IOException {
     return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addBlockKey(LockType.WRITE);
         return tla.acquire();

@@ -40,7 +40,7 @@ import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 
@@ -385,7 +385,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
      try {
        return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
          @Override
-         public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+         public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
            return null;
          }
 
@@ -406,7 +406,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     try {
       return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           return null;
         }
 
@@ -536,7 +536,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
           final int blocksToProcess) throws IOException {
     return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
         tla.getLocks().addReplicationIndex(TransactionLockTypes.LockType.WRITE);
         return tla.acquire();  

@@ -27,12 +27,12 @@ import se.sics.hop.metadata.hdfs.entity.hop.*;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.lock.ParallelReadThread;
-import se.sics.hop.transaction.lock.TransactionLockAcquirer;
+import se.sics.hop.transaction.lock.OldTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.util.*;
 import java.util.concurrent.ExecutionException;
@@ -46,7 +46,7 @@ import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
  * @author Hooman <hooman@sics.se>
  * @author Salman <salman@sics.se>
  */
-public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
+public class HDFSTransactionLockAcquirer extends OldTransactionLockAcquirer{
 
   private final  Log LOG = LogFactory.getLog(HDFSTransactionLockAcquirer.class);
   private final HDFSTransactionLocks locks;
@@ -81,7 +81,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
   }
 
   @Override
-  public TransactionLocks acquire()
+  public OldTransactionLocks acquire()
       throws PersistanceException, UnresolvedPathException, ExecutionException, SubtreeLockedException { //start taking locks from inodes
     // acuires lock in order
     if (locks.getInodeLock() != null && locks.getInodeParam() != null && locks.getInodeParam().length > 0) {
@@ -420,7 +420,7 @@ public class HDFSTransactionLockAcquirer extends TransactionLockAcquirer{
     return locks;
   }
 
-  public TransactionLocks acquireBatchForBlockReporting() throws PersistanceException {
+  public OldTransactionLocks acquireBatchForBlockReporting() throws PersistanceException {
     int[] inodeIds = locks.getInodesParam();
     if (locks.getBlockLock() != null && locks.getBlocksParam() != null) {
       if (inodeIds == null) {

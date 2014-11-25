@@ -35,7 +35,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -76,7 +76,7 @@ public class BlockManagerTestUtil {
     try {
       return (int[]) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
         @Override
-        public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
           tla.getLocks().
                   addBlock(b.getBlockId(),

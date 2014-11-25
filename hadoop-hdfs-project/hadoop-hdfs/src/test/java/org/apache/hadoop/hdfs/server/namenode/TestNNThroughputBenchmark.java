@@ -37,7 +37,7 @@ public class TestNNThroughputBenchmark {
     FileSystem.setDefaultUri(conf, "hdfs://localhost:" + 0);
     conf.set(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY, "0.0.0.0:0");
     DFSTestUtil.formatNameNode(conf);
-    String[] args = new String[] {"-op", "all"};
+    String[] args = new String[] {"-op", "blockReport","-datanodes", "1", "-reports", "100", "-blocksPerReport", "50000", "-blocksPerFile", "500"};
     NNThroughputBenchmark.runBenchmark(conf, Arrays.asList(args));
   }
 }

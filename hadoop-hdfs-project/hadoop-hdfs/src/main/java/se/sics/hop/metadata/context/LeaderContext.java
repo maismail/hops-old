@@ -34,7 +34,7 @@ import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  *
@@ -250,18 +250,18 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
+  public void prepare(OldTransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
     // lock type is checked after when list lenght is checked 
     // because some times in the tx handler the acquire lock 
     // function is empty and in that case tlm will throw 
     // null pointer exceptions
-    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+/*    HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
     if ((!removedLeaders.values().isEmpty()
             || !modifiedLeaders.values().isEmpty())
             && hlks.getLeaderLock() != TransactionLockTypes.LockType.WRITE) {
       throw new LockUpgradeException("Trying to upgrade leader locks");
-    }
+    }*/
     dataAccess.prepare(removedLeaders.values(), newLeaders.values(), modifiedLeaders.values());
   }
 

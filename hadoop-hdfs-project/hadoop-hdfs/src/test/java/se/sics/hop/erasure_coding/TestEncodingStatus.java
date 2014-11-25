@@ -13,9 +13,9 @@ import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.handler.TransactionalRequestHandler;
+import se.sics.hop.transaction.handler.OldTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
+import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -53,9 +53,9 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
-    TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -67,10 +67,10 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -92,9 +92,9 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(statusToAdd.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
-    TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -115,9 +115,9 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
-    TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -132,10 +132,10 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy1 = new EncodingPolicy("codec2", (short) 2);
     final EncodingStatus updatedStatus = new EncodingStatus(1, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
 
-    TransactionalRequestHandler updateReq = new TransactionalRequestHandler(
+    OldTransactionalRequestHandler updateReq = new OldTransactionalRequestHandler(
         EncodingStatusOperationType.UPDATE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -152,10 +152,10 @@ public class TestEncodingStatus extends TestCase {
     updateReq.setParams(updatedStatus.getInodeId());
     updateReq.handle();
 
-    TransactionalRequestHandler findReq = new TransactionalRequestHandler(
+    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         Integer id = (Integer) getParams()[0];
         ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
         ctla.getLocks().addEncodingStatusLock(id);
@@ -177,9 +177,9 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(updatedStatus.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
-    TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -205,9 +205,9 @@ public class TestEncodingStatus extends TestCase {
     statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
     statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
-    TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -221,10 +221,10 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    TransactionalRequestHandler countReq = new TransactionalRequestHandler(
+    OldTransactionalRequestHandler countReq = new OldTransactionalRequestHandler(
         EncodingStatusOperationType.COUNT_REQUESTED_ENCODINGS) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -236,9 +236,9 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(count(statusToAdd, EncodingStatus.Status.ENCODING_REQUESTED), (int) (Integer) countReq.handle());
 
     // Cleanup
-    TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -263,9 +263,9 @@ public class TestEncodingStatus extends TestCase {
     statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
     statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
-    TransactionalRequestHandler addReq = new TransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
@@ -300,9 +300,9 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(count(foundStatus, EncodingStatus.Status.ENCODING_REQUESTED), limit);
 
     // Cleanup
-    TransactionalRequestHandler delReq = new TransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
       @Override
-      public TransactionLocks acquireLock() throws PersistanceException, IOException {
+      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
         return null;
       }
 
