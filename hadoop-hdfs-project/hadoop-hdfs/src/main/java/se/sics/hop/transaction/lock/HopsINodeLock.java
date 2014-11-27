@@ -17,6 +17,7 @@ package se.sics.hop.transaction.lock;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -65,6 +66,13 @@ public class HopsINodeLock extends HopsBaseINodeLock {
     this.activeNamenodes = activeNamenodes;
     this.ignoreLocalSubtreeLocks = ignoreLocalSubtreeLocks;
     this.namenodeId = namenodeId;
+    /*
+     * Needs to be sorted in order to avoid deadlocks. Otherwise one transaction
+     * could acquire path0 and path1 in the given order while another one does
+     * it in the opposite order, more precisely path1, path0, what could cause
+     * a dealock situation.
+     */
+    Arrays.sort(paths);
     this.paths = paths;
   }
 
@@ -86,15 +94,15 @@ public class HopsINodeLock extends HopsBaseINodeLock {
       case PATH_AND_ALL_CHILDREN_RECURESIVELY:
         for (int i = 0; i < paths.length; i++) {
           List<INode> resolvedInodes = acquireInodeLockByPath(paths[i]);
-          getResolvedINodesMap().putPathINodes(paths[i], resolvedInodes);
+          addPathINodes(paths[i], resolvedInodes);
           if (resolvedInodes.size() > 0) {
             INode lastINode = resolvedInodes.get(resolvedInodes.size() - 1);
             if (resolveType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
               List<INode> children = findImmediateChildren(lastINode);
-              getResolvedINodesMap().putChildINodes(paths[i], children);
+              addChildINodes(paths[i], children);
             } else if (resolveType == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
               List<INode> children = findChildrenRecursively(lastINode);
-              getResolvedINodesMap().putChildINodes(paths[i], children);
+              addChildINodes(paths[i], children);
             }
           }
         }
@@ -275,7 +283,7 @@ public class HopsINodeLock extends HopsBaseINodeLock {
 
   private void acquireINodeAttributes() throws PersistanceException {
     List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
-    for (INode inode : getResolvedINodesMap().getAll()) {
+    for (INode inode : getAllResolvedINodes()) {
       if (inode instanceof INodeDirectoryWithQuota) {
         HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
         pks.add(pk);

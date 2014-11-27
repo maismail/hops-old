@@ -71,10 +71,9 @@ public class HopsIndividualINodeLock extends HopsBaseINodeLock {
 
     if (readUpPathInodes) {
       List<INode> pathInodes = readUpInodes(inode);
-      getResolvedINodesMap().putPathINodes(INodeUtil.constructPath(pathInodes),
-          pathInodes);
+      addPathINodes(INodeUtil.constructPath(pathInodes), pathInodes);
     } else {
-      getResolvedINodesMap().putIndividualINode(inode);
+      addIndividualINode(inode);
     }
   }
 

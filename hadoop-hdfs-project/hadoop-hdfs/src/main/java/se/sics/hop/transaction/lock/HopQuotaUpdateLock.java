@@ -18,25 +18,45 @@
 package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
+import se.sics.hop.transaction.EntityManager;
 
 import java.io.IOException;
 import java.util.List;
 
 public class HopQuotaUpdateLock extends HopsLock {
-  private final String[] paths;
+  private final String[] targets;
+  private final boolean includeChildren;
 
-  public HopQuotaUpdateLock(String paths...) {
-    this.paths = paths;
+  public HopQuotaUpdateLock(boolean includeChildren, String... targets) {
+    this.includeChildren = includeChildren;
+    this.targets = targets;
+  }
+
+  public HopQuotaUpdateLock(String... paths) {
+    this(false, paths);
   }
 
   @Override
   void acquire(TransactionLocks locks) throws IOException {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
-    HopsBaseINodeLock.ResolvedINodesMap map = inodeLock.getResolvedINodesMap();
-    for (String path : paths) {
-      List<INode> pathINodes = map.getPathINodes(path);
-      List<INode> childINodes = map.getChildINodes(path);
+    for (String target : targets) {
+      acquireQuotaUpdate(inodeLock.getTargetINodes(target));
+      if (includeChildren) {
+        acquireQuotaUpdate(inodeLock.getChildINodes(target));
+      }
     }
+  }
+
+  private void acquireQuotaUpdate(List<INode> iNodes) throws PersistanceException {
+    for (INode iNode : iNodes) {
+      acquireQuotaUpdate(iNode);
+    }
+  }
+
+  private void acquireQuotaUpdate(INode node) throws PersistanceException {
+    EntityManager.findList(QuotaUpdate.Finder.ByInodeId, node.getId());
   }
 
   @Override

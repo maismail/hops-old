@@ -102,11 +102,18 @@ import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.metadata.lock.*;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
+import se.sics.hop.transaction.lock.HopQuotaUpdateLock;
+import se.sics.hop.transaction.lock.HopsBlockLock;
+import se.sics.hop.transaction.lock.HopsBlockRelatedLock;
+import se.sics.hop.transaction.lock.HopsINodeLock;
+import se.sics.hop.transaction.lock.HopsLeaseLock;
+import se.sics.hop.transaction.lock.HopsLeasePathLock;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
@@ -1901,45 +1908,76 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final short replication, final long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
       FileNotFoundException, ParentNotDirectoryException, IOException {
-      final boolean resolveLink = false;
-      HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
-          @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
-                    addBlock().
-                    addLease(LockType.WRITE, holder).
-                    addLeasePath(LockType.WRITE).
-                    addReplica().
-                    addCorrupt().
-                    addExcess().
-                    addReplicaUc().
-                    addUnderReplicatedBlock().
-                    addPendingBlock().
-                    addInvalidatedBlock();
-            if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
-              tla.getLocks().addQuotaUpdateOnSubtree();
-            }
-            if (flag.contains(CreateFlag.OVERWRITE)) {
-              return tla.acquireForDelete(erasureCodingEnabled);
-            }
-            return tla.acquire();
+//      final boolean resolveLink = false;
+//      HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
+//          @Override
+//          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+//            ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
+//            tla.getLocks().
+//                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
+//                    addBlock().
+//                    addLease(LockType.WRITE, holder).
+//                    addLeasePath(LockType.WRITE).
+//                    addReplica().
+//                    addCorrupt().
+//                    addExcess().
+//                    addReplicaUc().
+//                    addUnderReplicatedBlock().
+//                    addPendingBlock().
+//                    addInvalidatedBlock();
+//            if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
+//              tla.getLocks().addQuotaUpdateOnSubtree();
+//            }
+//            if (flag.contains(CreateFlag.OVERWRITE)) {
+//              return tla.acquireForDelete(erasureCodingEnabled);
+//            }
+//            return tla.acquire();
+//          }
+//
+//          @Override
+//          public Object performTask() throws PersistanceException, IOException {
+//              try {
+//                  startFileInt(src, permissions, holder, clientMachine, flag, createParent,
+//                          replication, blockSize);
+//                  return null;
+//              } catch (AccessControlException e) {
+//                  logAuditEvent(false, "create", src);
+//                  throw e;
+//              }
+//          }
+//      };
+//      startFileHanlder.handle(this);
+    new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+      @Override
+      public void acquireLock(TransactionLocks locks)
+          throws IOException, ExecutionException {
+        locks.addLock(new HopsINodeLock(
+                INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH,
+                false,
+                src))
+            .addLock(new HopsLeaseLock(LockType.WRITE, holder))
+            .addLock(new HopsLeasePathLock(LockType.WRITE))
+            .addLock(new HopsBlockLock())
+            .addLock(new HopsBlockRelatedLock.HopsReplicaLock())
+            .addLock(new HopsBlockRelatedLock.HopsCorruptReplicaLock())
+            .addLock(new HopsBlockRelatedLock.HopsExcessReplicaLock())
+            .addLock(new HopsBlockRelatedLock.HopsReplicatUnderConstructionLock())
+            .addLock(new HopsBlockRelatedLock.HopsUnderReplicatedBlockLock())
+            .addLock(new HopsBlockRelatedLock.HopsPendingBlockLock())
+            .addLock(new HopsBlockRelatedLock.HopsInvalidatedBlockLock());
+        if (flag.contains(CreateFlag.OVERWRITE)) {
+          if (dir.isQuotaEnabled()) {
+            locks.addLock(new HopQuotaUpdateLock(src));
           }
+        }
+      }
 
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-              try {
-                  startFileInt(src, permissions, holder, clientMachine, flag, createParent,
-                          replication, blockSize);
-                  return null;
-              } catch (AccessControlException e) {
-                  logAuditEvent(false, "create", src);
-                  throw e;
-              }
-          }
-      };
-      startFileHanlder.handle(this);
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        return null;
+      }
+    }.handle(this);
   }
 
   private void startFileInt(String src, PermissionStatus permissions, String holder,

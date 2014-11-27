@@ -17,10 +17,10 @@ package se.sics.hop.transaction.lock;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import com.google.common.collect.Iterables;
 import org.apache.commons.logging.Log;
@@ -43,78 +43,95 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
   private final ResolvedINodesMap resolvedINodesMap;
 
-  public static class ResolvedINodesMap {
-    private Map<String, PathINodes> pathToPathINodes = new TreeMap<String, PathINodes>();
+  public HopsBaseINodeLock() {
+    this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
+    this.resolvedINodesMap = new ResolvedINodesMap();
+  }
+
+  private class ResolvedINodesMap {
+    private final Map<String, PathRelatedINodes> pathToPathINodes =
+        new HashMap<String, PathRelatedINodes>();
     private final Collection<INode> individualInodes = new ArrayList<INode>();
 
-    public static class PathINodes {
+    private class PathRelatedINodes {
       private List<INode> pathINodes;
       private List<INode> childINodes;
-
-      public List<INode> getPathINodes() {
-        return pathINodes;
-      }
-
-      public void setPathINodes(List<INode> pathINodes) {
-        this.pathINodes = pathINodes;
-      }
-
-      public List<INode> getChildINodes() {
-        return childINodes;
-      }
-
-      public void setChildINodes(List<INode> childINodes) {
-        this.childINodes = childINodes;
-      }
     }
 
-    private PathINodes getWithLazyInit(String path) {
+    private PathRelatedINodes getWithLazyInit(String path) {
       if (!pathToPathINodes.containsKey(path)) {
-        return pathToPathINodes.put(path, new PathINodes());
+        PathRelatedINodes pathRelatedINodes = new PathRelatedINodes();
+        pathToPathINodes.put(path, pathRelatedINodes);
+        return pathRelatedINodes;
       }
       return pathToPathINodes.get(path);
     }
 
-    public void putPathINodes(String path, List<INode> iNodes) {
-      PathINodes pathINodes = getWithLazyInit(path);
-      pathINodes.setPathINodes(iNodes);
+    private void putPathINodes(String path, List<INode> iNodes) {
+      PathRelatedINodes pathRelatedINodes = getWithLazyInit(path);
+      pathRelatedINodes.pathINodes = iNodes;
     }
 
-    public void putChildINodes(String path, List<INode> iNodes) {
-      PathINodes pathINodes = getWithLazyInit(path);
-      pathINodes.setChildINodes(iNodes);
+    private void putChildINodes(String path, List<INode> iNodes) {
+      PathRelatedINodes pathRelatedINodes = getWithLazyInit(path);
+      pathRelatedINodes.childINodes = iNodes;
     }
 
-    public void putIndividualINode(INode iNode) {
+    private void putIndividualINode(INode iNode) {
       individualInodes.add(iNode);
     }
 
-    public List<INode> getPathINodes(String path) {
-      return pathToPathINodes.get(path).getPathINodes();
+    private List<INode> getPathINodes(String path) {
+      return pathToPathINodes.get(path).pathINodes;
     }
 
-    public List<INode> getChildINodes(String path) {
-      return pathToPathINodes.get(path).getPathINodes();
+    private List<INode> getChildINodes(String path) {
+      return pathToPathINodes.get(path).childINodes;
     }
 
     public Iterable<INode> getAll() {
       Iterable iterable = null;
-      for (PathINodes pathINodes : pathToPathINodes.values()) {
+      for (PathRelatedINodes pathRelatedINodes : pathToPathINodes.values()) {
+        List<INode> pathINodes = pathRelatedINodes.pathINodes;
+        List<INode> childINodes = pathRelatedINodes.childINodes == null ?
+            Collections.EMPTY_LIST : pathRelatedINodes.childINodes;
         if (iterable == null) {
-          iterable = Iterables.concat(pathINodes.getPathINodes(),
-              pathINodes.getChildINodes());
+          iterable = Iterables.concat(pathINodes, childINodes);
         } else {
-          iterable = Iterables.concat(iterable, pathINodes.getPathINodes(),
-              pathINodes.getChildINodes());
+          iterable = Iterables.concat(iterable, pathINodes, childINodes);
         }
       }
       return Iterables.concat(iterable, individualInodes);
     }
   }
 
-  public HopsBaseINodeLock() {
-    this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
-    this.resolvedINodesMap = new ResolvedINodesMap();
+  Iterable<INode> getAllResolvedINodes() {
+    return resolvedINodesMap.getAll();
+  }
+
+  void addPathINodes(String path, List<INode> iNodes) {
+    resolvedINodesMap.putPathINodes(path, iNodes);
+  }
+
+  void addChildINodes(String path, List<INode> iNodes) {
+    resolvedINodesMap.putChildINodes(path, iNodes);
+  }
+
+  void addIndividualINode(INode iNode) {
+    resolvedINodesMap.putIndividualINode(iNode);
+  }
+
+  List<INode> getPathINodes(String path) {
+    return resolvedINodesMap.getPathINodes(path);
+  }
+
+  INode getTargetINodes(String path) {
+    List<INode> list = resolvedINodesMap.getPathINodes(path);
+    return list.get(list.size() - 1);
+  }
+
+  List<INode> getChildINodes(String path) {
+    return resolvedINodesMap.getChildINodes(path);
   }
 
   public static void enableSetPartitionKey() {
@@ -208,9 +225,5 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   @Override
   Type getType() {
     return Type.INode;
-  }
-
-  public ResolvedINodesMap getResolvedINodesMap() {
-    return resolvedINodesMap;
   }
 }

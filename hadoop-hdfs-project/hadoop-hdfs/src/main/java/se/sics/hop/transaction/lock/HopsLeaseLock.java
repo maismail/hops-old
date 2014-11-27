@@ -54,11 +54,9 @@ public class HopsLeaseLock extends HopsLock {
       holders.add(leaseHolder);
     }
 
-    for (List<INode> resolvedINodes : inodeLock.getAllResolvedINodes()) {
-      for (INode f : resolvedINodes) {
-        if (f instanceof INodeFileUnderConstruction) {
-          holders.add(((INodeFileUnderConstruction) f).getClientName());
-        }
+    for (INode f : inodeLock.getAllResolvedINodes()) {
+      if (f instanceof INodeFileUnderConstruction) {
+        holders.add(((INodeFileUnderConstruction) f).getClientName());
       }
     }
 
