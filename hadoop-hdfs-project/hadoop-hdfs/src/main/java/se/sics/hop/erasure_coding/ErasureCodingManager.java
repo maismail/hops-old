@@ -198,7 +198,7 @@ public class ErasureCodingManager extends Configured{
             public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
               ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
               tla.getLocks().
-                  addEncodingStatusLockOnPathLeave().
+                  addEncodingStatusLockOnPathLeaf().
                   addINode(TransactionLockTypes.INodeResolveType.PATH,
                       TransactionLockTypes.INodeLockType.WRITE, new String[]{path, parityPath});
               return tla.acquire();
@@ -350,7 +350,7 @@ public class ErasureCodingManager extends Configured{
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks()
-            .addEncodingStatusLockOnPathLeave()
+            .addEncodingStatusLockOnPathLeaf()
             .addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
         return lockAcquirer.acquire();

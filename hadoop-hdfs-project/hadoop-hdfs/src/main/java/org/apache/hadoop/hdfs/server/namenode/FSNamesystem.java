@@ -7977,7 +7977,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
         lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
-        lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
+        lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
         return lockAcquirer.acquire();
       }
 
@@ -8133,7 +8133,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
-            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
 
@@ -8156,7 +8156,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{filePath});
-            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
 
@@ -8195,7 +8195,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
             lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
                 TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
-            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeave();
+            lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
 

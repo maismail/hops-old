@@ -26,7 +26,7 @@ public class ErasureCodingTransactionLocks extends HDFSTransactionLocks {
     super(resolvedInodes, preTxPathFullyResolved);
   }
 
-  public ErasureCodingTransactionLocks addEncodingStatusLockOnPathLeave() {
+  public ErasureCodingTransactionLocks addEncodingStatusLockOnPathLeaf() {
     this.encodingStatusLockOnPathLeaf = TransactionLockTypes.LockType.READ_COMMITTED;
     return this;
   }
