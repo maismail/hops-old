@@ -46,13 +46,14 @@ public abstract class HopsTransactionalRequestHandler extends TransactionalReque
 
   
   @Override
-  protected Object run(final Object namesystem) throws IOException {
+  protected Object execute(final Object namesystem) throws IOException {
 
-    return super.run(new TransactionInfo() {
+    return super.execute(new TransactionInfo() {
       @Override
       public String getContextName(OperationType opType) {
         if (namesystem != null && namesystem instanceof FSNamesystem) {
-          return "NN (" + ((FSNamesystem) namesystem).getNamenodeId() + ") " + opType.toString() + "[" + Thread.currentThread().getId() + "]";
+          return "NN (" + ((FSNamesystem) namesystem).getNamenodeId() + ") " +
+              opType.toString() + "[" + Thread.currentThread().getId() + "]";
         } else {
           return opType.toString();
         }
@@ -67,18 +68,13 @@ public abstract class HopsTransactionalRequestHandler extends TransactionalReque
     });
   }
 
-  @Override
-  public void preTransactionSetup() throws IOException {
-    super.preTransactionSetup(); 
+  /**
+   * You need to call super() when overriding this method.
+   * @throws IOException
+   */
+  public void setUp() throws IOException {
     if(path != null){
       PathMemcache.getInstance().get(path);
     }
-    //call user defined setUp
-    setUp();
-  }
-
-  
-  public void setUp() throws IOException {
-    
   }
 }

@@ -16,14 +16,14 @@
 package se.sics.hop.transaction.lock;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.*;
 
 /**
@@ -31,7 +31,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.*;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsIndividualINodeLock extends HopsINodeLockBase {
+public class HopsIndividualINodeLock extends HopsBaseINodeLock {
 
   private final INodeLockType lockType;
   private final INodeIdentifier inodeIdentifier;
@@ -69,23 +69,23 @@ public class HopsIndividualINodeLock extends HopsINodeLockBase {
       throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifier);
     }
 
-    List<INode> resolvedInodes = new ArrayList<INode>();
-    resolvedInodes.add(inode);
-    
     if (readUpPathInodes) {
-      readUpInodes(inode, resolvedInodes);
+      List<INode> pathInodes = readUpInodes(inode);
+      getResolvedINodesMap().putPathINodes(INodeUtil.constructPath(pathInodes),
+          pathInodes);
+    } else {
+      getResolvedINodesMap().putIndividualINode(inode);
     }
-
-    addResolvedInodes(resolvedInodes);
-
-    
   }
 
-  private void readUpInodes(INode leaf, List<INode> resolvedInodes) throws PersistanceException {
+  private List<INode> readUpInodes(INode leaf) throws PersistanceException {
+    LinkedList<INode> pathInodes = new LinkedList<INode>();
+    pathInodes.add(leaf);
     INode curr = leaf;
     while (curr.getParentId() != INodeDirectory.ROOT_PARENT_ID) {
       curr = find(INodeLockType.READ_COMMITTED, curr.getParentId());
-      resolvedInodes.add(curr);
+      pathInodes.addFirst(curr);
     }
+    return pathInodes;
   }
 }

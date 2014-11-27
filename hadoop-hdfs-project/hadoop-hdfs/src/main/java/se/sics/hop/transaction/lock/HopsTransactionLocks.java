@@ -35,11 +35,13 @@ public class HopsTransactionLocks implements TransactionLocks{
   }
   
   @Override
-  public void addLock(HopsLock lock){
+  public TransactionLocks addLock(HopsLock lock){
     if(locks.containsKey(lock.getType()))
-      throw new IllegalArgumentException("you can't add the same lock twice!");
+      throw new IllegalArgumentException("The same lock cannot be added " +
+          "twice!");
     
     locks.put(lock.getType(), lock);
+    return this;
   }
   
   @Override
@@ -52,6 +54,4 @@ public class HopsTransactionLocks implements TransactionLocks{
     Collections.sort(lks);
     return lks;
   }
-
-
 }

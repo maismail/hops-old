@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Queue;
+
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -32,7 +32,6 @@ import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.metadata.lock.SubtreeLockHelper;
 import se.sics.hop.metadata.lock.SubtreeLockedException;
-import se.sics.hop.transaction.lock.TransactionLockTypes.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 
@@ -41,7 +40,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsINodeLock extends HopsINodeLockBase {
+public class HopsINodeLock extends HopsBaseINodeLock {
 
   private static INodeLockType defaultINodeLockType = INodeLockType.READ_COMMITTED;
 
@@ -87,17 +86,17 @@ public class HopsINodeLock extends HopsINodeLockBase {
       case PATH_AND_ALL_CHILDREN_RECURESIVELY:
         for (int i = 0; i < paths.length; i++) {
           List<INode> resolvedInodes = acquireInodeLockByPath(paths[i]);
+          getResolvedINodesMap().putPathINodes(paths[i], resolvedInodes);
           if (resolvedInodes.size() > 0) {
             INode lastINode = resolvedInodes.get(resolvedInodes.size() - 1);
             if (resolveType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
               List<INode> children = findImmediateChildren(lastINode);
-              resolvedInodes.addAll(children);
+              getResolvedINodesMap().putChildINodes(paths[i], children);
             } else if (resolveType == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
-              Queue<INode> children = findChildrenRecursively(lastINode);
-              resolvedInodes.addAll(children);
+              List<INode> children = findChildrenRecursively(lastINode);
+              getResolvedINodesMap().putChildINodes(paths[i], children);
             }
           }
-          addResolvedInodes(resolvedInodes);
         }
         break;
       default:
@@ -227,9 +226,10 @@ public class HopsINodeLock extends HopsINodeLockBase {
     return children;
   }
 
-  private Queue<INode> findChildrenRecursively(INode lastINode) throws PersistanceException {
-    Queue<INode> children = new LinkedList<INode>();
-    Queue<INode> unCheckedDirs = new LinkedList<INode>();
+  private List<INode> findChildrenRecursively(INode lastINode) throws
+      PersistanceException {
+    LinkedList<INode> children = new LinkedList<INode>();
+    LinkedList<INode> unCheckedDirs = new LinkedList<INode>();
     if (lastINode != null) {
       if (lastINode instanceof INodeDirectory) {
         unCheckedDirs.add(lastINode);
@@ -275,15 +275,12 @@ public class HopsINodeLock extends HopsINodeLockBase {
 
   private void acquireINodeAttributes() throws PersistanceException {
     List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
-    for (List<INode> resolvedINodes : getAllResolvedINodes()) {
-      for (INode inode : resolvedINodes) {
-        if (inode instanceof INodeDirectoryWithQuota) {
-          HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
-          pks.add(pk);
-        }
+    for (INode inode : getResolvedINodesMap().getAll()) {
+      if (inode instanceof INodeDirectoryWithQuota) {
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
+        pks.add(pk);
       }
     }
     acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByPKList, pks);
   }
-  
 }

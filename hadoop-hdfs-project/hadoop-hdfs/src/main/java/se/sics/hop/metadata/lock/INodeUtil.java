@@ -3,6 +3,7 @@ package se.sics.hop.metadata.lock;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.commons.logging.Log;
@@ -368,5 +369,17 @@ public class INodeUtil {
       throw new StorageException(ex.getMessage());
     }
     return inodeIdentifier;
+  }
+
+  public static String constructPath(List<INode> pathINodes) {
+    StringBuilder builder = new StringBuilder();
+    for (INode node : pathINodes) {
+      if (node.isDirectory()) {
+        builder.append(node.getLocalName() + "/");
+      } else {
+        builder.append(node.getLocalName());
+      }
+    }
+    return builder.toString();
   }
 }

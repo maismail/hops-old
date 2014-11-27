@@ -23,13 +23,14 @@ public abstract class HDFSTransactionalRequestHandler extends OldTransactionalRe
   }
 
   @Override
-  protected Object run(final Object namesystem) throws IOException {
+  protected Object execute(final Object namesystem) throws IOException {
 
-    return super.run(new TransactionInfo() {
+    return super.execute(new TransactionInfo() {
       @Override
       public String getContextName(OperationType opType) {
         if (namesystem != null && namesystem instanceof FSNamesystem) {
-          return "NN (" + ((FSNamesystem) namesystem).getNamenodeId() + ") " + opType.toString() + "[" + Thread.currentThread().getId() + "]";
+          return "NN (" + ((FSNamesystem) namesystem).getNamenodeId() + ") " +
+              opType.toString() + "[" + Thread.currentThread().getId() + "]";
         } else {
           return opType.toString();
         }
@@ -54,8 +55,7 @@ public abstract class HDFSTransactionalRequestHandler extends OldTransactionalRe
     setUp();
   }
 
-  
   public void setUp() throws PersistanceException, IOException {
-    
+
   }
 }

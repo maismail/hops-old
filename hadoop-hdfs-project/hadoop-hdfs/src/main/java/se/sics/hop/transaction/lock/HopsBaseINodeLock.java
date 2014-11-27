@@ -20,6 +20,9 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
+
+import com.google.common.collect.Iterables;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -27,19 +30,92 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.transaction.EntityManager;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.READ_COMMITTED;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.WRITE;
-import static se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType.WRITE_ON_PARENT;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public abstract class HopsINodeLockBase extends HopsLock {
+public abstract class HopsBaseINodeLock extends HopsLock {
 
-  protected final static Log LOG = LogFactory.getLog(HopsINodeLockBase.class);
+  protected final static Log LOG = LogFactory.getLog(HopsBaseINodeLock.class);
   private static boolean setPartitionKeyEnabled = false;
+
+  private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
+  private final ResolvedINodesMap resolvedINodesMap;
+
+  public static class ResolvedINodesMap {
+    private Map<String, PathINodes> pathToPathINodes = new TreeMap<String, PathINodes>();
+    private final Collection<INode> individualInodes = new ArrayList<INode>();
+
+    public static class PathINodes {
+      private List<INode> pathINodes;
+      private List<INode> childINodes;
+
+      public List<INode> getPathINodes() {
+        return pathINodes;
+      }
+
+      public void setPathINodes(List<INode> pathINodes) {
+        this.pathINodes = pathINodes;
+      }
+
+      public List<INode> getChildINodes() {
+        return childINodes;
+      }
+
+      public void setChildINodes(List<INode> childINodes) {
+        this.childINodes = childINodes;
+      }
+    }
+
+    private PathINodes getWithLazyInit(String path) {
+      if (!pathToPathINodes.containsKey(path)) {
+        return pathToPathINodes.put(path, new PathINodes());
+      }
+      return pathToPathINodes.get(path);
+    }
+
+    public void putPathINodes(String path, List<INode> iNodes) {
+      PathINodes pathINodes = getWithLazyInit(path);
+      pathINodes.setPathINodes(iNodes);
+    }
+
+    public void putChildINodes(String path, List<INode> iNodes) {
+      PathINodes pathINodes = getWithLazyInit(path);
+      pathINodes.setChildINodes(iNodes);
+    }
+
+    public void putIndividualINode(INode iNode) {
+      individualInodes.add(iNode);
+    }
+
+    public List<INode> getPathINodes(String path) {
+      return pathToPathINodes.get(path).getPathINodes();
+    }
+
+    public List<INode> getChildINodes(String path) {
+      return pathToPathINodes.get(path).getPathINodes();
+    }
+
+    public Iterable<INode> getAll() {
+      Iterable iterable = null;
+      for (PathINodes pathINodes : pathToPathINodes.values()) {
+        if (iterable == null) {
+          iterable = Iterables.concat(pathINodes.getPathINodes(),
+              pathINodes.getChildINodes());
+        } else {
+          iterable = Iterables.concat(iterable, pathINodes.getPathINodes(),
+              pathINodes.getChildINodes());
+        }
+      }
+      return Iterables.concat(iterable, individualInodes);
+    }
+  }
+
+  public HopsBaseINodeLock() {
+    this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
+    this.resolvedINodesMap = new ResolvedINodesMap();
+  }
 
   public static void enableSetPartitionKey() {
     setPartitionKeyEnabled = true;
@@ -48,24 +124,9 @@ public abstract class HopsINodeLockBase extends HopsLock {
   public static void disableSetPartitionKey() {
     setPartitionKeyEnabled = false;
   }
-  private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
-  private final List<List<INode>> allResolvedINodes;
-
-  public HopsINodeLockBase() {
-    this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
-    this.allResolvedINodes = new ArrayList<List<INode>>();
-  }
 
   public TransactionLockTypes.INodeLockType getLockedINodeLockType(INode inode) {
     return allLockedInodesInTx.get(inode);
-  }
-    
-  protected void addResolvedInodes(List<INode> resolvedInodes) {
-    allResolvedINodes.add(resolvedInodes);
-  }
-
-  List<List<INode>> getAllResolvedINodes() {
-    return allResolvedINodes;
   }
 
   protected INode find(TransactionLockTypes.INodeLockType lock, String name, int parentId) throws PersistanceException {
@@ -147,5 +208,9 @@ public abstract class HopsINodeLockBase extends HopsLock {
   @Override
   Type getType() {
     return Type.INode;
+  }
+
+  public ResolvedINodesMap getResolvedINodesMap() {
+    return resolvedINodesMap;
   }
 }
