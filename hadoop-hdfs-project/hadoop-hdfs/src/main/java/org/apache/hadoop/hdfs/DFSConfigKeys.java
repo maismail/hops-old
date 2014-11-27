@@ -147,7 +147,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final boolean DFS_NDC_ENABLED_DEFAULT = true;
 
   public static final String DFS_LEGACY_SET_QUOTA_ENABLE_KEY = "dfs.namenode.legacy-set-quota.enable";
-  public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = false;
+  public static final boolean DFS_LEGACY_SET_QUOTA_ENABLE_DEFAULT = true;
 
   public static final String DFS_SUBTREE_EXECUTOR_LIMIT_KEY = "dfs.namenode.subtree-executor-limit";
   public static final int DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT = 20;
