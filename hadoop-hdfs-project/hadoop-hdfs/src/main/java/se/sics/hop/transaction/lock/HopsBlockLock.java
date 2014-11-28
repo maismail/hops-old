@@ -36,7 +36,7 @@ public class HopsBlockLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws IOException {
+  void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     for (INode inode :  inodeLock.getAllResolvedINodes()) {
       if (inode instanceof INodeFile) {

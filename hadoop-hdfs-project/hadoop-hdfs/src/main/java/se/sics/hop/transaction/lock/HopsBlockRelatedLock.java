@@ -42,7 +42,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws IOException {
+  void acquire(TransactionLocks locks) throws Exception {
     HopsBlockLock blockLock = (HopsBlockLock) locks.getLock(Type.Block);
 
     for (BlockInfo blk : blockLock.getBlocks()) {

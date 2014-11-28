@@ -38,7 +38,7 @@ public class HopsVariablesLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws IOException {
+  void acquire(TransactionLocks locks) throws Exception {
     for (Map.Entry<HopVariable.Finder, TransactionLockTypes.LockType> e : variables.entrySet()) {
       acquireLock(e.getValue(), e.getKey());
     }

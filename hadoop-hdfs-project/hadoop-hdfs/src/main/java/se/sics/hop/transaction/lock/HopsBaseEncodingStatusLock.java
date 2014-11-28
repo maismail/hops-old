@@ -50,7 +50,7 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
     }
 
     @Override
-    void acquire(TransactionLocks locks) throws IOException {
+    void acquire(TransactionLocks locks) throws Exception {
       HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
       for (String target : targets) {
         INode iNode = iNodeLock.getTargetINodes(target);
@@ -70,7 +70,7 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
     }
 
     @Override
-    void acquire(TransactionLocks locks) throws IOException {
+    void acquire(TransactionLocks locks) throws Exception {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
       EncodingStatus status = acquireLock(getLockType(),

@@ -26,7 +26,7 @@ import java.util.Map;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsTransactionLocks implements TransactionLocks{
+public class HopsTransactionLocks implements TransactionLocks {
  
   private final Map<HopsLock.Type, HopsLock> locks;
   
@@ -43,9 +43,18 @@ public class HopsTransactionLocks implements TransactionLocks{
     locks.put(lock.getType(), lock);
     return this;
   }
+
+  @Override
+  public boolean containsLock(HopsLock.Type lock) {
+    return locks.containsKey(lock);
+  }
   
   @Override
-  public HopsLock getLock(HopsLock.Type type) {
+  public HopsLock getLock(HopsLock.Type type) throws LockNotAddedException{
+    if (!locks.containsKey(type)) {
+      throw new LockNotAddedException("Trying to get a lock which was not " +
+          "added.");
+    }
     return locks.get(type);
   }
     

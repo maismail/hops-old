@@ -17,32 +17,39 @@
  */
 package se.sics.hop.transaction.lock;
 
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess;
-import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.SortedSet;
 
-public class HopsBlockChecksumLock extends HopsLock {
-  private final String target;
-  private final int blockIndex;
+public class HopsNameNodeLeaseLock extends HopsLock {
+  private final TransactionLockTypes.LockType lockType;
+  private final SortedSet<String> paths;
+  private Lease nameNodeLease;
 
-  public HopsBlockChecksumLock(String target, int blockIndex) {
-    this.target = target;
-    this.blockIndex = blockIndex;
+  public HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType,
+      SortedSet<String> paths) {
+    this.lockType = lockType;
+    this.paths = paths;
   }
 
   @Override
   void acquire(TransactionLocks locks) throws Exception {
-    HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
-    INode iNode = iNodeLock.getTargetINodes(target);
-    BlockChecksumDataAccess.KeyTuple key = new BlockChecksumDataAccess
-        .KeyTuple(iNode.getId(), blockIndex);
-    acquireLock(DEFAULT_LOCK_TYPE, BlockChecksum.Finder.ByKeyTuple, key);
+    nameNodeLease = acquireLock(lockType, Lease.Finder.ByPKey,
+        HdfsServerConstants.NAMENODE_LEASE_HOLDER);
   }
 
   @Override
   final Type getType() {
-    return Type.BlockChecksum;
+    return Type.NameNodeLease;
+  }
+
+  public Lease getNameNodeLease() {
+    return nameNodeLease;
   }
 }

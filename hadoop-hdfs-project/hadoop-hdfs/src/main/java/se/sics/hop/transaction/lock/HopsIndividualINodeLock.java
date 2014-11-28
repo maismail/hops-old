@@ -51,7 +51,7 @@ public class HopsIndividualINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws IOException {
+  void acquire(TransactionLocks locks) throws Exception {
     setPartitioningKey(inodeIdentifier.getInodeId());
 
     INode inode = null;

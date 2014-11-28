@@ -46,7 +46,7 @@ public class HopsLeaseLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws IOException {
+  void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
 
     SortedSet<String> holders = new TreeSet<String>();

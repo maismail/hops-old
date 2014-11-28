@@ -37,7 +37,7 @@ public class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
   }
 
   @Override
-  public void acquire() throws IOException, ExecutionException {
+  public void acquire() throws Exception {
     for (HopsLock lock : locks.getSortedLocks()) {
       lock.acquire(locks);
     }
