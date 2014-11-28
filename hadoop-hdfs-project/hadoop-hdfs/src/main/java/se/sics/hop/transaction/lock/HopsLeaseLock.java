@@ -49,6 +49,7 @@ public class HopsLeaseLock extends HopsLock {
   void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
 
+    // TODO This sorts after each insertion what is inefficient
     SortedSet<String> holders = new TreeSet<String>();
     if (leaseHolder != null) {
       holders.add(leaseHolder);
