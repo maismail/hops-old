@@ -46,7 +46,7 @@ public class HopsBlockLock extends HopsLock {
   }
 
   @Override
-  Type getType() {
+  final Type getType() {
     return Type.Block;
   }
   

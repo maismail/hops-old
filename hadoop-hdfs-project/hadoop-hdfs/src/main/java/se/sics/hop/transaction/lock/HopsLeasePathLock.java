@@ -49,7 +49,7 @@ public class HopsLeasePathLock extends HopsLock {
   }
 
   @Override
-  Type getType() {
+  final Type getType() {
     return Type.LeasePath;
   }
   

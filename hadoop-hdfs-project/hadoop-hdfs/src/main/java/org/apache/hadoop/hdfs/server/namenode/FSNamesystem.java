@@ -102,7 +102,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.metadata.lock.*;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
-import se.sics.hop.transaction.lock.HopQuotaUpdateLock;
+import se.sics.hop.transaction.lock.HopsQuotaUpdateLock;
 import se.sics.hop.transaction.lock.HopsBlockLock;
 import se.sics.hop.transaction.lock.HopsBlockRelatedLock;
 import se.sics.hop.transaction.lock.HopsINodeLock;
@@ -1968,7 +1968,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             .addLock(new HopsBlockRelatedLock.HopsInvalidatedBlockLock());
         if (flag.contains(CreateFlag.OVERWRITE)) {
           if (dir.isQuotaEnabled()) {
-            locks.addLock(new HopQuotaUpdateLock(src));
+            locks.addLock(new HopsQuotaUpdateLock(src));
           }
         }
       }

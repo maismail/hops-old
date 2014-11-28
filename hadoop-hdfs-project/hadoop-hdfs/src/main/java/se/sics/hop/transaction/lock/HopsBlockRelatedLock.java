@@ -61,7 +61,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.Replica;
     }
   }
@@ -73,7 +73,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.CorruptReplica;
     }
   }
@@ -85,7 +85,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.ExcessReplica;
     }
   }
@@ -97,7 +97,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.ReplicaUnderConstruction;
     }
   }
@@ -109,7 +109,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.InvalidatedBlock;
     }
   }
@@ -121,7 +121,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.UnderReplicatedBlock;
     }
   }
@@ -133,7 +133,7 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    final Type getType() {
       return Type.PendingBlock;
     }
   }

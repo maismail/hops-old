@@ -20,21 +20,20 @@ package se.sics.hop.transaction.lock;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
-import se.sics.hop.transaction.EntityManager;
 
 import java.io.IOException;
 import java.util.List;
 
-public class HopQuotaUpdateLock extends HopsLock {
+public class HopsQuotaUpdateLock extends HopsLock {
   private final String[] targets;
   private final boolean includeChildren;
 
-  public HopQuotaUpdateLock(boolean includeChildren, String... targets) {
+  public HopsQuotaUpdateLock(boolean includeChildren, String... targets) {
     this.includeChildren = includeChildren;
     this.targets = targets;
   }
 
-  public HopQuotaUpdateLock(String... paths) {
+  public HopsQuotaUpdateLock(String... paths) {
     this(false, paths);
   }
 
@@ -55,12 +54,13 @@ public class HopQuotaUpdateLock extends HopsLock {
     }
   }
 
-  private void acquireQuotaUpdate(INode node) throws PersistanceException {
-    EntityManager.findList(QuotaUpdate.Finder.ByInodeId, node.getId());
+  private void acquireQuotaUpdate(INode iNode) throws PersistanceException {
+    acquireLockList(DEFAULT_LOCK_TYPE, QuotaUpdate.Finder.ByInodeId,
+        iNode.getId());
   }
 
   @Override
-  Type getType() {
+  final Type getType() {
     return Type.QuotaUpdate;
   }
 }

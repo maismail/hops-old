@@ -95,12 +95,6 @@ public class ErasureCodingTransactionLockAcquirer extends HDFSTransactionLockAcq
         acquireLock(locks.getBlockChecksumLockByKeyTuple(), BlockChecksum.Finder.ByKeyTuple, key);
       }
     }
-    if (locks.getBlockChecksumLockOnTargets() != null) {
-      for (LinkedList<INode> path : allResolvedINodes) {
-        INode target = path.getLast();
-        acquireLockList(locks.getBlockChecksumLockOnTargets(), BlockChecksum.Finder.ByInodeId, target.getId());
-      }
-    }
   }
 
   @Override

@@ -73,7 +73,7 @@ public class HopsLeaseLock extends HopsLock {
   }
 
   @Override
-  Type getType() {
+  final Type getType() {
     return Type.Lease;
   }
 }

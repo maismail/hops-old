@@ -49,7 +49,7 @@ public class HopsVariablesLock extends HopsLock {
   }
 
   @Override
-  Type getType() {
+  final Type getType() {
     return Type.Variable;
   }
 }
