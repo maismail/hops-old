@@ -22,10 +22,10 @@ import se.sics.hop.erasure_coding.EncodingStatus;
 
 import java.io.IOException;
 
-public abstract class HopsBaseEncodingStatusLock extends HopsLock {
+abstract class HopsBaseEncodingStatusLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
 
-  public HopsBaseEncodingStatusLock(
+  protected HopsBaseEncodingStatusLock(
       TransactionLockTypes.LockType lockType) {
     this.lockType = lockType;
   }
@@ -39,11 +39,11 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
     return Type.EncodingStatus;
   }
 
-  public static class HopsEncodingStatusLock extends
+  final static class HopsEncodingStatusLock extends
       HopsBaseEncodingStatusLock {
     private final String[] targets;
 
-    public HopsEncodingStatusLock(TransactionLockTypes.LockType lockType,
+    HopsEncodingStatusLock(TransactionLockTypes.LockType lockType,
         String... targets) {
       super(lockType);
       this.targets = targets;
@@ -59,11 +59,11 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
     }
   }
 
-  public static class HopsIndividualEncodingStatusLock extends
+  final static class HopsIndividualEncodingStatusLock extends
       HopsBaseEncodingStatusLock {
     private final int inodeId;
 
-    public HopsIndividualEncodingStatusLock(TransactionLockTypes.LockType
+    HopsIndividualEncodingStatusLock(TransactionLockTypes.LockType
         lockType, int inodeId) {
       super(lockType);
       this.inodeId = inodeId;

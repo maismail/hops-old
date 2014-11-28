@@ -24,15 +24,15 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HopsVariablesLock extends HopsLock {
+final class HopsVariablesLock extends HopsLock {
 
   private final Map<HopVariable.Finder, TransactionLockTypes.LockType> variables;
 
-  public HopsVariablesLock() {
+  HopsVariablesLock() {
     this.variables = new EnumMap<HopVariable.Finder, TransactionLockTypes.LockType>(HopVariable.Finder.class);
   }
 
-  public HopsVariablesLock addVariable(HopVariable.Finder variableType, TransactionLockTypes.LockType lockType) {
+  HopsVariablesLock addVariable(HopVariable.Finder variableType, TransactionLockTypes.LockType lockType) {
     this.variables.put(variableType, lockType);
     return this;
   }

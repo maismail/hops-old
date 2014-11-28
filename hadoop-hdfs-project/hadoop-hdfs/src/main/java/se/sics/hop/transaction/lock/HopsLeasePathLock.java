@@ -27,19 +27,19 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HopsLeasePathLock extends HopsLock {
+final class HopsLeasePathLock extends HopsLock {
 
   private final TransactionLockTypes.LockType lockType;
   private final List<HopLeasePath> leasePaths;
   private final int expectedCount;
 
-  public HopsLeasePathLock(TransactionLockTypes.LockType lockType, int expectedCount) {
+  HopsLeasePathLock(TransactionLockTypes.LockType lockType, int expectedCount) {
     this.lockType = lockType;
     this.leasePaths = new ArrayList<HopLeasePath>();
     this.expectedCount = expectedCount;
   }
 
-  public HopsLeasePathLock(TransactionLockTypes.LockType lockType) {
+  HopsLeasePathLock(TransactionLockTypes.LockType lockType) {
     this(lockType, Integer.MAX_VALUE);
   }
 

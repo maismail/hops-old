@@ -35,13 +35,13 @@ import se.sics.hop.transaction.EntityManager;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public abstract class HopsBaseINodeLock extends HopsLock {
+abstract class HopsBaseINodeLock extends HopsLock {
   protected final static Log LOG = LogFactory.getLog(HopsBaseINodeLock.class);
 
   private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
   private final ResolvedINodesMap resolvedINodesMap;
 
-  public HopsBaseINodeLock() {
+  protected HopsBaseINodeLock() {
     this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
     this.resolvedINodesMap = new ResolvedINodesMap();
   }

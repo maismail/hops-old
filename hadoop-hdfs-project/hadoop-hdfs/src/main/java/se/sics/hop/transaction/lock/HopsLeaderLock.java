@@ -24,10 +24,10 @@ import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import se.sics.hop.transaction.EntityManager;
 
-public class HopsLeaderLock extends HopsLock {
+final class HopsLeaderLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
 
-  public HopsLeaderLock(TransactionLockTypes.LockType lockType) {
+  HopsLeaderLock(TransactionLockTypes.LockType lockType) {
     this.lockType = lockType;
   }
 

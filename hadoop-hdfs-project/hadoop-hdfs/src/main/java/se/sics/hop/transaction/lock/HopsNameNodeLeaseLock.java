@@ -27,12 +27,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.SortedSet;
 
-public class HopsNameNodeLeaseLock extends HopsLock {
+final class HopsNameNodeLeaseLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
   private final SortedSet<String> paths;
   private Lease nameNodeLease;
 
-  public HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType,
+  HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType,
       SortedSet<String> paths) {
     this.lockType = lockType;
     this.paths = paths;

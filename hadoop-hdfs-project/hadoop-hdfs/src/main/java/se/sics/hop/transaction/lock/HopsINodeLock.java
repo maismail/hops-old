@@ -41,7 +41,7 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsINodeLock extends HopsBaseINodeLock {
+final class HopsINodeLock extends HopsBaseINodeLock {
 
   private static INodeLockType defaultINodeLockType = INodeLockType.READ_COMMITTED;
 
@@ -58,7 +58,7 @@ public class HopsINodeLock extends HopsBaseINodeLock {
   private final long namenodeId;
 
 
-  public HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId, List<ActiveNamenode> activeNamenodes, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId, List<ActiveNamenode> activeNamenodes, String... paths) {
     super();
     this.lockType = lockType;
     this.resolveType = resolveType;
@@ -76,7 +76,7 @@ public class HopsINodeLock extends HopsBaseINodeLock {
     this.paths = paths;
   }
 
-  public HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, String... paths) {
     this(lockType, resolveType, resolveLink, false, -1, null, paths);
   }
 

@@ -23,11 +23,11 @@ import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 
 import java.io.IOException;
 
-public class HopsBlockChecksumLock extends HopsLock {
+class HopsBlockChecksumLock extends HopsLock {
   private final String target;
   private final int blockIndex;
 
-  public HopsBlockChecksumLock(String target, int blockIndex) {
+  HopsBlockChecksumLock(String target, int blockIndex) {
     this.target = target;
     this.blockIndex = blockIndex;
   }

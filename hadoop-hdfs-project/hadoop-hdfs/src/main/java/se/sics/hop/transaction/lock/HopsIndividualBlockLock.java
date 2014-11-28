@@ -25,12 +25,12 @@ import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HopsIndividualBlockLock extends HopsBlockLock {
+final class HopsIndividualBlockLock extends HopsBlockLock {
 
   private final long blockId;
   private final int inodeId;
 
-  public HopsIndividualBlockLock(long blockId, INodeIdentifier inode) {
+  HopsIndividualBlockLock(long blockId, INodeIdentifier inode) {
     this.blockId = blockId;
     this.inodeId = inode == null ? INode.NON_EXISTING_ID : inode.getInodeId();
   }

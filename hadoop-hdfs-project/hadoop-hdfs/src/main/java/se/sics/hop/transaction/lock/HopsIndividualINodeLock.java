@@ -31,13 +31,13 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.*;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsIndividualINodeLock extends HopsBaseINodeLock {
+final class HopsIndividualINodeLock extends HopsBaseINodeLock {
 
   private final INodeLockType lockType;
   private final INodeIdentifier inodeIdentifier;
   private final boolean readUpPathInodes;
 
-  public HopsIndividualINodeLock(INodeLockType lockType, INodeIdentifier inodeIdentifier, boolean readUpPathInodes) {
+  HopsIndividualINodeLock(INodeLockType lockType, INodeIdentifier inodeIdentifier, boolean readUpPathInodes) {
     this.lockType = lockType;
     this.inodeIdentifier = inodeIdentifier;
     this.readUpPathInodes = readUpPathInodes;
@@ -46,7 +46,7 @@ public class HopsIndividualINodeLock extends HopsBaseINodeLock {
     }
   }
 
-  public HopsIndividualINodeLock(INodeLockType lockType, INodeIdentifier inodeIdentifier) {
+  HopsIndividualINodeLock(INodeLockType lockType, INodeIdentifier inodeIdentifier) {
     this(lockType, inodeIdentifier, false);
   }
 

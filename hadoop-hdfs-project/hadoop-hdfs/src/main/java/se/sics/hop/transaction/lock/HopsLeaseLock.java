@@ -29,19 +29,19 @@ import org.apache.hadoop.hdfs.server.namenode.Lease;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HopsLeaseLock extends HopsLock {
+final class HopsLeaseLock extends HopsLock {
 
   private final TransactionLockTypes.LockType lockType;
   private final String leaseHolder;
   private final List<Lease> leases;
 
-  public HopsLeaseLock(TransactionLockTypes.LockType lockType, String leaseHolder) {
+  HopsLeaseLock(TransactionLockTypes.LockType lockType, String leaseHolder) {
     this.lockType = lockType;
     this.leaseHolder = leaseHolder;
     this.leases = new ArrayList<Lease>();
   }
 
-  public HopsLeaseLock(TransactionLockTypes.LockType lockType) {
+  HopsLeaseLock(TransactionLockTypes.LockType lockType) {
     this(lockType, null);
   }
 

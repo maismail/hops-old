@@ -31,12 +31,12 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public abstract class HopsBlockRelatedLock extends HopsLock {
+abstract class HopsBlockRelatedLock extends HopsLock {
 
   private final boolean isList;
   private final FinderType finderType;
 
-  public HopsBlockRelatedLock(boolean isList, FinderType finderType) {
+  protected HopsBlockRelatedLock(boolean isList, FinderType finderType) {
     this.isList = isList;
     this.finderType = finderType;
   }
@@ -54,9 +54,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsReplicaLock extends HopsBlockRelatedLock {
+  final static class HopsReplicaLock extends HopsBlockRelatedLock {
 
-    public HopsReplicaLock() {
+    HopsReplicaLock() {
       super(true, HopIndexedReplica.Finder.ByBlockId);
     }
 
@@ -66,9 +66,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsCorruptReplicaLock extends HopsBlockRelatedLock {
+  final static class HopsCorruptReplicaLock extends HopsBlockRelatedLock {
 
-    public HopsCorruptReplicaLock() {
+    HopsCorruptReplicaLock() {
       super(true, HopCorruptReplica.Finder.ByBlockId);
     }
 
@@ -78,9 +78,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsExcessReplicaLock extends HopsBlockRelatedLock {
+  final static class HopsExcessReplicaLock extends HopsBlockRelatedLock {
 
-    public HopsExcessReplicaLock() {
+    HopsExcessReplicaLock() {
       super(true, HopExcessReplica.Finder.ByBlockId);
     }
 
@@ -90,9 +90,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsReplicatUnderConstructionLock extends HopsBlockRelatedLock {
+  final static class HopsReplicatUnderConstructionLock extends HopsBlockRelatedLock {
 
-    public HopsReplicatUnderConstructionLock() {
+    HopsReplicatUnderConstructionLock() {
       super(true, ReplicaUnderConstruction.Finder.ByBlockId);
     }
 
@@ -102,9 +102,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsInvalidatedBlockLock extends HopsBlockRelatedLock {
+  final static class HopsInvalidatedBlockLock extends HopsBlockRelatedLock {
 
-    public HopsInvalidatedBlockLock() {
+    HopsInvalidatedBlockLock() {
       super(true, HopInvalidatedBlock.Finder.ByBlockId);
     }
 
@@ -114,9 +114,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsUnderReplicatedBlockLock extends HopsBlockRelatedLock {
+  final static class HopsUnderReplicatedBlockLock extends HopsBlockRelatedLock {
 
-    public HopsUnderReplicatedBlockLock() {
+    HopsUnderReplicatedBlockLock() {
       super(false, HopUnderReplicatedBlock.Finder.ByBlockId);
     }
 
@@ -126,9 +126,9 @@ public abstract class HopsBlockRelatedLock extends HopsLock {
     }
   }
 
-  public final static class HopsPendingBlockLock extends HopsBlockRelatedLock {
+  final static class HopsPendingBlockLock extends HopsBlockRelatedLock {
 
-    public HopsPendingBlockLock() {
+    HopsPendingBlockLock() {
       super(false, PendingBlockInfo.Finder.ByBlockId);
     }
 

@@ -24,16 +24,16 @@ import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 import java.io.IOException;
 import java.util.List;
 
-public class HopsQuotaUpdateLock extends HopsLock {
+final class HopsQuotaUpdateLock extends HopsLock {
   private final String[] targets;
   private final boolean includeChildren;
 
-  public HopsQuotaUpdateLock(boolean includeChildren, String... targets) {
+  HopsQuotaUpdateLock(boolean includeChildren, String... targets) {
     this.includeChildren = includeChildren;
     this.targets = targets;
   }
 
-  public HopsQuotaUpdateLock(String... paths) {
+  HopsQuotaUpdateLock(String... paths) {
     this(false, paths);
   }
 

@@ -27,11 +27,11 @@ import org.apache.hadoop.hdfs.server.namenode.INodeFile;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public class HopsBlockLock extends HopsLock {
+class HopsBlockLock extends HopsLock {
 
   protected final List<BlockInfo> blocks;
 
-  public HopsBlockLock() {
+  HopsBlockLock() {
     this.blocks = new ArrayList<BlockInfo>();
   }
 
