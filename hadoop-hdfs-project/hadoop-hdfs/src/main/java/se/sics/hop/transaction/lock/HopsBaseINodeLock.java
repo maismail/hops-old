@@ -36,9 +36,7 @@ import se.sics.hop.transaction.EntityManager;
  * @author Mahmoud Ismail <maism@sics.se>
  */
 public abstract class HopsBaseINodeLock extends HopsLock {
-
   protected final static Log LOG = LogFactory.getLog(HopsBaseINodeLock.class);
-  private static boolean setPartitionKeyEnabled = false;
 
   private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
   private final ResolvedINodesMap resolvedINodesMap;
@@ -134,14 +132,6 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     return resolvedINodesMap.getChildINodes(path);
   }
 
-  public static void enableSetPartitionKey() {
-    setPartitionKeyEnabled = true;
-  }
-
-  public static void disableSetPartitionKey() {
-    setPartitionKeyEnabled = false;
-  }
-
   public TransactionLockTypes.INodeLockType getLockedINodeLockType(INode inode) {
     return allLockedInodesInTx.get(inode);
   }
@@ -209,7 +199,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   }
 
   protected void setPartitioningKey(Integer inodeId) throws StorageException {
-    if (inodeId == null || !setPartitionKeyEnabled) {
+    if (inodeId == null || !isSetPartitionKeyEnabled()) {
       LOG.warn("Transaction Partition Key is not Set");
     } else {
       //set partitioning key
