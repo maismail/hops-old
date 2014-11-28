@@ -23,6 +23,16 @@ import se.sics.hop.erasure_coding.EncodingStatus;
 import java.io.IOException;
 
 public abstract class HopsBaseEncodingStatusLock extends HopsLock {
+  private final TransactionLockTypes.LockType lockType;
+
+  public HopsBaseEncodingStatusLock(
+      TransactionLockTypes.LockType lockType) {
+    this.lockType = lockType;
+  }
+
+  public TransactionLockTypes.LockType getLockType() {
+    return lockType;
+  }
 
   @Override
   final Type getType() {
@@ -33,7 +43,9 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
       HopsBaseEncodingStatusLock {
     private final String[] targets;
 
-    public HopsEncodingStatusLock(String... targets) {
+    public HopsEncodingStatusLock(TransactionLockTypes.LockType lockType,
+        String... targets) {
+      super(lockType);
       this.targets = targets;
     }
 
@@ -42,7 +54,7 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
       HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
       for (String target : targets) {
         INode iNode = iNodeLock.getTargetINodes(target);
-        acquireLock(DEFAULT_LOCK_TYPE, EncodingStatus.Finder.ByInodeId, iNode.getId());
+        acquireLock(getLockType(), EncodingStatus.Finder.ByInodeId, iNode.getId());
       }
     }
   }
@@ -51,7 +63,9 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
       HopsBaseEncodingStatusLock {
     private final int inodeId;
 
-    public HopsIndividualEncodingStatusLock(int inodeId) {
+    public HopsIndividualEncodingStatusLock(TransactionLockTypes.LockType
+        lockType, int inodeId) {
+      super(lockType);
       this.inodeId = inodeId;
     }
 
@@ -59,14 +73,14 @@ public abstract class HopsBaseEncodingStatusLock extends HopsLock {
     void acquire(TransactionLocks locks) throws IOException {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
-      EncodingStatus status = acquireLock(DEFAULT_LOCK_TYPE,
+      EncodingStatus status = acquireLock(getLockType(),
           EncodingStatus.Finder.ByInodeId, inodeId);
       if (status != null) {
         // It's a source file
         return;
       }
       // It's a parity file
-      acquireLock(DEFAULT_LOCK_TYPE, EncodingStatus.Finder.ByParityInodeId, inodeId);
+      acquireLock(getLockType(), EncodingStatus.Finder.ByParityInodeId, inodeId);
     }
   }
 }
