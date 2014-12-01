@@ -176,6 +176,11 @@ public class HopsLockFactory {
     return new HopsINodeLock(lockType, resolveType, resolveLink, paths);
   }
 
+  public HopsLock getINodeLock(TransactionLockTypes.INodeLockType lockType,
+      TransactionLockTypes.INodeResolveType resolveType, String... paths) {
+    return new HopsINodeLock(lockType, resolveType, paths);
+  }
+
   public HopsLock getRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
           TransactionLockTypes.INodeResolveType resolveType,
           boolean ignoreLocalSubtreeLocks, long namenodeId,

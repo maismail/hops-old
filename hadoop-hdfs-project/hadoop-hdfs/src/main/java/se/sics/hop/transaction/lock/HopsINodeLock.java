@@ -70,6 +70,11 @@ class HopsINodeLock extends HopsBaseINodeLock {
     this(lockType, resolveType, resolveLink, false, -1, null, paths);
   }
 
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
+      String... paths) {
+    this(lockType, resolveType, true, false, -1, null, paths);
+  }
+
   @Override
   void acquire(TransactionLocks locks) throws Exception {
     setPartitionKey();
