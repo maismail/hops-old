@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.sics.hop.transaction.handler;
+package se.sics.hop.transaction.lock;
 
 import java.io.IOException;
 import java.util.List;
@@ -26,10 +26,6 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
-import se.sics.hop.transaction.lock.HopsIndividualBlockLock;
-import se.sics.hop.transaction.lock.HopsIndividualINodeLock;
-import se.sics.hop.transaction.lock.HopsINodeLock;
-import se.sics.hop.transaction.lock.HopsLeaseLock;
 import se.sics.hop.transaction.lock.HopsLock;
 import se.sics.hop.transaction.lock.HopsTransactionLocks;
 import se.sics.hop.transaction.lock.TransactionLockTypes.*;
@@ -63,7 +59,7 @@ public class TestHopsTransactionalLockAcquirer extends TestCase{
     HopsTransactionalRequestHandler handler = new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
-        locks.addLock(new HopsINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, true, "/f1/f2/test.txt"));
+        locks.add(new HopsINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, true, "/f1/f2/test.txt"));
       }
       
       @Override

@@ -15,36 +15,23 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
- * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
+abstract class HopsLockWithType extends HopsLock{
+  private final Type type;
+  protected final FinderType finder;
 
-  private final HopsTransactionLocks locks;
-
-  public HopsTransactionalLockAcquirer() {
-    locks = new HopsTransactionLocks();
+   HopsLockWithType(Type type, FinderType finder) {
+    this.type = type;
+    this.finder = finder;
   }
 
   @Override
-  public void addLock(HopsLock lock) {
-    locks.add(lock);
-  }
-
-  @Override
-  public void acquire() throws Exception {
-    for (HopsLock lock : locks.getSortedLocks()) {
-      lock.acquire(locks);
-    }
-  }
-
-  @Override
-  public TransactionLocks getLocks() {
-    return locks;
+  final Type getType() {
+    return type;
   }
 }

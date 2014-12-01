@@ -102,12 +102,6 @@ import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.metadata.lock.*;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
-import se.sics.hop.transaction.lock.HopsQuotaUpdateLock;
-import se.sics.hop.transaction.lock.HopsBlockLock;
-import se.sics.hop.transaction.lock.HopsBlockRelatedLock;
-import se.sics.hop.transaction.lock.HopsINodeLock;
-import se.sics.hop.transaction.lock.HopsLeaseLock;
-import se.sics.hop.transaction.lock.HopsLeasePathLock;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
@@ -133,6 +127,7 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 import static org.apache.hadoop.util.Time.now;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -1908,7 +1903,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       final short replication, final long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
       FileNotFoundException, ParentNotDirectoryException, IOException {
-//      final boolean resolveLink = false;
+      final boolean resolveLink = false;
 //      HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
 //          @Override
 //          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
@@ -1947,37 +1942,35 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //          }
 //      };
 //      startFileHanlder.handle(this);
-    new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE) {
+      
+    new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
       @Override
-      public void acquireLock(TransactionLocks locks)
-          throws IOException, ExecutionException {
-        locks.addLock(new HopsINodeLock(
-                INodeLockType.WRITE_ON_PARENT,
-                INodeResolveType.PATH,
-                false,
-                src))
-            .addLock(new HopsLeaseLock(LockType.WRITE, holder))
-            .addLock(new HopsLeasePathLock(LockType.WRITE))
-            .addLock(new HopsBlockLock())
-            .addLock(new HopsBlockRelatedLock.HopsReplicaLock())
-            .addLock(new HopsBlockRelatedLock.HopsCorruptReplicaLock())
-            .addLock(new HopsBlockRelatedLock.HopsExcessReplicaLock())
-            .addLock(new HopsBlockRelatedLock.HopsReplicatUnderConstructionLock())
-            .addLock(new HopsBlockRelatedLock.HopsUnderReplicatedBlockLock())
-            .addLock(new HopsBlockRelatedLock.HopsPendingBlockLock())
-            .addLock(new HopsBlockRelatedLock.HopsInvalidatedBlockLock());
+      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT, INodeResolveType.PATH, resolveLink, src))
+                .add(lf.getBlockRelatedLocks()).add(lf.getLeaseLock(LockType.WRITE, holder))
+                .add(lf.getLeasePathLock(LockType.WRITE));
+        if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
+          locks.add(lf.getQuotaUpdateLock(src));
+        }
         if (flag.contains(CreateFlag.OVERWRITE)) {
-          if (dir.isQuotaEnabled()) {
-            locks.addLock(new HopsQuotaUpdateLock(src));
-          }
+          locks.add(lf.getEncodingStatusLock(LockType.WRITE, src));
         }
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        return null;
+        try {
+          startFileInt(src, permissions, holder, clientMachine, flag, createParent,
+                  replication, blockSize);
+          return null;
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "create", src);
+          throw e;
+        }
       }
     }.handle(this);
+      
   }
 
   private void startFileInt(String src, PermissionStatus permissions, String holder,

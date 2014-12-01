@@ -15,30 +15,26 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-abstract class HopsBlockRelatedLock extends HopsLock {
+final class HopsBlockRelatedLock extends HopsLockWithType {
 
   private final boolean isList;
-  private final FinderType finderType;
 
-  protected HopsBlockRelatedLock(boolean isList, FinderType finderType) {
+  HopsBlockRelatedLock(boolean isList, FinderType finderType, Type type) {
+    super(type, finderType);
     this.isList = isList;
-    this.finderType = finderType;
+  }
+  
+   HopsBlockRelatedLock(FinderType finderType, Type type) {
+    super(type, finderType);
+    this.isList = true;
   }
 
   @Override
@@ -47,14 +43,14 @@ abstract class HopsBlockRelatedLock extends HopsLock {
 
     for (BlockInfo blk : blockLock.getBlocks()) {
       if (isList) {
-        acquireLockList(DEFAULT_LOCK_TYPE, finderType, blk.getBlockId(), blk.getInodeId());
+        acquireLockList(DEFAULT_LOCK_TYPE, finder, blk.getBlockId(), blk.getInodeId());
       } else {
-        acquireLock(DEFAULT_LOCK_TYPE, finderType, blk.getBlockId(), blk.getInodeId());
+        acquireLock(DEFAULT_LOCK_TYPE, finder, blk.getBlockId(), blk.getInodeId());
       }
     }
   }
 
-  final static class HopsReplicaLock extends HopsBlockRelatedLock {
+  /*final static class HopsReplicaLock extends HopsBlockRelatedLock {
 
     HopsReplicaLock() {
       super(true, HopIndexedReplica.Finder.ByBlockId);
@@ -136,5 +132,5 @@ abstract class HopsBlockRelatedLock extends HopsLock {
     final Type getType() {
       return Type.PendingBlock;
     }
-  }
+  }*/
 }

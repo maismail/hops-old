@@ -15,36 +15,23 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
- * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
-
-  private final HopsTransactionLocks locks;
-
-  public HopsTransactionalLockAcquirer() {
-    locks = new HopsTransactionLocks();
-  }
+final class HopsSqlBatchedBlocksLock extends HopsBlockLock{
 
   @Override
-  public void addLock(HopsLock lock) {
-    locks.add(lock);
-  }
-
-  @Override
-  public void acquire() throws Exception {
-    for (HopsLock lock : locks.getSortedLocks()) {
-      lock.acquire(locks);
+  void acquire(TransactionLocks locks) throws Exception {
+    HopsLock inodeLock = locks.getLock(Type.INode);
+    if(inodeLock instanceof HopsBatchedINodeLock){
+      int[] inodeIds = ((HopsBatchedINodeLock)inodeLock).getINodeIds();
+      blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByInodeIds, inodeIds));
+    }else{
+      throw new TransactionLocks.LockNotAddedException("HopsBatchedINodeLock wasn't added");
     }
   }
 
-  @Override
-  public TransactionLocks getLocks() {
-    return locks;
-  }
 }

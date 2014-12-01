@@ -15,7 +15,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;

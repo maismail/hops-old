@@ -15,7 +15,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -41,18 +40,12 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-final class HopsINodeLock extends HopsBaseINodeLock {
-
-  private static INodeLockType defaultINodeLockType = INodeLockType.READ_COMMITTED;
-
-  public static void setDefaultLockType(INodeLockType defaultLockType) {
-    defaultINodeLockType = defaultLockType;
-  }
+class HopsINodeLock extends HopsBaseINodeLock {
   
   private final INodeLockType lockType;
   private final INodeResolveType resolveType;
   private final boolean resolveLink;
-  private final String[] paths;
+  protected final String[] paths;
   private final List<ActiveNamenode> activeNamenodes;
   private final boolean ignoreLocalSubtreeLocks;
   private final long namenodeId;
@@ -87,7 +80,7 @@ final class HopsINodeLock extends HopsBaseINodeLock {
     acquireINodeAttributes();
   }
   
-  private void acquireInodeLocks() throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
+  protected void acquireInodeLocks() throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
     switch (resolveType) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
@@ -144,7 +137,7 @@ final class HopsINodeLock extends HopsBaseINodeLock {
       } else if (lockType == INodeLockType.READ_COMMITTED) {
         curInodeLock = INodeLockType.READ_COMMITTED;
       } else {
-        curInodeLock = defaultINodeLockType;
+        curInodeLock = DEFAULT_INODE_LOCK_TYPE;
       }
       setINodeLockType(curInodeLock);
 
@@ -291,4 +284,9 @@ final class HopsINodeLock extends HopsBaseINodeLock {
     }
     acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByPKList, pks);
   }
+  
+  protected INode find(String name, int parentId) throws PersistanceException {
+    return find(lockType, name, parentId);
+  }
+  
 }

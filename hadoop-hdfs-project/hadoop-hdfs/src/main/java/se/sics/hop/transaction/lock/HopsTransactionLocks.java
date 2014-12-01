@@ -16,6 +16,7 @@
 package se.sics.hop.transaction.lock;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
@@ -35,7 +36,7 @@ public class HopsTransactionLocks implements TransactionLocks {
   }
   
   @Override
-  public TransactionLocks addLock(HopsLock lock){
+  public TransactionLocks add(HopsLock lock){
     if(locks.containsKey(lock.getType()))
       throw new IllegalArgumentException("The same lock cannot be added " +
           "twice!");
@@ -44,6 +45,14 @@ public class HopsTransactionLocks implements TransactionLocks {
     return this;
   }
 
+   @Override
+  public TransactionLocks add(Collection<HopsLock> locks) {
+    for(HopsLock lock : locks){
+      add(lock);
+    }
+    return this;
+  }
+   
   @Override
   public boolean containsLock(HopsLock.Type lock) {
     return locks.containsKey(lock);
@@ -63,4 +72,6 @@ public class HopsTransactionLocks implements TransactionLocks {
     Collections.sort(lks);
     return lks;
   }
+
+ 
 }

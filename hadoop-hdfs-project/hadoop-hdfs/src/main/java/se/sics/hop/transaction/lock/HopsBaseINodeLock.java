@@ -41,6 +41,12 @@ abstract class HopsBaseINodeLock extends HopsLock {
   private final Map<INode, TransactionLockTypes.INodeLockType> allLockedInodesInTx;
   private final ResolvedINodesMap resolvedINodesMap;
 
+  protected static TransactionLockTypes.INodeLockType DEFAULT_INODE_LOCK_TYPE = TransactionLockTypes.INodeLockType.READ_COMMITTED;
+
+  public static void setDefaultLockType(TransactionLockTypes.INodeLockType defaultLockType) {
+    DEFAULT_INODE_LOCK_TYPE = defaultLockType;
+  }
+    
   protected HopsBaseINodeLock() {
     this.allLockedInodesInTx = new HashMap<INode, TransactionLockTypes.INodeLockType>();
     this.resolvedINodesMap = new ResolvedINodesMap();
@@ -141,19 +147,6 @@ abstract class HopsBaseINodeLock extends HopsLock {
     INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId);
     addLockedINodes(inode, lock);
     return inode;
-  }
-
-  protected Collection<INode> find(
-          TransactionLockTypes.INodeLockType lock,
-          String[] names,
-          int[] parentIds)
-          throws PersistanceException {
-    setINodeLockType(lock);
-    Collection<INode> inodes = EntityManager.findList(INode.Finder.ByPKS, names, parentIds);
-    for (INode inode : inodes) {
-      addLockedINodes(inode, lock);
-    }
-    return inodes;
   }
 
   protected INode find(
