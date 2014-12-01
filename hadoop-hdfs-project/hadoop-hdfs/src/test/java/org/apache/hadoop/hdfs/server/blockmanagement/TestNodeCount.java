@@ -45,7 +45,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 
 /**
  * Test if live nodes count per node is correct 

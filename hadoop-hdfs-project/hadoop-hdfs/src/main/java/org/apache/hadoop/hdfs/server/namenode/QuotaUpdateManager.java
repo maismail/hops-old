@@ -12,7 +12,7 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.SubtreeLockHelper;
+import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;

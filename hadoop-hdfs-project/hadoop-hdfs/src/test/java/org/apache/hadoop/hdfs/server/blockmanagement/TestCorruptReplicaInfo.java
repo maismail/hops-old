@@ -46,7 +46,7 @@ import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 
 
 /**

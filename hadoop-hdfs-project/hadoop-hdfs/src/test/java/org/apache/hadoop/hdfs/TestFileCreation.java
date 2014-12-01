@@ -110,7 +110,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**

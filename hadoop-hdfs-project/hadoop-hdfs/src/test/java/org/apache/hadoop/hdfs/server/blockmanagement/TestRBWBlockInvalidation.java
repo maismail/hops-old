@@ -46,7 +46,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 
 /**
  * Test when RBW block is removed. Invalidation of the corrupted block happens

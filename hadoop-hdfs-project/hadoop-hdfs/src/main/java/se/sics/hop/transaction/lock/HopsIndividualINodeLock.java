@@ -23,7 +23,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.lock.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.*;
 
 /**

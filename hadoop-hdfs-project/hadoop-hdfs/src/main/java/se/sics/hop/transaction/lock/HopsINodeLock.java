@@ -29,9 +29,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.metadata.lock.INodeUtil;
-import se.sics.hop.metadata.lock.SubtreeLockHelper;
-import se.sics.hop.metadata.lock.SubtreeLockedException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 

@@ -10,7 +10,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.*;
 import org.apache.hadoop.ipc.RemoteException;
 import org.junit.Test;
-import se.sics.hop.metadata.lock.SubtreeLockedException;
+import se.sics.hop.transaction.lock.SubtreeLockedException;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;

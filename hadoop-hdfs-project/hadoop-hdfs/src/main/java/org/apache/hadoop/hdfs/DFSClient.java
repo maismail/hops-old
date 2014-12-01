@@ -169,7 +169,7 @@ import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.metadata.lock.SubtreeLockedException;
+import se.sics.hop.transaction.lock.SubtreeLockedException;
 
 /********************************************************
  * DFSClient can connect to a Hadoop Filesystem and 

@@ -16,6 +16,7 @@
 package se.sics.hop.metadata.lock;
 
 
+import se.sics.hop.transaction.lock.INodeUtil;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.LinkedList;

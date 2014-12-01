@@ -17,6 +17,9 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.transaction.lock.SubtreeLockedException;
+import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.HashMultimap;
@@ -99,7 +102,6 @@ import se.sics.hop.metadata.hdfs.dal.*;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
-import se.sics.hop.metadata.lock.*;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.*;
 import se.sics.hop.transaction.lock.TransactionLockTypes;

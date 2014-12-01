@@ -1,4 +1,4 @@
-package se.sics.hop.metadata.lock;
+package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;

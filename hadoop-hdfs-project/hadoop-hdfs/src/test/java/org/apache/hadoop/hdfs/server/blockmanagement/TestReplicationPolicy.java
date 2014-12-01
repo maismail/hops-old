@@ -65,7 +65,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 
 public class TestReplicationPolicy {
   private Random random = DFSUtil.getRandom();

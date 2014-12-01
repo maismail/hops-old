@@ -52,7 +52,7 @@ import se.sics.hop.metadata.blockmanagement.ExcessReplicasMap;
 import se.sics.hop.metadata.hdfs.dal.MisReplicatedRangeQueueDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.metadata.security.token.block.NameNodeBlockTokenSecretManager;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.HDFSOperationType;

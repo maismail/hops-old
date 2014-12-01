@@ -99,7 +99,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.lock.INodeUtil;
+import se.sics.hop.transaction.lock.INodeUtil;
 /** Utilities for HDFS tests */
 public class DFSTestUtil {
   static final Log LOG = LogFactory.getLog(DFSTestUtil.class);

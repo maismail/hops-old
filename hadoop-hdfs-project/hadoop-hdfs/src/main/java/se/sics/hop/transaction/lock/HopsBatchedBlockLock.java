@@ -17,7 +17,6 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.memcache.Pair;
-import se.sics.hop.metadata.lock.INodeUtil;
 import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
 
 /**
