@@ -21,7 +21,6 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 
-import java.io.IOException;
 import java.util.List;
 
 final class HopsQuotaUpdateLock extends HopsLock {

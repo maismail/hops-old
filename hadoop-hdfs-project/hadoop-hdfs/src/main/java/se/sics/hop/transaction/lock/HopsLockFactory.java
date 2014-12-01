@@ -189,8 +189,7 @@ public class HopsLockFactory {
   }
 
   public HopsLock getRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
-          TransactionLockTypes.INodeResolveType resolveType, boolean resolveLink,
-          String src, String dst) {
+      TransactionLockTypes.INodeResolveType resolveType, String src, String dst) {
     return new HopsRenameINodeLock(lockType, resolveType, src, dst);
   }
 
@@ -202,8 +201,7 @@ public class HopsLockFactory {
   }
 
   public HopsLock getLegacyRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
-          TransactionLockTypes.INodeResolveType resolveType, boolean resolveLink,
-          String src, String dst) {
+          TransactionLockTypes.INodeResolveType resolveType, String src, String dst) {
     return new HopsRenameINodeLock(lockType, resolveType, src, dst, true);
   }
 

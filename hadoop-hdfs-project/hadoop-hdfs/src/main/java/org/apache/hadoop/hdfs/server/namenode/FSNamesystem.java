@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.transaction.lock.HopsLock;
 import se.sics.hop.transaction.lock.SubtreeLockedException;
 import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.transaction.lock.SubtreeLockHelper;
@@ -108,7 +109,6 @@ import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import javax.management.NotCompliantMBeanException;
@@ -129,6 +129,7 @@ import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 import static org.apache.hadoop.util.Time.now;
+
 import se.sics.hop.transaction.lock.HopsLockFactory;
 
 /***************************************************
@@ -432,7 +433,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Note that this does not load any data off of disk -- if you would
    * like that behavior, use {@link #loadFromDisk(Configuration)}
 
-   * @param fnImage The FSImage to associate with
    * @param conf configuration
    * @throws IOException on bad configuration
    */
@@ -1077,21 +1077,22 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Dump all metadata into specified file
    */
   void metaSave(final String filename) throws IOException {
-
-    HDFSTransactionalRequestHandler metaSaveHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.META_SAVE) {
+    // FIXME operation not supported yet
+    new HopsTransactionalRequestHandler(HDFSOperationType.META_SAVE) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        throw new UnsupportedOperationException("Not supported yet.");
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         checkSuperuserPrivilege();
         writeLock();
         try {
           File file = new File(System.getProperty("hadoop.log.dir"), filename);
           PrintWriter out = new PrintWriter(new BufferedWriter(
-                  new OutputStreamWriter(new FileOutputStream(file, true), Charsets.UTF_8)));
+              new OutputStreamWriter(new FileOutputStream(file, true),
+                  Charsets.UTF_8)));
           metaSave(out);
           out.flush();
           out.close();
@@ -1100,8 +1101,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
         return null;
       }
-    };
-    metaSaveHanlder.handle(this);
+    }.handle(this);
   }
 
   private void metaSave(PrintWriter out) throws  IOException, PersistanceException {
@@ -1152,14 +1152,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   void setPermission(final String src, final FsPermission permission)
           throws AccessControlException, FileNotFoundException, SafeModeException,
           UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler setPermissionHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_PERMISSION, src) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.SET_PERMISSION, src) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src))
+            .add(lf.getBlockLock());
       }
 
       @Override
@@ -1172,8 +1170,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
         return null;
       }
-    };
-    setPermissionHandler.handle(this);
+    }.handle(this);
   }
 
   private void setPermissionInt(String src, FsPermission permission)
@@ -1203,16 +1200,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @throws IOException
    */
   void setOwner(final String src, final String username, final String group)
-          throws AccessControlException, FileNotFoundException, SafeModeException,
-          UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler setOwnerHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_OWNER, src) {
+      throws AccessControlException, FileNotFoundException, SafeModeException,
+      UnresolvedLinkException, IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.SET_OWNER, src) {
+
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(
+            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src))
+            .add(lf.getBlockLock());
       }
 
       @Override
@@ -1225,8 +1222,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
         return null;
       }
-    };
-    setOwnerHandler.handle(this);
+    }.handle(this);
   }
 
   private void setOwnerInt(String src, String username, String group)
@@ -1264,41 +1260,41 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#getBlockLocations(String, long, long)
    */
   LocatedBlocks getBlockLocations(final String clientMachine, final String src,
-          final long offset, final long length) throws AccessControlException,
-          FileNotFoundException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}). /*taking write lock because of access time*/
-                addBlock().
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addReplicaUc();
-        return tla.acquire();
-      }
+      final long offset, final long length) throws IOException {
+    HopsTransactionalRequestHandler getBlockLocationsHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE,
+                INodeResolveType.PATH, src))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(
+                    HopsLockFactory.BLK.RE, HopsLockFactory.BLK.ER, HopsLockFactory.BLK.CR, HopsLockFactory.BLK.UC));
+          }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        LocatedBlocks blocks = getBlockLocationsInternal(src, offset, length, true, true,
-                true);
-        if (blocks != null) {
-          blockManager.getDatanodeManager().sortLocatedBlocks(
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            LocatedBlocks blocks =
+                getBlockLocationsInternal(src, offset, length, true, true,
+                    true);
+            if (blocks != null) {
+              blockManager.getDatanodeManager().sortLocatedBlocks(
                   clientMachine, blocks.getLocatedBlocks());
 
-          LocatedBlock lastBlock = blocks.getLastLocatedBlock();
-          if (lastBlock != null) {
-            ArrayList<LocatedBlock> lastBlockList = new ArrayList<LocatedBlock>();
-            lastBlockList.add(lastBlock);
-            blockManager.getDatanodeManager().sortLocatedBlocks(
+              LocatedBlock lastBlock = blocks.getLastLocatedBlock();
+              if (lastBlock != null) {
+                ArrayList<LocatedBlock> lastBlockList =
+                    new ArrayList<LocatedBlock>();
+                lastBlockList.add(lastBlock);
+                blockManager.getDatanodeManager().sortLocatedBlocks(
                     clientMachine, lastBlockList);
+              }
+            }
+            return blocks;
           }
-        }
-        return blocks;
-      }
-    };
+        };
     return (LocatedBlocks) getBlockLocationsHandler.handle(this);
   }
 
@@ -1307,28 +1303,32 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @see ClientProtocol#getBlockLocations(String, long, long)
    * @throws FileNotFoundException, UnresolvedLinkException, IOException
    */
-  public LocatedBlocks getBlockLocations(final String src, final long offset, final long length,
-      final boolean doAccessTime, final boolean needBlockToken, final boolean checkSafeMode)
-      throws FileNotFoundException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler getBlockLocationsHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
-                addBlock().
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addReplicaUc();
-        return tla.acquire();
-      }
+  public LocatedBlocks getBlockLocations(final String src, final long offset,
+      final long length,
+      final boolean doAccessTime, final boolean needBlockToken,
+      final boolean checkSafeMode)
+      throws IOException {
+    HopsTransactionalRequestHandler getBlockLocationsHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.READ,
+                INodeResolveType.PATH, src))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(
+                    HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.ER, HopsLockFactory.BLK.CR,
+                    HopsLockFactory.BLK.UC));
+          }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return getBlockLocationsInternal(src, offset, length, doAccessTime, needBlockToken, checkSafeMode);
-      }
-    };
+          @Override
+          public Object performTask() throws IOException {
+            return getBlockLocationsInternal(src, offset, length, doAccessTime,
+                needBlockToken, checkSafeMode);
+          }
+        };
     return (LocatedBlocks) getBlockLocationsHandler.handle(this);
   }
   
@@ -1450,25 +1450,26 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @param srcs
    * @throws IOException
    */
-  void concat(final String target, final String[] srcs)
-          throws IOException, UnresolvedLinkException {
-    HDFSTransactionalRequestHandler concatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CONCAT) {
+  void concat(final String target, final String[] srcs) throws IOException {
+    final String[] paths = new String[srcs.length + 1];
+    System.arraycopy(srcs, 0, paths, 0, srcs.length);
+    paths[srcs.length] = target;
+
+    new HopsTransactionalRequestHandler(HDFSOperationType.CONCAT) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        String[] paths = new String[srcs.length + 1];
-        System.arraycopy(srcs, 0, paths, 0, srcs.length);
-        paths[srcs.length] = target;
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, paths).
-                addBlock().
-                // These are added
-                addReplica().addReplicaUc().addCorrupt().addExcess().addPendingBlock().addUnderReplicatedBlock().addInvalidatedBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            INodeResolveType.PATH, paths))
+            .add(lf.getBlockLock())
+            .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                HopsLockFactory.BLK.PE, HopsLockFactory.BLK.UC,
+                HopsLockFactory.BLK.IV));
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         try {
           concatInt(target, srcs);
         } catch (AccessControlException e) {
@@ -1477,8 +1478,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
         return null;
       }
-    };
-    concatHandler.handle(this);
+    }.handle(this);
   }
 
   private void concatInt(String target, String [] srcs) 
@@ -1633,30 +1633,28 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * The access time is precise upto an hour. The transaction, if needed, is
    * written to the edits log but is not flushed.
    */
-  void setTimes(final String src, final long mtime, final long atime) 
-      throws IOException, UnresolvedLinkException {
-    HDFSTransactionalRequestHandler setTimesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_TIMES, src) {
+  void setTimes(final String src, final long mtime, final long atime)
+      throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.SET_TIMES, src) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                addBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(INodeLockType.WRITE,
+            INodeResolveType.PATH, src))
+            .add(lf.getBlockLock());
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-    try {
-      setTimesInt(src, mtime, atime);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "setTimes", src);
-      throw e;
-    }
+        try {
+          setTimesInt(src, mtime, atime);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "setTimes", src);
+          throw e;
+        }
         return null;
       }
-    };
-    setTimesHandler.handle(this);
+    }.handle(this);
   }
 
   private void setTimesInt(String src, long mtime, long atime) 
@@ -1692,34 +1690,29 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Create a symbolic link.
    */
   void createSymlink(final String target, final String link,
-      final PermissionStatus dirPerms, final boolean createParent) 
-      throws IOException, UnresolvedLinkException {
-    final boolean resolveLink = false;
-    HDFSTransactionalRequestHandler createSymLinkHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.CREATE_SYM_LINK, link) {
+      final PermissionStatus dirPerms, final boolean createParent)
+      throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.CREATE_SYM_LINK,
+        link) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE, resolveLink, new String[]{link});
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(
+            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, false,
+                link));
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
-    try {
-      createSymlinkInt(target, link, dirPerms, createParent);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "createSymlink", link, target, null);
-      throw e;
-    }
+      public Object performTask() throws IOException {
+        try {
+          createSymlinkInt(target, link, dirPerms, createParent);
+        } catch (AccessControlException e) {
+          logAuditEvent(false, "createSymlink", link, target, null);
+          throw e;
+        }
         return null;
       }
-
-      @Override
-      public void setUp() throws UnresolvedPathException, PersistanceException {
-      }
-    };
-    createSymLinkHandler.handle(this);
+    }.handle(this);
   }
 
   private void createSymlinkInt(String target, String link,
@@ -1789,31 +1782,30 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean setReplication(final String src, final short replication)
       throws IOException {
-    HDFSTransactionalRequestHandler setReplicationHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.SET_REPLICATION, src) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
-                addBlock().
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock().
-                addInvalidatedBlock();
-        return tla.acquire();
-      }
+    HopsTransactionalRequestHandler setReplicationHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.SET_REPLICATION,
+            src) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH, src))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.ER, HopsLockFactory.BLK.CR,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.IV));
+          }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-    try {
-      return setReplicationInt(src, replication);
-    } catch (AccessControlException e) {
-      logAuditEvent(false, "setReplication", src);
-      throw e;
-    }
-  }
-    };
+          @Override
+          public Object performTask() throws IOException {
+            try {
+              return setReplicationInt(src, replication);
+            } catch (AccessControlException e) {
+              logAuditEvent(false, "setReplication", src);
+              throw e;
+            }
+          }
+        };
     return (Boolean) setReplicationHandler.handle(this);
   }
 
@@ -1849,30 +1841,33 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     return isFile;
   }
 
-  long getPreferredBlockSize(final String filename) 
-      throws IOException, UnresolvedLinkException {
-     HDFSTransactionalRequestHandler getPreferredBlockSizeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_PREFERRED_BLOCK_SIZE, filename) {
-       @Override
-       public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-       }
-       
-       @Override
-       public Object performTask() throws PersistanceException, IOException {
-    FSPermissionChecker pc = getPermissionChecker();
-    readLock();
-    try {
-      checkOperation(OperationCategory.READ);
-      if (isPermissionEnabled) {
-        checkTraverse(pc, filename);
-      }
-      return dir.getPreferredBlockSize(filename);
-    } finally {
-      readUnlock();
-    }
-  }
-     };
-  return (Long) getPreferredBlockSizeHandler.handle(this);
+  long getPreferredBlockSize(final String filename) throws IOException {
+    // FIXME Operation not yet supported
+    HopsTransactionalRequestHandler getPreferredBlockSizeHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.GET_PREFERRED_BLOCK_SIZE, filename) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            throw new UnsupportedOperationException(
+                "Not supported yet.");
+          }
+
+          @Override
+          public Object performTask() throws IOException {
+            FSPermissionChecker pc = getPermissionChecker();
+            readLock();
+            try {
+              checkOperation(OperationCategory.READ);
+              if (isPermissionEnabled) {
+                checkTraverse(pc, filename);
+              }
+              return dir.getPreferredBlockSize(filename);
+            } finally {
+              readUnlock();
+            }
+          }
+        };
+    return (Long) getPreferredBlockSizeHandler.handle(this);
   }
 
   /*
@@ -1902,69 +1897,33 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void startFile(final String src, final PermissionStatus permissions, final String holder,
       final String clientMachine, final EnumSet<CreateFlag> flag, final boolean createParent,
-      final short replication, final long blockSize) throws AccessControlException,
-      SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
-      FileNotFoundException, ParentNotDirectoryException, IOException {
-      final boolean resolveLink = false;
-//      HDFSTransactionalRequestHandler startFileHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
-//          @Override
-//          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-//            ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-//            tla.getLocks().
-//                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, resolveLink, new String[]{src}).
-//                    addBlock().
-//                    addLease(LockType.WRITE, holder).
-//                    addLeasePath(LockType.WRITE).
-//                    addReplica().
-//                    addCorrupt().
-//                    addExcess().
-//                    addReplicaUc().
-//                    addUnderReplicatedBlock().
-//                    addPendingBlock().
-//                    addInvalidatedBlock();
-//            if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
-//              tla.getLocks().addQuotaUpdateOnSubtree();
-//            }
-//            if (flag.contains(CreateFlag.OVERWRITE)) {
-//              return tla.acquireForDelete(erasureCodingEnabled);
-//            }
-//            return tla.acquire();
-//          }
-//
-//          @Override
-//          public Object performTask() throws PersistanceException, IOException {
-//              try {
-//                  startFileInt(src, permissions, holder, clientMachine, flag, createParent,
-//                          replication, blockSize);
-//                  return null;
-//              } catch (AccessControlException e) {
-//                  logAuditEvent(false, "create", src);
-//                  throw e;
-//              }
-//          }
-//      };
-//      startFileHanlder.handle(this);
-      
+      final short replication, final long blockSize) throws IOException {
     new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
-        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT, INodeResolveType.PATH, resolveLink, src))
-                .add(lf.getBlockRelatedLocks()).add(lf.getLeaseLock(LockType.WRITE, holder))
-                .add(lf.getLeasePathLock(LockType.WRITE));
-        if (dir.isQuotaEnabled() && flag.contains(CreateFlag.OVERWRITE)) {
+        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            INodeResolveType.PATH, false, src))
+            .add(lf.getLeaseLock(LockType.WRITE, holder))
+            .add(lf.getLeasePathLock(LockType.WRITE))
+            .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+            HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+            HopsLockFactory.BLK.UC, HopsLockFactory.BLK.UR,
+            HopsLockFactory.BLK.PE));
+
+        if (flag.contains(CreateFlag.OVERWRITE) && dir.isQuotaEnabled()) {
           locks.add(lf.getQuotaUpdateLock(src));
         }
-        if (flag.contains(CreateFlag.OVERWRITE)) {
+        if (flag.contains(CreateFlag.OVERWRITE) && erasureCodingEnabled) {
           locks.add(lf.getEncodingStatusLock(LockType.WRITE, src));
         }
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         try {
-          startFileInt(src, permissions, holder, clientMachine, flag, createParent,
-                  replication, blockSize);
+          startFileInt(src, permissions, holder, clientMachine, flag,
+              createParent, replication, blockSize);
           return null;
         } catch (AccessControlException e) {
           logAuditEvent(false, "create", src);
@@ -1972,7 +1931,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }
       }
     }.handle(this);
-      
   }
 
   private void startFileInt(String src, PermissionStatus permissions, String holder,
@@ -2167,67 +2125,67 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @return true if the file is already closed
    * @throws IOException
    */
-  boolean recoverLease(final String src, final String holder, final String clientMachine)
+  boolean recoverLease(final String src, final String holder,
+      final String clientMachine)
       throws IOException {
-      
-      HDFSTransactionalRequestHandler recoverLeaseHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RECOVER_LEASE, src) {
+    HopsTransactionalRequestHandler recoverLeaseHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.RECOVER_LEASE,
+            src) {
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                    addBlock().
-                    addLease(LockType.WRITE, holder).
-                    addLeasePath(LockType.WRITE).
-                    addReplica().
-                    addCorrupt().
-                    addExcess().
-                    addReplicaUc().
-                    addUnderReplicatedBlock();
-            return tla.acquire();
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(
+                lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
+                    src))
+                .add(lf.getLeaseLock(LockType.WRITE, holder))
+                .add(lf.getLeasePathLock(LockType.WRITE))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.UR));
           }
 
           @Override
           public Object performTask() throws PersistanceException, IOException {
-              boolean skipSync = false;
-              FSPermissionChecker pc = getPermissionChecker();
-              writeLock();
-              try {
-                  checkOperation(OperationCategory.WRITE);
+            boolean skipSync = false;
+            FSPermissionChecker pc = getPermissionChecker();
+            writeLock();
+            try {
+              checkOperation(OperationCategory.WRITE);
 
-                  if (isInSafeMode()) {
-                      throw new SafeModeException(
-                              "Cannot recover the lease of " + src, safeMode);
-                  }
-                  if (!DFSUtil.isValidName(src)) {
-                      throw new IOException("Invalid file name: " + src);
-                  }
-
-                  final INodeFile inode = INodeFile.valueOf(dir.getINode(src), src);
-                  if (!inode.isUnderConstruction()) {
-                      return true;
-                  }
-                  if (isPermissionEnabled) {
-                      checkPathAccess(pc, src, FsAction.WRITE);
-                  }
-
-                  recoverLeaseInternal(inode, src, holder, clientMachine, true);
-              } catch (StandbyException se) {
-                  skipSync = true;
-                  throw se;
-              } finally {
-                  writeUnlock();
-                  // There might be transactions logged while trying to recover the lease.
-                  // They need to be sync'ed even when an exception was thrown.
-//HOP             if (!skipSync) {
-//                      getEditLog().logSync();
-//                  }
+              if (isInSafeMode()) {
+                throw new SafeModeException(
+                    "Cannot recover the lease of " + src, safeMode);
               }
-              return false;
+              if (!DFSUtil.isValidName(src)) {
+                throw new IOException("Invalid file name: " + src);
+              }
+
+              final INodeFile inode = INodeFile.valueOf(dir.getINode(src), src);
+              if (!inode.isUnderConstruction()) {
+                return true;
+              }
+              if (isPermissionEnabled) {
+                checkPathAccess(pc, src, FsAction.WRITE);
+              }
+
+              recoverLeaseInternal(inode, src, holder, clientMachine, true);
+            } catch (StandbyException se) {
+              skipSync = true;
+              throw se;
+            } finally {
+              writeUnlock();
+              // There might be transactions logged while trying to recover the lease.
+              // They need to be sync'ed even when an exception was thrown.
+              //HOP             if (!skipSync) {
+              //                      getEditLog().logSync();
+              //                  }
+            }
+            return false;
           }
-      };
-      
-      return (Boolean) recoverLeaseHandler.handle(this);
+        };
+
+    return (Boolean) recoverLeaseHandler.handle(this);
   }
 
   private void recoverLeaseInternal(INode fileInode, 
@@ -2308,41 +2266,37 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Append to an existing file in the namespace.
    */
-  LocatedBlock appendFile(final String src, final String holder, final String clientMachine)
-      throws AccessControlException, SafeModeException,
-      FileAlreadyExistsException, FileNotFoundException,
-            ParentNotDirectoryException, IOException {
-      HDFSTransactionalRequestHandler appendFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.APPEND_FILE, src) {
+  LocatedBlock appendFile(final String src, final String holder,
+      final String clientMachine) throws IOException {
+    HopsTransactionalRequestHandler appendFileHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.APPEND_FILE, src) {
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
-                    addBlock().
-                    addLease(LockType.WRITE, holder).
-                    addLeasePath(LockType.WRITE).
-                    addReplica().
-                    addCorrupt().
-                    addExcess().
-                    addReplicaUc().
-                    addUnderReplicatedBlock().
-                    addInvalidatedBlock().
-                    addPendingBlock();
-            return tla.acquire();
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH, src))
+                .add(lf.getBlockLock())
+                .add(lf.getLeaseLock(LockType.WRITE, holder))
+                .add(lf.getLeasePathLock(LockType.WRITE))
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.UR,
+                    HopsLockFactory.BLK.IV,
+                    HopsLockFactory.BLK.PE));
           }
 
+
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              try {
-                  return appendFileInt(src, holder, clientMachine);
-              } catch (AccessControlException e) {
-                  logAuditEvent(false, "append", src);
-                  throw e;
-              }
+          public Object performTask() throws IOException {
+            try {
+              return appendFileInt(src, holder, clientMachine);
+            } catch (AccessControlException e) {
+              logAuditEvent(false, "append", src);
+              throw e;
+            }
           }
-      };
-    LocatedBlock lb = (LocatedBlock) appendFileHandler.handle(this);
-    return lb;
+        };
+    return (LocatedBlock) appendFileHandler.handle(this);
   }
 
   private LocatedBlock appendFileInt(String src, String holder, String clientMachine)
@@ -2407,108 +2361,107 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * are replicated.  Will return an empty 2-elt array if we want the
    * client to "try again later".
    */
-    LocatedBlock getAdditionalBlock(final String src,
-            final String clientName,
-            final ExtendedBlock previous,
-            final HashMap<Node, Node> excludedNodes)
-            throws LeaseExpiredException, NotReplicatedYetException,
-            QuotaExceededException, SafeModeException, UnresolvedLinkException,
-            IOException {
-        HDFSTransactionalRequestHandler additionalBlockHanlder = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_ADDITIONAL_BLOCK, src) {
-            @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              tla.getLocks().
-                      addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                      addBlock().
-                      addReplica().
-                      addLease(LockType.READ, clientName).
-                      addCorrupt().
-                      addExcess().
-                      addReplicaUc();
-              return tla.acquire();
+  LocatedBlock getAdditionalBlock(final String src, final String clientName,
+      final ExtendedBlock previous, final HashMap<Node, Node> excludedNodes)
+      throws IOException {
+    HopsTransactionalRequestHandler additionalBlockHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.GET_ADDITIONAL_BLOCK, src) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(
+                lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
+                    src))
+                .add(lf.getLeaseLock(LockType.READ, clientName))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                    HopsLockFactory.BLK.UC));
+          }
+
+          @Override
+          public Object performTask() throws IOException {
+            long blockSize;
+            int replication;
+            DatanodeDescriptor clientNode = null;
+
+            if (NameNode.stateChangeLog.isDebugEnabled()) {
+              NameNode.stateChangeLog.debug(
+                  "BLOCK* NameSystem.getAdditionalBlock: file "
+                      + src + " for " + clientName);
             }
 
-            @Override
-            public Object performTask() throws PersistanceException, IOException {
-                long blockSize;
-                int replication;
-                DatanodeDescriptor clientNode = null;
+            // Part I. Analyze the state of the file with respect to the input data.
+            readLock();
+            try {
+              LocatedBlock[] onRetryBlock = new LocatedBlock[1];
+              final INode[] inodes = analyzeFileState(
+                  src, clientName, previous, onRetryBlock);
+              final INodeFileUnderConstruction pendingFile =
+                  (INodeFileUnderConstruction) inodes[inodes.length - 1];
 
-                if (NameNode.stateChangeLog.isDebugEnabled()) {
-                    NameNode.stateChangeLog.debug(
-                            "BLOCK* NameSystem.getAdditionalBlock: file "
-                            + src + " for " + clientName);
-                }
+              if (onRetryBlock[0] != null) {
+                // This is a retry. Just return the last block.
+                return onRetryBlock[0];
+              }
 
-                // Part I. Analyze the state of the file with respect to the input data.
-                readLock();
-                try {
-                    LocatedBlock[] onRetryBlock = new LocatedBlock[1];
-                    final INode[] inodes = analyzeFileState(
-                            src, clientName, previous, onRetryBlock);
-                    final INodeFileUnderConstruction pendingFile =
-                            (INodeFileUnderConstruction) inodes[inodes.length - 1];
-
-                    if (onRetryBlock[0] != null) {
-                        // This is a retry. Just return the last block.
-                        return onRetryBlock[0];
-                    }
-
-                    blockSize = pendingFile.getPreferredBlockSize();
-                    //clientNode = pendingFile.getClientNode(); HOP
-                    clientNode = pendingFile.getClientNode() == null ? null : getBlockManager().getDatanodeManager().getDatanode(pendingFile.getClientNode());
-                    replication = pendingFile.getBlockReplication();
-                } finally {
-                    readUnlock();
-                }
-
-                // choose targets for the new block to be allocated.
-                final DatanodeDescriptor targets[] = getBlockManager().chooseTarget(
-                        src, replication, clientNode, excludedNodes, blockSize);
-
-                // Part II.
-                // Allocate a new block, add it to the INode and the BlocksMap. 
-                Block newBlock = null;
-                long offset;
-                writeLock();
-                try {
-                    // Run the full analysis again, since things could have changed
-                    // while chooseTarget() was executing.
-                    LocatedBlock[] onRetryBlock = new LocatedBlock[1];
-                    INode[] inodes =
-                            analyzeFileState(src, clientName, previous, onRetryBlock);
-                    final INodeFileUnderConstruction pendingFile =
-                            (INodeFileUnderConstruction) inodes[inodes.length - 1];
-
-                    if (onRetryBlock[0] != null) {
-                        // This is a retry. Just return the last block.
-                        return onRetryBlock[0];
-                    }
-
-                    // commit the last block and complete it if it has minimum replicas
-                    commitOrCompleteLastBlock(pendingFile,
-                            ExtendedBlock.getLocalBlock(previous));
-
-                    // allocate new block, record block locations in INode.
-                    newBlock = createNewBlock(pendingFile);
-                    saveAllocatedBlock(src, inodes, newBlock, targets);
-
-                    dir.persistBlocks(src, pendingFile);
-                    offset = pendingFile.computeFileSize(true);
-                } finally {
-                    writeUnlock();
-                }
-//HOP           if (persistBlocks) {
-//                  getEditLog().logSync();
-//              }
-
-                // Return located block
-                return makeLocatedBlock(newBlock, targets, offset);
+              blockSize = pendingFile.getPreferredBlockSize();
+              //clientNode = pendingFile.getClientNode(); HOP
+              clientNode = pendingFile.getClientNode() == null ? null :
+                  getBlockManager().getDatanodeManager()
+                      .getDatanode(pendingFile.getClientNode());
+              replication = pendingFile.getBlockReplication();
+            } finally {
+              readUnlock();
             }
+
+            // choose targets for the new block to be allocated.
+            final DatanodeDescriptor targets[] = getBlockManager().chooseTarget(
+                src, replication, clientNode, excludedNodes, blockSize);
+
+            // Part II.
+            // Allocate a new block, add it to the INode and the BlocksMap.
+            Block newBlock = null;
+            long offset;
+            writeLock();
+            try {
+              // Run the full analysis again, since things could have changed
+              // while chooseTarget() was executing.
+              LocatedBlock[] onRetryBlock = new LocatedBlock[1];
+              INode[] inodes =
+                  analyzeFileState(src, clientName, previous, onRetryBlock);
+              final INodeFileUnderConstruction pendingFile =
+                  (INodeFileUnderConstruction) inodes[inodes.length - 1];
+
+              if (onRetryBlock[0] != null) {
+                // This is a retry. Just return the last block.
+                return onRetryBlock[0];
+              }
+
+              // commit the last block and complete it if it has minimum replicas
+              commitOrCompleteLastBlock(pendingFile,
+                  ExtendedBlock.getLocalBlock(previous));
+
+              // allocate new block, record block locations in INode.
+              newBlock = createNewBlock(pendingFile);
+              saveAllocatedBlock(src, inodes, newBlock, targets);
+
+              dir.persistBlocks(src, pendingFile);
+              offset = pendingFile.computeFileSize(true);
+            } finally {
+              writeUnlock();
+            }
+            //HOP           if (persistBlocks) {
+            //                  getEditLog().logSync();
+            //              }
+
+            // Return located block
+            return makeLocatedBlock(newBlock, targets, offset);
+          }
         };
-        return (LocatedBlock) additionalBlockHanlder.handle(this);
-    }
+    return (LocatedBlock) additionalBlockHandler.handle(this);
+  }
 
   INode[] analyzeFileState(String src,
                                 String clientName,
@@ -2616,121 +2569,126 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   /** @see NameNode#getAdditionalDatanode(String, ExtendedBlock, DatanodeInfo[], DatanodeInfo[], int, String) */
   LocatedBlock getAdditionalDatanode(final String src, final ExtendedBlock blk,
-      final DatanodeInfo[] existings,  final HashMap<Node, Node> excludes,
-      final int numAdditionalNodes, final String clientName
-      ) throws IOException {
-      HDFSTransactionalRequestHandler getAdditionalDatanodeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_ADDITIONAL_DATANODE, src) {
+      final DatanodeInfo[] existings, final HashMap<Node, Node> excludes,
+      final int numAdditionalNodes, final String clientName)
+      throws IOException {
+    HopsTransactionalRequestHandler getAdditionalDatanodeHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.GET_ADDITIONAL_DATANODE, src) {
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src}).
-                    addLease(LockType.READ, clientName);
-            return tla.acquire();     
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.READ,
+                INodeResolveType.PATH, src))
+                .add(lf.getLeaseLock(LockType.READ, clientName));
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              //check if the feature is enabled
-              dtpReplaceDatanodeOnFailure.checkEnabled();
+          public Object performTask() throws IOException {
+            //check if the feature is enabled
+            dtpReplaceDatanodeOnFailure.checkEnabled();
 
-              final DatanodeDescriptor clientnode;
-              final long preferredblocksize;
-              final List<DatanodeDescriptor> chosen;
-              readLock();
-              try {
-                  checkOperation(OperationCategory.WRITE);
-                  //check safe mode
-                  if (isInSafeMode()) {
-                      throw new SafeModeException("Cannot add datanode; src=" + src
-                              + ", blk=" + blk, safeMode);
-                  }
-
-                  //check lease
-                  final INodeFileUnderConstruction file = checkLease(src, clientName);
-                  //clientnode = file.getClientNode(); HOP
-                  clientnode = getBlockManager().getDatanodeManager().getDatanode(file.getClientNode());
-                  preferredblocksize = file.getPreferredBlockSize();
-
-                  //find datanode descriptors
-                  chosen = new ArrayList<DatanodeDescriptor>();
-                  for (DatanodeInfo d : existings) {
-                      final DatanodeDescriptor descriptor = blockManager.getDatanodeManager().getDatanode(d);
-                      if (descriptor != null) {
-                          chosen.add(descriptor);
-                      }
-                  }
-              } finally {
-                  readUnlock();
+            final DatanodeDescriptor clientnode;
+            final long preferredblocksize;
+            final List<DatanodeDescriptor> chosen;
+            readLock();
+            try {
+              checkOperation(OperationCategory.WRITE);
+              //check safe mode
+              if (isInSafeMode()) {
+                throw new SafeModeException("Cannot add datanode; src=" + src
+                    + ", blk=" + blk, safeMode);
               }
 
-              // choose new datanodes.
-              final DatanodeInfo[] targets = blockManager.getBlockPlacementPolicy().chooseTarget(src, numAdditionalNodes, clientnode, chosen, true,
-                      excludes, preferredblocksize);
-              final LocatedBlock lb = new LocatedBlock(blk, targets);
-              blockManager.setBlockToken(lb, AccessMode.COPY);
-              return lb;
+              //check lease
+              final INodeFileUnderConstruction file =
+                  checkLease(src, clientName);
+              //clientnode = file.getClientNode(); HOP
+              clientnode = getBlockManager().getDatanodeManager()
+                  .getDatanode(file.getClientNode());
+              preferredblocksize = file.getPreferredBlockSize();
+
+              //find datanode descriptors
+              chosen = new ArrayList<DatanodeDescriptor>();
+              for (DatanodeInfo d : existings) {
+                final DatanodeDescriptor descriptor =
+                    blockManager.getDatanodeManager().getDatanode(d);
+                if (descriptor != null) {
+                  chosen.add(descriptor);
+                }
+              }
+            } finally {
+              readUnlock();
+            }
+
+            // choose new datanodes.
+            final DatanodeInfo[] targets =
+                blockManager.getBlockPlacementPolicy()
+                    .chooseTarget(src, numAdditionalNodes, clientnode, chosen,
+                        true, excludes, preferredblocksize);
+            final LocatedBlock lb = new LocatedBlock(blk, targets);
+            blockManager.setBlockToken(lb, AccessMode.COPY);
+            return lb;
           }
-      };
-      return (LocatedBlock) getAdditionalDatanodeHandler.handle(this);
+        };
+    return (LocatedBlock) getAdditionalDatanodeHandler.handle(this);
   }
 
   /**
    * The client would like to let go of the given block
    */
-  boolean abandonBlock(final ExtendedBlock b, final String src, final String holder)
-      throws LeaseExpiredException, FileNotFoundException,
-      UnresolvedLinkException, IOException {
-      HDFSTransactionalRequestHandler abandonBlockHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ABANDON_BLOCK, src) {
+  boolean abandonBlock(final ExtendedBlock b, final String src,
+      final String holder) throws IOException {
+    HopsTransactionalRequestHandler abandonBlockHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.ABANDON_BLOCK,
+            src) {
+
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.WRITE_ON_PARENT, new String[]{src}).
-                    addReplica().
-                    addBlock().
-                    addLease(LockType.READ).
-                    addCorrupt().
-                    addReplicaUc().
-                    addUnderReplicatedBlock();
-            return tla.acquire();
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH, src))
+                .add(lf.getLeaseLock(LockType.READ))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.UC,
+                    HopsLockFactory.BLK.UR));
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              writeLock();
-              try {
-                  checkOperation(OperationCategory.WRITE);
-                  //
-                  // Remove the block from the pending creates list
-                  //
-                  if (NameNode.stateChangeLog.isDebugEnabled()) {
-                      NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
-                              + b + "of file " + src);
-                  }
-                  if (isInSafeMode()) {
-                      throw new SafeModeException("Cannot abandon block " + b
-                              + " for fle" + src, safeMode);
-                  }
-                  INodeFileUnderConstruction file = checkLease(src, holder);
-                  dir.removeBlock(src, file, ExtendedBlock.getLocalBlock(b));
-                  if (NameNode.stateChangeLog.isDebugEnabled()) {
-                      NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
-                              + b + " is removed from pendingCreates");
-                  }
-                  dir.persistBlocks(src, file);
-              } finally {
-                  writeUnlock();
+          public Object performTask() throws IOException {
+            writeLock();
+            try {
+              checkOperation(OperationCategory.WRITE);
+              //
+              // Remove the block from the pending creates list
+              //
+              if (NameNode.stateChangeLog.isDebugEnabled()) {
+                NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
+                    + b + "of file " + src);
               }
-//HOP         if (persistBlocks) {
-//              getEditLog().logSync();
-//            }
+              if (isInSafeMode()) {
+                throw new SafeModeException("Cannot abandon block " + b
+                    + " for fle" + src, safeMode);
+              }
+              INodeFileUnderConstruction file = checkLease(src, holder);
+              dir.removeBlock(src, file, ExtendedBlock.getLocalBlock(b));
+              if (NameNode.stateChangeLog.isDebugEnabled()) {
+                NameNode.stateChangeLog.debug("BLOCK* NameSystem.abandonBlock: "
+                    + b + " is removed from pendingCreates");
+              }
+              dir.persistBlocks(src, file);
+            } finally {
+              writeUnlock();
+            }
+            //HOP         if (persistBlocks) {
+            //              getEditLog().logSync();
+            //            }
 
-              return true;
+            return true;
           }
-      };
-    return (Boolean)abandonBlockHandler.handle(this);
-    
+        };
+    return (Boolean) abandonBlockHandler.handle(this);
   }
   
   // make sure that we still have the lease on this file.
@@ -2771,44 +2729,43 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    *         (e.g if not all blocks have reached minimum replication yet)
    * @throws IOException on error (eg lease mismatch, file not open, file deleted)
    */
-  boolean completeFile(final String src, final String holder, final ExtendedBlock last) 
-    throws SafeModeException, UnresolvedLinkException, IOException {
-      HDFSTransactionalRequestHandler completeFileHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE, src) {
+  boolean completeFile(final String src, final String holder,
+      final ExtendedBlock last) throws IOException {
+    HopsTransactionalRequestHandler completeFileHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.COMPLETE_FILE,
+            src) {
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{src}).
-                    addBlock().
-                    addLease(LockType.WRITE, holder).
-                    addLeasePath(LockType.WRITE).
-                    addReplica().
-                    addCorrupt().
-                    addExcess().
-                    addReplicaUc().
-                    addUnderReplicatedBlock().
-                    addInvalidatedBlock();
-            return tla.acquire();
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE,
+                INodeResolveType.PATH, src))
+                .add(lf.getLeaseLock(LockType.WRITE, holder))
+                .add(lf.getLeasePathLock(LockType.WRITE))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.UR,
+                    HopsLockFactory.BLK.IV));
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              checkBlock(last);
-              boolean success = false;
-              writeLock();
-              try {
-                  checkOperation(OperationCategory.WRITE);
+          public Object performTask() throws IOException {
+            checkBlock(last);
+            boolean success = false;
+            writeLock();
+            try {
+              checkOperation(OperationCategory.WRITE);
 
-                  success = completeFileInternal(src, holder,
-                          ExtendedBlock.getLocalBlock(last));
-              } finally {
-                  writeUnlock();
-              }
-//HOP         getEditLog().logSync();
-              return success;
+              success = completeFileInternal(src, holder,
+                  ExtendedBlock.getLocalBlock(last));
+            } finally {
+              writeUnlock();
+            }
+            //HOP         getEditLog().logSync();
+            return success;
           }
-      };
-      return (Boolean) completeFileHandler.handle(this);
+        };
+    return (Boolean) completeFileHandler.handle(this);
   }
 
   private boolean completeFileInternal(String src, 
@@ -2956,42 +2913,37 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @deprecated Use {@link #renameTo(String, String, Options.Rename...)} instead.
    */
   @Deprecated
-  boolean renameTo(final String src, final String dst) 
-      throws IOException, UnresolvedLinkException {
-      HDFSTransactionalRequestHandler renameToHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
+  boolean renameTo(final String src, final String dst) throws IOException {
+    HopsTransactionalRequestHandler renameToHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                addLease(LockType.WRITE).
-                addLeasePath(LockType.WRITE).
-                addBlock().
-                addReplica().
-                addReplicaUc().
-                addInvalidatedBlock().
-                addCorrupt().
-                addExcess().
-                addPendingBlock().
-                addUnderReplicatedBlock();
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getLegacyRenameINodeLock(INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, src, dst))
+                .add(lf.getLeaseLock(LockType.WRITE))
+                .add(lf.getLeasePathLock(LockType.WRITE))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.IV,
+                    HopsLockFactory.BLK.CR, HopsLockFactory.BLK.ER,
+                    HopsLockFactory.BLK.PE, HopsLockFactory.BLK.UR));
             if (dir.isQuotaEnabled()) {
-              tla.getLocks().addQuotaUpdateOnSubtree();
+              locks.add(lf.getQuotaUpdateLock(true, src, dst));
             }
-            return tla.acquireForRename(true); // The deprecated rename, allows to move a dir to an existing dir.
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              try {
-                  return renameToInt(src, dst);
-              } catch (AccessControlException e) {
-                  logAuditEvent(false, "rename", src, dst, null);
-                  throw e;
-              }
+          public Object performTask() throws IOException {
+            try {
+              return renameToInt(src, dst);
+            } catch (AccessControlException e) {
+              logAuditEvent(false, "rename", src, dst, null);
+              throw e;
+            }
           }
-      };
-      return (Boolean) renameToHandler.handle(this);
+        };
+    return (Boolean) renameToHandler.handle(this);
   }
 
   private boolean renameToInt(String src, String dst) 
@@ -3051,60 +3003,56 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   
 
   /** Rename src to dst */
-    void renameTo(final String src, final String dst, final Options.Rename... options)
-            throws IOException, UnresolvedLinkException {
-        HDFSTransactionalRequestHandler renameTo2Handler = new HDFSTransactionalRequestHandler(HDFSOperationType.RENAME_TO2, src) {
-            @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              tla.getLocks().
-                  addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                  INodeLockType.WRITE_ON_PARENT, false, new String[]{src, dst}).
-                  addLease(LockType.WRITE).
-                  addLeasePath(LockType.WRITE).
-                  addBlock().
-                  addReplica().
-                  addCorrupt().
-                  addReplicaUc().
-                  addUnderReplicatedBlock().
-                  addInvalidatedBlock().
-                  addPendingBlock().
-                  addExcess();
-              if (dir.isQuotaEnabled()) {
-                tla.getLocks().addQuotaUpdateOnSubtree();
-              }
-              return tla.acquireForRename();
-            }
+  void renameTo(final String src, final String dst,
+      final Options.Rename... options) throws IOException {
+    new HopsTransactionalRequestHandler(HDFSOperationType.RENAME_TO2, src) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, false, src,
+            dst))
+            .add(lf.getLeaseLock(LockType.WRITE))
+            .add(lf.getLeasePathLock(LockType.WRITE))
+            .add(lf.getBlockLock())
+            .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                HopsLockFactory.BLK.CR, HopsLockFactory.BLK.UC,
+                HopsLockFactory.BLK.UR, HopsLockFactory.BLK.IV,
+                HopsLockFactory.BLK.PE, HopsLockFactory.BLK.ER));
+        if (dir.isQuotaEnabled()) {
+          locks.add(lf.getQuotaUpdateLock(true, src, dst));
+        }
+      }
 
-            @Override
-            public Object performTask() throws PersistanceException, IOException {
-                HdfsFileStatus resultingStat = null;
-                if (NameNode.stateChangeLog.isDebugEnabled()) {
-                    NameNode.stateChangeLog.debug("DIR* NameSystem.renameTo: with options - "
-                            + src + " to " + dst);
-                }
-                FSPermissionChecker pc = getPermissionChecker();
-                writeLock();
-                try {
-                    checkOperation(OperationCategory.WRITE);
-                    renameToInternal(pc, src, dst, options);
-                    resultingStat = getAuditFileInfo(dst, false);
-                } finally {
-                    writeUnlock();
-                }
-//HOP           getEditLog().logSync();
-                if (resultingStat != null) {
-                    StringBuilder cmd = new StringBuilder("rename options=");
-                    for (Rename option : options) {
-                        cmd.append(option.value()).append(" ");
-                    }
-                    logAuditEvent(true, cmd.toString(), src, dst, resultingStat);
-                }
-                return null;
-            }
-        };
-        renameTo2Handler.handle(this);
-    }
+      @Override
+      public Object performTask() throws IOException {
+        HdfsFileStatus resultingStat = null;
+        if (NameNode.stateChangeLog.isDebugEnabled()) {
+          NameNode.stateChangeLog
+              .debug("DIR* NameSystem.renameTo: with options - "
+                  + src + " to " + dst);
+        }
+        FSPermissionChecker pc = getPermissionChecker();
+        writeLock();
+        try {
+          checkOperation(OperationCategory.WRITE);
+          renameToInternal(pc, src, dst, options);
+          resultingStat = getAuditFileInfo(dst, false);
+        } finally {
+          writeUnlock();
+        }
+        //HOP           getEditLog().logSync();
+        if (resultingStat != null) {
+          StringBuilder cmd = new StringBuilder("rename options=");
+          for (Rename option : options) {
+            cmd.append(option.value()).append(" ");
+          }
+          logAuditEvent(true, cmd.toString(), src, dst, resultingStat);
+        }
+        return null;
+      }
+    }.handle(this);
+  }
 
   private void renameToInternal(FSPermissionChecker pc, String src, String dst,
       Options.Rename... options) throws IOException, PersistanceException {
@@ -3130,41 +3078,46 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * description of exceptions
    */
   public boolean deleteWithTransaction(final String src, final boolean recursive)
-      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-        tla.getLocks().
-            addINode(
-                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
-                INodeLockType.WRITE_ON_PARENT, false, new String[]{src}).
-            addLease(LockType.WRITE).
-            addLeasePath(LockType.WRITE).
-            addBlock().
-            addReplica().
-            addCorrupt().
-            addReplicaUc().
-            addUnderReplicatedBlock().
-            addPendingBlock().
-            addInvalidatedBlock();
-        if (dir.isQuotaEnabled()) {
-          tla.getLocks().addQuotaUpdateOnSubtree();
-        }
-        return tla.acquireForDelete(erasureCodingEnabled);
-      }
+      throws IOException {
+    HopsTransactionalRequestHandler deleteHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, false,
+                src))
+                .add(lf.getLeaseLock(LockType.WRITE))
+                .add(lf.getLeasePathLock(LockType.WRITE))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE,
+                    HopsLockFactory.BLK.CR,
+                    HopsLockFactory.BLK.UC, HopsLockFactory.BLK.UR,
+                    HopsLockFactory.BLK.PE, HopsLockFactory.BLK.IV));
+            if (dir.isQuotaEnabled()) {
+              locks.add(lf.getQuotaUpdateLock(true, src));
+            }
+            if (erasureCodingEnabled) {
+              locks.add(lf.getEncodingStatusLock(LockType.WRITE, src));
+            }
+          }
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return delete(src, recursive);
-      }
-    };
+          @Override
+          public Object performTask() throws IOException {
+            return delete(src, recursive);
+          }
+        };
     return (Boolean) deleteHandler.handle(this);
   }
 
   boolean deleteWithTransactionIgnoreLocalSubtreeLock(final String src, final boolean recursive)
-      throws AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
-    HDFSTransactionalRequestHandler deleteHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      throws  IOException {
+    HopsTransactionalRequestHandler deleteHandler = new HopsTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
+      }
+
       @Override
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
@@ -6666,7 +6619,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addINode(INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
+        tla.getLocks().addINode(
+            INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY,
             INodeLockType.READ_COMMITTED, false, new String[]{src});
         return tla.acquire();
       }
@@ -7970,7 +7924,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+        lockAcquirer.getLocks().addINode(INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
         lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
         return lockAcquirer.acquire();
@@ -8042,7 +7996,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer lockAcquirer = new HDFSTransactionLockAcquirer();
-        lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+        lockAcquirer.getLocks().addINode(INodeResolveType.PATH,
             INodeLockType.READ_COMMITTED, new String[]{filePath});
         return lockAcquirer.acquire();
       }
@@ -8080,7 +8034,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+            tla.getLocks().addINode(INodeResolveType.PATH,
                 INodeLockType.WRITE, new String[]{sourcePath});
             return tla.acquire();
           }
@@ -8126,8 +8080,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
+            lockAcquirer.getLocks().addINode(INodeResolveType.PATH,
+                INodeLockType.WRITE, new String[]{path});
             lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
@@ -8149,8 +8103,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{filePath});
+            lockAcquirer.getLocks().addINode(INodeResolveType.PATH,
+                INodeLockType.WRITE, new String[]{filePath});
             lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
@@ -8188,8 +8142,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
             ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-            lockAcquirer.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{sourceFile});
+            lockAcquirer.getLocks().addINode(INodeResolveType.PATH,
+                INodeLockType.WRITE, new String[]{sourceFile});
             lockAcquirer.getLocks().addEncodingStatusLockOnPathLeaf();
             return lockAcquirer.acquire();
           }
@@ -8231,7 +8185,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       @Override
       public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH,
+        tla.getLocks().addINode(INodeResolveType.PATH,
             INodeLockType.WRITE, new String[]{src});
         return tla.acquire();
       }
@@ -8256,7 +8210,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
         tla.getLocks()
             .addBlockChecksumLockByBlockIndex(blockIndex)
-            .addINode(TransactionLockTypes.INodeResolveType.PATH, INodeLockType.READ, new String[]{src});
+            .addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{src});
         return tla.acquire();
       }
 
