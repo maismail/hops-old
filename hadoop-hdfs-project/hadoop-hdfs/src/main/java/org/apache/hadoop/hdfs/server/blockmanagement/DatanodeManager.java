@@ -77,15 +77,16 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageIdMap;
 import se.sics.hop.transaction.lock.INodeUtil;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.HopsLockFactory.BLK;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Manage datanodes, include decommission and other activities.
@@ -1234,33 +1235,28 @@ public class DatanodeManager {
   
   DatanodeDescriptor[] getDataNodeDescriptorsTx(final BlockInfoUnderConstruction b) throws IOException {
     final DatanodeManager datanodeManager = this;
-    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.HANDLE_HEARTBEAT) {
+    return (DatanodeDescriptor[]) new HopsTransactionalRequestHandler(HDFSOperationType.GET_EXPECTED_BLK_LOCATIONS) {
       INodeIdentifier inodeIdentifier;
+
       @Override
       public void setUp() throws StorageException {
         Block b = (Block) getParams()[0];
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
-      
+
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addINode(TransactionLockTypes.INodeLockType.WRITE).
-                addBlock(b.getBlockId(),b.getInodeId()).
-                addReplica().
-                addReplicaUc();
-        return tla.acquireByBlock(inodeIdentifier);
+      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, inodeIdentifier))
+                .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockRelated(BLK.RE, BLK.UC));
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
-        BlockInfoUnderConstruction b = (BlockInfoUnderConstruction) getParams()[0];
         return b.getExpectedLocations(datanodeManager);
       }
-    };
-    return (DatanodeDescriptor[]) handler.setParams(b).handle(namesystem);
-
+    }.handle();
   }
   //END_HOP_CODE
 }
