@@ -34,6 +34,36 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
 public class HopsLockFactory {
 
+  public static enum BLK{
+    /**
+     * Replica
+     */
+    RE, 
+    /**
+     * CorruptReplica
+     */
+    CR, 
+    /**
+     * ExcessReplica
+     */
+    ER,
+    /**
+     * UnderReplicated
+     */
+    UR,
+    /**
+     * ReplicaUnderConstruction
+     */
+    UC,
+    /**
+     * InvalidatedBlock
+     */
+    IV,
+    /**
+     * PendingBlock
+     */
+    PE
+  }
   private static final HopsLockFactory instance = new HopsLockFactory();
 
   private HopsLockFactory() {
@@ -79,19 +109,6 @@ public class HopsLockFactory {
     return new HopsBlockRelatedLock(false, PendingBlockInfo.Finder.ByBlockId, HopsLock.Type.PendingBlock);
   }
 
-  public Collection<HopsLock> getBlockRelatedLocks() {
-    ArrayList<HopsLock> list = new ArrayList(8);
-    list.add(getBlockLock());
-    list.add(getReplicaLock());
-    list.add(getCorruptReplicaLock());
-    list.add(getExcessReplicaLock());
-    list.add(getReplicatUnderConstructionLock());
-    list.add(getInvalidatedBlockLock());
-    list.add(getUnderReplicatedBlockLock());
-    list.add(getPendingBlockLock());
-    return list;
-  }
-
   public HopsLock getSqlBatchedBlocksLock() {
     return new HopsSqlBatchedBlocksLock();
   }
@@ -122,19 +139,6 @@ public class HopsLockFactory {
 
   public HopsLock getSqlBatchedPendingBlocksLock() {
     return new HopsSqlBatchedBlocksRelatedLock(PendingBlockInfo.Finder.ByInodeIds, HopsLock.Type.PendingBlock);
-  }
-
-  public Collection<HopsLock> getSqlBatchedBlocksRelatedLocks() {
-    ArrayList<HopsLock> list = new ArrayList(8);
-    list.add(getSqlBatchedBlocksLock());
-    list.add(getSqlBatchedReplicasLock());
-    list.add(getSqlBatchedCorruptReplicasLock());
-    list.add(getSqlBatchedExcessReplicasLock());
-    list.add(getSqlBatchedReplicasUnderConstructionLock());
-    list.add(getSqlBatchedInvalidatedBlocksLock());
-    list.add(getSqlBatchedUnderReplicatedBlocksLock());
-    list.add(getSqlBatchedPendingBlocksLock());
-    return list;
   }
 
   public HopsLock getIndividualBlockLock(long blockId, INodeIdentifier inode) {
@@ -265,5 +269,65 @@ public class HopsLockFactory {
 
   public HopsLock getIndivdualEncodingStatusLock(TransactionLockTypes.LockType lockType, int inodeId) {
     return new HopsBaseEncodingStatusLock.HopsIndividualEncodingStatusLock(lockType, inodeId);
+  }
+  
+  public Collection<HopsLock> getBlockRelated(BLK... relatedBlks) {
+    ArrayList<HopsLock> list = new ArrayList();
+    for (BLK b : relatedBlks) {
+      switch (b) {
+        case RE:
+          list.add(getReplicaLock());
+          break;
+        case CR:
+          list.add(getCorruptReplicaLock());
+          break;
+        case IV:
+          list.add(getInvalidatedBlockLock());
+          break;
+        case PE:
+          list.add(getPendingBlockLock());
+          break;
+        case UC:
+          list.add(getReplicatUnderConstructionLock());
+          break;
+        case UR:
+          list.add(getUnderReplicatedBlockLock());
+          break;
+        case ER:
+          list.add(getExcessReplicaLock());
+          break;
+      }
+    }
+    return list;
+  }
+  
+    public Collection<HopsLock> getSqlBatchedBlocksRelated(BLK... relatedBlks) {
+    ArrayList<HopsLock> list = new ArrayList();
+    for (BLK b : relatedBlks) {
+      switch (b) {
+        case RE:
+          list.add(getSqlBatchedReplicasLock());
+          break;
+        case CR:
+          list.add(getSqlBatchedCorruptReplicasLock());
+          break;
+        case IV:
+          list.add(getSqlBatchedInvalidatedBlocksLock());
+          break;
+        case PE:
+          list.add(getSqlBatchedInvalidatedBlocksLock());
+          break;
+        case UC:
+          list.add(getSqlBatchedReplicasUnderConstructionLock());
+          break;
+        case UR:
+          list.add(getUnderReplicatedBlockLock());
+          break;
+        case ER:
+          list.add(getSqlBatchedExcessReplicasLock());
+          break;
+      }
+    }
+    return list;
   }
 }
