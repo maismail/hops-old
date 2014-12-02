@@ -341,10 +341,13 @@ public class DatanodeManager {
    * @return DatanodeDescriptor or null if the node is not found.
    * @throws UnregisteredNodeException
    */
-  public DatanodeDescriptor getDatanode(DatanodeID nodeID
+    public DatanodeDescriptor getDatanode(DatanodeID nodeID
       ) throws UnregisteredNodeException {
-    final DatanodeDescriptor node = getDatanode(nodeID.getStorageID());
-    if (node == null) 
+    DatanodeDescriptor node = null;
+    if(nodeID != null && nodeID.getStorageID() != null && !nodeID.getStorageID().equals("")){
+        node = getDatanode(nodeID.getStorageID());
+    }
+    if (node == null)
       return null;
     if (!node.getXferAddr().equals(nodeID.getXferAddr())) {
       final UnregisteredNodeException e = new UnregisteredNodeException(
@@ -355,7 +358,7 @@ public class DatanodeManager {
     }
     return node;
   }
-
+    
   /** Prints information about all datanodes. */
   void datanodeDump(final PrintWriter out) {
     synchronized (datanodeMap) {
