@@ -14,15 +14,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -65,25 +66,23 @@ public class LeaderElection extends Thread {
         // Determine the next leader and set it
         // if this is the leader, also remove previous leaders
         try {
-            new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+          new HopsTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+            @Override
+            public void acquireLock(TransactionLocks locks) throws IOException {
+              //FIXME: do we need to take write lock on the leader table, it's already safe since we took look on MaxNNID
+              HopsLockFactory lf = HopsLockFactory.getInstance();
+              locks.add(lf.getVariableLock(HopVariable.Finder.MaxNNID, TransactionLockTypes.LockType.WRITE))
+                      .add(lf.getLeaderLock(TransactionLockTypes.LockType.WRITE));
+            }
 
-                @Override
-                public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-                    HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-                    tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
-                    tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-
-                    return tla.acquireLeaderLock();
-                }
-
-                @Override
-                public Object performTask() throws PersistanceException, IOException {
-                    LOG.info(hostname + ") Leader Election initializing ... ");
-                    determineAndSetLeader();
-                    return null;
-                }
-            }.handle();
-
+            @Override
+            public Object performTask() throws PersistanceException, IOException {
+              LOG.info(hostname + ") Leader Election initializing ... ");
+              determineAndSetLeader();
+              return null;
+            }
+          }.handle();
+          
             // Start leader election thread
             start();
 
@@ -117,35 +116,33 @@ public class LeaderElection extends Thread {
         }
         // TODO [S] do something if i am no longer the leader. 
     }
-    private HDFSTransactionalRequestHandler leaderElectionHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+    private HopsTransactionalRequestHandler leaderElectionHandler = new HopsTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.MaxNNID, TransactionLockTypes.LockType.WRITE))
+                .add(lf.getLeaderLock(TransactionLockTypes.LockType.WRITE));
+      }
 
-        @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
-            tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-            return tla.acquireLeaderLock();
+      @Override
+      public Object performTask() throws PersistanceException, IOException {
+        updateCounter();
+        // Determine the next leader and set it
+        // if this is the leader, also remove previous leaders
+        determineAndSetLeader();
+
+        //Update list of active NN in Namenode.java
+        SortedActiveNamenodeList sortedList = getActiveNamenodes();
+        nn.setNameNodeList(sortedList);
+        while (suspend) {
+          try {
+            Thread.sleep(10);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
         }
-
-        @Override
-        public Object performTask() throws PersistanceException, IOException {
-            updateCounter();
-            // Determine the next leader and set it
-            // if this is the leader, also remove previous leaders
-            determineAndSetLeader();
-
-            //Update list of active NN in Namenode.java
-            SortedActiveNamenodeList sortedList = getActiveNamenodes();
-            nn.setNameNodeList(sortedList);
-            while (suspend) {
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
-            return null;
-        }
+        return null;
+      }
     };
 
     @Override

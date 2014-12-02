@@ -22,7 +22,6 @@ import se.sics.hop.metadata.hdfs.dal.*;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hop.*;
 import se.sics.hop.metadata.hdfs.entity.hop.var.*;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.ContextInitializer;
 import se.sics.hop.transaction.EntityManager;
 
@@ -37,6 +36,7 @@ import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 
 /**
  *
@@ -56,7 +56,7 @@ public class StorageFactory {
   public static void setConfiguration(Configuration conf) throws IOException {
     IDsMonitor.getInstance().setConfiguration(conf);
     PathMemcache.getInstance().setConfiguration(conf);
-    HDFSTransactionLockAcquirer.setConfiguration(conf);
+    HopsLockFactory.getInstance().setConfiguration(conf);
     NDCWrapper.enableNDC(conf.getBoolean(DFSConfigKeys.DFS_NDC_ENABLED_KEY, DFSConfigKeys.DFS_NDC_ENABLED_DEFAULT));
     if (!isDALInitialized) {
       Variables.registerDefaultValues();

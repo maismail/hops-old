@@ -4,21 +4,21 @@ import java.io.IOException;
 import java.security.SecureRandom;
 import java.util.Collection;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Persisted version of the BlockTokenSecretManager to be used by the NameNode
@@ -189,12 +189,11 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   private void addBlockKeys() throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_TOKENS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlockKey(LockType.WRITE);
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.BlockTokenKeys, LockType.WRITE));
       }
 
       @Override
@@ -234,18 +233,17 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
   }
 
   private boolean updateBlockKeys() throws IOException {
-    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
+    return (Boolean) new HopsTransactionalRequestHandler(HDFSOperationType.UPDATE_BLOCK_KEYS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlockKey(LockType.WRITE);
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.BlockTokenKeys, LockType.WRITE));
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByType();
-        if(keys.isEmpty()){
+        if (keys.isEmpty()) {
           log.debug("keys is not generated yet to be updated");
           return false;
         }

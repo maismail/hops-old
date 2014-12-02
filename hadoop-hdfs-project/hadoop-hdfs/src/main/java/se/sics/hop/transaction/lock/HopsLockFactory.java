@@ -24,6 +24,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
@@ -334,5 +336,22 @@ public class HopsLockFactory {
       }
     }
     return list;
+  }
+    
+    
+  public void setConfiguration(Configuration conf) {
+    HopsLock.enableSetPartitionKey(conf.getBoolean(DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED, DFSConfigKeys.DFS_SET_PARTITION_KEY_ENABLED_DEFAULT));
+    HopsBaseINodeLock.setDefaultLockType(getPrecedingPathLockType(conf));
+  }
+  
+  private TransactionLockTypes.INodeLockType getPrecedingPathLockType(Configuration conf) {
+    String val = conf.get(DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE, DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT);
+    if (val.compareToIgnoreCase("READ") == 0) {
+      return TransactionLockTypes.INodeLockType.READ;
+    } else if (val.compareToIgnoreCase("READ_COMMITTED") == 0) {
+      return TransactionLockTypes.INodeLockType.READ_COMMITTED;
+    } else {
+      throw new IllegalStateException("Critical Parameter is not defined. Set " + DFSConfigKeys.DFS_STORAGE_ANCESTOR_LOCK_TYPE);
+    }
   }
 }
