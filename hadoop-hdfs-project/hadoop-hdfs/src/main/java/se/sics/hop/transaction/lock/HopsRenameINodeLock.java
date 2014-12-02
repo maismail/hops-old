@@ -16,6 +16,7 @@
 package se.sics.hop.transaction.lock;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -42,22 +43,36 @@ final class HopsRenameINodeLock extends HopsINodeLock {
   };
   private final boolean legacyRename;
 
-  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType, TransactionLockTypes.INodeResolveType resolveType, boolean ignoreLocalSubtreeLocks, long namenodeId, List<ActiveNamenode> activeNamenodes, String src, String dst, boolean legacyRename) {
-    super(lockType, resolveType, false, ignoreLocalSubtreeLocks, namenodeId, activeNamenodes, src, dst);
+  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
+      TransactionLockTypes.INodeResolveType resolveType,
+      boolean ignoreLocalSubtreeLocks, long namenodeId,
+      Collection<ActiveNamenode> activeNamenodes, String src, String dst,
+      boolean legacyRename) {
+    super(lockType, resolveType, false, ignoreLocalSubtreeLocks, namenodeId,
+        activeNamenodes, src, dst);
     this.legacyRename = legacyRename;
   }
 
-  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType, TransactionLockTypes.INodeResolveType resolveType, String src, String dst, boolean legacyRename) {
-    super(lockType, resolveType, false, src, dst);
+  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
+      TransactionLockTypes.INodeResolveType resolveType,
+      Collection<ActiveNamenode> activeNamenodes, String src, String dst,
+      boolean legacyRename) {
+    super(lockType, resolveType, false, activeNamenodes, src, dst);
     this.legacyRename = legacyRename;
   }
 
-  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType, TransactionLockTypes.INodeResolveType resolveType, boolean ignoreLocalSubtreeLocks, long namenodeId, List<ActiveNamenode> activeNamenodes, String src, String dst) {
-    this(lockType, resolveType, ignoreLocalSubtreeLocks, namenodeId, activeNamenodes, src, dst, false);
+  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
+      TransactionLockTypes.INodeResolveType resolveType,
+      boolean ignoreLocalSubtreeLocks, long namenodeId,
+      List<ActiveNamenode> activeNamenodes, String src, String dst) {
+    this(lockType, resolveType, ignoreLocalSubtreeLocks, namenodeId,
+        activeNamenodes, src, dst, false);
   }
 
-  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType, TransactionLockTypes.INodeResolveType resolveType, String src, String dst) {
-    this(lockType, resolveType, src, dst, false);
+  public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
+      TransactionLockTypes.INodeResolveType resolveType,
+      Collection<ActiveNamenode> activeNamenodes, String src, String dst) {
+    this(lockType, resolveType, activeNamenodes, src, dst, false);
   }
 
   @Override

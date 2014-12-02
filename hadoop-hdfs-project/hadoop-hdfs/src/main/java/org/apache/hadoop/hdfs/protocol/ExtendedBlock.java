@@ -109,7 +109,7 @@ public class ExtendedBlock {
     ExtendedBlock b = (ExtendedBlock)o;
     return b.block.equals(block) && b.poolId.equals(poolId);
   }
-  
+
   @Override // Object
   public int hashCode() {
     return block.hashCode();

@@ -17,9 +17,13 @@ import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.*;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -182,8 +186,7 @@ public class ErasureCodingManager extends Configured{
   private void finalizeEncoding(final String path) {
     LOG.info("Finilizing encoding for " + path);
     try {
-      HDFSTransactionalRequestHandler handler =
-          new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+          new HopsTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
             private String parityPath;
 
             @Override
@@ -192,6 +195,11 @@ public class ErasureCodingManager extends Configured{
               EncodingStatus status = namesystem.getEncodingStatus(path);
               // TODO How to handle the case that status was not found?
               parityPath = parityFolder + "/" + status.getParityFileName();
+            }
+
+            @Override
+            public void acquireLock(TransactionLocks locks) throws IOException {
+
             }
 
             @Override
@@ -231,8 +239,7 @@ public class ErasureCodingManager extends Configured{
               EntityManager.update(encodingStatus);
               return null;
             }
-          };
-      handler.handle(this);
+          }.handle(this);
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
     }

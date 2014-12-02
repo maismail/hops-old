@@ -17,6 +17,7 @@ package se.sics.hop.transaction.lock;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -43,12 +44,12 @@ class HopsINodeLock extends HopsBaseINodeLock {
   private final INodeResolveType resolveType;
   private final boolean resolveLink;
   protected final String[] paths;
-  private final List<ActiveNamenode> activeNamenodes;
+  private final Collection<ActiveNamenode> activeNamenodes;
   private final boolean ignoreLocalSubtreeLocks;
   private final long namenodeId;
 
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId, List<ActiveNamenode> activeNamenodes, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId, Collection<ActiveNamenode> activeNamenodes, String... paths) {
     super();
     this.lockType = lockType;
     this.resolveType = resolveType;
@@ -66,13 +67,12 @@ class HopsINodeLock extends HopsBaseINodeLock {
     this.paths = paths;
   }
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, String... paths) {
-    this(lockType, resolveType, resolveLink, false, -1, null, paths);
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, Collection<ActiveNamenode> activeNamenodes, String... paths) {
+    this(lockType, resolveType, resolveLink, false, -1, activeNamenodes, paths);
   }
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
-      String... paths) {
-    this(lockType, resolveType, true, false, -1, null, paths);
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, Collection<ActiveNamenode> activeNamenodes, String... paths) {
+    this(lockType, resolveType, true, false, -1, activeNamenodes, paths);
   }
 
   @Override
