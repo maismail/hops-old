@@ -20,11 +20,11 @@ package se.sics.hop.transaction.lock;
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-final class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
+public final class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
 
   private final HopsTransactionLocks locks;
 
-  HopsTransactionalLockAcquirer() {
+  public HopsTransactionalLockAcquirer() {
     locks = new HopsTransactionLocks();
   }
 

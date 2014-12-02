@@ -28,7 +28,7 @@ import org.apache.hadoop.hdfs.server.namenode.Lease;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsLeaseLock extends HopsLock {
+public final class HopsLeaseLock extends HopsLock {
 
   private final TransactionLockTypes.LockType lockType;
   private final String leaseHolder;
@@ -72,6 +72,10 @@ final class HopsLeaseLock extends HopsLock {
     return leases;
   }
 
+  public TransactionLockTypes.LockType  getLockType(){
+    return lockType;
+  }
+  
   @Override
   final Type getType() {
     return Type.Lease;

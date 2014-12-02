@@ -1,7 +1,5 @@
 package se.sics.hop.metadata.context;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess;
@@ -10,12 +8,12 @@ import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.*;
 
 import static se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess.KeyTuple;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class BlockChecksumContext extends EntityContext<BlockChecksum> {
   private BlockChecksumDataAccess<BlockChecksum> dataAccess;
@@ -120,7 +118,7 @@ public class BlockChecksumContext extends EntityContext<BlockChecksum> {
   }
 
   @Override
-  public void prepare(OldTransactionLocks tlm) throws StorageException {
+  public void prepare(TransactionLocks tlm) throws StorageException {
     for (BlockChecksum blockChecksum : added.values()) {
       dataAccess.add(blockChecksum);
     }

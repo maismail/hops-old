@@ -15,7 +15,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import java.util.EnumMap;
 import java.util.Map;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
@@ -24,7 +23,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsVariablesLock extends HopsLock {
+public final class HopsVariablesLock extends HopsLock {
 
   private final Map<HopVariable.Finder, TransactionLockTypes.LockType> variables;
 
@@ -44,7 +43,7 @@ final class HopsVariablesLock extends HopsLock {
     }
   }
 
-  TransactionLockTypes.LockType getVariableLockType(HopVariable.Finder variableType) {
+  public TransactionLockTypes.LockType getVariableLockType(HopVariable.Finder variableType) {
     return variables.get(variableType);
   }
 

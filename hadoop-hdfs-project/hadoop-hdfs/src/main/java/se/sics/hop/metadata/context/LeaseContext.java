@@ -5,16 +5,17 @@ import java.util.*;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.HopsLeaseLock;
+import se.sics.hop.transaction.lock.HopsLock;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -180,16 +181,17 @@ public class LeaseContext extends EntityContext<Lease> {
     return false;
   }
     @Override
-    public void prepare(OldTransactionLocks lks) throws StorageException {
+    public void prepare(TransactionLocks lks) throws StorageException {
+      //FIXME:
         // if the list is not empty then check for the lock types
         // lock type is checked after when list lenght is checked 
         // because some times in the tx handler the acquire lock 
         // function is empty and in that case tlm will throw 
         // null pointer exceptions
-//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
+//        HopsLeaseLock hlk = (HopsLeaseLock)lks.getLock(HopsLock.Type.Lease);
 //        if ((!removedLeases.values().isEmpty()
 //                || !modifiedLeases.values().isEmpty())
-//                && hlks.getLeaseLock() != TransactionLockTypes.LockType.WRITE) {
+//                && hlk.getLockType()!= TransactionLockTypes.LockType.WRITE) {
 //            throw new LockUpgradeException("Trying to upgrade lease locks");
 //        }
         dataAccess.prepare(removedLeases.values(), newLeases.values(), modifiedLeases.values());
