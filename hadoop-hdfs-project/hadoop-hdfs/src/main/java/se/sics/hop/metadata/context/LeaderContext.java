@@ -19,12 +19,10 @@ import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
@@ -32,9 +30,7 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -250,7 +246,8 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public void prepare(OldTransactionLocks lks) throws StorageException {
+  public void prepare(TransactionLocks lks) throws StorageException {
+    //FIXME:
     // if the list is not empty then check for the lock types
     // lock type is checked after when list lenght is checked 
     // because some times in the tx handler the acquire lock 

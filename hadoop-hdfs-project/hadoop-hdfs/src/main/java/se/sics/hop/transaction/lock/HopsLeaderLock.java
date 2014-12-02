@@ -17,7 +17,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import org.apache.hadoop.hdfs.DFSConfigKeys;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
@@ -49,5 +48,9 @@ final class HopsLeaderLock extends HopsLock {
   @Override
   final Type getType() {
     return Type.LeaderLock;
+  }
+  
+  TransactionLockTypes.LockType getLockType(){
+    return lockType;
   }
 }

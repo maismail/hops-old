@@ -5,20 +5,19 @@ import java.util.*;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
+import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
-import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.Common;
-import se.sics.hop.exception.StorageCallPreventedException;
 import static se.sics.hop.metadata.hdfs.entity.EntityContext.currentLockMode;
 import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.HopsBaseINodeLock;
+import se.sics.hop.transaction.lock.HopsLock;
+import se.sics.hop.transaction.lock.TransactionLockTypes.*;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -175,16 +174,16 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void prepare(OldTransactionLocks lks) throws StorageException {
+  public void prepare(TransactionLocks lks) throws StorageException {
     // if the list is not empty then check for the lock types
     // lock type is checked after when list lenght is checked 
     // because some times in the tx handler the acquire lock 
     // function is empty and in that case tlm will throw 
     // null pointer exceptions
-   /* HDFSTransactionLocks hlks = (HDFSTransactionLocks) lks;
+    HopsBaseINodeLock hlk = (HopsBaseINodeLock) lks.getLock(HopsLock.Type.INode);
     if (!removedInodes.values().isEmpty()) {
       for (INode inode : removedInodes.values()) {
-        INodeLockType lock = hlks.getLockedINodeLockType(inode);
+        INodeLockType lock = hlk.getLockedINodeLockType(inode);
         if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
           throw new LockUpgradeException("Trying to remove inode id=" + inode.getId() + " acquired lock was " + lock);
         }
@@ -193,12 +192,12 @@ public class INodeContext extends EntityContext<INode> {
 
     if (!modifiedInodes.values().isEmpty()) {
       for (INode inode : modifiedInodes.values()) {
-        INodeLockType lock = hlks.getLockedINodeLockType(inode);
+        INodeLockType lock = hlk.getLockedINodeLockType(inode);
         if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
           throw new LockUpgradeException("Trying to update inode id=" + inode.getId() + " acquired lock was " + lock);
         }
       }
-    }*/
+    }
     dataAccess.prepare(removedInodes.values(), newInodes.values(), modifiedInodes.values());
   }
 

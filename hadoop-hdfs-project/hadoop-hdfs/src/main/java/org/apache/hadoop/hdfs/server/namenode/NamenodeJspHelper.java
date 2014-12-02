@@ -54,7 +54,6 @@ import org.apache.hadoop.hdfs.server.common.JspHelper;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 //import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;    //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.http.HttpConfig;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.net.NodeBase;
@@ -67,13 +66,13 @@ import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
 import se.sics.hop.transaction.lock.INodeUtil;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 class NamenodeJspHelper {
   static String fraction2String(double value) {
@@ -814,26 +813,24 @@ class NamenodeJspHelper {
         this.inode = null;
       } else {
         this.block = new Block(blockId);
-        this.inode = (INodeFile) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+        this.inode = (INodeFile) new HopsTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
           INodeIdentifier inodeIdentifier;
-          @Override
-          public Object performTask() throws PersistanceException, IOException {
-            return blockManager.getBlockCollection(block);
-          }
-
-          @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-            HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-            tla.getLocks().
-                    addINode(INodeLockType.READ).
-                    addBlock(block.getBlockId(),
-                    inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
-            return tla.acquireByBlock(inodeIdentifier);
-          }
 
           @Override
           public void setUp() throws StorageException {
             inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
+          }
+
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, inodeIdentifier))
+                    .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier));
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            return blockManager.getBlockCollection(block);
           }
         }.handle();
       }

@@ -33,15 +33,16 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Common class for storage information.
@@ -129,12 +130,11 @@ public class StorageInfo {
   //START_HOP_CODE
   public static StorageInfo getStorageInfoFromDB() throws IOException {
     if (storageInfo == null) {
-      storageInfo = (StorageInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
+      storageInfo = (StorageInfo) new HopsTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
         @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-          tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.READ);
-          return tla.acquire();
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf = HopsLockFactory.getInstance();
+          locks.add(lf.getVariableLock(HopVariable.Finder.StorageInfo, TransactionLockTypes.LockType.READ));
         }
 
         @Override
@@ -149,27 +149,26 @@ public class StorageInfo {
   public static void storeStorageInfoToDB(final String clusterId) throws IOException { // should only be called by the format function once during the life time of the cluster. 
                                                                                        // FIXME [S] it can cause problems in the future when we try to run multiple NN
                                                                                        // Solution. call format on only one namenode or every one puts the same values.  
-    HDFSTransactionalRequestHandler formatHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
+    
+    new HopsTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addStorageInfo(TransactionLockTypes.LockType.WRITE);
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.StorageInfo, TransactionLockTypes.LockType.WRITE));
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
         Configuration conf = new Configuration();
         String bpid = newBlockPoolID();
-        Variables.setStorageInfo(new StorageInfo(HdfsConstants.LAYOUT_VERSION,
+        storageInfo = new StorageInfo(HdfsConstants.LAYOUT_VERSION,
                 conf.getInt(DFSConfigKeys.DFS_NAME_SPACE_ID_KEY, DFSConfigKeys.DFS_NAME_SPACE_ID_DEFAULT),
-                clusterId, 0L, bpid));
+                clusterId, 0L, bpid);
+        Variables.setStorageInfo(storageInfo);
         LOG.info("Added new entry to storage info. nsid:" + DFSConfigKeys.DFS_NAME_SPACE_ID_KEY + " CID:" + clusterId + " pbid:" + bpid);
         return null;
       }
-    };
-    formatHandler.handle();
-    storageInfo = null;
+    }.handle();
   }
   
   public String getBlockPoolId()

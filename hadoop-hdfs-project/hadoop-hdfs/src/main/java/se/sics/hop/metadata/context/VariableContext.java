@@ -3,8 +3,6 @@ package se.sics.hop.metadata.context;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import java.util.Collection;
 import java.util.EnumMap;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.exception.PersistanceException;
@@ -14,7 +12,10 @@ import se.sics.hop.exception.LockUpgradeException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.HopsLock;
+import se.sics.hop.transaction.lock.HopsVariablesLock;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -72,15 +73,19 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public void prepare(OldTransactionLocks lks) throws StorageException {
-    /*HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-    checkLockUpgrade(hlks, modifiedVariables);
-    checkLockUpgrade(hlks, newVariables);*/
+  public void prepare(TransactionLocks lks) throws StorageException {
+    HopsVariablesLock hlk = (HopsVariablesLock) lks.getLock(HopsLock.Type.Variable);
+    checkLockUpgrade(hlk, modifiedVariables);
+    checkLockUpgrade(hlk, newVariables);
     da.prepare(newVariables.values(), modifiedVariables.values(), null);
   }
 
-  private void checkLockUpgrade(HDFSTransactionLocks lks, EnumMap<HopVariable.Finder, HopVariable> varmap) throws LockUpgradeException {
-    
+  private void checkLockUpgrade(HopsVariablesLock hlk, EnumMap<HopVariable.Finder, HopVariable> varmap) throws LockUpgradeException {
+    for(HopVariable.Finder varType : varmap.keySet()){
+      if(!hlk.getVariableLockType(varType).equals(TransactionLockTypes.LockType.WRITE)){
+        throw new LockUpgradeException(varType.toString());
+      }
+    }
   }
   
   @Override

@@ -19,19 +19,18 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
-import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.hdfs.dal.StorageIdMapDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopStorageId;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -80,12 +79,11 @@ public class StorageIdMap {
   }
 
   private void getSetSId(final String storageId) throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SET_SID) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.GET_SET_SID) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addSIdCounter(LockType.WRITE);
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.SIdCounter, LockType.WRITE));
       }
 
       @Override

@@ -16,7 +16,7 @@ import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.metadata.hdfs.entity.hop.HopBlockLookUp;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -242,17 +242,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public void prepare(OldTransactionLocks lks) throws StorageException {
-    // if the list is not empty then check for the lock types
-        // lock type is checked after when list lenght is checked 
-        // because some times in the tx handler the acquire lock 
-        // function is empty and in that case tlm will throw 
-        // null pointer exceptions
-//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-//        if ((!removedInvBlocks.values().isEmpty())
-//                && hlks.getInvLocks()!= TransactionLockTypes.LockType.WRITE) {
-//            throw new LockUpgradeException("Trying to upgrade invalidated blocks locks");
-//        }  
+  public void prepare(TransactionLocks lks) throws StorageException { 
     dataAccess.prepare(removedInvBlocks.values(), newInvBlocks.values(), new ArrayList<HopInvalidatedBlock>());
   }
 

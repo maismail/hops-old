@@ -27,7 +27,7 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsLeasePathLock extends HopsLock {
+public final class HopsLeasePathLock extends HopsLock {
 
   private final TransactionLockTypes.LockType lockType;
   private final List<HopLeasePath> leasePaths;
@@ -76,5 +76,9 @@ final class HopsLeasePathLock extends HopsLock {
   
   Collection<HopLeasePath> getLeasePaths(){
     return leasePaths;
+  }
+  
+  public TransactionLockTypes.LockType getLockType(){
+    return lockType;
   }
 }

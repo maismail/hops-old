@@ -18,15 +18,7 @@
 package org.apache.hadoop.hdfs.server.common;
 
 
-import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.Variables;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 
 /****************************************************************
  * A GenerationStamp is a Hadoop FS primitive, identified by a long.

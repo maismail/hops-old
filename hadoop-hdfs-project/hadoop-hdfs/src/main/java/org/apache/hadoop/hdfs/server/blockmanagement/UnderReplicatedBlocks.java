@@ -26,23 +26,23 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Keep prioritized queues of under replicated blocks.
@@ -383,12 +383,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   /** returns an iterator of all blocks in a given priority queue */
   BlockIterator iterator(final int level) {
      try {
-       return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
+       return (BlockIterator) new HopsTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
          @Override
-         public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-           return null;
+         public void acquireLock(TransactionLocks locks) throws IOException {
          }
-
+         
          @Override
          public Object performTask() throws PersistanceException, IOException {
            return new BlockIterator(fillPriorityQueues(level), level);
@@ -404,12 +403,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   @Override
   public BlockIterator iterator() {
     try {
-      return (BlockIterator) new HDFSTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
+      return (BlockIterator) new HopsTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
         @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          return null;
+        public void acquireLock(TransactionLocks locks) throws IOException {
         }
-
+        
         @Override
         public Object performTask() throws PersistanceException, IOException {
           return new BlockIterator(fillPriorityQueues());
@@ -534,12 +532,11 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
-    return (List<List<Block>>) new HDFSTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
+    return (List<List<Block>>) new HopsTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addReplicationIndex(TransactionLockTypes.LockType.WRITE);
-        return tla.acquire();  
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getVariableLock(HopVariable.Finder.ReplicationIndex, TransactionLockTypes.LockType.WRITE));
       }
 
       @Override

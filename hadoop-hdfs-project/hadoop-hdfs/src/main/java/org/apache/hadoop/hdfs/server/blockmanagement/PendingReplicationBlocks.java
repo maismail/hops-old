@@ -24,26 +24,16 @@ import static org.apache.hadoop.util.Time.now;
 
 import java.io.PrintWriter;
 import java.sql.Time;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.logging.Log;
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -254,32 +244,5 @@ class PendingReplicationBlocks {
 
   private void removePendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
     EntityManager.remove(pbi);
-  }
-  
-  private Block getBlock(final PendingBlockInfo pbi) throws IOException {
-    return (Block) new HDFSTransactionalRequestHandler(HDFSOperationType.GET_BLOCK) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(pbi.getBlockId(),pbi.getInodeId());
-        return tla.acquire();
-      }
-
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Block block = EntityManager.find(BlockInfo.Finder.ById, pbi.getBlockId());
-        if (block == null) {
-          //this function is called from getTimedOutBlocks
-          //which has already deleted the timeout rows from the table
-            
-          // the block is not found then instead of returning null we have create 
-          // the block and return it. 
-          // Note: we dont have any information other than block id. infuture this
-          // can potentially cause problems
-          block = new Block(pbi.getBlockId());
-        }
-        return block;
-      }
-    }.handle();
   }
 }

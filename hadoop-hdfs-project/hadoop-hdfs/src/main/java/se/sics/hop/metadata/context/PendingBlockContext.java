@@ -15,7 +15,7 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -163,18 +163,7 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
 
     @Override
-    public void prepare(OldTransactionLocks lks) throws StorageException {
-        // if the list is not empty then check for the lock types
-        // lock type is checked after when list lenght is checked 
-        // because some times in the tx handler the acquire lock 
-        // function is empty and in that case tlm will throw 
-        // null pointer exceptions
-//        HDFSTransactionLocks hlks = (HDFSTransactionLocks)lks;
-//        if ((!removedPendings.values().isEmpty()
-//                || !modifiedPendings.values().isEmpty())
-//                && hlks.getPbLock()!= TransactionLockTypes.LockType.WRITE) {
-//            throw new LockUpgradeException("Trying to upgrade pending block locks");
-//        }
+    public void prepare(TransactionLocks lks) throws StorageException {
         dataAccess.prepare(removedPendings.values(), newPendings.values(), modifiedPendings.values());
     }
 

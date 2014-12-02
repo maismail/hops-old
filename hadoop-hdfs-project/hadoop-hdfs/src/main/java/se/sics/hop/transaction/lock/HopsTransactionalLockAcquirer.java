@@ -15,15 +15,12 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
-public class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
+public final class HopsTransactionalLockAcquirer extends TransactionLockAcquirer {
 
   private final HopsTransactionLocks locks;
 
