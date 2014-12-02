@@ -385,7 +385,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
      try {
        return (BlockIterator) new HopsTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
          @Override
-         public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+         public void acquireLock(TransactionLocks locks) throws IOException {
          }
          
          @Override
@@ -405,7 +405,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     try {
       return (BlockIterator) new HopsTransactionalRequestHandler(HDFSOperationType.UNDER_REPLICATED_BLKS_ITERATOR) {
         @Override
-        public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+        public void acquireLock(TransactionLocks locks) throws IOException {
         }
         
         @Override
@@ -534,7 +534,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
           final int blocksToProcess) throws IOException {
     return (List<List<Block>>) new HopsTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getVariableLock(HopVariable.Finder.ReplicationIndex, TransactionLockTypes.LockType.WRITE));
       }

@@ -1023,7 +1023,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(blk.getBlockId(), inodeIdentifier))
@@ -1686,7 +1686,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         Block b = (Block) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
@@ -1805,7 +1805,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         Block b = (Block) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
@@ -1899,7 +1899,7 @@ public class BlockManager {
    final HopsTransactionalRequestHandler processReportHandler = new HopsTransactionalRequestHandler(firstBlockReport ? 
            HDFSOperationType.PROCESS_FIRST_BLOCK_REPORT : HDFSOperationType.PROCESS_REPORT) {
      @Override
-     public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+     public void acquireLock(TransactionLocks locks) throws IOException {
        HopsLockFactory lf = HopsLockFactory.getInstance();
        long[] partOfreportedBlks = (long[]) getParams()[0];
        locks.add(lf.getBlockReportingLocks(partOfreportedBlks, dn.getSId()));
@@ -2511,7 +2511,7 @@ public class BlockManager {
     // also this could be optimized even more by batching multiple inode files at a time
     final HopsTransactionalRequestHandler processMisReplicatedBlocksHandler = new HopsTransactionalRequestHandler(HDFSOperationType.PROCESS_MIS_REPLICATED_BLOCKS_PER_INODE_BATCH) {
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
         locks.add(lf.getBatchedINodesLock(inodeIdentifiers))
@@ -2966,7 +2966,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
@@ -3082,7 +3082,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
@@ -3259,7 +3259,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         Block block = (Block) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
@@ -3314,7 +3314,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         Block block = (Block) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
@@ -3741,7 +3741,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(b, inodeIdentifier))
@@ -3771,7 +3771,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
@@ -3841,7 +3841,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(timedOutItemId, inodeIdentifier))
@@ -3896,7 +3896,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
@@ -3926,7 +3926,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
@@ -3960,7 +3960,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(b.corrupted.getBlockId(), inodeIdentifier))
@@ -4004,7 +4004,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
@@ -4035,7 +4035,7 @@ public class BlockManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))

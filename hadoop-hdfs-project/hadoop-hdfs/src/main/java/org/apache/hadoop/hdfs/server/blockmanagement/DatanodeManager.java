@@ -1245,7 +1245,7 @@ public class DatanodeManager {
       }
 
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))

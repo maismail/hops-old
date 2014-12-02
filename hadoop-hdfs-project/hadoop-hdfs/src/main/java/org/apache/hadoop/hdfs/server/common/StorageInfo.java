@@ -132,7 +132,7 @@ public class StorageInfo {
     if (storageInfo == null) {
       storageInfo = (StorageInfo) new HopsTransactionalRequestHandler(HDFSOperationType.GET_STORAGE_INFO) {
         @Override
-        public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+        public void acquireLock(TransactionLocks locks) throws IOException {
           HopsLockFactory lf = HopsLockFactory.getInstance();
           locks.add(lf.getVariableLock(HopVariable.Finder.StorageInfo, TransactionLockTypes.LockType.READ));
         }
@@ -152,7 +152,7 @@ public class StorageInfo {
     
     new HopsTransactionalRequestHandler(HDFSOperationType.ADD_STORAGE_INFO) {
       @Override
-      public void acquireLock(TransactionLocks locks) throws IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getVariableLock(HopVariable.Finder.StorageInfo, TransactionLockTypes.LockType.WRITE));
       }
