@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
@@ -39,18 +38,17 @@ import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestBlockUnderConstruction {
   static final String BASE_DIR = "/test/TestBlockUnderConstruction";
@@ -91,14 +89,12 @@ public class TestBlockUnderConstruction {
 
   private void verifyFileBlocks(final String file,
                                 final boolean isFileOpen) throws IOException{
-    HDFSTransactionalRequestHandler verifyFileBlocksHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.VERIFY_FILE_BLOCKS, file) {
+    HopsTransactionalRequestHandler verifyFileBlocksHandler = new HopsTransactionalRequestHandler(HDFSOperationType.VERIFY_FILE_BLOCKS, file) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.READ, new String[]{file}).
-                addBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(cluster.getNameNode(), INodeLockType.READ, INodeResolveType.PATH, file))
+                .add(lf.getBlockLock());
       }
       
       @Override

@@ -35,14 +35,13 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
 import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestProcessCorruptBlocks {
   /**
@@ -264,29 +263,26 @@ public class TestProcessCorruptBlocks {
 
   private static NumberReplicas countReplicas(final FSNamesystem namesystem,
           final ExtendedBlock block) throws IOException {
-    return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
+    return (NumberReplicas) new HopsTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
+      INodeIdentifier inodeIdentifier;
+
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addReplica().
-                addExcess().
-                addCorrupt();
-        return tla.acquire();
+      public void setUp() throws PersistanceException, IOException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+      }
+
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.RE, HopsLockFactory.BLK.ER, HopsLockFactory.BLK.CR));
       }
 
       @Override
       public Object performTask() throws PersistanceException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
-        }
+
     }.handle(namesystem);
   }
 

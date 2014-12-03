@@ -24,19 +24,18 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestFSNamesystem {
 
@@ -73,13 +72,11 @@ public class TestFSNamesystem {
   }
   
   private void addLease(final LeaseManager leaseMan, final String holder, final String src) throws IOException{
-    new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addLease(LockType.WRITE, holder);
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getLeaseLock(LockType.WRITE, holder));
       }
       
       @Override

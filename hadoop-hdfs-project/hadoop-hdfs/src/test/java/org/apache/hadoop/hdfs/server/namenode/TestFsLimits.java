@@ -26,7 +26,6 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -37,16 +36,16 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Before;
 import org.junit.Test;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestFsLimits {
   static Configuration conf;
@@ -171,13 +170,13 @@ public class TestFsLimits {
   private static int id  = 1 + INodeDirectory.ROOT_ID;
   private void addChildWithName(final String name, final Class<?> expected)
   throws Exception {
-  HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    HopsTransactionalRequestHandler handler = new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
 
     @Override
-    public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-      HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-      tla.getLocks().addINode(TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, new String[]{"/", "/"+name});
-      return tla.acquire();
+    public void acquireLock(TransactionLocks locks) throws IOException {
+      HopsLockFactory lf = HopsLockFactory.getInstance();
+      locks.add(lf.getINodeLock(getMockNamesystem().getNameNode(), TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, 
+              TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, "/", "/"+name));
     }
 
     @Override
