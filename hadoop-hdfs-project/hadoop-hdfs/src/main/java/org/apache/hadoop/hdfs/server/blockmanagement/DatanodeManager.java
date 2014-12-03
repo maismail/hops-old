@@ -51,6 +51,7 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.UnregisteredNodeException;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor.BlockTargetPair;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.Namesystem;
 import org.apache.hadoop.hdfs.server.protocol.BalancerBandwidthCommand;
@@ -1249,7 +1250,7 @@ public class DatanodeManager {
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance();
+        HopsLockFactory lf = HopsLockFactory.getInstance((namesystem.getNameNode()));
         locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, inodeIdentifier))
                 .add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
                 .add(lf.getBlockRelated(BLK.RE, BLK.UC));

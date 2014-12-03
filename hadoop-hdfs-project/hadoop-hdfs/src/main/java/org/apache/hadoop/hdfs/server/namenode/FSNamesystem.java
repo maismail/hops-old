@@ -143,9 +143,7 @@ import se.sics.hop.transaction.handler.EncodingStatusOperationType;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.lock.HopsLock;
 import se.sics.hop.transaction.lock.HopsLockFactory;
-import se.sics.hop.transaction.lock.HopsTransactionalLockAcquirer;
 import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.lock.SubtreeLockedException;
@@ -260,7 +258,8 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUBTREE_EXECUTOR_LIMIT_KE
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_KEY;
 import static org.apache.hadoop.util.Time.now;
-import static se.sics.hop.transaction.lock.HopsLockFactory.*;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
+import static se.sics.hop.transaction.lock.HopsLockFactory.getInstance;
 
 /***************************************************
  * FSNamesystem does the actual bookkeeping work for the
@@ -1285,8 +1284,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.SET_PERMISSION, src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src))
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, src))
             .add(lf.getBlockLock());
       }
 
@@ -1336,9 +1335,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(
-            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src))
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, src))
             .add(lf.getBlockLock());
       }
 
@@ -1396,9 +1394,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE,
-                INodeResolveType.PATH, src))
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, src))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC));
           }
@@ -1442,9 +1439,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.GET_BLOCK_LOCATIONS, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ,
-                INodeResolveType.PATH, src))
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ, INodeResolveType.PATH, src))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC));
           }
@@ -1584,8 +1580,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.CONCAT) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH, paths))
             .add(lf.getBlockLock())
             .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.PE, BLK.UC, BLK.IV));
@@ -1761,8 +1757,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.SET_TIMES, src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE,
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
             INodeResolveType.PATH, src))
             .add(lf.getBlockLock());
       }
@@ -1819,10 +1815,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         link) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(
-            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, false,
-                link));
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
+            INodeResolveType.PATH, false, link));
       }
 
       @Override
@@ -1910,8 +1905,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH, src))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC, BLK.IV));
@@ -2022,8 +2017,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE, src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH, false, src))
             .add(lf.getLeaseLock(LockType.WRITE, holder))
             .add(lf.getLeasePathLock(LockType.WRITE))
@@ -2251,10 +2246,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
+            HopsLockFactory lf = getInstance();
             locks.add(
-                lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
-                    src))
+                lf.getINodeLock(nameNode, INodeLockType.WRITE,
+                    INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.WRITE, holder))
                 .add(lf.getLeasePathLock(LockType.WRITE))
                 .add(lf.getBlockLock())
@@ -2388,8 +2383,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.APPEND_FILE, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH, src))
                 .add(lf.getBlockLock())
                 .add(lf.getLeaseLock(LockType.WRITE, holder))
@@ -2482,10 +2477,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.GET_ADDITIONAL_BLOCK, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
+            HopsLockFactory lf = getInstance();
             locks.add(
-                lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
-                    src))
+                lf.getINodeLock(nameNode, INodeLockType.WRITE,
+                    INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.READ, clientName))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC));
@@ -2688,8 +2683,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.GET_ADDITIONAL_DATANODE, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ,
                 INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.READ, clientName));
           }
@@ -2756,8 +2751,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.READ))
                 .add(lf.getBlockLock())
@@ -2845,8 +2840,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
                 INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.WRITE, holder))
                 .add(lf.getLeasePathLock(LockType.WRITE))
@@ -3025,8 +3020,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getLegacyRenameINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getLegacyRenameINodeLock(nameNode,
+                INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, src, dst))
                 .add(lf.getLeaseLock(LockType.WRITE))
                 .add(lf.getLeasePathLock(LockType.WRITE))
@@ -3113,8 +3109,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.RENAME_TO2, src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
-        locks.add(lf.getRenameINodeLock(INodeLockType.WRITE_ON_PARENT,
+        HopsLockFactory lf = getInstance();
+        locks.add(lf.getRenameINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, src, dst))
             .add(lf.getLeaseLock(LockType.WRITE))
             .add(lf.getLeasePathLock(LockType.WRITE))
@@ -3185,8 +3181,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, false,
                 src))
                 .add(lf.getLeaseLock(LockType.WRITE))
@@ -3216,8 +3212,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.DELETE, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, false,
                 true, src))
                 .add(lf.getLeaseLock(LockType.WRITE))
@@ -3407,9 +3403,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ, INodeResolveType.PATH,
-                resolveLink, src))
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ,
+                INodeResolveType.PATH, resolveLink, src))
                 .add(lf.getBlockLock());
           }
 
@@ -3451,8 +3447,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.MKDIRS, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH, resolvedLink, src));
           }
 
@@ -3550,8 +3546,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.GET_CONTENT_SUMMARY, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, src))
                 .add(lf.getBlockLock());
           }
@@ -3588,8 +3584,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.SET_QUOTA, path) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.WRITE,
+            HopsLockFactory lf = getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, path))
                 .add(lf.getBlockLock());
           }
@@ -3627,9 +3623,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.FSYNC, src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
+        HopsLockFactory lf = getInstance();
         locks.add(
-            lf.getINodeLock(INodeLockType.READ, INodeResolveType.PATH, src))
+            lf.getINodeLock(nameNode, INodeLockType.READ, INodeResolveType.PATH, src))
             .add(lf.getLeaseLock(LockType.READ))
             .add(lf.getBlockLock());
       }
@@ -3864,10 +3860,10 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = getInstance(nameNode);
+        HopsLockFactory lf = getInstance();
         locks.add(
-            lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier,
-                true))
+            lf.getIndividualINodeLock(INodeLockType.WRITE,
+                inodeIdentifier, true))
             .add(lf.getLeaseLock(LockType.WRITE))
             .add(lf.getLeasePathLock(LockType.WRITE))
             .add(lf.getBlockLock())
@@ -3993,7 +3989,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.RENEW_LEASE) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getLeaseLock(LockType.WRITE, holder));
       }
 
@@ -4036,8 +4032,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ,
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ,
                 INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN, src))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC));
@@ -5694,7 +5690,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+            HopsLockFactory lf = HopsLockFactory.getInstance();
             locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE,
                 inodeIdentifier))
                 .add(lf.getBlockLock());
@@ -5751,7 +5747,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE,
             inodeIdentifier))
             .add(lf.getLeaseLock(LockType.READ))
@@ -5977,7 +5973,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
             @Override
             public void acquireLock(TransactionLocks locks) throws IOException {
-              HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+              HopsLockFactory lf = HopsLockFactory.getInstance();
               locks.add(lf.getIndividualINodeLock(INodeLockType.READ_COMMITTED,
                   iNodeIdentifier, true))
                   .add(lf.getBlockLock())
@@ -6731,8 +6727,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.PRE_DELETE_CHECK) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ_COMMITTED,
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ_COMMITTED,
                 INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, false,
                 src));
           }
@@ -6955,8 +6951,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               path) {
             @Override
             public void acquireLock(TransactionLocks locks) throws IOException {
-              HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-              locks.add(lf.getINodeLock(INodeLockType.WRITE,
+              HopsLockFactory lf = HopsLockFactory.getInstance();
+              locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
                       INodeResolveType.PATH, true, true, path))
                   .add(lf.getBlockLock());
             }
@@ -7075,8 +7071,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         src) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getRenameINodeLock(INodeLockType.WRITE_ON_PARENT,
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getRenameINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN, true, src, dst))
             .add(lf.getLeaseLock(LockType.WRITE))
             .add(lf.getLeasePathLock(LockType.WRITE))
@@ -7130,8 +7126,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.IS_DIR) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ_COMMITTED,
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ_COMMITTED,
                 INodeResolveType.PATH, false, dst));
           }
 
@@ -7202,8 +7198,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         new HopsTransactionalRequestHandler(HDFSOperationType.RENAME_TO, src) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-            locks.add(lf.getLegacyRenameINodeLock(INodeLockType.WRITE_ON_PARENT,
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getLegacyRenameINodeLock(nameNode,
+                INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN, true, src, dst))
                 .add(lf.getLeaseLock(LockType.WRITE))
                 .add(lf.getLeasePathLock(LockType.WRITE))
@@ -7309,9 +7306,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 @Override
                 public void acquireLock(TransactionLocks locks)
                     throws IOException {
-                  HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-                  locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
-                      INodeResolveType.PATH, true, path))
+                  HopsLockFactory lf = HopsLockFactory.getInstance();
+                  locks.add(lf.getINodeLock(nameNode,
+                      INodeLockType.WRITE_ON_PARENT, INodeResolveType.PATH, true, path))
                       .add(lf.getLeaseLock(LockType.WRITE))
                       .add(lf.getLeasePathLock(LockType.WRITE))
                       .add(lf.getBlockLock())
@@ -7383,8 +7380,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HDFSOperationType.SET_SUBTREE_LOCK) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE,
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
             INodeResolveType.PATH, false, path));
       }
 
@@ -7427,9 +7424,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.RESET_SUBTREE_LOCK) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
-            false, true, path));
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
+            INodeResolveType.PATH, false, true, path));
       }
 
       @Override
@@ -7966,8 +7963,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.START_FILE) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE_ON_PARENT,
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH, false, parameters.get(0)))
             .add(lf.getLeaseLock(LockType.WRITE, "holder"))
             .add(lf.getLeasePathLock(LockType.WRITE))
@@ -7993,9 +7990,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         parameters.get(0)) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
-            parameters.get(0)))
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
+            INodeResolveType.PATH, parameters.get(0)))
             .add(lf.getLeaseLock(LockType.WRITE, "holder"))
             .add(lf.getLeaseLock(LockType.WRITE))
             .add(lf.getBlockLock())
@@ -8044,8 +8041,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             HDFSOperationType.FIND_ENCODING_STATUS) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-            locks.add(lf.getINodeLock(INodeLockType.READ_COMMITTED,
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ_COMMITTED,
                 INodeResolveType.PATH, filePath))
                 .add(lf.getEncodingStatusLock(LockType.READ_COMMITTED,
                     filePath));
@@ -8108,9 +8105,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
-            sourcePath));
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE,
+            INodeResolveType.PATH, sourcePath));
       }
 
       @Override
@@ -8152,9 +8149,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(
-            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, path))
+            lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, path))
             .add(lf.getEncodingStatusLock(LockType.WRITE, path));
       }
 
@@ -8173,8 +8170,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH,
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH,
             filePath))
             .add(lf.getEncodingStatusLock(LockType.WRITE, filePath));
       }
@@ -8210,9 +8207,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+            HopsLockFactory lf = HopsLockFactory.getInstance();
             // TODO Does it still make sense to resolve the path and lock the inode?
-            locks.add(lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, sourceFile))
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, sourceFile))
                 .add(lf.getEncodingStatusLock(LockType.WRITE, sourceFile));
           }
 
@@ -8252,9 +8249,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     new HopsTransactionalRequestHandler(HDFSOperationType.ADD_BLOCK_CHECKSUM) {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
-        locks.add(
-            lf.getINodeLock(INodeLockType.WRITE, INodeResolveType.PATH, src));
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, src));
       }
 
       @Override
@@ -8277,9 +8273,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
-        HopsLockFactory lf = HopsLockFactory.getInstance(nameNode);
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(
-            lf.getINodeLock(INodeLockType.READ, INodeResolveType.PATH, src))
+            lf.getINodeLock(nameNode, INodeLockType.READ, INodeResolveType.PATH, src))
             .add(lf.getBlockChecksumLock(src, blockIndex));
       }
 

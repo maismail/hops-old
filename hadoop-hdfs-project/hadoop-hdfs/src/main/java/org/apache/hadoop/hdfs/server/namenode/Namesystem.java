@@ -48,7 +48,7 @@ public interface Namesystem extends RwLock, SafeMode {
   
   /** Returns the namenode id*/
   public long getNamenodeId();
-  
+
   public void adjustSafeModeBlocks(Set<Long> safeBlocks) throws IOException;
    
   //END_HOP_CODE

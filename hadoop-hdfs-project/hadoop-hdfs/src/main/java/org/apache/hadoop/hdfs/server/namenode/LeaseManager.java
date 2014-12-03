@@ -17,8 +17,32 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hdfs.DFSUtil;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
+import org.apache.hadoop.util.Daemon;
+import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
-import static org.apache.hadoop.util.Time.now;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -30,32 +54,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
-import org.apache.hadoop.util.Daemon;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import org.apache.hadoop.hdfs.DFSUtil;
-import se.sics.hop.transaction.lock.INodeUtil;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import static org.apache.hadoop.util.Time.now;
+import static se.sics.hop.transaction.lock.HopsLockFactory.*;
 
 /**
  * LeaseManager does the lease housekeeping for writing on files.   
@@ -104,10 +104,10 @@ public class LeaseManager {
   }
   
   SortedSet<Lease> getSortedLeases() throws IOException {
-    HDFSTransactionalRequestHandler getSortedLeasesHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
+    HopsTransactionalRequestHandler getSortedLeasesHandler = new HopsTransactionalRequestHandler(HDFSOperationType.GET_SORTED_LEASES) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -407,17 +407,16 @@ public class LeaseManager {
           }
       }
     
-    HDFSTransactionalRequestHandler isInSafeModeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
-      
+    HopsTransactionalRequestHandler isInSafeModeHandler = new HopsTransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
+
       @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return fsnamesystem.isInSafeMode();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        // TODO safemode
       }
 
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        // TODO safemode
-        return null;
+      public Object performTask() throws PersistanceException, IOException {
+        return fsnamesystem.isInSafeMode();
       }
     };
     
@@ -429,44 +428,43 @@ public class LeaseManager {
         return new TreeSet<Lease>(da.findByTimeLimit(expiredTime));
       }
     };
-    
-    HDFSTransactionalRequestHandler expiredLeaseHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.LEASE_MANAGER_MONITOR) {
 
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        String holder = (String) getParams()[0];
-        if (holder != null) {
-          checkLeases(holder);
-        }
-        return null;
-      }
+    HopsTransactionalRequestHandler expiredLeaseHandler =
+        new HopsTransactionalRequestHandler(
+            HDFSOperationType.LEASE_MANAGER_MONITOR) {
+          private SortedSet<String> leasePaths = null;
 
-      private SortedSet<String> leasePaths = null;
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        String holder = (String) getParams()[0];
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeResolveType.PATH, INodeLockType.WRITE).
-                addBlock().
-                addLease(LockType.WRITE, holder).
-                addNameNodeLease(LockType.WRITE).
-                addLeasePath(LockType.WRITE).
-                addReplica().
-                addCorrupt().
-                addExcess().
-                addReplicaUc().
-                addUnderReplicatedBlock();
-        return tla.acquireByLease(leasePaths);
-        }
-      
-      @Override
-      public void setUp() throws StorageException
-      {
-        String holder = (String) getParams()[0];
-        leasePaths = INodeUtil.findPathsByLeaseHolder(holder);
-      }
-    };
+          @Override
+          public void setUp() throws StorageException {
+            String holder = (String) getParams()[0];
+            leasePaths = INodeUtil.findPathsByLeaseHolder(holder);
+          }
+
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            String holder = (String) getParams()[0];
+            HopsLockFactory lf = getInstance();
+            locks.add(
+                lf.getINodeLock(fsnamesystem.getNameNode(),
+                    INodeLockType.WRITE, INodeResolveType.PATH,
+                    leasePaths.toArray(new String[leasePaths.size()])))
+                .add(lf.getNameNodeLeaseLock(LockType.WRITE, leasePaths))
+                .add(lf.getLeaseLock(LockType.WRITE, holder))
+                .add(lf.getLeasePathLock(LockType.WRITE, leasePaths.size()))
+                .add(lf.getBlockLock())
+                .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC,
+                    BLK.UR));
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            String holder = (String) getParams()[0];
+            if (holder != null) {
+              checkLeases(holder);
+            }
+            return null;
+          }
+        };
   }
 
 //HOP: this method won't be needed

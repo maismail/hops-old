@@ -16,30 +16,27 @@
  */
 package se.sics.hop.transaction.lock;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.SortedSet;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
 public class HopsLockFactory {
 
-  private static HopsLockFactory instance;
-
-  private final NameNode nameNode;
+  private final static HopsLockFactory instance = new HopsLockFactory();
 
   public static enum BLK{
     /**
@@ -72,14 +69,11 @@ public class HopsLockFactory {
     PE
   }
 
-  private HopsLockFactory(NameNode nameNode) {
-    this.nameNode = nameNode;
+  private HopsLockFactory() {
+
   }
 
-  public static synchronized HopsLockFactory getInstance(NameNode nameNode) {
-    if (instance == null) {
-      instance = new HopsLockFactory(nameNode);
-    }
+  public static HopsLockFactory getInstance() {
     return instance;
   }
 
@@ -172,7 +166,8 @@ public class HopsLockFactory {
     return new HopsIndividualINodeLock(lockType, inodeIdentifier);
   }
 
-  public HopsLock getINodeLock(TransactionLockTypes.INodeLockType lockType,
+  public HopsLock getINodeLock(NameNode nameNode,
+      TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType, boolean resolveLink,
       boolean ignoreLocalSubtreeLocks, String... paths) {
     return new HopsINodeLock(lockType, resolveType, resolveLink,
@@ -180,30 +175,31 @@ public class HopsLockFactory {
         nameNode.getActiveNamenodes().getActiveNamenodes(), paths);
   }
 
-  public HopsLock getINodeLock(TransactionLockTypes.INodeLockType lockType,
+  public HopsLock getINodeLock(NameNode nameNode,
+      TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType, boolean resolveLink,
       String... paths) {
     return new HopsINodeLock(lockType, resolveType, resolveLink,
         nameNode.getActiveNamenodes().getActiveNamenodes(), paths);
   }
 
-  public HopsLock getINodeLock(TransactionLockTypes.INodeLockType lockType,
+  public HopsLock getINodeLock(NameNode nameNode,
+      TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType, String... paths) {
     return new HopsINodeLock(lockType, resolveType,
         nameNode.getActiveNamenodes().getActiveNamenodes(), paths);
   }
 
-  public HopsLock getRenameINodeLock(
+  public HopsLock getRenameINodeLock(NameNode nameNode,
       TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
-      boolean ignoreLocalSubtreeLocks, String src,
-      String dst) {
+      boolean ignoreLocalSubtreeLocks, String src, String dst) {
     return new HopsRenameINodeLock(lockType, resolveType,
         ignoreLocalSubtreeLocks, nameNode.getId(),
         nameNode.getActiveNamenodes().getActiveNamenodes(), src, dst);
   }
 
-  public HopsLock getRenameINodeLock(
+  public HopsLock getRenameINodeLock(NameNode nameNode,
       TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType, String src,
       String dst) {
@@ -211,7 +207,7 @@ public class HopsLockFactory {
         nameNode.getActiveNamenodes().getActiveNamenodes(), src, dst);
   }
 
-  public HopsLock getLegacyRenameINodeLock(
+  public HopsLock getLegacyRenameINodeLock(NameNode nameNode,
       TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
       boolean ignoreLocalSubtreeLocks, String src, String dst) {
@@ -220,7 +216,7 @@ public class HopsLockFactory {
         nameNode.getActiveNamenodes().getActiveNamenodes(), src, dst, true);
   }
 
-  public HopsLock getLegacyRenameINodeLock(
+  public HopsLock getLegacyRenameINodeLock(NameNode nameNode,
       TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType, String src,
       String dst) {

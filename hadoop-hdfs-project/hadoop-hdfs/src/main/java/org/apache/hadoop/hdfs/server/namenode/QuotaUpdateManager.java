@@ -8,22 +8,26 @@ import org.apache.hadoop.util.Daemon;
 import se.sics.hop.common.HopQuotaUpdateIdGen;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.ExecutionException;
 
 import static org.apache.hadoop.util.ExitUtil.terminate;
 
@@ -31,7 +35,7 @@ public class QuotaUpdateManager {
 
   static final Log LOG = LogFactory.getLog(QuotaUpdateManager.class);
 
-  private final FSNamesystem namesystem;
+  private final Namesystem namesystem;
 
   private final int updateInterval;
   private final int updateLimit;
@@ -42,7 +46,7 @@ public class QuotaUpdateManager {
       new ConcurrentLinkedQueue<Iterator<Integer>>();
 
   public QuotaUpdateManager(Namesystem namesystem, Configuration conf) {
-    this.namesystem = (FSNamesystem) namesystem;
+    this.namesystem = namesystem;
     updateInterval =
         conf.getInt(DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY,
                     DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_DEFAULT);
@@ -175,13 +179,18 @@ public class QuotaUpdateManager {
     if (updates.size() == 0) {
       return;
     }
-    new HDFSTransactionalRequestHandler(HDFSOperationType.APPLY_QUOTA_UPDATE) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.APPLY_QUOTA_UPDATE) {
+      INodeIdentifier iNodeIdentifier;
       @Override
-      public OldTransactionLocks acquireLock() throws IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-            addIndividualInode(TransactionLockTypes.INodeLockType.READ, updates.get(0).getInodeId());
-        return tla.acquire();
+      public void setUp() throws IOException {
+        super.setUp();
+        iNodeIdentifier = new INodeIdentifier(updates.get(0).getInodeId());
+      }
+
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, iNodeIdentifier));
       }
 
       @Override

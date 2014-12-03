@@ -15,13 +15,12 @@ import org.apache.hadoop.util.StringUtils;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -186,60 +185,60 @@ public class ErasureCodingManager extends Configured{
   private void finalizeEncoding(final String path) {
     LOG.info("Finilizing encoding for " + path);
     try {
-          new HopsTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
-            private String parityPath;
+      new HopsTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+        private String parityPath;
 
-            @Override
-            public void setUp() throws PersistanceException, IOException {
-              super.setUp();
-              EncodingStatus status = namesystem.getEncodingStatus(path);
-              // TODO How to handle the case that status was not found?
-              parityPath = parityFolder + "/" + status.getParityFileName();
-            }
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          super.setUp();
+          EncodingStatus status = namesystem.getEncodingStatus(path);
+          // TODO How to handle the case that status was not found?
+          parityPath = parityFolder + "/" + status.getParityFileName();
+        }
 
-            @Override
-            public void acquireLock(TransactionLocks locks) throws IOException {
+        @Override
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf =
+              HopsLockFactory.getInstance();
+          locks.add(lf.getINodeLock(namesystem.getNameNode(),
+              TransactionLockTypes.INodeLockType.WRITE,
+              TransactionLockTypes.INodeResolveType.PATH, path, parityPath))
+              .add(lf.getEncodingStatusLock(TransactionLockTypes.LockType.WRITE,
+                  path));
+        }
 
-            }
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          INode sourceInode = namesystem.getINode(path);
+          INode parityInode = namesystem.getINode(parityPath);
+          // TODO How to make sure that all blocks are available at this very moment?
 
-            @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              ErasureCodingTransactionLockAcquirer tla = new ErasureCodingTransactionLockAcquirer();
-              tla.getLocks().
-                  addEncodingStatusLockOnPathLeaf().
-                  addINode(TransactionLockTypes.INodeResolveType.PATH,
-                      TransactionLockTypes.INodeLockType.WRITE, new String[]{path, parityPath});
-              return tla.acquire();
-            }
+          if (sourceInode == null) {
+            // TODO The source was deleted. Should probably delete the parity here if existing.
+            return null;
+          }
 
-            @Override
-            public Object performTask() throws PersistanceException, IOException {
-              INode sourceInode = namesystem.getINode(path);
-              INode parityInode = namesystem.getINode(parityPath);
-              // TODO How to make sure that all blocks are availalbe at this very moment?
+          EncodingStatus encodingStatus = EntityManager
+              .find(EncodingStatus.Finder.ByInodeId, sourceInode.getId());
 
-              if (sourceInode == null) {
-                // TODO The source was deleted. Should probably delete the parity here if existing.
-                return null;
-              }
+          if (parityInode == null) {
+            encodingStatus.setStatus(EncodingStatus.Status.ENCODING_FAILED);
+            encodingStatus
+                .setStatusModificationTime(System.currentTimeMillis());
+          } else {
+            encodingStatus.setStatus(EncodingStatus.Status.ENCODED);
+            encodingStatus
+                .setStatusModificationTime(System.currentTimeMillis());
+            encodingStatus.setParityInodeId(parityInode.getId());
+            encodingStatus.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
+            encodingStatus
+                .setParityStatusModificationTime(System.currentTimeMillis());
+          }
 
-              EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, sourceInode.getId());
-
-              if (parityInode == null) {
-                encodingStatus.setStatus(EncodingStatus.Status.ENCODING_FAILED);
-                encodingStatus.setStatusModificationTime(System.currentTimeMillis());
-              } else {
-                encodingStatus.setStatus(EncodingStatus.Status.ENCODED);
-                encodingStatus.setStatusModificationTime(System.currentTimeMillis());
-                encodingStatus.setParityInodeId(parityInode.getId());
-                encodingStatus.setParityStatus(EncodingStatus.ParityStatus.HEALTHY);
-                encodingStatus.setParityStatusModificationTime(System.currentTimeMillis());
-              }
-
-              EntityManager.update(encodingStatus);
-              return null;
-            }
-          }.handle(this);
+          EntityManager.update(encodingStatus);
+          return null;
+        }
+      }.handle(this);
     } catch (IOException e) {
       LOG.error(StringUtils.stringifyException(e));
     }
@@ -352,19 +351,19 @@ public class ErasureCodingManager extends Configured{
   }
 
   private void checkFixedSource(final String path) throws IOException {
-    OldTransactionalRequestHandler checkFixedHandler = new OldTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.CHECK_FIXED_SOURCE) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-        lockAcquirer.getLocks()
-            .addEncodingStatusLockOnPathLeaf()
-            .addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
-        return lockAcquirer.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(
+                namesystem.getNameNode(),
+                TransactionLockTypes.INodeLockType.WRITE,
+                TransactionLockTypes.INodeResolveType.PATH, path))
+            .add(lf.getEncodingStatusLock(TransactionLockTypes.LockType.WRITE, path));
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INode targetNode = namesystem.getINode(path);
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, targetNode.getId());
         if (status.getLostBlocks() == 0) {
@@ -376,24 +375,23 @@ public class ErasureCodingManager extends Configured{
         EntityManager.update(status);
         return null;
       }
-    };
-    checkFixedHandler.handle();
+    }.handle();
   }
 
   private void checkFixedParity(final String path) throws IOException {
-    OldTransactionalRequestHandler checkFixedHandler = new OldTransactionalRequestHandler(HDFSOperationType.GET_INODE) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.CHECK_FIXED_PARITY) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        ErasureCodingTransactionLockAcquirer lockAcquirer = new ErasureCodingTransactionLockAcquirer();
-        lockAcquirer.getLocks()
-            .addEncodingStatusLockByParityFilePathLeaf()
-            .addINode(TransactionLockTypes.INodeResolveType.PATH,
-                TransactionLockTypes.INodeLockType.WRITE, new String[]{path});
-        return lockAcquirer.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getINodeLock(
+                namesystem.getNameNode(),
+                TransactionLockTypes.INodeLockType.WRITE,
+                TransactionLockTypes.INodeResolveType.PATH, path))
+            .add(lf.getEncodingStatusLock(TransactionLockTypes.LockType.WRITE, path));
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INode targetNode = namesystem.getINode(path);
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByParityInodeId, targetNode.getId());
         if (status.getLostParityBlocks() == 0) {
@@ -405,8 +403,7 @@ public class ErasureCodingManager extends Configured{
         EntityManager.update(status);
         return null;
       }
-    };
-    checkFixedHandler.handle();
+    }.handle();
   }
 
   private void scheduleSourceRepairs() {
@@ -419,7 +416,7 @@ public class ErasureCodingManager extends Configured{
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_REQUESTED_REPAIRS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         return dataAccess.findRequestedRepairs(limit);
@@ -465,7 +462,7 @@ public class ErasureCodingManager extends Configured{
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_REQUESTED_PARITY_REPAIRS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         return dataAccess.findRequestedParityRepairs(limit);
@@ -507,7 +504,7 @@ public class ErasureCodingManager extends Configured{
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_DELETED) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         return dataAccess.findDeleted(deletionLimit);
@@ -530,7 +527,7 @@ public class ErasureCodingManager extends Configured{
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_REVOKED) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         return dataAccess.findRevoked();
