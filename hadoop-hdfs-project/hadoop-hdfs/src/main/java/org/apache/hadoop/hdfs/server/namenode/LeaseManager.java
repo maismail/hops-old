@@ -50,12 +50,13 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ExecutionException;
 
 import static org.apache.hadoop.util.Time.now;
-import static se.sics.hop.transaction.lock.HopsLockFactory.*;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
+import static se.sics.hop.transaction.lock.HopsLockFactory.getInstance;
 
 /**
  * LeaseManager does the lease housekeeping for writing on files.   
@@ -432,7 +433,7 @@ public class LeaseManager {
     HopsTransactionalRequestHandler expiredLeaseHandler =
         new HopsTransactionalRequestHandler(
             HDFSOperationType.LEASE_MANAGER_MONITOR) {
-          private SortedSet<String> leasePaths = null;
+          private Set<String> leasePaths = null;
 
           @Override
           public void setUp() throws StorageException {
