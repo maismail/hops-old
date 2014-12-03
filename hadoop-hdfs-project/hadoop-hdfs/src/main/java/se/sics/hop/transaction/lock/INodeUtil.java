@@ -2,8 +2,10 @@ package se.sics.hop.transaction.lock;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.apache.commons.logging.Log;
@@ -247,19 +249,19 @@ public class INodeUtil {
     }
   }
 
-  public static SortedSet<String> findPathsByLeaseHolder(String holder) throws StorageException {
-    SortedSet<String> sortedPaths = new TreeSet<String>();
+  public static Set<String> findPathsByLeaseHolder(String holder) throws StorageException {
+    HashSet<String> paths = new HashSet<String>();
     LeaseDataAccess<Lease> lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
     Lease rcLease = lda.findByPKey(holder);
     if (rcLease == null) {
-      return sortedPaths;
+      return paths;
     }
     LeasePathDataAccess pda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
     Collection<HopLeasePath> rclPaths = pda.findByHolderId(rcLease.getHolderID());
     for (HopLeasePath lp : rclPaths) {
-      sortedPaths.add(lp.getPath()); // sorts paths in order to lock paths in the lexicographic order.
+      paths.add(lp.getPath());
     }
-    return sortedPaths;
+    return paths;
   }
 
   private static INode getRoot() throws StorageException, PersistanceException {
