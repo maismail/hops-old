@@ -16,6 +16,64 @@
  * limitations under the License.
  */
 package org.apache.hadoop.hdfs;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.CommonConfigurationKeys;
+import org.apache.hadoop.fs.CreateFlag;
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.apache.hadoop.fs.FSDataOutputStream;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.FsServerDefaults;
+import org.apache.hadoop.fs.InvalidPathException;
+import org.apache.hadoop.fs.LocatedFileStatus;
+import org.apache.hadoop.fs.Options;
+import org.apache.hadoop.fs.ParentNotDirectoryException;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.fs.RemoteIterator;
+import org.apache.hadoop.fs.permission.FsPermission;
+import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
+import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
+import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.protocol.LocatedBlock;
+import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
+import org.apache.hadoop.hdfs.server.datanode.DataNode;
+import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
+import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
+import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
+import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
+import org.apache.hadoop.io.EnumSetWritable;
+import org.apache.hadoop.io.IOUtils;
+import org.apache.hadoop.security.UserGroupInformation;
+import org.apache.hadoop.test.GenericTestUtils;
+import org.apache.hadoop.util.Time;
+import org.junit.Test;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.Variables;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.security.PrivilegedExceptionAction;
+import java.util.EnumSet;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.logging.Logger;
+
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_DEFAULT;
 import static org.apache.hadoop.fs.CommonConfigurationKeysPublic.IO_FILE_BUFFER_SIZE_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_BLOCK_SIZE_DEFAULT;
@@ -34,84 +92,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.Assume.assumeTrue;
-
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.security.PrivilegedExceptionAction;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Random;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
-import org.apache.commons.logging.Log;
-
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.impl.Log4JLogger;
-import org.apache.commons.math.stat.inference.TestUtils;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CommonConfigurationKeys;
-import org.apache.hadoop.fs.CreateFlag;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FsServerDefaults;
-import org.apache.hadoop.fs.InvalidPathException;
-import org.apache.hadoop.fs.LocatedFileStatus;
-import org.apache.hadoop.fs.Options;
-import org.apache.hadoop.fs.Options.Rename;
-import org.apache.hadoop.fs.ParentNotDirectoryException;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.fs.RemoteIterator;
-import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.hdfs.client.HdfsDataOutputStream;
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
-import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import org.apache.hadoop.hdfs.protocol.LocatedBlock;
-import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.datanode.DataNode;
-import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
-import org.apache.hadoop.hdfs.server.datanode.SimulatedFSDataset;
-import org.apache.hadoop.hdfs.server.datanode.fsdataset.FsDatasetSpi;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.Lease;
-import org.apache.hadoop.hdfs.server.namenode.LeaseManager;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.metadata.lock.HDFSTransactionLocks;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import se.sics.hop.metadata.StorageFactory;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
-import org.apache.hadoop.io.EnumSetWritable;
-import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.security.UserGroupInformation;
-import org.apache.hadoop.test.GenericTestUtils;
-import org.apache.hadoop.util.Time;
-import org.apache.log4j.Level;
-import org.jboss.netty.util.internal.ExecutorUtil;
-import org.junit.Assert;
-import org.junit.Test;
-import se.sics.hop.metadata.Variables;
-import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.transaction.lock.INodeUtil;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 
 /**
  * This class tests various cases during file creation.
@@ -1442,40 +1422,52 @@ public class TestFileCreation {
       
       
   }
-  private void acquireLock(final TransactionLockTypes.LockType lockType, final String holder) throws IOException{
-      Configuration conf = new HdfsConfiguration();
-      StorageFactory.setConfiguration(conf);
-      HDFSTransactionalRequestHandler testHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+
+  private void acquireLock(final TransactionLockTypes.LockType lockType,
+      final String holder) throws IOException {
+    Configuration conf = new HdfsConfiguration();
+    StorageFactory.setConfiguration(conf);
+    HopsTransactionalRequestHandler testHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
           TransactionLockTypes.LockType lockType = null;
+
           @Override
-          public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              lockType = (TransactionLockTypes.LockType)getParams()[0];
-              tla.getLocks().addLease(lockType, holder);
-              return tla.acquire();
+          public void setUp() throws IOException {
+            super.setUp();
+            lockType = (TransactionLockTypes.LockType) getParams()[0];
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
-              
-              Lease lease = (Lease)EntityManager.find(Lease.Finder.ByPKey, holder);
-              if(lease != null)
-              FSNamesystem.LOG.debug("XXXXXXXXXXX Got the lock "+lockType+"Lease. Holder is: "+lease.getHolder()+" ID: "+lease.getHolderID());
-              else
-                  FSNamesystem.LOG.debug("XXXXXXXXX LEASE is NULL");
-              try {
-                  Thread.sleep(5000);
-              } catch (InterruptedException ex) {
-                  Logger.getLogger(TestFileCreation.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
-              }
-              
-              return null;
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getLeaseLock(lockType, holder));
           }
-          
-      };
-      
-      testHandler.setParams(lockType);
-      testHandler.handle();
+
+          @Override
+          public Object performTask() throws IOException {
+
+            Lease lease = EntityManager.find(Lease.Finder.ByPKey, holder);
+            if (lease != null) {
+              FSNamesystem.LOG.debug("XXXXXXXXXXX Got the lock " + lockType +
+                  "Lease. Holder is: " + lease.getHolder() + " ID: " +
+                  lease.getHolderID());
+            } else {
+              FSNamesystem.LOG.debug("XXXXXXXXX LEASE is NULL");
+            }
+            try {
+              Thread.sleep(5000);
+            } catch (InterruptedException ex) {
+              Logger.getLogger(TestFileCreation.class.getName())
+                  .log(java.util.logging.Level.SEVERE, null, ex);
+            }
+
+            return null;
+          }
+
+        };
+
+    testHandler.setParams(lockType);
+    testHandler.handle();
   }
   //END_HOP_CODE
 }

@@ -9,21 +9,19 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
-import se.sics.hop.metadata.lock.ErasureCodingTransactionLockAcquirer;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.EncodingStatusOperationType;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.handler.OldTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Properties;
-import java.util.concurrent.ExecutionException;
 
 public class TestEncodingStatus extends TestCase {
 
@@ -53,10 +51,10 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
-    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    HopsTransactionalRequestHandler addReq = new HopsTransactionalRequestHandler(HDFSOperationType.ADD_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -67,14 +65,14 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(
-        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+    HopsTransactionalRequestHandler findReq = new HopsTransactionalRequestHandler(
+        HDFSOperationType.FIND_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         Integer id = (Integer) getParams()[0];
-        ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(id);
-        return ctla.acquire();
+        locks.add(lf.getIndivdualEncodingStatusLock(
+            TransactionLockTypes.LockType.READ_COMMITTED, id));
       }
 
       @Override
@@ -92,10 +90,10 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(statusToAdd.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
-    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    HopsTransactionalRequestHandler delReq = new HopsTransactionalRequestHandler(HDFSOperationType.DELETE_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -115,10 +113,10 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy = new EncodingPolicy("codec", (short) 1);
     final EncodingStatus statusToAdd = new EncodingStatus(1, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L);
 
-    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    HopsTransactionalRequestHandler addReq = new HopsTransactionalRequestHandler(HDFSOperationType.ADD_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -132,14 +130,14 @@ public class TestEncodingStatus extends TestCase {
     final EncodingPolicy policy1 = new EncodingPolicy("codec2", (short) 2);
     final EncodingStatus updatedStatus = new EncodingStatus(1, EncodingStatus.Status.ENCODING_ACTIVE, policy1, 2L);
 
-    OldTransactionalRequestHandler updateReq = new OldTransactionalRequestHandler(
-        EncodingStatusOperationType.UPDATE) {
+    HopsTransactionalRequestHandler updateReq = new HopsTransactionalRequestHandler(
+        HDFSOperationType.UPDATE_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         Integer id = (Integer) getParams()[0];
-        ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(id);
-        return ctla.acquire();
+        locks.add(lf.getIndivdualEncodingStatusLock(
+            TransactionLockTypes.LockType.WRITE, id));
       }
 
       @Override
@@ -152,14 +150,14 @@ public class TestEncodingStatus extends TestCase {
     updateReq.setParams(updatedStatus.getInodeId());
     updateReq.handle();
 
-    OldTransactionalRequestHandler findReq = new OldTransactionalRequestHandler(
-        EncodingStatusOperationType.FIND_BY_INODE_ID) {
+    HopsTransactionalRequestHandler findReq = new HopsTransactionalRequestHandler(
+        HDFSOperationType.FIND_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
         Integer id = (Integer) getParams()[0];
-        ErasureCodingTransactionLockAcquirer ctla = new ErasureCodingTransactionLockAcquirer();
-        ctla.getLocks().addEncodingStatusLock(id);
-        return ctla.acquire();
+        locks.add(lf.getIndivdualEncodingStatusLock(
+            TransactionLockTypes.LockType.READ_COMMITTED, id));
       }
 
       @Override
@@ -177,10 +175,10 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(updatedStatus.getStatusModificationTime(), foundStatus.getStatusModificationTime());
 
     // Cleanup
-    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    HopsTransactionalRequestHandler delReq = new HopsTransactionalRequestHandler(HDFSOperationType.DELETE_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -205,10 +203,10 @@ public class TestEncodingStatus extends TestCase {
     statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
     statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
-    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    HopsTransactionalRequestHandler addReq = new HopsTransactionalRequestHandler(HDFSOperationType.ADD_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -221,11 +219,11 @@ public class TestEncodingStatus extends TestCase {
     };
     addReq.handle();
 
-    OldTransactionalRequestHandler countReq = new OldTransactionalRequestHandler(
-        EncodingStatusOperationType.COUNT_REQUESTED_ENCODINGS) {
+    HopsTransactionalRequestHandler countReq = new HopsTransactionalRequestHandler(
+        HDFSOperationType.COUNT_REQUESTED_ENCODINGS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -236,10 +234,10 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(count(statusToAdd, EncodingStatus.Status.ENCODING_REQUESTED), (int) (Integer) countReq.handle());
 
     // Cleanup
-    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    HopsTransactionalRequestHandler delReq = new HopsTransactionalRequestHandler(HDFSOperationType.DELETE_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -263,10 +261,10 @@ public class TestEncodingStatus extends TestCase {
     statusToAdd.add(new EncodingStatus(4, EncodingStatus.Status.REPAIR_ACTIVE, policy, 1L));
     statusToAdd.add(new EncodingStatus(5, EncodingStatus.Status.ENCODING_REQUESTED, policy, 1L));
 
-    OldTransactionalRequestHandler addReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.ADD) {
+    HopsTransactionalRequestHandler addReq = new HopsTransactionalRequestHandler(HDFSOperationType.ADD_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override
@@ -300,10 +298,10 @@ public class TestEncodingStatus extends TestCase {
     assertEquals(count(foundStatus, EncodingStatus.Status.ENCODING_REQUESTED), limit);
 
     // Cleanup
-    OldTransactionalRequestHandler delReq = new OldTransactionalRequestHandler(EncodingStatusOperationType.DELETE) {
+    HopsTransactionalRequestHandler delReq = new HopsTransactionalRequestHandler(HDFSOperationType.DELETE_ENCODING_STATUS) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
+
       }
 
       @Override

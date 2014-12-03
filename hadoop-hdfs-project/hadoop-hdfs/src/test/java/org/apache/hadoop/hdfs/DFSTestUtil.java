@@ -18,37 +18,10 @@
 
 package org.apache.hadoop.hdfs;
 
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SERVICE_RPC_ADDRESS_KEY;
-import static org.junit.Assert.assertEquals;
-
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.URL;
-import java.net.URLConnection;
-import java.security.PrivilegedExceptionAction;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
-
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
@@ -86,20 +59,44 @@ import org.apache.hadoop.security.ShellBasedUnixGroupsMapping;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.VersionInfo;
-
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.URL;
+import java.net.URLConnection;
+import java.security.PrivilegedExceptionAction;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SERVICE_RPC_ADDRESS_KEY;
+import static org.junit.Assert.assertEquals;
+
 /** Utilities for HDFS tests */
 public class DFSTestUtil {
   static final Log LOG = LogFactory.getLog(DFSTestUtil.class);
@@ -356,28 +353,28 @@ public class DFSTestUtil {
       throws IOException, TimeoutException, InterruptedException {
     int count = 0;
     final int ATTEMPTS = 50;
-    HDFSTransactionalRequestHandler corruptReplicasHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
-      @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addBlock(b.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addCorrupt();
-        return tla.acquire();
-      }
-      
-      @Override
-      public Object performTask() throws PersistanceException, IOException {
-        return ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
-      }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(b.getLocalBlock());
-        }
-    };
+    HopsTransactionalRequestHandler corruptReplicasHandler =
+        new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
+          INodeIdentifier inodeIdentifier;
+
+          @Override
+          public void setUp() throws IOException {
+            inodeIdentifier =
+                INodeUtil.resolveINodeFromBlock(b.getLocalBlock());
+          }
+
+          @Override
+          public void acquireLock(TransactionLocks locks) throws IOException {
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getIndividualBlockLock(b.getBlockId(), inodeIdentifier))
+                .add(lf.getCorruptReplicaLock());
+          }
+
+          @Override
+          public Object performTask() throws PersistanceException, IOException {
+            return ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
+          }
+        };
     int repls = (Integer) corruptReplicasHandler.handle(ns);
     while (repls != corruptRepls && count < ATTEMPTS) {
       try {
@@ -386,14 +383,14 @@ public class DFSTestUtil {
       } catch (IOException e) {
         // Swallow exceptions
       }
-      System.out.println("Waiting for "+corruptRepls+" corrupt replicas");
+      System.out.println("Waiting for " + corruptRepls + " corrupt replicas");
       repls = (Integer) corruptReplicasHandler.handle(ns);
       count++;
       Thread.sleep(1000);
     }
     if (count == ATTEMPTS) {
       throw new TimeoutException("Timed out waiting for corrupt replicas."
-          + " Waiting for "+corruptRepls+", but only found "+repls);
+          + " Waiting for " + corruptRepls + ", but only found " + repls);
     }
   }
 
