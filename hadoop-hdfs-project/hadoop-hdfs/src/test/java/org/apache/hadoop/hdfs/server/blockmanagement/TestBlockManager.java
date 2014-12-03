@@ -53,14 +53,14 @@ import com.google.common.collect.Lists;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.lock.INodeUtil;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestBlockManager {
   private List<DatanodeDescriptor> nodes;
@@ -364,56 +364,50 @@ public class TestBlockManager {
    */
   private void fulfillPipeline(final BlockInfo blockInfo,
       DatanodeDescriptor[] pipeline) throws IOException {
-    HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
+    HopsTransactionalRequestHandler handler = new HopsTransactionalRequestHandler(HDFSOperationType.FULFILL_PIPELINE) {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(blockInfo);
       }
-
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeLockType.WRITE).
-                addBlock(blockInfo.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addUnderReplicatedBlock().
-                addPendingBlock().
-                addReplicaUc().
-                addInvalidatedBlock();
-        return tla.acquireByBlock(inodeIdentifier);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
+                .add(lf.getIndividualBlockLock(blockInfo.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UR, BLK.UC, BLK.PE, BLK.IV));
       }
-
+      
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         DatanodeDescriptor dnd = (DatanodeDescriptor) getParams()[0];
         bm.addBlock(dnd, blockInfo, null);
         return null;
       }
     };
-
+    
     for (int i = 1; i < pipeline.length; i++) {
       handler.setParams(pipeline[i]).handle();
     }
   }
 
   private BlockInfo blockOnNodes(final long blkId, final List<DatanodeDescriptor> nodes) throws IOException {
-    return (BlockInfo) new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
-       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().addBlock(blkId,
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-           addReplica();
-        return tla.acquire();
-      }
+    return (BlockInfo) new HopsTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
+      INodeIdentifier inodeIdentifier;
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blkId);
+        }   
       @Override
-      public Object performTask() throws PersistanceException, IOException {
-        Block block = new Block(blkId);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualBlockLock(blkId, inodeIdentifier))
+                .add(lf.getBlockRelated(BLK.RE));
+      }
+      
+      @Override
+      public Object performTask() throws IOException {
+         Block block = new Block(blkId);
         BlockInfo blockInfo = new BlockInfo(block,
                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
 
@@ -423,13 +417,6 @@ public class TestBlockManager {
         }
         return blockInfo;
       }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blkId);
-        }    
-
     }.handle();
   }
 
@@ -453,33 +440,34 @@ public class TestBlockManager {
     final BlockCollection bc = Mockito.mock(BlockCollection.class);
     Mockito.doReturn((short)3).when(bc).getBlockReplication();
     final BlockInfo blockInfo = blockOnNodes(blockId, nodes);
-    new HDFSTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
-       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-         HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-         tla.getLocks().
-                 addBlock(blockId,
-                 inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID);
-         return tla.acquire();
+    new HopsTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
+            
+      INodeIdentifier inodeIdentifier;
+
+      @Override
+      public void setUp() throws PersistanceException, IOException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blockId);
       }
+
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualBlockLock(blockId, inodeIdentifier));
+      }
+
       @Override
       public Object performTask() throws PersistanceException, IOException {
-          bm.blocksMap.addBlockCollection(blockInfo, bc);
-         return null;
+        bm.blocksMap.addBlockCollection(blockInfo, bc);
+        return null;
       }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blockId);
-        }  
+
     }.handle();
     
     return blockInfo;
   }
 
   private DatanodeDescriptor[] scheduleSingleReplication(final BlockInfo block) throws IOException {
-    return (DatanodeDescriptor[]) new HDFSTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
+    return (DatanodeDescriptor[]) new HopsTransactionalRequestHandler(HDFSOperationType.SCHEDULE_SINGLE_REPLICATION) {
       INodeIdentifier inodeIdentifier;
       @Override
       public void setUp() throws StorageException {
@@ -487,18 +475,11 @@ public class TestBlockManager {
       }
 
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addINode(INodeLockType.WRITE).
-                addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addReplica().
-                addExcess().
-                addCorrupt().
-                addPendingBlock().
-                addUnderReplicatedBlock();
-        return tla.acquireByBlock(inodeIdentifier);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
+                .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UR, BLK.PE));
       }
 
       @Override

@@ -81,14 +81,12 @@ import org.apache.log4j.RollingFileAppender;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * A JUnit test for doing fsck
@@ -734,44 +732,43 @@ public class TestFsck {
       final String fileName = "/test.txt";
       Path filePath = new Path(fileName);
       FileSystem fs = cluster.getFileSystem();
-      
-      // create a one-block file
-      DFSTestUtil.createFile(fs, filePath, 1L, (short)1, 1L);
-      DFSTestUtil.waitReplication(fs, filePath, (short)1);
-      
-      final MiniDFSCluster clusterFinal = cluster;
-        HDFSTransactionalRequestHandler handler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
-            @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              tla.getLocks().
-                      addINode(INodeResolveType.PATH, INodeLockType.WRITE, new String[]{fileName}).
-                      addBlock();
-              return tla.acquire();
-            }
 
-            @Override
-            public Object performTask() throws PersistanceException, IOException {
-                // intentionally corrupt NN data structure
-                INodeFile node = (INodeFile) clusterFinal.getNamesystem().dir.getRootDir().getNode(
-                        fileName, true);
-                final BlockInfo[] blocks = node.getBlocks();
-                assertEquals(blocks.length, 1);
-                blocks[0].setNumBytes(-1L);  // set the block length to be negative
-                return null;
-            }
-        };
+      // create a one-block file
+      DFSTestUtil.createFile(fs, filePath, 1L, (short) 1, 1L);
+      DFSTestUtil.waitReplication(fs, filePath, (short) 1);
+
+      final MiniDFSCluster clusterFinal = cluster;
+      HopsTransactionalRequestHandler handler = new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
+        @Override
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf = HopsLockFactory.getInstance();
+          locks.add(lf.getINodeLock(clusterFinal.getNameNode(), TransactionLockTypes.INodeLockType.WRITE, TransactionLockTypes.INodeResolveType.PATH, fileName));
+        }
+
+        @Override
+        public Object performTask() throws PersistanceException, IOException {
+          // intentionally corrupt NN data structure
+          INodeFile node = (INodeFile) clusterFinal.getNamesystem().dir.getRootDir().getNode(
+                  fileName, true);
+          final BlockInfo[] blocks = node.getBlocks();
+          assertEquals(blocks.length, 1);
+          blocks[0].setNumBytes(-1L);  // set the block length to be negative
+          return null;
+        }
+      };
       handler.handle();
-      
+
       // run fsck and expect a failure with -1 as the error code
       String outStr = runFsck(conf, -1, true, fileName);
       System.out.println(outStr);
       assertTrue(outStr.contains(NamenodeFsck.FAILURE_STATUS));
-      
+
       // clean up file system
       fs.delete(filePath, true);
     } finally {
-      if (cluster != null) {cluster.shutdown();}
+      if (cluster != null) {
+        cluster.shutdown();
+      }
     }
   }
   
