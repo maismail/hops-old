@@ -31,7 +31,7 @@ final class HopsLeaderLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     setPartitioningKey();
     acquireLockList(lockType, HopLeader.Finder.All);
   }
@@ -46,7 +46,7 @@ final class HopsLeaderLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.LeaderLock;
   }
   

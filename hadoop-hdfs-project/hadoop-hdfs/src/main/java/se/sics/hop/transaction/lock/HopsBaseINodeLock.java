@@ -206,7 +206,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.INode;
   }
 }

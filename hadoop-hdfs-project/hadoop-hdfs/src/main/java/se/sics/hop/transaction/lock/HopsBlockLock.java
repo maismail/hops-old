@@ -15,7 +15,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -36,7 +35,7 @@ class HopsBlockLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     for (INode inode :  inodeLock.getAllResolvedINodes()) {
       if (inode instanceof INodeFile) {
@@ -46,7 +45,7 @@ class HopsBlockLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.Block;
   }
   

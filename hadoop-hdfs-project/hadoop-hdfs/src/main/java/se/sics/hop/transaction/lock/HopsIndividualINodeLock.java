@@ -15,7 +15,6 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -50,7 +49,7 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     setPartitioningKey(inodeIdentifier.getInodeId());
 
     INode inode = null;

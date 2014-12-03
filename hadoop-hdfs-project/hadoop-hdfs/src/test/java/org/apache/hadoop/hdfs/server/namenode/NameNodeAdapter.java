@@ -17,12 +17,10 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.IOException;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
+import org.apache.hadoop.hdfs.TestLease;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
@@ -30,18 +28,20 @@ import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretMan
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.security.AccessControlException;
 import org.mockito.Mockito;
+import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.IOException;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This is a utility class to expose NameNode functionality for unit tests.
@@ -130,11 +130,10 @@ public class NameNodeAdapter {
 
   public static String getLeaseHolderForPath(final NameNode namenode, final String path) throws IOException {
 
-    return (String) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    return (String) new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        locks.add(new TestLease.HopsTestLeaseLock(LockType.READ, LockType.READ, path));
       }
 
       @Override
@@ -151,11 +150,10 @@ public class NameNodeAdapter {
    */
   public static long getLeaseRenewalTime(final NameNode nn, final String path) throws IOException {
 
-    HDFSTransactionalRequestHandler leaseRenewalTimeHandler = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    HopsTransactionalRequestHandler leaseRenewalTimeHandler = new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        return tla.acquireByLeasePath(path, LockType.READ, LockType.READ);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        locks.add(new TestLease.HopsTestLeaseLock(LockType.READ, LockType.READ, path));
       }
 
       @Override

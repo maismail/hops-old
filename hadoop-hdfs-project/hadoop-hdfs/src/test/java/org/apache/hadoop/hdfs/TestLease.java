@@ -17,15 +17,6 @@
  */
 package org.apache.hadoop.hdfs;
 
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
-
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.security.PrivilegedExceptionAction;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
@@ -35,12 +26,8 @@ import org.apache.hadoop.fs.Options;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
+import org.apache.hadoop.hdfs.server.namenode.Lease;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -49,21 +36,56 @@ import org.apache.hadoop.util.Time;
 import org.junit.Assert;
 import org.junit.Test;
 import org.mockito.Mockito;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsBaseTestLock;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.security.PrivilegedExceptionAction;
+
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
 public class TestLease {
-  
-    static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
-    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+
+  public static class HopsTestLeaseLock extends HopsBaseTestLock {
+    private final LockType leasePathLock;
+    private final LockType leaseLock;
+    private final String leasePath;
+
+    public HopsTestLeaseLock(LockType leasePathLock, LockType leaseLock,
+        String leasePath) {
+      this.leasePathLock = leasePathLock;
+      this.leaseLock = leaseLock;
+      this.leasePath = leasePath;
+    }
+
+    @Override
+    protected void acquire(TransactionLocks locks) throws Exception {
+      HopLeasePath lp = acquireLock(leasePathLock, HopLeasePath.Finder.ByPKey, leasePath);
+      if (lp != null) {
+        acquireLock(leaseLock, Lease.Finder.ByHolderId, lp.getHolderId());
+      }
+    }
+  }
+
+  static boolean hasLease(final MiniDFSCluster cluster, final Path src) throws IOException {
+    return (Boolean) new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
 
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        return tla.acquireByLeasePath(src.toString(), LockType.READ, LockType.WRITE);
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        locks.add(new HopsTestLeaseLock(LockType.READ, LockType.WRITE, src.toString()));
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         return NameNodeAdapter.getLeaseManager(cluster.getNamesystem()
         ).getLeaseByPath(src.toString()) != null;
       }

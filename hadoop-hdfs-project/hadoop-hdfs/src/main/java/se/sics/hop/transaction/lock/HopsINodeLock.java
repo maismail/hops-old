@@ -76,7 +76,7 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     setPartitionKey();
     acquireInodeLocks();
     acquireINodeAttributes();

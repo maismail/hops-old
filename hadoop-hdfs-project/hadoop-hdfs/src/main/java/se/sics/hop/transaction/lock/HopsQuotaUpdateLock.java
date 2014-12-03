@@ -37,7 +37,7 @@ final class HopsQuotaUpdateLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     for (String target : targets) {
       acquireQuotaUpdate(inodeLock.getTargetINodes(target));
@@ -59,7 +59,7 @@ final class HopsQuotaUpdateLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.QuotaUpdate;
   }
 }

@@ -45,7 +45,7 @@ public final class HopsLeaseLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
 
     // TODO This sorts after each insertion what is inefficient
@@ -77,7 +77,7 @@ public final class HopsLeaseLock extends HopsLock {
   }
   
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.Lease;
   }
 }

@@ -31,7 +31,7 @@ abstract class HopsLockWithType extends HopsLock{
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return type;
   }
 }

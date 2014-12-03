@@ -35,7 +35,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsLock blockLock = locks.getLock(Type.Block);
     if (blockLock instanceof HopsBatchedBlockLock) {
       Pair<int[], long[]> inodeBlockIds = ((HopsBatchedBlockLock) blockLock).getINodeBlockIds();
@@ -52,7 +52,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    protected Type getType() {
       return Type.Replica;
     }
   }
@@ -64,7 +64,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
     }
 
     @Override
-    Type getType() {
+    protected Type getType() {
       return Type.InvalidatedBlock;
     }
   }

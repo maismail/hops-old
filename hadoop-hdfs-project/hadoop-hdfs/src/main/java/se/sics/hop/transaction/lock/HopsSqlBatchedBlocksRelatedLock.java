@@ -28,7 +28,7 @@ final class HopsSqlBatchedBlocksRelatedLock extends HopsLockWithType {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsLock inodeLock = locks.getLock(Type.INode);
     if (inodeLock instanceof HopsBatchedINodeLock) {
       int[] inodeIds = ((HopsBatchedINodeLock) inodeLock).getINodeIds();

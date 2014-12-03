@@ -21,8 +21,6 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 
-import java.io.IOException;
-
 class HopsBlockChecksumLock extends HopsLock {
   private final String target;
   private final int blockIndex;
@@ -33,7 +31,7 @@ class HopsBlockChecksumLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     INode iNode = iNodeLock.getTargetINodes(target);
     BlockChecksumDataAccess.KeyTuple key = new BlockChecksumDataAccess
@@ -42,7 +40,7 @@ class HopsBlockChecksumLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.BlockChecksum;
   }
 }

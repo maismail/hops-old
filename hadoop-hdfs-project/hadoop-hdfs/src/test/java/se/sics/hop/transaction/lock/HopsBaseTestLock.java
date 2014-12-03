@@ -17,29 +17,10 @@
  */
 package se.sics.hop.transaction.lock;
 
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
-import org.apache.hadoop.hdfs.server.namenode.Lease;
-
-final class HopsNameNodeLeaseLock extends HopsLock {
-  private final TransactionLockTypes.LockType lockType;
-  private Lease nameNodeLease;
-
-  HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType) {
-    this.lockType = lockType;
-  }
+public abstract class HopsBaseTestLock extends HopsLock {
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
-    nameNodeLease = acquireLock(lockType, Lease.Finder.ByPKey,
-        HdfsServerConstants.NAMENODE_LEASE_HOLDER);
-  }
-
-  @Override
-  protected final Type getType() {
-    return Type.NameNodeLease;
-  }
-
-  public Lease getNameNodeLease() {
-    return nameNodeLease;
+  protected final HopsLock.Type getType() {
+    return HopsLock.Type.Test;
   }
 }

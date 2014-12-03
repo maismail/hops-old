@@ -17,7 +17,6 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.memcache.Pair;
-import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
 
 /**
  *
@@ -38,7 +37,7 @@ final class HopsBatchedBlockLock extends HopsBlockLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     if(inodeIds == null){
       inodeIds = INodeUtil.resolveINodesFromBlockIds(blockIds);
     }

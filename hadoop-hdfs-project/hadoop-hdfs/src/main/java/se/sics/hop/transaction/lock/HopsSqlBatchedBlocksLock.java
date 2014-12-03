@@ -24,7 +24,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 final class HopsSqlBatchedBlocksLock extends HopsBlockLock{
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     HopsLock inodeLock = locks.getLock(Type.INode);
     if(inodeLock instanceof HopsBatchedINodeLock){
       int[] inodeIds = ((HopsBatchedINodeLock)inodeLock).getINodeIds();

@@ -15,13 +15,14 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  *
@@ -44,7 +45,7 @@ public final class HopsLeasePathLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     if (locks.containsLock(Type.NameNodeLease)) {
       HopsNameNodeLeaseLock nameNodeLeaseLock = (HopsNameNodeLeaseLock)
           locks.getLock(Type.NameNodeLease);
@@ -70,7 +71,7 @@ public final class HopsLeasePathLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.LeasePath;
   }
   

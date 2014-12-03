@@ -38,7 +38,7 @@ public class HopsBatchedINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     if (inodeIdentifiers != null && !inodeIdentifiers.isEmpty()) {
       String[] names = new String[inodeIdentifiers.size()];
       int[] parentIds = new int[inodeIdentifiers.size()];

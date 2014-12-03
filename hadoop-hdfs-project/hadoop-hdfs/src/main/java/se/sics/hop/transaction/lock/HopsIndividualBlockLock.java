@@ -15,11 +15,9 @@
  */
 package se.sics.hop.transaction.lock;
 
-import java.io.IOException;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
-import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
 
 /**
  *
@@ -36,7 +34,7 @@ final class HopsIndividualBlockLock extends HopsBlockLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ById, blockId, inodeId);
     if (result != null) {
       blocks.add(result);

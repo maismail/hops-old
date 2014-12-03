@@ -37,7 +37,7 @@ public final class HopsVariablesLock extends HopsLock {
   }
 
   @Override
-  void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws Exception {
     for (Map.Entry<HopVariable.Finder, TransactionLockTypes.LockType> e : variables.entrySet()) {
       acquireLock(e.getValue(), e.getKey());
     }
@@ -48,7 +48,7 @@ public final class HopsVariablesLock extends HopsLock {
   }
 
   @Override
-  final Type getType() {
+  protected final Type getType() {
     return Type.Variable;
   }
 }
