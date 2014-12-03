@@ -62,7 +62,7 @@ public final class HopsLeaseLock extends HopsLock {
       }
     }
     
-    List<String> holders = new ArrayList<String>(hldrs.size());
+    List<String> holders = new ArrayList<String>(hldrs);
     Collections.sort(holders);
     
     for (String h : holders) {

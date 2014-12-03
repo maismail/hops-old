@@ -100,5 +100,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
         find(srcComponents[srcComponents.length - 1], lastComp.getId());
       }
     }
+    
+    acquireINodeAttributes();
   }
 }
