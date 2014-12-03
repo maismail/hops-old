@@ -68,13 +68,15 @@ public abstract class HopsTransactionalRequestHandler extends TransactionalReque
     });
   }
 
-  /**
-   * You need to call super() when overriding this method.
-   * @throws IOException
-   */
-  public void setUp() throws IOException {
+  @Override
+  protected final void preTransactionSetup() throws IOException {
     if(path != null){
       PathMemcache.getInstance().get(path);
     }
+    setUp();
+  }
+
+  public void setUp() throws IOException {
+
   }
 }
