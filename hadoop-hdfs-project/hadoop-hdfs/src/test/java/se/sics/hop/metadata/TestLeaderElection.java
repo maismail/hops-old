@@ -15,36 +15,37 @@
  */
 package se.sics.hop.metadata;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.security.Permission;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.FileSystem;
-import static org.apache.hadoop.fs.FileSystem.FS_DEFAULT_NAME_KEY;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.junit.After;
-import static org.junit.Assert.*;
 import org.junit.Before;
 import org.junit.Test;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
+import static org.apache.hadoop.fs.FileSystem.FS_DEFAULT_NAME_KEY;
+import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -333,14 +334,13 @@ public class TestLeaderElection {
     }
 
     private List<ActiveNamenode> getActiveNN(final LeaderElection leaderElector) throws IOException {
-        return (List<ActiveNamenode>) new HDFSTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+        return (List<ActiveNamenode>) new HopsTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
             @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-                HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-                tla.getLocks().addLeaderTocken(TransactionLockTypes.LockType.WRITE);
-                tla.getLocks().addLeaderLock(TransactionLockTypes.LockType.WRITE);
-                return tla.acquireLeaderLock();
+            public void acquireLock(TransactionLocks locks) throws IOException {
+                HopsLockFactory lf = HopsLockFactory.getInstance();
+                locks.add(lf.getLeaderLock(TransactionLockTypes.LockType.WRITE))
+                    .add(lf.getVariableLock(HopVariable.Finder.MaxNNID, TransactionLockTypes.LockType.WRITE));
             }
 
             @Override
