@@ -35,7 +35,7 @@ public class QuotaUpdateManager {
 
   static final Log LOG = LogFactory.getLog(QuotaUpdateManager.class);
 
-  private final Namesystem namesystem;
+  private final FSNamesystem namesystem;
 
   private final int updateInterval;
   private final int updateLimit;
@@ -45,7 +45,7 @@ public class QuotaUpdateManager {
   private final ConcurrentLinkedQueue<Iterator<Integer>> prioritizedUpdates =
       new ConcurrentLinkedQueue<Iterator<Integer>>();
 
-  public QuotaUpdateManager(Namesystem namesystem, Configuration conf) {
+  public QuotaUpdateManager(FSNamesystem namesystem, Configuration conf) {
     this.namesystem = namesystem;
     updateInterval =
         conf.getInt(DFSConfigKeys.DFS_NAMENODE_QUOTA_UPDATE_INTERVAL_KEY,
