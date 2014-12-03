@@ -15,7 +15,20 @@
  */
 package se.sics.hop.transaction.lock;
 
+import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
+import static se.sics.hop.transaction.lock.HopsLock.Type.CorruptReplica;
+import static se.sics.hop.transaction.lock.HopsLock.Type.ExcessReplica;
+import static se.sics.hop.transaction.lock.HopsLock.Type.InvalidatedBlock;
+import static se.sics.hop.transaction.lock.HopsLock.Type.PendingBlock;
+import static se.sics.hop.transaction.lock.HopsLock.Type.Replica;
+import static se.sics.hop.transaction.lock.HopsLock.Type.UnderReplicatedBlock;
 
 /**
  *
@@ -23,8 +36,8 @@ import se.sics.hop.metadata.hdfs.entity.FinderType;
  */
 final class HopsSqlBatchedBlocksRelatedLock extends HopsLockWithType {
 
-  HopsSqlBatchedBlocksRelatedLock(FinderType finder, Type type) {
-    super(type, finder);
+  HopsSqlBatchedBlocksRelatedLock(Type type) {
+    super(type);
   }
 
   @Override
@@ -32,9 +45,29 @@ final class HopsSqlBatchedBlocksRelatedLock extends HopsLockWithType {
     HopsLock inodeLock = locks.getLock(Type.INode);
     if (inodeLock instanceof HopsBatchedINodeLock) {
       int[] inodeIds = ((HopsBatchedINodeLock) inodeLock).getINodeIds();
-      acquireLockList(DEFAULT_LOCK_TYPE, finder, inodeIds);
+      acquireLockList(DEFAULT_LOCK_TYPE, getFinderType(), inodeIds);
     } else {
-      throw new TransactionLocks.LockNotAddedException("HopsBatchedINodeLock wasn't added");
+      throw new TransactionLocks.LockNotAddedException("Batched Inode Lock wasn't added");
     }
+  }
+
+  private FinderType getFinderType() {
+    switch (getType()) {
+      case Replica:
+        return HopIndexedReplica.Finder.ByINodeIds;
+      case CorruptReplica:
+        return HopCorruptReplica.Finder.ByINodeIds;
+      case ExcessReplica:
+        return HopExcessReplica.Finder.ByINodeIds;
+      case ReplicaUnderConstruction:
+        return ReplicaUnderConstruction.Finder.ByINodeIds;
+      case InvalidatedBlock:
+        return HopInvalidatedBlock.Finder.ByINodeIds;
+      case UnderReplicatedBlock:
+        return HopUnderReplicatedBlock.Finder.ByINodeIds;
+      case PendingBlock:
+        return PendingBlockInfo.Finder.ByInodeIds;
+    }
+    return null;
   }
 }

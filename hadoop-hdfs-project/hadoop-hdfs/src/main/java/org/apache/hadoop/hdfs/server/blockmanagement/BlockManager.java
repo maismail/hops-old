@@ -3112,9 +3112,9 @@ public class BlockManager {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
-                .add(lf.getIndividualBlockLock(rdbi.getBlock().getBlockId(), inodeIdentifier))
+                .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UR));
-        if (rdbi.isDeletedBlock()) {
+        if (!rdbi.isDeletedBlock()) {
           locks.add(lf.getBlockRelated(BLK.PE, BLK.UC, BLK.IV));
         }
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {

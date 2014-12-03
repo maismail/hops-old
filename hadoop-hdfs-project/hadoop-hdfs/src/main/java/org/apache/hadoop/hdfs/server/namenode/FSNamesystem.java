@@ -2020,6 +2020,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         HopsLockFactory lf = getInstance();
         locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
             INodeResolveType.PATH, false, src))
+            .add(lf.getBlockLock())
             .add(lf.getLeaseLock(LockType.WRITE, holder))
             .add(lf.getLeasePathLock(LockType.WRITE))
             .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC, BLK.UR, BLK.PE));
@@ -7308,7 +7309,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                     throws IOException {
                   HopsLockFactory lf = HopsLockFactory.getInstance();
                   locks.add(lf.getINodeLock(nameNode,
-                      INodeLockType.WRITE_ON_PARENT, INodeResolveType.PATH, true, path))
+                      INodeLockType.WRITE_ON_PARENT, INodeResolveType.PATH, false, true, path))
                       .add(lf.getLeaseLock(LockType.WRITE))
                       .add(lf.getLeasePathLock(LockType.WRITE))
                       .add(lf.getBlockLock())

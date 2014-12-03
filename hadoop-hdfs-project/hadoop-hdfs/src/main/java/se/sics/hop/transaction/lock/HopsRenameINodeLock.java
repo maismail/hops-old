@@ -83,6 +83,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
     //layer will not let the request go to the db as it has already cached the root inode
     //one simple solution is that to acquire lock on the short path first
     //setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
+    String src = paths[0];
     String dst = paths[1];
     Arrays.sort(paths, PATH_COMPARTOR);
     acquireInodeLocks();
@@ -91,11 +92,12 @@ final class HopsRenameINodeLock extends HopsINodeLock {
     {
       List<INode> dstINodes = getPathINodes(dst);
       String[] dstComponents = INode.getPathNames(dst);
+      String[] srcComponents = INode.getPathNames(src);
       INode lastComp = dstINodes.get(dstINodes.size() - 1);
 
       if (dstINodes.size() == dstComponents.length && lastComp.isDirectory()) {
         //the dst exist and is a directory.
-        find(dstComponents[dstComponents.length - 1], lastComp.getId());
+        find(srcComponents[srcComponents.length - 1], lastComp.getId());
       }
     }
   }

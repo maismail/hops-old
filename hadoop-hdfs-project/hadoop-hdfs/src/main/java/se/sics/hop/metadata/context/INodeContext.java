@@ -180,21 +180,23 @@ public class INodeContext extends EntityContext<INode> {
     // because some times in the tx handler the acquire lock 
     // function is empty and in that case tlm will throw 
     // null pointer exceptions
-    HopsBaseINodeLock hlk = (HopsBaseINodeLock) lks.getLock(HopsLock.Type.INode);
-    if (!removedInodes.values().isEmpty()) {
-      for (INode inode : removedInodes.values()) {
-        INodeLockType lock = hlk.getLockedINodeLockType(inode);
-        if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
-          throw new LockUpgradeException("Trying to remove inode id=" + inode.getId() + " acquired lock was " + lock);
+    if (lks.containsLock(HopsLock.Type.INode)) {
+      HopsBaseINodeLock hlk = (HopsBaseINodeLock) lks.getLock(HopsLock.Type.INode);
+      if (!removedInodes.values().isEmpty()) {
+        for (INode inode : removedInodes.values()) {
+          INodeLockType lock = hlk.getLockedINodeLockType(inode);
+          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+            throw new LockUpgradeException("Trying to remove inode id=" + inode.getId() + " acquired lock was " + lock);
+          }
         }
       }
-    }
 
-    if (!modifiedInodes.values().isEmpty()) {
-      for (INode inode : modifiedInodes.values()) {
-        INodeLockType lock = hlk.getLockedINodeLockType(inode);
-        if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
-          throw new LockUpgradeException("Trying to update inode id=" + inode.getId() + " acquired lock was " + lock);
+      if (!modifiedInodes.values().isEmpty()) {
+        for (INode inode : modifiedInodes.values()) {
+          INodeLockType lock = hlk.getLockedINodeLockType(inode);
+          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+            throw new LockUpgradeException("Trying to update inode id=" + inode.getId() + " acquired lock was " + lock);
+          }
         }
       }
     }

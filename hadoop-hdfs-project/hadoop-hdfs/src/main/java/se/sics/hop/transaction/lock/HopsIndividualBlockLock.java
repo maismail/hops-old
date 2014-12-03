@@ -23,7 +23,7 @@ import se.sics.hop.metadata.INodeIdentifier;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsIndividualBlockLock extends HopsBlockLock {
+final class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
 
   private final long blockId;
   private final int inodeId;

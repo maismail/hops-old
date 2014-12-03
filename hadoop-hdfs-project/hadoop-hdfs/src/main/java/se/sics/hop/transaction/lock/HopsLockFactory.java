@@ -18,21 +18,13 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.SortedSet;
 
 public class HopsLockFactory {
 
@@ -86,31 +78,31 @@ public class HopsLockFactory {
   }
 
   public HopsLock getReplicaLock() {
-    return new HopsBlockRelatedLock(HopIndexedReplica.Finder.ByBlockId, HopsLock.Type.Replica);
+    return new HopsBlockRelatedLock(HopsLock.Type.Replica);
   }
 
   public HopsLock getCorruptReplicaLock() {
-    return new HopsBlockRelatedLock(HopCorruptReplica.Finder.ByBlockId, HopsLock.Type.CorruptReplica);
+    return new HopsBlockRelatedLock(HopsLock.Type.CorruptReplica);
   }
 
   public HopsLock getExcessReplicaLock() {
-    return new HopsBlockRelatedLock(HopExcessReplica.Finder.ByBlockId, HopsLock.Type.ExcessReplica);
+    return new HopsBlockRelatedLock(HopsLock.Type.ExcessReplica);
   }
 
   public HopsLock getReplicatUnderConstructionLock() {
-    return new HopsBlockRelatedLock(ReplicaUnderConstruction.Finder.ByBlockId, HopsLock.Type.ReplicaUnderConstruction);
+    return new HopsBlockRelatedLock(HopsLock.Type.ReplicaUnderConstruction);
   }
 
   public HopsLock getInvalidatedBlockLock() {
-    return new HopsBlockRelatedLock(HopInvalidatedBlock.Finder.ByBlockId, HopsLock.Type.InvalidatedBlock);
+    return new HopsBlockRelatedLock(HopsLock.Type.InvalidatedBlock);
   }
 
   public HopsLock getUnderReplicatedBlockLock() {
-    return new HopsBlockRelatedLock(false, HopUnderReplicatedBlock.Finder.ByBlockId, HopsLock.Type.UnderReplicatedBlock);
+    return new HopsBlockRelatedLock(HopsLock.Type.UnderReplicatedBlock);
   }
 
   public HopsLock getPendingBlockLock() {
-    return new HopsBlockRelatedLock(false, PendingBlockInfo.Finder.ByBlockId, HopsLock.Type.PendingBlock);
+    return new HopsBlockRelatedLock(HopsLock.Type.PendingBlock);
   }
 
   public HopsLock getSqlBatchedBlocksLock() {
@@ -118,31 +110,31 @@ public class HopsLockFactory {
   }
 
   public HopsLock getSqlBatchedReplicasLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(HopIndexedReplica.Finder.ByINodeIds, HopsLock.Type.Replica);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.Replica);
   }
 
   public HopsLock getSqlBatchedCorruptReplicasLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(HopCorruptReplica.Finder.ByINodeIds, HopsLock.Type.CorruptReplica);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.CorruptReplica);
   }
 
   public HopsLock getSqlBatchedExcessReplicasLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(HopExcessReplica.Finder.ByINodeIds, HopsLock.Type.ExcessReplica);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.ExcessReplica);
   }
 
   public HopsLock getSqlBatchedReplicasUnderConstructionLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(ReplicaUnderConstruction.Finder.ByINodeIds, HopsLock.Type.ReplicaUnderConstruction);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.ReplicaUnderConstruction);
   }
 
   public HopsLock getSqlBatchedInvalidatedBlocksLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(HopInvalidatedBlock.Finder.ByINodeIds, HopsLock.Type.InvalidatedBlock);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.InvalidatedBlock);
   }
 
   public HopsLock getSqlBatchedUnderReplicatedBlocksLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(HopUnderReplicatedBlock.Finder.ByINodeIds, HopsLock.Type.UnderReplicatedBlock);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.UnderReplicatedBlock);
   }
 
   public HopsLock getSqlBatchedPendingBlocksLock() {
-    return new HopsSqlBatchedBlocksRelatedLock(PendingBlockInfo.Finder.ByInodeIds, HopsLock.Type.PendingBlock);
+    return new HopsSqlBatchedBlocksRelatedLock(HopsLock.Type.PendingBlock);
   }
 
   public HopsLock getIndividualBlockLock(long blockId, INodeIdentifier inode) {

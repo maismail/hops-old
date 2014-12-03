@@ -26,30 +26,26 @@ import org.apache.hadoop.hdfs.server.namenode.INodeFile;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-class HopsBlockLock extends HopsLock {
+final class HopsBlockLock extends HopsBaseBlockLock {
 
-  protected final List<BlockInfo> blocks;
-
+  private final List<INodeFile> files;
+  
   HopsBlockLock() {
-    this.blocks = new ArrayList<BlockInfo>();
+    this.files = new ArrayList<INodeFile>();
   }
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
-    HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
+    HopsBaseINodeLock inodeLock = (HopsBaseINodeLock) locks.getLock(Type.INode);
     for (INode inode :  inodeLock.getAllResolvedINodes()) {
       if (inode instanceof INodeFile) {
-        blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByInodeId, inode.getId()));
+        acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByInodeId, inode.getId());
+        files.add((INodeFile) inode);
       }
     }
   }
-
-  @Override
-  protected final Type getType() {
-    return Type.Block;
-  }
   
-  Collection<BlockInfo> getBlocks(){
-    return blocks;
+  Collection<INodeFile> getFiles(){
+    return files;
   }
 }

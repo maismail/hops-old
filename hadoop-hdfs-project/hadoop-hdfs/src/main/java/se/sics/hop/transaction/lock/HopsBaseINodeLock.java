@@ -26,10 +26,14 @@ import com.google.common.collect.Iterables;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.EntityManager;
+import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
 
 /**
  *
@@ -96,7 +100,8 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     public Iterable<INode> getAll() {
       Iterable iterable = null;
       for (PathRelatedINodes pathRelatedINodes : pathToPathINodes.values()) {
-        List<INode> pathINodes = pathRelatedINodes.pathINodes;
+        List<INode> pathINodes = pathRelatedINodes.pathINodes == null ? 
+                Collections.EMPTY_LIST : pathRelatedINodes.pathINodes;
         List<INode> childINodes = pathRelatedINodes.childINodes == null ?
             Collections.EMPTY_LIST : pathRelatedINodes.childINodes;
         if (iterable == null) {
@@ -105,6 +110,8 @@ public abstract class HopsBaseINodeLock extends HopsLock {
           iterable = Iterables.concat(iterable, pathINodes, childINodes);
         }
       }
+      if(iterable == null)
+        iterable = Collections.EMPTY_LIST;
       return Iterables.concat(iterable, individualInodes);
     }
   }
@@ -185,6 +192,17 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     }
   }
 
+  protected void acquireINodeAttributes() throws PersistanceException {
+    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
+    for (INode inode : getAllResolvedINodes()) {
+      if (inode instanceof INodeDirectoryWithQuota) {
+        HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
+        pks.add(pk);
+      }
+    }
+    acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByPKList, pks);
+  }
+    
   //TODO check if it does work or not and connect it to memchached
   // or use memcached to balance the reading by starting from reverse order of the path
   protected void setPartitionKey() {

@@ -74,9 +74,11 @@ public class VariableContext extends EntityContext<HopVariable> {
 
   @Override
   public void prepare(TransactionLocks lks) throws StorageException {
-    HopsVariablesLock hlk = (HopsVariablesLock) lks.getLock(HopsLock.Type.Variable);
-    checkLockUpgrade(hlk, modifiedVariables);
-    checkLockUpgrade(hlk, newVariables);
+    if (lks.containsLock(HopsLock.Type.Variable)) {
+      HopsVariablesLock hlk = (HopsVariablesLock) lks.getLock(HopsLock.Type.Variable);
+      checkLockUpgrade(hlk, modifiedVariables);
+      checkLockUpgrade(hlk, newVariables);
+    }
     da.prepare(newVariables.values(), modifiedVariables.values(), null);
   }
 

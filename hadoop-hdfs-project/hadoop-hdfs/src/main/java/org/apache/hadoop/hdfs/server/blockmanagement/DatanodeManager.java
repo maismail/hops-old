@@ -1244,7 +1244,6 @@ public class DatanodeManager {
 
       @Override
       public void setUp() throws StorageException {
-        Block b = (Block) getParams()[0];
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
       }
 

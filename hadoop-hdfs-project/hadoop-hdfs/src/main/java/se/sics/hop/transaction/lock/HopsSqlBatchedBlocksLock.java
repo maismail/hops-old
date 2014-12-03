@@ -21,7 +21,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsSqlBatchedBlocksLock extends HopsBlockLock{
+final class HopsSqlBatchedBlocksLock extends HopsBaseIndividualBlockLock{
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {

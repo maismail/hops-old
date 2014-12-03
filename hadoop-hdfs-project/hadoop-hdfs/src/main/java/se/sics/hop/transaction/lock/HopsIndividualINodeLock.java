@@ -31,13 +31,15 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.*;
  */
 final class HopsIndividualINodeLock extends HopsBaseINodeLock {
 
+  private static final INodeIdentifier NON_EXISTING_INODE = new INodeIdentifier(INode.NON_EXISTING_ID);
+  
   private final INodeLockType lockType;
   private final INodeIdentifier inodeIdentifier;
   private final boolean readUpPathInodes;
 
   HopsIndividualINodeLock(INodeLockType lockType, INodeIdentifier inodeIdentifier, boolean readUpPathInodes) {
     this.lockType = lockType;
-    this.inodeIdentifier = inodeIdentifier;
+    this.inodeIdentifier = inodeIdentifier == null ? NON_EXISTING_INODE : inodeIdentifier;
     this.readUpPathInodes = readUpPathInodes;
     if (lockType.equals(INodeLockType.WRITE_ON_PARENT)) {
       throw new UnsupportedOperationException();
@@ -73,6 +75,7 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
     } else {
       addIndividualINode(inode);
     }
+    acquireINodeAttributes();
   }
 
   private List<INode> readUpInodes(INode leaf) throws PersistanceException {

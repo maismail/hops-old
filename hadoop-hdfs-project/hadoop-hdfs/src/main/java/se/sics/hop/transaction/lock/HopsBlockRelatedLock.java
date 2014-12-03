@@ -16,7 +16,15 @@
 package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
 /**
  *
@@ -25,28 +33,63 @@ import se.sics.hop.metadata.hdfs.entity.FinderType;
  */
 final class HopsBlockRelatedLock extends HopsLockWithType {
 
-  private final boolean isList;
-
-  HopsBlockRelatedLock(boolean isList, FinderType finderType, Type type) {
-    super(type, finderType);
-    this.isList = isList;
-  }
-  
-   HopsBlockRelatedLock(FinderType finderType, Type type) {
-    super(type, finderType);
-    this.isList = true;
+  HopsBlockRelatedLock(Type type) {
+    super(type);
   }
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
-    HopsBlockLock blockLock = (HopsBlockLock) locks.getLock(Type.Block);
+    HopsLock lock = locks.getLock(Type.Block);
 
-    for (BlockInfo blk : blockLock.getBlocks()) {
-      if (isList) {
-        acquireLockList(DEFAULT_LOCK_TYPE, finder, blk.getBlockId(), blk.getInodeId());
-      } else {
-        acquireLock(DEFAULT_LOCK_TYPE, finder, blk.getBlockId(), blk.getInodeId());
+    if (lock instanceof HopsBlockLock) {
+      //get by inodeId
+      HopsBlockLock blockLock = (HopsBlockLock) lock;
+      for (INodeFile file : blockLock.getFiles()) {
+        acquireLockList(DEFAULT_LOCK_TYPE, getFinderType(false), file.getId());
       }
+    } else if (lock instanceof HopsBaseIndividualBlockLock) {
+      HopsBaseIndividualBlockLock individualBlockLock = (HopsBaseIndividualBlockLock) lock;
+      //get by blocksId
+      for (BlockInfo blk : individualBlockLock.getBlocks()) {
+        if (isList()) {
+          acquireLockList(DEFAULT_LOCK_TYPE, getFinderType(true), blk.getBlockId(), blk.getInodeId());
+        } else {
+          acquireLock(DEFAULT_LOCK_TYPE, getFinderType(true), blk.getBlockId(), blk.getInodeId());
+        }
+      }
+    }else{
+      throw new TransactionLocks.LockNotAddedException("Block Lock wasn't added");
     }
   }
+
+  private FinderType getFinderType(boolean byBlockID) {
+    switch (getType()) {
+      case Replica:
+        return byBlockID ? HopIndexedReplica.Finder.ByBlockId : HopIndexedReplica.Finder.ByINodeId;
+      case CorruptReplica:
+        return byBlockID ? HopCorruptReplica.Finder.ByBlockId : HopCorruptReplica.Finder.ByINodeId;
+      case ExcessReplica:
+        return byBlockID ? HopExcessReplica.Finder.ByBlockId : HopExcessReplica.Finder.ByINodeId;
+      case ReplicaUnderConstruction:
+        return byBlockID ? ReplicaUnderConstruction.Finder.ByBlockId : ReplicaUnderConstruction.Finder.ByINodeId;
+      case InvalidatedBlock:
+        return byBlockID ? HopInvalidatedBlock.Finder.ByBlockId : HopInvalidatedBlock.Finder.ByINodeId;
+      case UnderReplicatedBlock:
+        return byBlockID ? HopUnderReplicatedBlock.Finder.ByBlockId : HopUnderReplicatedBlock.Finder.ByINodeId;
+      case PendingBlock:
+        return byBlockID ? PendingBlockInfo.Finder.ByBlockId : PendingBlockInfo.Finder.ByInodeId;
+    }
+    return null;
+  }
+
+  private boolean isList() {
+    switch (getType()) {
+      case UnderReplicatedBlock:
+      case PendingBlock:
+        return false;
+      default:
+        return true;
+    }
+  }
+  
 }

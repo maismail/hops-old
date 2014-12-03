@@ -17,9 +17,10 @@ package se.sics.hop.transaction.lock;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Set;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFileUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
@@ -46,20 +47,24 @@ public final class HopsLeaseLock extends HopsLock {
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
-    HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
-
-    // TODO This sorts after each insertion what is inefficient
-    SortedSet<String> holders = new TreeSet<String>();
+    Set<String> hldrs = new HashSet<String>();
     if (leaseHolder != null) {
-      holders.add(leaseHolder);
+      hldrs.add(leaseHolder);
     }
 
-    for (INode f : inodeLock.getAllResolvedINodes()) {
-      if (f instanceof INodeFileUnderConstruction) {
-        holders.add(((INodeFileUnderConstruction) f).getClientName());
+    if (locks.containsLock(Type.INode)) {
+      HopsBaseINodeLock inodeLock = (HopsBaseINodeLock) locks.getLock(Type.INode);
+
+      for (INode f : inodeLock.getAllResolvedINodes()) {
+        if (f instanceof INodeFileUnderConstruction) {
+          hldrs.add(((INodeFileUnderConstruction) f).getClientName());
+        }
       }
     }
-
+    
+    List<String> holders = new ArrayList<String>(hldrs.size());
+    Collections.sort(holders);
+    
     for (String h : holders) {
       Lease lease = acquireLock(lockType, Lease.Finder.ByPKey, h);
       if (lease != null) {
@@ -72,10 +77,10 @@ public final class HopsLeaseLock extends HopsLock {
     return leases;
   }
 
-  public TransactionLockTypes.LockType  getLockType(){
+  public TransactionLockTypes.LockType getLockType() {
     return lockType;
   }
-  
+
   @Override
   protected final Type getType() {
     return Type.Lease;

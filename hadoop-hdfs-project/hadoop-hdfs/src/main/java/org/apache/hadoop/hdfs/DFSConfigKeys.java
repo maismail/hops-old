@@ -153,7 +153,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT = 20;
 
   public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
-  public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = true;
+  public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = false;
   public static final String PARITY_FOLDER = "se.sics.hop.erasure_coding.parity_folder";
   public static final String DEFAULT_PARITY_FOLDER = "/parity";
   public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";

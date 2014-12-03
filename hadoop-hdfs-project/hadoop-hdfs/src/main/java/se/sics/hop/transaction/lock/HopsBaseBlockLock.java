@@ -19,15 +19,12 @@ package se.sics.hop.transaction.lock;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-abstract class HopsLockWithType extends HopsLock{
-  private final Type type;
+abstract class HopsBaseBlockLock extends HopsLock{
 
-   HopsLockWithType(Type type) {
-    this.type = type;
-  }
-
+  //FIXME: write a method to bring null to the cache
   @Override
-  protected final Type getType() {
-    return type;
+  protected Type getType() {
+    return Type.Block;
   }
+  
 }

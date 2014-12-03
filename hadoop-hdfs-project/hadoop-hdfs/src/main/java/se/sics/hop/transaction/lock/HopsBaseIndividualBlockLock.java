@@ -15,37 +15,24 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import se.sics.hop.memcache.Pair;
 
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsBatchedBlockLock extends HopsBaseIndividualBlockLock {
+abstract class HopsBaseIndividualBlockLock extends HopsBaseBlockLock{
 
-  private final long[] blockIds;
-  private int[] inodeIds;
-
-  public HopsBatchedBlockLock(long[] blockIds, int[] inodeIds) {
-    this.blockIds = blockIds;
-    this.inodeIds = inodeIds;
-  }
-
-  public HopsBatchedBlockLock(long[] blockIds) {
-    this(blockIds, null);
-  }
-
-  @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
-    if(inodeIds == null){
-      inodeIds = INodeUtil.resolveINodesFromBlockIds(blockIds);
-    }
-    blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByIds, blockIds, inodeIds));
+  protected final List<BlockInfo> blocks;
+  
+  public HopsBaseIndividualBlockLock(){
+    this.blocks = new ArrayList<BlockInfo>();
   }
   
-  Pair<int[], long[]> getINodeBlockIds(){
-    return new Pair<int[], long[]>(inodeIds, blockIds);
-  }
-  
+  Collection<BlockInfo> getBlocks(){
+    return blocks;
+  } 
 }

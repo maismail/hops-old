@@ -47,9 +47,10 @@ public final class HopsLeasePathLock extends HopsLock {
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
     if (locks.containsLock(Type.NameNodeLease)) {
-      HopsNameNodeLeaseLock nameNodeLeaseLock = (HopsNameNodeLeaseLock)
-          locks.getLock(Type.NameNodeLease);
-      acquireLeasePaths(nameNodeLeaseLock.getNameNodeLease());
+      HopsNameNodeLeaseLock nameNodeLeaseLock = (HopsNameNodeLeaseLock) locks.getLock(Type.NameNodeLease);
+      if (nameNodeLeaseLock.getNameNodeLease() != null) {
+        acquireLeasePaths(nameNodeLeaseLock.getNameNodeLease());
+      }
     }
 
     HopsLeaseLock leaseLock = (HopsLeaseLock) locks.getLock(Type.Lease);
@@ -74,12 +75,12 @@ public final class HopsLeasePathLock extends HopsLock {
   protected final Type getType() {
     return Type.LeasePath;
   }
-  
-  Collection<HopLeasePath> getLeasePaths(){
+
+  Collection<HopLeasePath> getLeasePaths() {
     return leasePaths;
   }
-  
-  public TransactionLockTypes.LockType getLockType(){
+
+  public TransactionLockTypes.LockType getLockType() {
     return lockType;
   }
 }

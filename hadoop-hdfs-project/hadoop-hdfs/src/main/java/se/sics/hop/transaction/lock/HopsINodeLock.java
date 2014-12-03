@@ -57,13 +57,6 @@ class HopsINodeLock extends HopsBaseINodeLock {
     this.activeNamenodes = activeNamenodes;
     this.ignoreLocalSubtreeLocks = ignoreLocalSubtreeLocks;
     this.namenodeId = namenodeId;
-    /*
-     * Needs to be sorted in order to avoid deadlocks. Otherwise one transaction
-     * could acquire path0 and path1 in the given order while another one does
-     * it in the opposite order, more precisely path1, path0, what could cause
-     * a dealock situation.
-     */
-    Arrays.sort(paths);
     this.paths = paths;
   }
 
@@ -77,6 +70,13 @@ class HopsINodeLock extends HopsBaseINodeLock {
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
+    /*
+     * Needs to be sorted in order to avoid deadlocks. Otherwise one transaction
+     * could acquire path0 and path1 in the given order while another one does
+     * it in the opposite order, more precisely path1, path0, what could cause
+     * a dealock situation.
+     */
+    Arrays.sort(paths);
     setPartitionKey();
     acquireInodeLocks();
     acquireINodeAttributes();
@@ -274,17 +274,6 @@ class HopsINodeLock extends HopsBaseINodeLock {
     }
 
     return builder.toString();
-  }
-
-  private void acquireINodeAttributes() throws PersistanceException {
-    List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
-    for (INode inode : getAllResolvedINodes()) {
-      if (inode instanceof INodeDirectoryWithQuota) {
-        HopINodeCandidatePK pk = new HopINodeCandidatePK(inode.getId());
-        pks.add(pk);
-      }
-    }
-    acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByPKList, pks);
   }
   
   protected INode find(String name, int parentId) throws PersistanceException {
