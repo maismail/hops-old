@@ -30,14 +30,13 @@ import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.junit.Test;
 import se.sics.hop.transaction.lock.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Test if FSNamesystem handles heartbeat right
@@ -93,28 +92,26 @@ public class TestComputeInvalidateWork {
   }
   
   private void addToInvalidates(final BlockManager bm,final Block block,final DatanodeDescriptor node, final FSNamesystem namesystem) throws IOException{
-    new HDFSTransactionalRequestHandler(HDFSOperationType.COMP_INVALIDATE) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.COMP_INVALIDATE) {
+      INodeIdentifier inodeIdentifier;
+
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addBlock(block.getBlockId(),
-                inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                addInvalidatedBlock();
-        return tla.acquire();
+      public void setUp() throws PersistanceException, IOException {
+        inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
-      
+
+      @Override
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.IV));
+      }
+
       @Override
       public Object performTask() throws PersistanceException, IOException {
         bm.addToInvalidates(block, node);
         return null;
       }
-      
-      INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
-        } 
     }.handle(namesystem);
   }
 }

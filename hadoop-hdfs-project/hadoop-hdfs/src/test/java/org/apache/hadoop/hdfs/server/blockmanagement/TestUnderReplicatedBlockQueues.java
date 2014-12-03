@@ -19,19 +19,19 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Assert;
 import org.junit.Test;
+import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestUnderReplicatedBlockQueues extends Assert {
 
@@ -117,10 +117,9 @@ public class TestUnderReplicatedBlockQueues extends Assert {
   
   
   private BlockInfo add(final BlockInfo block) throws IOException {
-    new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException {
-        return null;
+      public void acquireLock(TransactionLocks locks) throws IOException {
       }
 
       @Override
@@ -136,14 +135,12 @@ public class TestUnderReplicatedBlockQueues extends Assert {
           final int curReplicas,
           final int decomissionedReplicas,
           final int expectedReplicas) throws IOException {
-    return (Boolean) new HDFSTransactionalRequestHandler(HDFSOperationType.TEST) {
+    return (Boolean) new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
       @Override
-      public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-        HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-        tla.getLocks().
-                addBlock(block.getBlockId(), block.getInodeId()).
-                addUnderReplicatedBlock();
-        return tla.acquire();
+      public void acquireLock(TransactionLocks locks) throws IOException {
+        HopsLockFactory lf = HopsLockFactory.getInstance();
+        locks.add(lf.getIndividualBlockLock(block.getBlockId(), new INodeIdentifier(block.getInodeId())))
+                .add(lf.getBlockRelated(HopsLockFactory.BLK.UR));
       }
 
       @Override

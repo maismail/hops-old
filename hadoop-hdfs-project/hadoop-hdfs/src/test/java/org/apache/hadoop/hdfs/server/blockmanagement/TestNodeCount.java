@@ -22,7 +22,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.hadoop.conf.Configuration;
@@ -35,17 +34,16 @@ import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
 import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  * Test if live nodes count per node is correct 
@@ -109,38 +107,36 @@ public class TestNodeCount {
       }
       
       // find out a non-excess node
-      HDFSTransactionalRequestHandler getnonExcessDN = new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
+      HopsTransactionalRequestHandler getnonExcessDN = new HopsTransactionalRequestHandler(HDFSOperationType.TEST_NODE_COUNT) {
+        INodeIdentifier inodeIdentifier;
+
         @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-          tla.getLocks().
-                  addBlock(block.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                  addReplica().
-                  addExcess();
-          return tla.acquire();
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        }
+
+        @Override
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf = HopsLockFactory.getInstance();
+          locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                  .add(lf.getBlockRelated(BLK.RE, BLK.ER));
         }
 
         @Override
         public Object performTask() throws PersistanceException, IOException {
           final Iterator<DatanodeDescriptor> iter = bm.blocksMap.nodeIterator(block.getLocalBlock());
-          BlockInfo blkInfo  = new BlockInfo(block.getLocalBlock(), inodeIdentifier.getInodeId());
+          BlockInfo blkInfo = new BlockInfo(block.getLocalBlock(), inodeIdentifier.getInodeId());
           Collection<String> excessDns = bm.excessReplicateMap.get(blkInfo);
           DatanodeDescriptor nonExcessDN = null;
           while (iter.hasNext()) {
             DatanodeDescriptor dn = iter.next();
-            if(!excessDns.contains(dn.getStorageID())){
+            if (!excessDns.contains(dn.getStorageID())) {
               nonExcessDN = dn;
             }
           }
           return nonExcessDN;
         }
-        
-        INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
-        }    
+
       };
       
       DatanodeDescriptor nonExcessDN = (DatanodeDescriptor)getnonExcessDN.handle(namesystem);
@@ -207,30 +203,27 @@ public class TestNodeCount {
   NumberReplicas countNodes(final Block block, final FSNamesystem namesystem) throws IOException {
     namesystem.readLock();
     try {
-      return (NumberReplicas) new HDFSTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {
-         @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-           HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-           tla.getLocks().
-                   addBlock(block.getBlockId(),
-                   inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                   addReplica().
-                   addExcess().
-                   addCorrupt();
-           return tla.acquire();
+      return (NumberReplicas) new HopsTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {      
+        INodeIdentifier inodeIdentifier;
+
+        @Override
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
         }
-         
+
+        @Override
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf = HopsLockFactory.getInstance();
+          locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                  .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR));
+        }
+
         @Override
         public Object performTask() throws PersistanceException, IOException {
           lastBlock = block;
           lastNum = namesystem.getBlockManager().countNodes(block);
           return lastNum;
         }
-        INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
-        } 
 
       }.handle(namesystem);
     } finally {

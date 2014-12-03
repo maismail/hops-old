@@ -59,7 +59,7 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
-import se.sics.hop.transaction.lock.HopsLockFactory.BLK;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestBlockManager {

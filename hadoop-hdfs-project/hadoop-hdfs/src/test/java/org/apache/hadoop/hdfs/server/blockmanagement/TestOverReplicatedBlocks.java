@@ -24,7 +24,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.BlockLocation;
@@ -43,18 +42,17 @@ import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.metadata.lock.HDFSTransactionLockAcquirer;
-import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.transaction.lock.OldTransactionLocks;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HDFSTransactionalRequestHandler;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
 import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestOverReplicatedBlocks {
   /** Test processOverReplicatedBlock can handle corrupt replicas fine.
@@ -121,17 +119,19 @@ public class TestOverReplicatedBlocks {
           // decrease the replication factor to 1; 
           NameNodeAdapter.setReplication(namesystem, fileName.toString(), (short)1);
           
-          new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+          new HopsTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+            INodeIdentifier inodeIdentifier;
+
             @Override
-            public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-              HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-              tla.getLocks().
-                      addBlock(block.getBlockId(),
-                      inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                      addReplica().
-                      addExcess().
-                      addCorrupt();
-              return tla.acquire();
+            public void setUp() throws PersistanceException, IOException {
+              inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+            }
+
+            @Override
+            public void acquireLock(TransactionLocks locks) throws IOException {
+              HopsLockFactory lf = HopsLockFactory.getInstance();
+              locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                      .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR));
             }
 
             @Override
@@ -141,14 +141,8 @@ public class TestOverReplicatedBlocks {
               assertEquals(1, bm.countNodes(block.getLocalBlock()).liveReplicas());
               return null;
             }
-            INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
-        }
-            
           }.handle(namesystem);
-         
+
         }
       } finally {
         namesystem.writeUnlock();
@@ -250,17 +244,19 @@ public class TestOverReplicatedBlocks {
       out.close();
       final ExtendedBlock block = DFSTestUtil.getFirstBlock(fs, p);
       
-      new HDFSTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+      new HopsTransactionalRequestHandler(HDFSOperationType.TEST_PROCESS_OVER_REPLICATED_BLOCKS) {
+        INodeIdentifier inodeIdentifier;
+
         @Override
-        public OldTransactionLocks acquireLock() throws PersistanceException, IOException, ExecutionException {
-          HDFSTransactionLockAcquirer tla = new HDFSTransactionLockAcquirer();
-          tla.getLocks().
-                  addBlock(block.getBlockId(),
-                  inodeIdentifier!=null?inodeIdentifier.getInodeId():INode.NON_EXISTING_ID).
-                  addReplica().
-                  addExcess().
-                  addCorrupt();
-          return tla.acquire();
+        public void setUp() throws PersistanceException, IOException {
+          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
+        }
+
+        @Override
+        public void acquireLock(TransactionLocks locks) throws IOException {
+          HopsLockFactory lf = HopsLockFactory.getInstance();
+          locks.add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                  .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR));
         }
 
         @Override
@@ -269,11 +265,7 @@ public class TestOverReplicatedBlocks {
                   .countNodes(block.getLocalBlock()).liveReplicas());
           return null;
         }
-        INodeIdentifier inodeIdentifier;
-        @Override
-        public void setUp() throws PersistanceException, IOException {
-          inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
-        } 
+
       }.handle(namesystem);
        
     } finally {
