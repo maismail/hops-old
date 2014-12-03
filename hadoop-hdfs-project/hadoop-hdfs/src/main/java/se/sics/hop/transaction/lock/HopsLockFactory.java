@@ -246,9 +246,8 @@ public class HopsLockFactory {
     return new HopsLeasePathLock(lockType);
   }
 
-  public HopsLock getNameNodeLeaseLock(TransactionLockTypes.LockType lockType,
-          SortedSet<String> paths) {
-    return new HopsNameNodeLeaseLock(lockType, paths);
+  public HopsLock getNameNodeLeaseLock(TransactionLockTypes.LockType lockType) {
+    return new HopsNameNodeLeaseLock(lockType);
   }
 
   public HopsLock getQuotaUpdateLock(boolean includeChildren,

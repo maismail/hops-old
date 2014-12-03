@@ -449,7 +449,7 @@ public class LeaseManager {
                 lf.getINodeLock(fsnamesystem.getNameNode(),
                     INodeLockType.WRITE, INodeResolveType.PATH,
                     leasePaths.toArray(new String[leasePaths.size()])))
-                .add(lf.getNameNodeLeaseLock(LockType.WRITE, leasePaths))
+                .add(lf.getNameNodeLeaseLock(LockType.WRITE))
                 .add(lf.getLeaseLock(LockType.WRITE, holder))
                 .add(lf.getLeasePathLock(LockType.WRITE, leasePaths.size()))
                 .add(lf.getBlockLock())

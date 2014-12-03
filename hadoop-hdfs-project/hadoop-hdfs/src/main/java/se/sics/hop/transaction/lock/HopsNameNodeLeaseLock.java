@@ -19,23 +19,13 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
-
-import java.io.IOException;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.SortedSet;
 
 final class HopsNameNodeLeaseLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
-  private final SortedSet<String> paths;
   private Lease nameNodeLease;
 
-  HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType,
-      SortedSet<String> paths) {
+  HopsNameNodeLeaseLock(TransactionLockTypes.LockType lockType) {
     this.lockType = lockType;
-    this.paths = paths;
   }
 
   @Override
