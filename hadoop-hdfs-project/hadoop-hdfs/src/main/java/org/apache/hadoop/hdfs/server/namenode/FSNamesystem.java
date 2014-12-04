@@ -2024,7 +2024,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             .add(lf.getBlockLock())
             .add(lf.getLeaseLock(LockType.WRITE, holder))
             .add(lf.getLeasePathLock(LockType.WRITE))
-            .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC, BLK.UR, BLK.PE));
+            .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC, BLK.UR,
+                BLK.PE, BLK.IV));
 
         if (flag.contains(CreateFlag.OVERWRITE) && dir.isQuotaEnabled()) {
           locks.add(lf.getQuotaUpdateLock(src));
