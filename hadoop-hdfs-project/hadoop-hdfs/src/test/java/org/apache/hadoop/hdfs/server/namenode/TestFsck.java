@@ -742,7 +742,8 @@ public class TestFsck {
         @Override
         public void acquireLock(TransactionLocks locks) throws IOException {
           HopsLockFactory lf = HopsLockFactory.getInstance();
-          locks.add(lf.getINodeLock(clusterFinal.getNameNode(), TransactionLockTypes.INodeLockType.WRITE, TransactionLockTypes.INodeResolveType.PATH, fileName));
+          locks.add(lf.getINodeLock(clusterFinal.getNameNode(), TransactionLockTypes.INodeLockType.WRITE, TransactionLockTypes.INodeResolveType.PATH, fileName))
+              .add(lf.getBlockLock());
         }
 
         @Override
