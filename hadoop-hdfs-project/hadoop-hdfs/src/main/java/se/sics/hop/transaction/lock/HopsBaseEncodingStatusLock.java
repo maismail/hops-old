@@ -20,6 +20,8 @@ package se.sics.hop.transaction.lock;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
+import java.util.Arrays;
+
 abstract class HopsBaseEncodingStatusLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
 
@@ -50,6 +52,7 @@ abstract class HopsBaseEncodingStatusLock extends HopsLock {
     @Override
     protected void acquire(TransactionLocks locks) throws Exception {
       HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
+      Arrays.sort(targets);
       for (String target : targets) {
         INode iNode = iNodeLock.getTargetINodes(target);
         acquireLock(getLockType(), EncodingStatus.Finder.ByInodeId, iNode.getId());
