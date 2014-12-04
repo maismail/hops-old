@@ -54,7 +54,7 @@ abstract class HopsBaseEncodingStatusLock extends HopsLock {
       HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
       Arrays.sort(targets);
       for (String target : targets) {
-        INode iNode = iNodeLock.getTargetINodes(target);
+        INode iNode = iNodeLock.getTargetINode(target);
         acquireLock(getLockType(), EncodingStatus.Finder.ByInodeId, iNode.getId());
       }
     }

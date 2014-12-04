@@ -33,7 +33,7 @@ class HopsBlockChecksumLock extends HopsLock {
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
-    INode iNode = iNodeLock.getTargetINodes(target);
+    INode iNode = iNodeLock.getTargetINode(target);
     BlockChecksumDataAccess.KeyTuple key = new BlockChecksumDataAccess
         .KeyTuple(iNode.getId(), blockIndex);
     acquireLock(DEFAULT_LOCK_TYPE, BlockChecksum.Finder.ByKeyTuple, key);

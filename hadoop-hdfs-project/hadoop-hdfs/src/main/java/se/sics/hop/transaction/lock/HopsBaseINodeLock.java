@@ -136,7 +136,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     return resolvedINodesMap.getPathINodes(path);
   }
 
-  INode getTargetINodes(String path) {
+  INode getTargetINode(String path) {
     List<INode> list = resolvedINodesMap.getPathINodes(path);
     return list.get(list.size() - 1);
   }

@@ -40,7 +40,7 @@ final class HopsQuotaUpdateLock extends HopsLock {
   protected void acquire(TransactionLocks locks) throws Exception {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     for (String target : targets) {
-      acquireQuotaUpdate(inodeLock.getTargetINodes(target));
+      acquireQuotaUpdate(inodeLock.getTargetINode(target));
       if (includeChildren) {
         acquireQuotaUpdate(inodeLock.getChildINodes(target));
       }
