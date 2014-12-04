@@ -14,10 +14,6 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.*;
 public abstract class BasicClusterTestCase extends TestCase {
 
   protected static final int DFS_TEST_BLOCK_SIZE = 4 * 1024;
-  protected static final String ENCODING_MANAGER_CLASSNAME = "se.sics.hop" +
-      ".erasure_coding.MockEncodingManager";
-  protected static final String BLOCK_REPAIR_MANAGER_CLASSNAME =
-      "se.sics.hop.erasure_coding.MapReduceBlockRepairManager";
 
   private MiniDFSCluster cluster;
   private DistributedFileSystem dfs;
@@ -25,8 +21,6 @@ public abstract class BasicClusterTestCase extends TestCase {
 
   protected BasicClusterTestCase() {
     this(new HdfsConfiguration());
-    conf.set(DFSConfigKeys.ENCODING_MANAGER_CLASSNAME_KEY, ENCODING_MANAGER_CLASSNAME);
-    conf.set(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, BLOCK_REPAIR_MANAGER_CLASSNAME);
     conf.setLong(DFS_BLOCK_SIZE_KEY, DFS_TEST_BLOCK_SIZE);
     conf.setInt(DFS_REPLICATION_KEY, DFS_REPLICATION_DEFAULT);
     conf.setBoolean(DFSConfigKeys.ERASURE_CODING_ENABLED_KEY, true);
