@@ -7085,6 +7085,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         if (dir.isQuotaEnabled()) {
           locks.add(lf.getQuotaUpdateLock(true, src, dst));
         }
+        if (erasureCodingEnabled) {
+          locks.add(lf.getEncodingStatusLock(LockType.WRITE, dst));
+        }
       }
 
       @Override
