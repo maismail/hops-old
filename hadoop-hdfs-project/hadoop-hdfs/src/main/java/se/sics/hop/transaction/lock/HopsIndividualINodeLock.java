@@ -66,7 +66,8 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
     if (inode == null) {
       //there's no inode for this specific name,parentid or inodeId which means this file is deleted
       //so fallback to the scan to update the inodecontext cache
-      throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifier);
+      // TODO Check why this was here
+//      throw new StorageException("Abort the transaction because INode doesn't exists for " + inodeIdentifier);
     }
 
     if (readUpPathInodes) {

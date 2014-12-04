@@ -1909,7 +1909,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE_ON_PARENT,
                 INodeResolveType.PATH, src))
                 .add(lf.getBlockLock())
-                .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC, BLK.IV));
+                .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UC, BLK.UR,
+                    BLK.IV));
           }
 
           @Override
@@ -7317,6 +7318,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                           BLK.PE, BLK.IV));
                   if (dir.isQuotaEnabled()) {
                     locks.add(lf.getQuotaUpdateLock(path));
+                  }
+                  if (erasureCodingEnabled) {
+                    locks.add(lf.getEncodingStatusLock(LockType.WRITE, path));
                   }
                 }
 

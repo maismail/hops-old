@@ -75,16 +75,14 @@ public class ErasureCodingManager extends Configured{
       if (encodingManagerClass == null || !EncodingManager.class.isAssignableFrom(encodingManagerClass)) {
         throw new ClassNotFoundException(encodingManagerClass + " is not an implementation of " + EncodingManager.class.getCanonicalName());
       }
-      Constructor<?> encodingManagerConstructor = encodingManagerClass.getConstructor(
-          new Class[] {Configuration.class} );
+      Constructor<?> encodingManagerConstructor = encodingManagerClass.getConstructor(Configuration.class);
       encodingManager = (EncodingManager) encodingManagerConstructor.newInstance(getConf());
 
       Class<?> blockRepairManagerClass = getConf().getClass(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY, null);
       if (blockRepairManagerClass == null || !BlockRepairManager.class.isAssignableFrom(blockRepairManagerClass)) {
         throw new ClassNotFoundException(blockRepairManagerClass + " is not an implementation of " + BlockRepairManager.class.getCanonicalName());
       }
-      Constructor<?> blockRepairManagerConstructor = blockRepairManagerClass.getConstructor(
-          new Class[] {Configuration.class} );
+      Constructor<?> blockRepairManagerConstructor = blockRepairManagerClass.getConstructor(Configuration.class);
       blockRepairManager = (BlockRepairManager) blockRepairManagerConstructor.newInstance(getConf());
     } catch (Exception e) {
       LOG.error("Could not load erasure coding classes", e);
