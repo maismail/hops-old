@@ -106,6 +106,9 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import se.sics.hop.erasure_coding.MockEncodingManager;
+import se.sics.hop.erasure_coding.MockRepairManager;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
@@ -633,6 +636,14 @@ public class MiniDFSCluster {
     conf.setInt(DFS_NAMENODE_DECOMMISSION_INTERVAL_KEY, 3); // 3 second
     conf.setClass(NET_TOPOLOGY_NODE_SWITCH_MAPPING_IMPL_KEY, 
                    StaticMapping.class, DNSToSwitchMapping.class);
+    if (conf.get(DFSConfigKeys.ENCODING_MANAGER_CLASSNAME_KEY) == null) {
+      conf.set(DFSConfigKeys.ENCODING_MANAGER_CLASSNAME_KEY,
+          MockEncodingManager.class.getName());
+    }
+    if (conf.get(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY) == null) {
+      conf.set(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY,
+          MockRepairManager.class.getName());
+    }
     
     // In an HA cluster, in order for the StandbyNode to perform checkpoints,
     // it needs to know the HTTP port of the Active. So, if ephemeral ports
