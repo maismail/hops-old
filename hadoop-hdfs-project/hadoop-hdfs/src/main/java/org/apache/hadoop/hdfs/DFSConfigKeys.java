@@ -36,16 +36,16 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String DFS_STORAGE_DRIVER_CLASS = "dfs.storage.driver.class";
   public static final String DFS_STORAGE_DRIVER_CLASS_DEFAULT = "se.sics.hop.metadata.ndb.NdbStorageFactory";
-  
+
   public static final String DFS_STORAGE_DRIVER_CONFIG_FILE = "dfs.storage.driver.configfile";
   public static final String DFS_STORAGE_DRIVER_CONFIG_FILE_DEFAULT = "ndb-config.properties";
 
   public static final String  DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY = "dfs.system.level.lock.enabled";
   public static final boolean DFS_SYSTEM_LEVEL_LOCK_ENABLED_DEFAULT = false;
-  
+
   public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE = "dfs.storage.ansestor.lock.type";
   public static final String DFS_STORAGE_ANCESTOR_LOCK_TYPE_DEFAULT = "READ_COMMITTED"; // "READ"  | "READ_COMMITTED"
-  
+
   public static final String  DFS_ROW_LEVEL_LOCK_ENABLED_KEY = "dfs.row.level.lock.enabled";
   public static final boolean DFS_ROW_LEVEL_LOCK_ENABLED_DEFAULT = true;
 
@@ -63,22 +63,22 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
 
   public static final String DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD = "dfs.namenode.quota.update.updateThreshold";
   public static final float DFS_NAMENODE_QUOTA_UPDATE_ID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
-  
+
   public static final String DFS_NAMENODE_INODEID_BATCH_SIZE = "dfs.namenode.inodeid.batchsize";
   public static final int DFS_NAMENODE_INODEID_BATCH_SIZE_DEFAULT = 1000;
-  
+
   public static final String DFS_NAMENODE_BLOCKID_BATCH_SIZE = "dfs.namenode.blockid.batchsize";
   public static final int DFS_NAMENODE_BLOCKID_BATCH_SIZE_DEFAULT = 1000;
-  
+
   public static final String DFS_NAMENODE_INODEID_UPDATE_THRESHOLD = "dfs.namenode.inodeid.updateThreshold";
   public static final float DFS_NAMENODE_INODEID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
-  
+
   public static final String DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD = "dfs.namenode.blockid.updateThreshold";
   public static final float DFS_NAMENODE_BLOCKID_UPDATE_THRESHOLD_DEFAULT = (float) 0.5;
 
   public static final String DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS = "dfs.namenode.id.updateThreshold";
   public static final int DFS_NAMENODE_IDSMONITOR_CHECK_INTERVAL_IN_MS_DEFAULT = 1000;
-  
+
   public static final String DFS_NAMENODE_PROCESS_REPORT_BATCH_SIZE = "dfs.namenode.processReport.batchsize";
   public static final int DFS_NAMENODE_PROCESS_REPORT_BATCH_SIZE_DEFAULT = 100;
   
@@ -153,7 +153,7 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int DFS_SUBTREE_EXECUTOR_LIMIT_DEFAULT = 20;
 
   public static final String ERASURE_CODING_ENABLED_KEY = "se.sics.hop.erasure_coding.enabled";
-  public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = false;
+  public static final boolean DEFAULT_ERASURE_CODING_ENABLED_KEY = true;
   public static final String PARITY_FOLDER = "se.sics.hop.erasure_coding.parity_folder";
   public static final String DEFAULT_PARITY_FOLDER = "/parity";
   public static final String ENCODING_MANAGER_CLASSNAME_KEY = "se.sics.hop.erasure_coding.encoding_manager";
