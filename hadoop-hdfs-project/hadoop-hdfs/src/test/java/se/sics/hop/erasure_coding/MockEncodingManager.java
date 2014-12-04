@@ -21,11 +21,13 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MockEncodingManager extends EncodingManager {
+  private static final List<Report> EMPTY_REPORT = new ArrayList<Report>(0);
 
-  MockEncodingManager(Configuration conf)
+  public MockEncodingManager(Configuration conf)
       throws IOException {
     super(conf);
   }
@@ -37,7 +39,7 @@ public class MockEncodingManager extends EncodingManager {
 
   @Override
   public List<Report> computeReports() {
-    return null;
+    return EMPTY_REPORT;
   }
 
   @Override

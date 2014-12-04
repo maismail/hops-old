@@ -20,9 +20,12 @@ package se.sics.hop.erasure_coding;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MockRepairManager extends BlockRepairManager {
+  private static final List<Report> EMPTY_REPORT = new ArrayList<Report>(0);
+
   public MockRepairManager(Configuration conf) {
     super(conf);
   }
@@ -41,7 +44,7 @@ public class MockRepairManager extends BlockRepairManager {
 
   @Override
   public List<Report> computeReports() {
-    return null;
+    return EMPTY_REPORT;
   }
 
   @Override
