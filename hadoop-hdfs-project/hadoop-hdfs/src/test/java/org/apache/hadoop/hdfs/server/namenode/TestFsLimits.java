@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -36,6 +37,7 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
@@ -65,6 +67,11 @@ public class TestFsLimits {
     ).thenReturn(
          new PermissionStatus("root", "wheel", FsPermission.getDefault())
     );
+    NameNode nn = mock(NameNode.class);
+    when(nn.getActiveNamenodes()).thenReturn(new SortedActiveNamenodeList
+        (Collections.EMPTY_LIST));
+    fsn.setNameNode(nn);
+    when(fsn.getNameNode()).thenReturn(nn);
     return fsn;
   }
   
