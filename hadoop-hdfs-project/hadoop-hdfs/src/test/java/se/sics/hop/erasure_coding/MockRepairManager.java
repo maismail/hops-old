@@ -17,11 +17,16 @@
  */
 package se.sics.hop.erasure_coding;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 
 import java.util.List;
 
 public class MockRepairManager extends BlockRepairManager {
+  public MockRepairManager(Configuration conf) {
+    super(conf);
+  }
+
   @Override
   public void repairSourceBlocks(String codecId, Path sourceFile,
       Path parityFile) {
