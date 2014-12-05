@@ -1585,6 +1585,9 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             INodeResolveType.PATH, paths))
             .add(lf.getBlockLock())
             .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.PE, BLK.UC, BLK.IV));
+        if (erasureCodingEnabled) {
+          locks.add(lf.getEncodingStatusLock(LockType.WRITE, srcs));
+        }
       }
 
       @Override
