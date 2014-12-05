@@ -77,7 +77,8 @@ public class TestDFSRemove {
           fs.delete(a, false);
         }
         // wait 3 heartbeat intervals, so that all blocks are deleted.
-        Thread.sleep(3 * DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT * 1000);
+        // FIXME There is a race condition here :)
+        Thread.sleep(10 * DFSConfigKeys.DFS_HEARTBEAT_INTERVAL_DEFAULT * 1000);
         // all blocks should be gone now.
         long dfsUsedFinal = getTotalDfsUsed(cluster);
         assertEquals("All blocks should be gone. start=" + dfsUsedStart

@@ -1959,14 +1959,14 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   long getPreferredBlockSize(final String filename) throws IOException {
-    // FIXME Operation not yet supported
     HopsTransactionalRequestHandler getPreferredBlockSizeHandler =
         new HopsTransactionalRequestHandler(
             HDFSOperationType.GET_PREFERRED_BLOCK_SIZE, filename) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            throw new UnsupportedOperationException(
-                "Not supported yet.");
+            HopsLockFactory lf = HopsLockFactory.getInstance();
+            locks.add(lf.getINodeLock(nameNode, INodeLockType.READ_COMMITTED,
+                INodeResolveType.PATH, filename));
           }
 
           @Override
