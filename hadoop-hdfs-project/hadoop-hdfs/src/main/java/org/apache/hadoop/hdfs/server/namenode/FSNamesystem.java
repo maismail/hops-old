@@ -6067,13 +6067,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   Token<DelegationTokenIdentifier> getDelegationToken(final Text renewer)
       throws IOException {
-    //FIXME Not yet implemented
+    //FIXME This does not seem to be persisted
     HopsTransactionalRequestHandler getDelegationTokenHandler =
         new HopsTransactionalRequestHandler(
             HDFSOperationType.GET_DELEGATION_TOKEN) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            throw new UnsupportedOperationException();
+//            throw new UnsupportedOperationException();
           }
 
           @Override
@@ -6130,13 +6130,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   long renewDelegationToken(final Token<DelegationTokenIdentifier> token)
       throws InvalidToken, IOException {
-    //FIXME Not yet implemented
+    //FIXME This does not seem to be persisted
     HopsTransactionalRequestHandler renewDelegationTokenHandler =
         new HopsTransactionalRequestHandler(
             HDFSOperationType.RENEW_DELEGATION_TOKEN) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            throw new UnsupportedOperationException();
+//            throw new UnsupportedOperationException();
           }
 
           @Override
@@ -6179,13 +6179,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   void cancelDelegationToken(final Token<DelegationTokenIdentifier> token)
       throws IOException {
-    //FIXME Not yet implemented
+    //FIXME This does not seem to be persisted
     HopsTransactionalRequestHandler cancelDelegationTokenHandler =
         new HopsTransactionalRequestHandler(
             HDFSOperationType.CANCEL_DELEGATION_TOKEN) {
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
-            throw new UnsupportedOperationException();
+//            throw new UnsupportedOperationException();
           }
 
           @Override
