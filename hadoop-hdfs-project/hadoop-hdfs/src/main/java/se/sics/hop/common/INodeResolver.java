@@ -25,6 +25,7 @@ import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.exception.PersistanceException;
 
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 public class INodeResolver {
@@ -55,7 +56,7 @@ public class INodeResolver {
     if (currentInode.isFile()) {
       return false;
     }
-    return count < components.length;
+    return count + 1 < components.length;
   }
 
   public INode next() throws UnresolvedPathException, PersistanceException {
@@ -82,11 +83,8 @@ public class INodeResolver {
           "Trying to read more components than available");
     }
 
-    currentInode = INodeUtil.getNode(
-        components[count + 1],
-        currentInode.getId(),
+    currentInode = INodeUtil.getNode(components[++count], currentInode.getId(),
         transactional);
-    count++;
     return currentInode;
   }
 

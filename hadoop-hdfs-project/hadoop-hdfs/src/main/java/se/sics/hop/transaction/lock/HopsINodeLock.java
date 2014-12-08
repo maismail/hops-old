@@ -191,9 +191,10 @@ class HopsINodeLock extends HopsBaseINodeLock {
 
   private void handleLockUpgrade(List<INode> resolvedINodes, byte[][] components, String path)
       throws PersistanceException, UnresolvedPathException {
+    // TODO Handle the case that predecessing nodes get deleted before locking
     // lock upgrade if the path was not fully resolved
-    if (resolvedINodes.size() !=
-        components.length) { // path was not fully resolved
+    if (resolvedINodes.size() != components.length) {
+      // path was not fully resolved
       INode inodeToReread = null;
       if (lockType == INodeLockType.WRITE_ON_TARGET_AND_PARENT) {
         if (resolvedINodes.size() <= components.length - 2) {
@@ -232,8 +233,6 @@ class HopsINodeLock extends HopsBaseINodeLock {
       if (current != null) {
         addLockedINodes(current, lock);
         resolved.add(current);
-      } else {
-        throw new UnresolvedPathException("Could not upgrade lock for " + fullPath);
       }
     }
     return resolved;
