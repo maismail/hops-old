@@ -32,7 +32,7 @@ import org.junit.Assert;
 import com.google.common.base.Preconditions;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;

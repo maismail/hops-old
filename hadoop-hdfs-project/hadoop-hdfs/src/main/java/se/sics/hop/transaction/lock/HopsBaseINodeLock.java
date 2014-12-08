@@ -33,7 +33,6 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.EntityManager;
-import static se.sics.hop.transaction.lock.HopsLock.DEFAULT_LOCK_TYPE;
 
 /**
  *
@@ -180,7 +179,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   protected void setINodeLockType(TransactionLockTypes.INodeLockType lock) throws StorageException {
     switch (lock) {
       case WRITE:
-      case WRITE_ON_PARENT:
+      case WRITE_ON_TARGET_AND_PARENT:
         EntityManager.writeLock();
         break;
       case READ:

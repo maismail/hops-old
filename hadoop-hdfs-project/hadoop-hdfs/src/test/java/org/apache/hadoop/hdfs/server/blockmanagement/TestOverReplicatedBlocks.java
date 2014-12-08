@@ -51,7 +51,7 @@ import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestOverReplicatedBlocks {

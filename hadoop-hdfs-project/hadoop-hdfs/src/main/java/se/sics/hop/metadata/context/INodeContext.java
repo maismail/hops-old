@@ -10,8 +10,6 @@ import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.exception.StorageException;
-import static se.sics.hop.metadata.hdfs.entity.EntityContext.currentLockMode;
-import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.HopsBaseINodeLock;
@@ -185,7 +183,7 @@ public class INodeContext extends EntityContext<INode> {
       if (!removedInodes.values().isEmpty()) {
         for (INode inode : removedInodes.values()) {
           INodeLockType lock = hlk.getLockedINodeLockType(inode);
-          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_TARGET_AND_PARENT) {
             throw new LockUpgradeException("Trying to remove inode id=" + inode.getId() + " acquired lock was " + lock);
           }
         }
@@ -194,7 +192,7 @@ public class INodeContext extends EntityContext<INode> {
       if (!modifiedInodes.values().isEmpty()) {
         for (INode inode : modifiedInodes.values()) {
           INodeLockType lock = hlk.getLockedINodeLockType(inode);
-          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_PARENT) {
+          if (lock != null && lock != INodeLockType.WRITE && lock != INodeLockType.WRITE_ON_TARGET_AND_PARENT) {
             throw new LockUpgradeException("Trying to update inode id=" + inode.getId() + " acquired lock was " + lock);
           }
         }
