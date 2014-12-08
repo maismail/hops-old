@@ -43,7 +43,7 @@ final class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
        BlockInfo dummy = new BlockInfo();
        dummy.setINodeIdNoPersistance(inodeId);
        dummy.setBlockIdNoPersistance(blockId);
-       blocks.add(result);
+       blocks.add(dummy);
     }
   }
 }

@@ -3925,7 +3925,7 @@ public class BlockManager {
       public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
-                .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.PE, BLK.IV, BLK.UR));
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
           locks.add(lf.getIndivdualEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId()));
