@@ -8220,7 +8220,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           @Override
           public void acquireLock(TransactionLocks locks) throws IOException {
             HopsLockFactory lf = HopsLockFactory.getInstance();
-            // TODO Does it still make sense to resolve the path and lock the inode?
             locks.add(lf.getINodeLock(nameNode, INodeLockType.WRITE, INodeResolveType.PATH, sourceFile))
                 .add(lf.getEncodingStatusLock(LockType.WRITE, sourceFile));
           }
