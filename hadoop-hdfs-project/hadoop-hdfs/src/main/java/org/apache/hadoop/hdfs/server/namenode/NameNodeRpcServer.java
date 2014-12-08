@@ -159,16 +159,11 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   private final String minimumDataNodeVersion;
 
-  private String parityFolder;
-
   public NameNodeRpcServer(Configuration conf, NameNode nn)
       throws IOException {
     this.nn = nn;
     this.namesystem = nn.getNamesystem();
     this.metrics = NameNode.getNameNodeMetrics();
-
-    parityFolder = conf.get(DFSConfigKeys.PARITY_FOLDER,
-        DFSConfigKeys.DEFAULT_PARITY_FOLDER);
 
     int handlerCount = 
       conf.getInt(DFS_NAMENODE_HANDLER_COUNT_KEY, 
