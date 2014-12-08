@@ -182,8 +182,8 @@ public class TestFsLimits {
     @Override
     public void acquireLock(TransactionLocks locks) throws IOException {
       HopsLockFactory lf = HopsLockFactory.getInstance();
-      locks.add(lf.getINodeLock(getMockNamesystem().getNameNode(), TransactionLockTypes.INodeLockType.WRITE_ON_PARENT, 
-              TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY, "/", "/"+name));
+      locks.add(lf.getINodeLock(getMockNamesystem().getNameNode(), TransactionLockTypes.INodeLockType.WRITE_ON_TARGET_AND_PARENT,
+              TransactionLockTypes.INodeResolveType.PATH_AND_ALL_CHILDREN_RECURSIVELY, "/", "/"+name));
     }
 
     @Override

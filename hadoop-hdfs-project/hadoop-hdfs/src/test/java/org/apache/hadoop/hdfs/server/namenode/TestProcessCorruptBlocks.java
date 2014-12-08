@@ -23,7 +23,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
@@ -37,7 +36,7 @@ import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
 import se.sics.hop.exception.PersistanceException;
 import org.junit.Test;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;

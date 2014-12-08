@@ -19,6 +19,7 @@ import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
@@ -41,7 +42,7 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
     this.lockType = lockType;
     this.inodeIdentifier = inodeIdentifier == null ? NON_EXISTING_INODE : inodeIdentifier;
     this.readUpPathInodes = readUpPathInodes;
-    if (lockType.equals(INodeLockType.WRITE_ON_PARENT)) {
+    if (lockType.equals(INodeLockType.WRITE_ON_TARGET_AND_PARENT)) {
       throw new UnsupportedOperationException();
     }
   }

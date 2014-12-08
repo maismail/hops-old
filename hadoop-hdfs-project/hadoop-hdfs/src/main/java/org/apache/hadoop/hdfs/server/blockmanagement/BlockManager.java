@@ -74,7 +74,7 @@ import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
@@ -3925,7 +3925,7 @@ public class BlockManager {
       public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
-                .add(lf.getIndividualBlockLock(block.getBlockId(), inodeIdentifier))
+                .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.PE, BLK.IV, BLK.UR));
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
           locks.add(lf.getIndivdualEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId()));

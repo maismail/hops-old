@@ -39,6 +39,7 @@ final class HopsBlockRelatedLock extends HopsLockWithType {
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
+    // FIXME handle null block
     HopsLock lock = locks.getLock(Type.Block);
 
     if (lock instanceof HopsBlockLock) {

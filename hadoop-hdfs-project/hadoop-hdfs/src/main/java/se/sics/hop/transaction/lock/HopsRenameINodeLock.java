@@ -86,7 +86,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
     String src = paths[0];
     String dst = paths[1];
     Arrays.sort(paths, PATH_COMPARTOR);
-    acquireInodeLocks();
+    acquireINodeLocks();
 
     if (legacyRename) // In deprecated rename, it allows to move a dir to an existing destination.
     {

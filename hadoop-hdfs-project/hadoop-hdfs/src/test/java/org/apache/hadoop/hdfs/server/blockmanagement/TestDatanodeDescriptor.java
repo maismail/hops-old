@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
@@ -38,7 +37,7 @@ import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**

@@ -24,17 +24,16 @@ import java.util.List;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import se.sics.hop.common.INodeResolver;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 
 /**
- *
  * @author Mahmoud Ismail <maism@sics.se>
  * @author Steffen Grohsschmiedt <steffeng@sics.se>
  */
@@ -49,7 +48,9 @@ class HopsINodeLock extends HopsBaseINodeLock {
   private final long namenodeId;
 
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId, Collection<ActiveNamenode> activeNamenodes, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
+      boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId,
+      Collection<ActiveNamenode> activeNamenodes, String... paths) {
     super();
     this.lockType = lockType;
     this.resolveType = resolveType;
@@ -60,11 +61,14 @@ class HopsINodeLock extends HopsBaseINodeLock {
     this.paths = paths;
   }
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, boolean resolveLink, Collection<ActiveNamenode> activeNamenodes, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
+      boolean resolveLink, Collection<ActiveNamenode> activeNamenodes,
+      String... paths) {
     this(lockType, resolveType, resolveLink, false, -1, activeNamenodes, paths);
   }
 
-  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType, Collection<ActiveNamenode> activeNamenodes, String... paths) {
+  HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
+      Collection<ActiveNamenode> activeNamenodes, String... paths) {
     this(lockType, resolveType, true, false, -1, activeNamenodes, paths);
   }
 
@@ -78,24 +82,27 @@ class HopsINodeLock extends HopsBaseINodeLock {
      */
     Arrays.sort(paths);
     setPartitionKey();
-    acquireInodeLocks();
+    acquireINodeLocks();
     acquireINodeAttributes();
   }
   
-  protected void acquireInodeLocks() throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
+  protected void acquireINodeLocks()
+      throws UnresolvedPathException, PersistanceException,
+      SubtreeLockedException {
     switch (resolveType) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
-      case PATH_AND_ALL_CHILDREN_RECURESIVELY:
+      case PATH_AND_ALL_CHILDREN_RECURSIVELY:
         for (int i = 0; i < paths.length; i++) {
-          List<INode> resolvedInodes = acquireInodeLockByPath(paths[i]);
-          addPathINodes(paths[i], resolvedInodes);
-          if (resolvedInodes.size() > 0) {
-            INode lastINode = resolvedInodes.get(resolvedInodes.size() - 1);
+          List<INode> resolvedINodes = acquireINodeLockByPath(paths[i]);
+          addPathINodes(paths[i], resolvedINodes);
+          if (resolvedINodes.size() > 0) {
+            INode lastINode = resolvedINodes.get(resolvedINodes.size() - 1);
             if (resolveType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
               List<INode> children = findImmediateChildren(lastINode);
               addChildINodes(paths[i], children);
-            } else if (resolveType == INodeResolveType.PATH_AND_ALL_CHILDREN_RECURESIVELY) {
+            } else if (resolveType ==
+                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURSIVELY) {
               List<INode> children = findChildrenRecursively(lastINode);
               addChildINodes(paths[i], children);
             }
@@ -107,118 +114,133 @@ class HopsINodeLock extends HopsBaseINodeLock {
     }
   }
 
-  private List<INode> acquireInodeLockByPath(String path)
-          throws UnresolvedPathException, PersistanceException, SubtreeLockedException {
-    List<INode> resolvedInodes = new ArrayList<INode>();
-
-    if (path == null) {
-      return resolvedInodes;
-    }
-
+  private List<INode> acquireINodeLockByPath(String path)
+      throws UnresolvedPathException, PersistanceException,
+      SubtreeLockedException {
+    List<INode> resolvedINodes = new ArrayList<INode>();
     byte[][] components = INode.getPathComponents(path);
-    INode[] curNode = new INode[1];
 
-    int[] count = new int[]{0};
-    boolean lastComp = (count[0] == components.length - 1);
-    if (lastComp) { // if root is the last directory, we should acquire the write lock over the root
-      resolvedInodes.add(acquireLockOnRoot(lockType));
-      return resolvedInodes;
-    } else if ((count[0] == components.length - 2) && lockType == INodeLockType.WRITE_ON_PARENT) { // if Root is the parent
-      curNode[0] = acquireLockOnRoot(lockType);
+    INode currentINode;
+    if (isRootTarget(components)) {
+      resolvedINodes.add(acquireLockOnRoot(lockType));
+      return resolvedINodes;
+    } else if (isRootParent(components)
+        && TransactionLockTypes.impliesParentWriteLock(this.lockType)) {
+      currentINode = acquireLockOnRoot(lockType);
     } else {
-      curNode[0] = acquireLockOnRoot(INodeLockType.READ_COMMITTED);
+      currentINode = acquireLockOnRoot(DEFAULT_INODE_LOCK_TYPE);
     }
-    resolvedInodes.add(curNode[0]);
+    resolvedINodes.add(currentINode);
 
-    while (count[0] < components.length && curNode[0] != null) {
-
-      INodeLockType curInodeLock = null;
-      if (((lockType == INodeLockType.WRITE || lockType == INodeLockType.WRITE_ON_PARENT) && (count[0] + 1 == components.length - 1))
-              || (lockType == INodeLockType.WRITE_ON_PARENT && (count[0] + 1 == components.length - 2))) {
-        curInodeLock = INodeLockType.WRITE;
-      } else if (lockType == INodeLockType.READ_COMMITTED) {
-        curInodeLock = INodeLockType.READ_COMMITTED;
-      } else {
-        curInodeLock = DEFAULT_INODE_LOCK_TYPE;
-      }
-      setINodeLockType(curInodeLock);
-
-      lastComp = INodeUtil.getNextChild(
-              curNode,
-              components,
-              count,
-              resolveLink,
-              true);
-
-      if (curNode[0] != null) {
-        addLockedINodes(curNode[0], curInodeLock);
-        if (SubtreeLockHelper.isSubtreeLocked(curNode[0].isSubtreeLocked(), curNode[0].getSubtreeLockOwner(), activeNamenodes)) {
-          if (!ignoreLocalSubtreeLocks
-                  || ignoreLocalSubtreeLocks && namenodeId != curNode[0].getSubtreeLockOwner()) {
-            throw new SubtreeLockedException();
-          }
-        }
-        resolvedInodes.add(curNode[0]);
-      }
-
-      if (lastComp) {
-        break;
+    INodeResolver resolver = new INodeResolver(components, currentINode,
+        resolveLink, true);
+    while (resolver.hasNext()) {
+      INodeLockType currentINodeLock =
+          identifyLockType(resolver.getCount() + 1, components);
+      setINodeLockType(currentINodeLock);
+      currentINode = resolver.next();
+      if (currentINode != null) {
+        addLockedINodes(currentINode, currentINodeLock);
+        checkSubtreeLock(currentINode);
+        resolvedINodes.add(currentINode);
       }
     }
 
-// lock upgrade if the path was not fully resolved
-    if (resolvedInodes.size() != components.length) { // path was not fully resolved
+    handleLockUpgrade(resolvedINodes, components, path);
+    return resolvedINodes;
+  }
+
+  private boolean isRootTarget(byte[][] components) {
+    return isTarget(0, components);
+  }
+
+  private boolean isRootParent(byte[][] components) {
+    return isParent(0, components);
+  }
+
+  private INodeLockType identifyLockType(int count, byte[][] components)
+      throws StorageException {
+    INodeLockType lockType;
+    if (isTarget(count, components)) {
+      lockType = this.lockType;
+    } else if (isParent(count, components)
+        && TransactionLockTypes.impliesParentWriteLock(this.lockType)) {
+      lockType = INodeLockType.WRITE;
+    } else {
+      lockType = DEFAULT_INODE_LOCK_TYPE;
+    }
+    return lockType;
+  }
+
+  private boolean isTarget(int count, byte[][] components) {
+    return count == components.length - 1;
+  }
+
+  private boolean isParent(int count, byte[][] components) {
+    return count == components.length - 2;
+  }
+
+  private void checkSubtreeLock(INode iNode) throws SubtreeLockedException {
+    if (SubtreeLockHelper.isSubtreeLocked(iNode.isSubtreeLocked(),
+        iNode.getSubtreeLockOwner(), activeNamenodes)) {
+      if (!ignoreLocalSubtreeLocks && namenodeId != iNode.getSubtreeLockOwner()) {
+        throw new SubtreeLockedException();
+      }
+    }
+  }
+
+  private void handleLockUpgrade(List<INode> resolvedINodes, byte[][] components, String path)
+      throws PersistanceException, UnresolvedPathException {
+    // lock upgrade if the path was not fully resolved
+    if (resolvedINodes.size() !=
+        components.length) { // path was not fully resolved
       INode inodeToReread = null;
-      if (lockType == INodeLockType.WRITE_ON_PARENT) {
-        if (resolvedInodes.size() <= components.length - 2) {
-          inodeToReread = resolvedInodes.get(resolvedInodes.size() - 1);
+      if (lockType == INodeLockType.WRITE_ON_TARGET_AND_PARENT) {
+        if (resolvedINodes.size() <= components.length - 2) {
+          inodeToReread = resolvedINodes.get(resolvedINodes.size() - 1);
         }
       } else if (lockType == INodeLockType.WRITE) {
-        inodeToReread = resolvedInodes.get(resolvedInodes.size() - 1);
+        inodeToReread = resolvedINodes.get(resolvedINodes.size() - 1);
       }
 
       if (inodeToReread != null) {
-        INode inode = find(lockType, inodeToReread.getLocalName(), inodeToReread.getParentId());
-        if (inode != null) { // re-read after taking write lock to make sure that no one has created the same inode. 
+        INode inode = find(lockType, inodeToReread.getLocalName(),
+            inodeToReread.getParentId());
+        if (inode != null) {
+        // re-read after taking write lock to make sure that no one has created the same inode.
           addLockedINodes(inode, lockType);
-          String existingPath = buildPath(path, resolvedInodes.size());
-          List<INode> rest = acquireLockOnRestOfPath(lockType, inode, path, existingPath, false);
-          resolvedInodes.addAll(rest);
+          String existingPath = buildPath(path, resolvedINodes.size());
+          List<INode> rest = acquireLockOnRestOfPath(lockType, inode, path,
+              existingPath, false);
+          resolvedINodes.addAll(rest);
         }
       }
     }
-    return resolvedInodes;
   }
 
-  private List<INode> acquireLockOnRestOfPath(INodeLockType lock, INode baseInode, String fullPath, String prefix, boolean resolveLink)
-          throws PersistanceException, UnresolvedPathException {
+  private List<INode> acquireLockOnRestOfPath(INodeLockType lock,
+      INode baseInode, String fullPath, String prefix, boolean resolveLink)
+      throws PersistanceException, UnresolvedPathException {
     List<INode> resolved = new ArrayList<INode>();
     byte[][] fullComps = INode.getPathComponents(fullPath);
     byte[][] prefixComps = INode.getPathComponents(prefix);
-    int[] count = new int[]{prefixComps.length - 1};
-    boolean lastComp;
-    INode[] curInode = new INode[]{baseInode};
-    while (count[0] < fullComps.length && curInode[0] != null) {
+    INodeResolver resolver = new INodeResolver(fullComps, baseInode,
+        resolveLink, true, prefixComps.length - 1);
+    while (resolver.hasNext()) {
       setINodeLockType(lock);
-      lastComp = INodeUtil.getNextChild(
-              curInode,
-              fullComps,
-              count,
-              resolveLink,
-              true);
-      if (curInode[0] != null) {
-        addLockedINodes(curInode[0], lock);
-        resolved.add(curInode[0]);
-      }
-      if (lastComp) {
-        break;
+      INode current = resolver.next();
+      if (current != null) {
+        addLockedINodes(current, lock);
+        resolved.add(current);
+      } else {
+        throw new UnresolvedPathException("Could not upgrade lock for " + fullPath);
       }
     }
-
     return resolved;
   }
 
-  private List<INode> findImmediateChildren(INode lastINode) throws PersistanceException {
+  private List<INode> findImmediateChildren(INode lastINode)
+      throws PersistanceException {
     List<INode> children = new ArrayList<INode>();
     if (lastINode != null) {
       if (lastINode instanceof INodeDirectory) {
@@ -249,12 +271,13 @@ class HopsINodeLock extends HopsBaseINodeLock {
         children.addAll(clist);
       }
     }
-    LOG.debug("Added " + children.size() + " childern.");
+    LOG.debug("Added " + children.size() + " children.");
     return children;
   }
 
-  private INode acquireLockOnRoot(INodeLockType lock) throws PersistanceException {
-    LOG.debug("Acquring " + lock + " on the root node");
+  private INode acquireLockOnRoot(INodeLockType lock)
+      throws PersistanceException {
+    LOG.debug("Acquiring " + lock + " on the root node");
     return find(lock, INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID);
   }
 
@@ -279,5 +302,4 @@ class HopsINodeLock extends HopsBaseINodeLock {
   protected INode find(String name, int parentId) throws PersistanceException {
     return find(lockType, name, parentId);
   }
-  
 }

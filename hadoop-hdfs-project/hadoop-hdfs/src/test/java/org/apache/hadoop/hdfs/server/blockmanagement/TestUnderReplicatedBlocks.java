@@ -32,7 +32,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;

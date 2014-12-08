@@ -31,6 +31,7 @@ final class HopsBlockLock extends HopsBaseBlockLock {
   private final List<INodeFile> files;
   
   HopsBlockLock() {
+    // FIXME Add constructor with block id to bring null to the cache
     this.files = new ArrayList<INodeFile>();
   }
 

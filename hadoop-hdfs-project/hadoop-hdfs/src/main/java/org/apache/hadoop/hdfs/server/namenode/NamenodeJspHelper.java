@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
@@ -65,7 +64,7 @@ import org.apache.hadoop.util.Time;
 import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
-import se.sics.hop.transaction.lock.INodeUtil;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
