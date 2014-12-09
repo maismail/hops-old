@@ -119,7 +119,7 @@ delimiter $$
 
 CREATE TABLE `lease_paths` (
   `holder_id` int(11) NOT NULL,
-  `path` varchar(256) NOT NULL,
+  `path` varchar(3000) NOT NULL,
   `part_key` int(11) NOT NULL,
   PRIMARY KEY (`path`,`part_key`),
   KEY `holder_idx` (`holder_id`)
