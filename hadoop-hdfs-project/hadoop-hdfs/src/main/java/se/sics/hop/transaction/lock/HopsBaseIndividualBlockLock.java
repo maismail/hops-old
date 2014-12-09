@@ -24,15 +24,20 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-abstract class HopsBaseIndividualBlockLock extends HopsBaseBlockLock{
+abstract class HopsBaseIndividualBlockLock extends HopsLock {
 
   protected final List<BlockInfo> blocks;
-  
-  public HopsBaseIndividualBlockLock(){
+
+  HopsBaseIndividualBlockLock() {
     this.blocks = new ArrayList<BlockInfo>();
   }
-  
-  Collection<BlockInfo> getBlocks(){
+
+  Collection<BlockInfo> getBlocks() {
     return blocks;
-  } 
+  }
+
+  @Override
+  protected HopsLock.Type getType() {
+    return HopsLock.Type.Block;
+  }
 }

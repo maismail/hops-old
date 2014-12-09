@@ -17,7 +17,6 @@
  */
 package se.sics.hop.common;
 
-import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
@@ -25,7 +24,6 @@ import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.exception.PersistanceException;
 
-import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 public class INodeResolver {

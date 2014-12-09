@@ -27,7 +27,6 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.common.INodeResolver;
-import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -160,16 +159,16 @@ class HopsINodeLock extends HopsBaseINodeLock {
 
   private INodeLockType identifyLockType(int count, byte[][] components)
       throws StorageException {
-    INodeLockType lockType;
+    INodeLockType lkType;
     if (isTarget(count, components)) {
-      lockType = this.lockType;
+      lkType = this.lockType;
     } else if (isParent(count, components)
         && TransactionLockTypes.impliesParentWriteLock(this.lockType)) {
-      lockType = INodeLockType.WRITE;
+      lkType = INodeLockType.WRITE;
     } else {
-      lockType = DEFAULT_INODE_LOCK_TYPE;
+      lkType = DEFAULT_INODE_LOCK_TYPE;
     }
-    return lockType;
+    return lkType;
   }
 
   private boolean isTarget(int count, byte[][] components) {

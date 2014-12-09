@@ -23,10 +23,16 @@ import se.sics.hop.metadata.INodeIdentifier;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-final class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
+class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
 
-  private final long blockId;
+  private final static long NON_EXISTING_BLOCK = Long.MIN_VALUE;
+  protected final long blockId;
   private final int inodeId;
+
+  public HopsIndividualBlockLock() {
+    this.blockId = NON_EXISTING_BLOCK;
+    this.inodeId = INode.NON_EXISTING_ID;
+  }
 
   HopsIndividualBlockLock(long blockId, INodeIdentifier inode) {
     this.blockId = blockId;
@@ -35,15 +41,17 @@ final class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
 
   @Override
   protected void acquire(TransactionLocks locks) throws Exception {
-    BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ById, blockId, inodeId);
-    if (result != null) {
-      blocks.add(result);
-    }else{
-      //TODO fix this add a method to bring null in the others caches 
-       BlockInfo dummy = new BlockInfo();
-       dummy.setINodeIdNoPersistance(inodeId);
-       dummy.setBlockIdNoPersistance(blockId);
-       blocks.add(dummy);
+    if (blockId != NON_EXISTING_BLOCK) {
+      BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ById, blockId, inodeId);
+      if (result != null) {
+        blocks.add(result);
+      } else {
+        //TODO fix this add a method to bring null in the others caches 
+        BlockInfo dummy = new BlockInfo();
+        dummy.setINodeIdNoPersistance(inodeId);
+        dummy.setBlockIdNoPersistance(blockId);
+        blocks.add(dummy);
+      }
     }
   }
 }

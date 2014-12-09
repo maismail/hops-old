@@ -41,14 +41,7 @@ final class HopsBlockRelatedLock extends HopsLockWithType {
   protected void acquire(TransactionLocks locks) throws Exception {
     // FIXME handle null block
     HopsLock lock = locks.getLock(Type.Block);
-
-    if (lock instanceof HopsBlockLock) {
-      //get by inodeId
-      HopsBlockLock blockLock = (HopsBlockLock) lock;
-      for (INodeFile file : blockLock.getFiles()) {
-        acquireLockList(DEFAULT_LOCK_TYPE, getFinderType(false), file.getId());
-      }
-    } else if (lock instanceof HopsBaseIndividualBlockLock) {
+    if (lock instanceof HopsBaseIndividualBlockLock) {
       HopsBaseIndividualBlockLock individualBlockLock = (HopsBaseIndividualBlockLock) lock;
       //get by blocksId
       for (BlockInfo blk : individualBlockLock.getBlocks()) {
@@ -58,7 +51,14 @@ final class HopsBlockRelatedLock extends HopsLockWithType {
           acquireLock(DEFAULT_LOCK_TYPE, getFinderType(true), blk.getBlockId(), blk.getInodeId());
         }
       }
-    }else{
+      if (lock instanceof HopsBlockLock) {
+        //get by inodeId
+        HopsBlockLock blockLock = (HopsBlockLock) lock;
+        for (INodeFile file : blockLock.getFiles()) {
+          acquireLockList(DEFAULT_LOCK_TYPE, getFinderType(false), file.getId());
+        }
+      }
+    } else {
       throw new TransactionLocks.LockNotAddedException("Block Lock wasn't added");
     }
   }

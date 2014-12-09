@@ -76,7 +76,11 @@ public class HopsLockFactory {
   public HopsLock getBlockLock() {
     return new HopsBlockLock();
   }
-
+  
+  public HopsLock getBlockLock(long blockId, INodeIdentifier inode) {
+    return new HopsBlockLock(blockId, inode);
+  }
+   
   public HopsLock getReplicaLock() {
     return new HopsBlockRelatedLock(HopsLock.Type.Replica);
   }

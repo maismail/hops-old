@@ -3112,7 +3112,7 @@ public class BlockManager {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         ReceivedDeletedBlockInfo rdbi = (ReceivedDeletedBlockInfo) getParams()[0];
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
-                .add(lf.getBlockLock())
+                .add(lf.getBlockLock(rdbi.getBlock().getBlockId(), inodeIdentifier))
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.UR));
         if (!rdbi.isDeletedBlock()) {
           locks.add(lf.getBlockRelated(BLK.PE, BLK.UC, BLK.IV));
@@ -3925,7 +3925,7 @@ public class BlockManager {
       public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
         locks.add(lf.getIndividualINodeLock(INodeLockType.WRITE, inodeIdentifier))
-                .add(lf.getBlockLock())
+                .add(lf.getBlockLock(block.getBlockId(), inodeIdentifier))
                 .add(lf.getBlockRelated(BLK.RE, BLK.ER, BLK.CR, BLK.PE, BLK.IV, BLK.UR));
         if (((FSNamesystem) namesystem).isErasureCodingEnabled() && inodeIdentifier != null) {
           locks.add(lf.getIndivdualEncodingStatusLock(LockType.WRITE, inodeIdentifier.getInodeId()));
