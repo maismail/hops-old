@@ -2488,6 +2488,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                 lf.getINodeLock(nameNode, INodeLockType.WRITE,
                     INodeResolveType.PATH, src))
                 .add(lf.getLeaseLock(LockType.READ, clientName))
+                .add(lf.getLeasePathLock(LockType.READ))
                 .add(lf.getBlockLock())
                 .add(lf.getBlockRelated(BLK.RE, BLK.CR, BLK.ER, BLK.UC));
           }
