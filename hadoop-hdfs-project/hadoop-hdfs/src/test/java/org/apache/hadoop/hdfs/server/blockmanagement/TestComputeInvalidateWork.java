@@ -28,7 +28,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import org.junit.Test;
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -94,7 +94,7 @@ public class TestComputeInvalidateWork {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
@@ -106,7 +106,7 @@ public class TestComputeInvalidateWork {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         bm.addToInvalidates(block, node);
         return null;
       }

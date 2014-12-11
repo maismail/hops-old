@@ -15,6 +15,7 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,8 +28,8 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.common.INodeResolver;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 
@@ -72,7 +73,7 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     /*
      * Needs to be sorted in order to avoid deadlocks. Otherwise one transaction
      * could acquire path0 and path1 in the given order while another one does
@@ -86,8 +87,8 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
   
   protected void acquireINodeLocks()
-      throws UnresolvedPathException, PersistanceException,
-      SubtreeLockedException {
+      throws UnresolvedPathException, StorageException,
+      SubtreeLockedException, TransactionContextException {
     switch (resolveType) {
       case PATH: // Only use memcached for this case.
       case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
@@ -114,8 +115,8 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   private List<INode> acquireINodeLockByPath(String path)
-      throws UnresolvedPathException, PersistanceException,
-      SubtreeLockedException {
+      throws UnresolvedPathException, StorageException,
+      SubtreeLockedException, TransactionContextException {
     List<INode> resolvedINodes = new ArrayList<INode>();
     byte[][] components = INode.getPathComponents(path);
 
@@ -183,13 +184,14 @@ class HopsINodeLock extends HopsBaseINodeLock {
     if (SubtreeLockHelper.isSubtreeLocked(iNode.isSubtreeLocked(),
         iNode.getSubtreeLockOwner(), activeNamenodes)) {
       if (!ignoreLocalSubtreeLocks && namenodeId != iNode.getSubtreeLockOwner()) {
-        throw new SubtreeLockedException();
+        throw new SubtreeLockedException(activeNamenodes);
       }
     }
   }
 
   private void handleLockUpgrade(List<INode> resolvedINodes, byte[][] components, String path)
-      throws PersistanceException, UnresolvedPathException {
+      throws StorageException, UnresolvedPathException,
+      TransactionContextException {
     // TODO Handle the case that predecessing nodes get deleted before locking
     // lock upgrade if the path was not fully resolved
     if (resolvedINodes.size() != components.length) {
@@ -220,7 +222,8 @@ class HopsINodeLock extends HopsBaseINodeLock {
 
   private List<INode> acquireLockOnRestOfPath(INodeLockType lock,
       INode baseInode, String fullPath, String prefix, boolean resolveLink)
-      throws PersistanceException, UnresolvedPathException {
+      throws StorageException, UnresolvedPathException,
+      TransactionContextException {
     List<INode> resolved = new ArrayList<INode>();
     byte[][] fullComps = INode.getPathComponents(fullPath);
     byte[][] prefixComps = INode.getPathComponents(prefix);
@@ -238,7 +241,7 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   private List<INode> findImmediateChildren(INode lastINode)
-      throws PersistanceException {
+      throws StorageException, TransactionContextException {
     List<INode> children = new ArrayList<INode>();
     if (lastINode != null) {
       if (lastINode instanceof INodeDirectory) {
@@ -250,7 +253,7 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   private List<INode> findChildrenRecursively(INode lastINode) throws
-      PersistanceException {
+      StorageException, TransactionContextException {
     LinkedList<INode> children = new LinkedList<INode>();
     LinkedList<INode> unCheckedDirs = new LinkedList<INode>();
     if (lastINode != null) {
@@ -274,7 +277,7 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   private INode acquireLockOnRoot(INodeLockType lock)
-      throws PersistanceException {
+      throws StorageException, TransactionContextException {
     LOG.debug("Acquiring " + lock + " on the root node");
     return find(lock, INodeDirectory.ROOT_NAME, INodeDirectory.ROOT_PARENT_ID);
   }
@@ -297,7 +300,8 @@ class HopsINodeLock extends HopsBaseINodeLock {
     return builder.toString();
   }
   
-  protected INode find(String name, int parentId) throws PersistanceException {
+  protected INode find(String name, int parentId)
+      throws StorageException, TransactionContextException {
     return find(lockType, name, parentId);
   }
 }

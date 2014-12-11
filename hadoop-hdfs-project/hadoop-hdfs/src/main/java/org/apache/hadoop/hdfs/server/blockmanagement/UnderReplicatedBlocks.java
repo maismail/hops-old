@@ -17,6 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,12 +27,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import java.util.concurrent.ExecutionException;
-
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -108,7 +107,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   void clear() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_UNDER_REPLICATED_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess)StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         da.removeAll();
         return null;
@@ -121,7 +120,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_ALL_UNDER_REPLICATED_BLKS) {
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countAll();
       }
@@ -132,7 +131,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   int getUnderReplicatedBlockCount() throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_LESS_THAN_LVL4) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countLessThanALevel(QUEUE_WITH_CORRUPT_BLOCKS);
       }
@@ -145,7 +144,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
 
   /** Check if a block is in the neededReplication queue */
-  boolean contains(BlockInfo block) throws PersistanceException {
+  boolean contains(BlockInfo block)
+      throws StorageException, TransactionContextException {
     return getUnderReplicatedBlock(block) != null;
   }
 
@@ -195,7 +195,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   boolean add(BlockInfo block,
                            int curReplicas, 
                            int decomissionedReplicas,
-                           int expectedReplicas) throws PersistanceException {
+                           int expectedReplicas)
+      throws StorageException, TransactionContextException {
     assert curReplicas >= 0 : "Negative replicas!";
     int priLevel = getPriority(block, curReplicas, decomissionedReplicas,
                                expectedReplicas);
@@ -218,7 +219,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   boolean remove(BlockInfo block, 
                               int oldReplicas, 
                               int decommissionedReplicas,
-                              int oldExpectedReplicas) throws PersistanceException {
+                              int oldExpectedReplicas) throws
+      StorageException, TransactionContextException {
     int priLevel = getPriority(block, oldReplicas, 
                                decommissionedReplicas,
                                oldExpectedReplicas);
@@ -240,7 +242,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * @param priLevel expected privilege level
    * @return true if the block was found and removed from one of the priority queues
    */
-  boolean remove(BlockInfo block, int priLevel) throws PersistanceException {
+  boolean remove(BlockInfo block, int priLevel)
+      throws StorageException, TransactionContextException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if(priLevel >= 0 && priLevel < LEVEL 
             && remove(urb)) {
@@ -289,7 +292,9 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   void update(BlockInfo block, int curReplicas,
                            int decommissionedReplicas,
                            int curExpectedReplicas,
-                           int curReplicasDelta, int expectedReplicasDelta) throws PersistanceException {
+                           int curReplicasDelta, int expectedReplicasDelta)
+      throws
+      StorageException, TransactionContextException {
     int oldReplicas = curReplicas-curReplicasDelta;
     int oldExpectedReplicas = curExpectedReplicas-expectedReplicasDelta;
     int curPri = getPriority(block, curReplicas, decommissionedReplicas, curExpectedReplicas);
@@ -389,7 +394,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
          }
          
          @Override
-         public Object performTask() throws PersistanceException, IOException {
+         public Object performTask() throws StorageException, IOException {
            return new BlockIterator(fillPriorityQueues(level), level);
          }
        }.handle();
@@ -409,7 +414,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
         }
         
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           return new BlockIterator(fillPriorityQueues());
         }
       }.handle();
@@ -511,7 +516,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
    * 
    * @param priority  - int priority level
    */
-  public void decrementReplicationIndex(int priority) throws PersistanceException {
+  public void decrementReplicationIndex(int priority) throws
+      StorageException, TransactionContextException {
     List<Integer> priorityToReplIdx = getReplicationIndex();
     Integer replIdx = priorityToReplIdx.get(priority);
     replIdx = replIdx <= 0 ? 0 :  (replIdx-1);
@@ -540,13 +546,14 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return chooseUnderReplicatedBlocksInt(blocksToProcess);
       }
     }.handle();
   }
   
-  private boolean remove(HopUnderReplicatedBlock urb) throws PersistanceException {
+  private boolean remove(HopUnderReplicatedBlock urb) throws
+      StorageException, TransactionContextException {
     if (urb != null) {
       removeUnderReplicatedBlock(urb);
       return true;
@@ -555,7 +562,8 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   }
    
   // return true if it does not exist other wise return false
-  private boolean add(BlockInfo block, int priLevel) throws PersistanceException {
+  private boolean add(BlockInfo block, int priLevel) throws
+      StorageException, TransactionContextException {
     HopUnderReplicatedBlock urb = getUnderReplicatedBlock(block);
     if (urb == null) {
       addUnderReplicatedBlock(new HopUnderReplicatedBlock(priLevel, block.getBlockId(), block.getInodeId()));
@@ -589,7 +597,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level) throws IOException {
     return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_UNDER_REPLICATED_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         if(level == -1){
           return da.findAll();
@@ -604,7 +612,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   private List<HopUnderReplicatedBlock> getUnderReplicatedBlocks(final int level, final int offset, final int count) throws IOException {
     return (List<HopUnderReplicatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_UNDER_REPLICATED_BLKS_By_LEVEL_LIMITED) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.findByLevel(level, offset, count);
 
@@ -628,7 +636,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     new LightWeightRequestHandler(HDFSOperationType.GET_BLOCKS) {
       
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         List<BlockInfo> blks = bda.findByIds(blockIds, inodeIds);
         for(BlockInfo blk : blks){
@@ -652,30 +660,35 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   int count(final int level) throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_UNDER_REPLICATED_BLKS_AT_LVL) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         UnderReplicatedBlockDataAccess da = (UnderReplicatedBlockDataAccess) StorageFactory.getDataAccess(UnderReplicatedBlockDataAccess.class);
         return da.countByLevel(level);
       }
     }.handle();
   }
   
-  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws PersistanceException {
+  private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws
+      StorageException, TransactionContextException {
     return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
 
-  private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
+  private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws
+      StorageException, TransactionContextException {
     EntityManager.add(urb);
   }
 
-  private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws PersistanceException {
+  private void removeUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws
+      StorageException, TransactionContextException {
     EntityManager.remove(urb);
   }
 
-  private List<Integer> getReplicationIndex() throws PersistanceException {
+  private List<Integer> getReplicationIndex()
+      throws StorageException, TransactionContextException {
     return Variables.getReplicationIndex();
   }
 
-  private void setReplicationIndex(List<Integer> replicationIndex) throws PersistanceException {
+  private void setReplicationIndex(List<Integer> replicationIndex) throws
+      StorageException, TransactionContextException {
     Variables.setReplicationIndex(replicationIndex);
   }
   

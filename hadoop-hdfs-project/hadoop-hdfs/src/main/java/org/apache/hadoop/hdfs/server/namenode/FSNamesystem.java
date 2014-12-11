@@ -88,6 +88,7 @@ import org.apache.hadoop.hdfs.server.namenode.ha.HAState;
 import org.apache.hadoop.hdfs.server.namenode.metrics.FSNamesystemMBean;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
@@ -120,11 +121,12 @@ import org.mortbay.util.ajax.JSON;
 import se.sics.hop.common.HopBlockIdGen;
 import se.sics.hop.common.HopTXnChkPtsIDs;
 import se.sics.hop.common.IDsMonitor;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.StorageFactory;
@@ -144,7 +146,6 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
-import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.SubtreeLockHelper;
 import se.sics.hop.transaction.lock.SubtreeLockedException;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
@@ -292,7 +293,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private HdfsFileStatus getAuditFileInfo(String path, boolean resolveSymlink)
-      throws IOException, PersistanceException {
+      throws IOException, StorageException {
 //HOP FIXME    return (isAuditEnabled() && isExternalInvocation())
 //        ? dir.getFileInfo(path, resolveSymlink) : null;
     return null;
@@ -1233,7 +1234,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }.handle(this);
   }
 
-  private void metaSave(PrintWriter out) throws  IOException, PersistanceException {
+  private void metaSave(PrintWriter out) throws  IOException,
+      StorageException {
     assert hasWriteLock();
     long totalInodes = this.dir.totalInodes();
     long totalBlocks = this.getBlocksTotal();
@@ -1243,7 +1245,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     blockManager.metaSave(out);
   }
 
-  private String metaSaveAsString() throws  IOException, PersistanceException {
+  private String metaSaveAsString() throws  IOException, StorageException {
     StringWriter sw = new StringWriter();
     PrintWriter pw = new PrintWriter(sw);
     metaSave(pw);
@@ -1290,7 +1292,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         try {
           setPermissionInt(src, permission);
         } catch (AccessControlException e) {
@@ -1304,7 +1306,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void setPermissionInt(String src, FsPermission permission)
       throws AccessControlException, FileNotFoundException, SafeModeException,
-      UnresolvedLinkException, IOException, PersistanceException {
+      UnresolvedLinkException, IOException, StorageException {
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -1341,7 +1343,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         try {
           setOwnerInt(src, username, group);
         } catch (AccessControlException e) {
@@ -1355,7 +1357,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void setOwnerInt(String src, String username, String group)
       throws AccessControlException, FileNotFoundException, SafeModeException,
-      UnresolvedLinkException, IOException, PersistanceException {
+      UnresolvedLinkException, IOException, StorageException {
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -1401,7 +1403,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             LocatedBlocks blocks =
                 getBlockLocationsInternal(src, offset, length, true, true,
                     true);
@@ -1461,7 +1463,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   LocatedBlocks getBlockLocationsInternal(String src, long offset, long length,
       boolean doAccessTime, boolean needBlockToken, boolean checkSafeMode)
-      throws FileNotFoundException, UnresolvedLinkException, IOException, PersistanceException {
+      throws FileNotFoundException, UnresolvedLinkException, IOException,
+      StorageException {
     FSPermissionChecker pc = getPermissionChecker();
     try {
       return getBlockLocationsInt(pc, src, offset, length, doAccessTime,
@@ -1485,7 +1488,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private LocatedBlocks getBlockLocationsInt(FSPermissionChecker pc,
       String src, long offset, long length, boolean doAccessTime,
       boolean needBlockToken, boolean checkSafeMode)
-      throws FileNotFoundException, UnresolvedLinkException, IOException, PersistanceException {
+      throws FileNotFoundException, UnresolvedLinkException, IOException,
+      StorageException {
     if (isPermissionEnabled) {
       checkPathAccess(pc, src, FsAction.READ);
     }
@@ -1522,7 +1526,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                                        long length,
                                                        boolean doAccessTime, 
                                                        boolean needBlockToken)
-      throws FileNotFoundException, UnresolvedLinkException, IOException, PersistanceException {
+      throws FileNotFoundException, UnresolvedLinkException, IOException,
+      StorageException {
 
     for (int attempt = 0; attempt < 2; attempt++) {
       if (attempt == 0) { // first attempt is with readlock
@@ -1604,7 +1609,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private void concatInt(String target, String [] srcs) 
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     if(FSNamesystem.LOG.isDebugEnabled()) {
       FSNamesystem.LOG.debug("concat " + Arrays.toString(srcs) +
           " to " + target);
@@ -1648,7 +1653,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   /** See {@link #concat(String, String[])} */
   private void concatInternal(FSPermissionChecker pc, String target, String [] srcs) 
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     assert hasWriteLock();
 
     // write permission for the target
@@ -1767,7 +1772,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         try {
           setTimesInt(src, mtime, atime);
         } catch (AccessControlException e) {
@@ -1780,7 +1785,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private void setTimesInt(String src, long mtime, long atime) 
-    throws IOException, UnresolvedLinkException, PersistanceException {
+    throws IOException, UnresolvedLinkException, StorageException {
     if (!isAccessTimeSupported() && atime != -1) {
       throw new IOException("Access time for hdfs is not configured. " +
                             " Please set " + DFS_NAMENODE_ACCESSTIME_PRECISION_KEY + " configuration parameter.");
@@ -1838,7 +1843,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void createSymlinkInt(String target, String link,
       PermissionStatus dirPerms, boolean createParent) 
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     HdfsFileStatus resultingStat = null;
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -1862,7 +1867,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   private void createSymlinkInternal(FSPermissionChecker pc, String target,
       String link, PermissionStatus dirPerms, boolean createParent)
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.createSymlink: target=" + 
@@ -1930,7 +1935,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private boolean setReplicationInt(final String src, final short replication)
-      throws IOException, PersistanceException {
+      throws IOException, StorageException {
     blockManager.verifyReplication(src, replication, null);
     final boolean isFile;
     FSPermissionChecker pc = getPermissionChecker();
@@ -1994,7 +1999,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Verify that parent directory of src exists.
    */
   private void verifyParentDir(String src) throws FileNotFoundException,
-      ParentNotDirectoryException, UnresolvedLinkException, PersistanceException {
+      ParentNotDirectoryException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     assert hasReadOrWriteLock();
     Path parent = new Path(src).getParent();
     if (parent != null) {
@@ -2056,7 +2062,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       String clientMachine, EnumSet<CreateFlag> flag, boolean createParent,
       short replication, long blockSize) throws AccessControlException,
       SafeModeException, FileAlreadyExistsException, UnresolvedLinkException,
-      FileNotFoundException, ParentNotDirectoryException, IOException, PersistanceException {
+      FileNotFoundException, ParentNotDirectoryException, IOException,
+      StorageException {
     boolean skipSync = false;
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -2100,7 +2107,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       EnumSet<CreateFlag> flag, boolean createParent, short replication,
       long blockSize) throws SafeModeException, FileAlreadyExistsException,
       AccessControlException, UnresolvedLinkException, FileNotFoundException,
-      ParentNotDirectoryException, IOException, PersistanceException {
+      ParentNotDirectoryException, IOException, StorageException {
     assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.startFile: src=" + src
@@ -2218,7 +2225,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   LocatedBlock prepareFileForWrite(String src, INodeFile file,
       String leaseHolder, String clientMachine, DatanodeDescriptor clientNode,
-      boolean writeToEditLog) throws IOException, PersistanceException {
+      boolean writeToEditLog) throws IOException, StorageException {
     INodeFileUnderConstruction cons = file.convertToUnderConstruction(
                                             leaseHolder,
                                             clientMachine,
@@ -2263,7 +2270,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             boolean skipSync = false;
             FSPermissionChecker pc = getPermissionChecker();
             writeLock();
@@ -2307,7 +2314,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void recoverLeaseInternal(INode fileInode, 
       String src, String holder, String clientMachine, boolean force)
-      throws IOException, PersistanceException {
+      throws IOException, StorageException {
     assert hasWriteLock();
     if (fileInode != null && fileInode.isUnderConstruction()) {
       INodeFileUnderConstruction pendingFile = (INodeFileUnderConstruction) fileInode;
@@ -2359,7 +2366,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               + pendingFile.getClientName());
           boolean isClosed = internalReleaseLease(lease, src, null);
           if(!isClosed)
-            throw new RecoveryInProgressException(
+            throw new RecoveryInProgressException.NonAbortingRecoveryInProgressException(
                 "Failed to close file " + src +
                 ". Lease recovery is in progress. Try again later.");
         } else {
@@ -2416,7 +2423,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private LocatedBlock appendFileInt(String src, String holder, String clientMachine)
       throws AccessControlException, SafeModeException,
       FileAlreadyExistsException, FileNotFoundException,
-      ParentNotDirectoryException, IOException, UnresolvedLinkException, PersistanceException {
+      ParentNotDirectoryException, IOException, UnresolvedLinkException,
+      StorageException {
     boolean skipSync = false;
     if (!supportAppends) {
       throw new UnsupportedOperationException(
@@ -2580,7 +2588,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
                                 String clientName,
                                 ExtendedBlock previous,
                                 LocatedBlock[] onRetryBlock)
-          throws IOException, LeaseExpiredException, PersistanceException  {
+          throws IOException, LeaseExpiredException, StorageException {
     assert hasReadOrWriteLock();
 
     checkBlock(previous);
@@ -2803,14 +2811,16 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   // make sure that we still have the lease on this file.
-  private INodeFileUnderConstruction checkLease(String src, String holder) 
-      throws LeaseExpiredException, UnresolvedLinkException, PersistanceException {
+  private INodeFileUnderConstruction checkLease(String src, String holder)
+      throws LeaseExpiredException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     assert hasReadOrWriteLock();
     return checkLease(src, holder, dir.getINode(src));
   }
 
   private INodeFileUnderConstruction checkLease(String src, String holder,
-      INode file) throws LeaseExpiredException, PersistanceException {
+      INode file) throws LeaseExpiredException, StorageException,
+      TransactionContextException {
     assert hasReadOrWriteLock();
     if (file == null || !(file instanceof INodeFile)) {
       Lease lease = leaseManager.getLease(holder);
@@ -2879,7 +2889,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private boolean completeFileInternal(String src, 
       String holder, Block last) throws SafeModeException,
-      UnresolvedLinkException, IOException, PersistanceException {
+      UnresolvedLinkException, IOException, StorageException {
     assert hasWriteLock();
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.completeFile: " +
@@ -2935,7 +2945,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * @throws QuotaExceededException If addition of block exceeds space quota
    */
   BlockInfo saveAllocatedBlock(String src, INode[] inodes,
-      Block newBlock, DatanodeDescriptor targets[]) throws IOException, PersistanceException {
+      Block newBlock, DatanodeDescriptor targets[]) throws IOException,
+      StorageException {
     assert hasWriteLock();
     BlockInfo b = dir.addBlock(src, inodes, newBlock, targets);
     NameNode.stateChangeLog.info("BLOCK* allocateBlock: " + src + ". "
@@ -2949,7 +2960,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /**
    * Create new block with a unique block id and a new generation stamp.
    */
-  Block createNewBlock(INodeFile pendingFile) throws IOException, PersistanceException {
+  Block createNewBlock(INodeFile pendingFile) throws IOException,
+      StorageException {
     assert hasWriteLock();
     Block b = new Block(HopBlockIdGen.getUniqueBlockId(), 0, 0); // HOP. previous code was getFSImage().getUniqueBlockId()
     // Increment the generation stamp for every new block.
@@ -2962,7 +2974,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * replicated.  If not, return false. If checkall is true, then check
    * all blocks, otherwise check only penultimate block.
    */
-  boolean checkFileProgress(INodeFile v, boolean checkall) throws PersistanceException, IOException {
+  boolean checkFileProgress(INodeFile v, boolean checkall) throws
+      StorageException, IOException {
     readLock();
     try {
       if (checkall) {
@@ -3055,7 +3068,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private boolean renameToInt(String src, String dst) 
-    throws IOException, UnresolvedLinkException, PersistanceException {
+    throws IOException, UnresolvedLinkException, StorageException {
     boolean status = false;
     HdfsFileStatus resultingStat = null;
     if (NameNode.stateChangeLog.isDebugEnabled()) {
@@ -3084,7 +3097,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /** @deprecated See {@link #renameTo(String, String)} */
   @Deprecated
   private boolean renameToInternal(FSPermissionChecker pc, String src, String dst)
-    throws IOException, UnresolvedLinkException, PersistanceException {
+    throws IOException, UnresolvedLinkException, StorageException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot rename " + src, safeMode);
@@ -3160,7 +3173,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private void renameToInternal(FSPermissionChecker pc, String src, String dst,
-      Options.Rename... options) throws IOException, PersistanceException {
+      Options.Rename... options) throws IOException, StorageException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot rename " + src, safeMode);
@@ -3246,7 +3259,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     
   boolean delete(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
-      UnresolvedLinkException, IOException, PersistanceException {
+      UnresolvedLinkException, IOException, StorageException {
     try {
       return deleteInt(src, recursive);
     } catch (AccessControlException e) {
@@ -3257,7 +3270,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       
   private boolean deleteInt(String src, boolean recursive)
       throws AccessControlException, SafeModeException,
-      UnresolvedLinkException, IOException, PersistanceException {
+      UnresolvedLinkException, IOException, StorageException {
     if (NameNode.stateChangeLog.isDebugEnabled()) {
       NameNode.stateChangeLog.debug("DIR* NameSystem.delete: " + src);
     }
@@ -3286,7 +3299,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private boolean deleteInternal(String src, boolean recursive,
       boolean enforcePermission)
       throws AccessControlException, SafeModeException, UnresolvedLinkException,
-             IOException, PersistanceException {
+             IOException, StorageException {
     ArrayList<Block> collectedBlocks = new ArrayList<Block>();
     FSPermissionChecker pc = getPermissionChecker();
     writeLock();
@@ -3323,7 +3336,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Writelock is dropped and reacquired every BLOCK_DELETION_INCREMENT to
    * ensure that other waiters on the lock can get in. See HDFS-2938
    */
-  private void removeBlocks(List<Block> blocks) throws PersistanceException {
+  private void removeBlocks(List<Block> blocks)
+      throws StorageException, TransactionContextException {
     int start = 0;
     int end = 0;
     while (start < blocks.size()) {
@@ -3341,7 +3355,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     }
   }
   
-  void removePathAndBlocks(String src, List<Block> blocks) throws PersistanceException, IOException {
+  void removePathAndBlocks(String src, List<Block> blocks) throws
+      StorageException, IOException {
     assert hasWriteLock();
     leaseManager.removeLeaseWithPrefixPath(src);
     if (blocks == null) {
@@ -3460,7 +3475,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             try {
               return mkdirsInt(src, permissions, createParent);
             } catch (AccessControlException e) {
@@ -3473,7 +3488,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private boolean mkdirsInt(String src, PermissionStatus permissions,
-      boolean createParent) throws IOException, UnresolvedLinkException, PersistanceException {
+      boolean createParent) throws IOException, UnresolvedLinkException,
+      StorageException {
     HdfsFileStatus resultingStat = null;
     boolean status = false;
     if(NameNode.stateChangeLog.isDebugEnabled()) {
@@ -3502,7 +3518,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   private boolean mkdirsInternal(FSPermissionChecker pc, String src,
       PermissionStatus permissions, boolean createParent) 
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot create directory " + src, safeMode);
@@ -3598,7 +3614,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             checkSuperuserPrivilege();
             writeLock();
             try {
@@ -3677,7 +3693,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    */
   boolean internalReleaseLease(Lease lease, String src, 
       String recoveryLeaseHolder) throws AlreadyBeingCreatedException, 
-      IOException, UnresolvedLinkException, PersistanceException {
+      IOException, UnresolvedLinkException, StorageException {
     LOG.info("Recovering " + lease + ", src=" + src);
     assert !isInSafeMode();
     assert hasWriteLock();
@@ -3790,7 +3806,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private Lease reassignLease(Lease lease, String src, String newHolder,
-      INodeFileUnderConstruction pendingFile) throws PersistanceException {
+      INodeFileUnderConstruction pendingFile)
+      throws StorageException, TransactionContextException {
     assert hasWriteLock();
     if(newHolder == null)
       return lease;
@@ -3800,14 +3817,15 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   Lease reassignLeaseInternal(Lease lease, String src, String newHolder,
-      INodeFileUnderConstruction pendingFile) throws PersistanceException {
+      INodeFileUnderConstruction pendingFile)
+      throws StorageException, TransactionContextException {
     assert hasWriteLock();
     pendingFile.setClientName(newHolder);
     return leaseManager.reassignLease(lease, src, newHolder);
   }
 
   private void commitOrCompleteLastBlock(final INodeFileUnderConstruction fileINode,
-      final Block commitBlock) throws IOException, PersistanceException {
+      final Block commitBlock) throws IOException {
     assert hasWriteLock();
     if (!blockManager.commitOrCompleteLastBlock(fileINode, commitBlock)) {
       return;
@@ -3817,16 +3835,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       // Adjust disk space consumption if required
       final long diff = fileINode.getPreferredBlockSize() - commitBlock.getNumBytes();
       if (diff > 0) {
-        try {
-          String path = leaseManager.findPath(fileINode);
-          dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
-        } catch (IOException e) {
-          LOG.warn("Unexpected exception while updating disk space.", e);
-          //START_HOP_CODE
-          if(e instanceof StorageException ){
-            throw (IOException)e;
-          }
-        }
+        String path = leaseManager.findPath(fileINode);
+        dir.updateSpaceConsumed(path, 0, -diff * fileINode.getBlockReplication());
         //END_HOP_CODE
       }
     }
@@ -3834,7 +3844,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private void finalizeINodeFileUnderConstruction(String src, 
       INodeFileUnderConstruction pendingFile) 
-      throws IOException, UnresolvedLinkException, PersistanceException {
+      throws IOException, UnresolvedLinkException, StorageException {
     assert hasWriteLock();
     leaseManager.removeLease(pendingFile.getClientName(), src);
 
@@ -4061,7 +4071,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   private DirectoryListing getListingInt(String src, byte[] startAfter,
       boolean needLocation) 
-    throws AccessControlException, UnresolvedLinkException, IOException, PersistanceException {
+    throws AccessControlException, UnresolvedLinkException, IOException,
+      StorageException {
     DirectoryListing dl;
     FSPermissionChecker pc = getPermissionChecker();
     readLock();
@@ -5127,7 +5138,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   @Override
-  public void decrementSafeBlockCount(BlockInfo b) throws PersistanceException, IOException{
+  public void decrementSafeBlockCount(BlockInfo b) throws StorageException, IOException{
     // safeMode is volatile, and may be set to null at any time
     SafeModeInfo safeMode = this.safeMode;
     if (safeMode == null) // mostly true
@@ -5374,33 +5385,35 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private void checkOwner(FSPermissionChecker pc, String path)
-      throws AccessControlException, UnresolvedLinkException, PersistanceException {
+      throws AccessControlException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     checkPermission(pc, path, true, null, null, null, null);
   }
 
   private void checkPathAccess(FSPermissionChecker pc,
       String path, FsAction access) throws AccessControlException,
       UnresolvedLinkException,
-      PersistanceException {
+      StorageException, TransactionContextException {
     checkPermission(pc, path, false, null, null, access, null);
   }
 
   private void checkParentAccess(FSPermissionChecker pc,
       String path, FsAction access) throws AccessControlException,
       UnresolvedLinkException,
-      PersistanceException {
+      StorageException, TransactionContextException {
     checkPermission(pc, path, false, null, access, null, null);
   }
 
   private void checkAncestorAccess(FSPermissionChecker pc,
       String path, FsAction access) throws AccessControlException,
       UnresolvedLinkException,
-      PersistanceException {
+      StorageException, TransactionContextException {
     checkPermission(pc, path, false, access, null, null, null);
   }
 
   private void checkTraverse(FSPermissionChecker pc, String path)
-      throws AccessControlException, UnresolvedLinkException, PersistanceException {
+      throws AccessControlException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     checkPermission(pc, path, false, null, null, null, null);
   }
 
@@ -5421,7 +5434,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private void checkPermission(FSPermissionChecker pc,
       String path, boolean doCheckOwner, FsAction ancestorAccess,
       FsAction parentAccess, FsAction access, FsAction subAccess)
-      throws AccessControlException, UnresolvedLinkException, PersistanceException {
+      throws AccessControlException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     if (!pc.isSuperUser()) {
       dir.waitForReady();
       readLock();
@@ -5438,7 +5452,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * Check to see if we have exceeded the limit on the number
    * of inodes.
    */
-  void checkFsObjectLimit() throws IOException, PersistanceException {
+  void checkFsObjectLimit() throws IOException, StorageException {
     if (maxFsObjects != 0 &&
         maxFsObjects <= dir.totalInodes() + getBlocksTotal()) {
       throw new IOException("Exceeded the configured number of objects " +
@@ -5615,7 +5629,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //  }
 
   private INodeFileUnderConstruction checkUCBlock(ExtendedBlock block,
-      String clientName) throws IOException, PersistanceException {
+      String clientName) throws IOException, StorageException {
     assert hasWriteLock();
     if (isInSafeMode()) {
       throw new SafeModeException("Cannot get a new generation stamp and an " +
@@ -5797,7 +5811,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   /** @see #updatePipeline(String, ExtendedBlock, ExtendedBlock, DatanodeID[]) */
   private void updatePipelineInternal(String clientName, ExtendedBlock oldBlock, 
       ExtendedBlock newBlock, DatanodeID[] newNodes)
-      throws IOException, PersistanceException {
+      throws IOException, StorageException {
     assert hasWriteLock();
     // check the vadility of the block and lease holder name
     final INodeFileUnderConstruction pendingFile
@@ -5836,7 +5850,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
   // rename was successful. If any part of the renamed subtree had
   // files that were being written to, update with new filename.
-  void unprotectedChangeLease(String src, String dst) throws PersistanceException {
+  void unprotectedChangeLease(String src, String dst) throws
+      StorageException, TransactionContextException {
     assert hasWriteLock();
     leaseManager.changeLease(src, dst);
   }
@@ -5973,7 +5988,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             INodeIdentifier iNodeIdentifier;
 
             @Override
-            public void setUp() throws PersistanceException {
+            public void setUp() throws StorageException {
               Block block = (Block) getParams()[0];
               iNodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
             }
@@ -6082,7 +6097,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             Token<DelegationTokenIdentifier> token;
             writeLock();
             try {
@@ -6145,7 +6160,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             long expiryTime;
             writeLock();
             try {
@@ -6194,7 +6209,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             writeLock();
             try {
               checkOperation(OperationCategory.WRITE);
@@ -6546,7 +6561,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
   
   @Override
-  public boolean isGenStampInFuture(long genStamp) throws PersistanceException {
+  public boolean isGenStampInFuture(long genStamp) throws StorageException {
     //return (genStamp > getGenerationStamp());
     throw new UnsupportedOperationException("Not supported yet.");
   }
@@ -6833,7 +6848,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   }
 
   private boolean deleteChildrenIncrementally(LinkedList<FNode> toBeDeleted, final boolean recursive)
-      throws PersistanceException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
+      throws StorageException, AccessControlException, SafeModeException, UnresolvedLinkException, IOException {
     for (FNode fnode : toBeDeleted) {
       if (!deleteWithTransaction(fnode.getPath(), recursive))
         return false;
@@ -6867,7 +6882,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private void removeSafeBlock(final Long safeBlock) throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.REMOVE_SAFE_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
         da.remove(safeBlock);
         return null;
@@ -6878,7 +6893,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private void addSafeBlocks(final Set<Long> safeBlocks) throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.ADD_SAFE_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
         da.insert(safeBlocks);
         return null;
@@ -6889,7 +6904,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private int getBlockSafe() throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.GET_SAFE_BLOCKS_COUNT) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
         return da.countAll();
       }
@@ -6899,7 +6914,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
   private void clearSafeBlocks() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.CLEAR_SAFE_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         SafeBlocksDataAccess da = (SafeBlocksDataAccess) StorageFactory.getDataAccess(SafeBlocksDataAccess.class);
         da.removeAll();
         return null;
@@ -6967,7 +6982,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 
             @Override
             public Object performTask()
-                throws PersistanceException, IOException {
+                throws StorageException, IOException {
               dir.setQuota(path, nsQuota, dsQuota, fileTree.getNamespaceCount(),
                   fileTree.getDiskspaceCount());
               return null;
@@ -6991,7 +7006,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       fileTree.buildUp();
       return (ContentSummary) new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ATTRIBUTES) {
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           INodeAttributesDataAccess<INodeAttributes> dataAccess = (INodeAttributesDataAccess<INodeAttributes>)
               StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
           INodeAttributes attributes = dataAccess.findAttributesByPk(subtreeRoot.getId());
@@ -7143,7 +7158,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             return dir.isDir(dst) ?
                 dst + Path.SEPARATOR + new Path(src).getName() : dst;
           }
@@ -7496,7 +7511,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       public void run() {
         LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
             List<ProjectedINode> children = dataAccess.findInodesForSubtreeOperationsWithReadLock(parentId);
             for (ProjectedINode child : children) {
@@ -7511,11 +7526,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             }
 
             for (ProjectedINode inode : children) {
+              List<ActiveNamenode> activeNamenodes =
+                  nameNode.getActiveNamenodes().getActiveNamenodes();
               if (SubtreeLockHelper.isSubtreeLocked(
                   inode.isSubtreeLocked(),
                   inode.getSubtreeLockOwner(),
-                  nameNode.getActiveNamenodes().getActiveNamenodes())) {
-                exception = new SubtreeLockedException();
+                  activeNamenodes)) {
+                exception = new SubtreeLockedException(activeNamenodes);
                 return null;
               }
               if (inode.isDirectory()) {
@@ -7592,7 +7609,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     private INode readSubtreeRoot() throws IOException {
       return (INode) new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ROOT) {
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           INodeDataAccess<INode> dataAccess = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
           // No need to acquire a lock as the locking flag was already set
           INode subtreeRoot = dataAccess.indexScanfindInodeById(subtreeRootId);
@@ -7633,11 +7650,12 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * This method id for testing only! Do not rely on it.
    * @param path The path of the subtree
    * @return A FileTree instance reprecenting the path
-   * @throws PersistanceException
+   * @throws se.sics.hop.exception.StorageException
    * @throws UnresolvedPathException
    */
   @VisibleForTesting
-  CountingFileTree createCountingFileTreeFromPath(String path) throws PersistanceException, UnresolvedPathException {
+  CountingFileTree createCountingFileTreeFromPath(String path) throws
+      StorageException, UnresolvedPathException, TransactionContextException {
     LinkedList<INode> nodes = new LinkedList<INode>();
     boolean[] fullyResovled = new boolean[1];
     INodeUtil.resolvePathWithNoTransaction(path, false, nodes,fullyResovled);
@@ -7678,7 +7696,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         fileCount.addAndGet(1);
         LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             BlockInfoDataAccess<BlockInfo> dataAccess = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
             List<BlockInfo> blockInfos = dataAccess.findByInodeId(node.getId());
             BlockInfo[] blocks = blockInfos.toArray(new BlockInfo[blockInfos.size()]);
@@ -7747,7 +7765,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
       if (node.isDirWithQuota()) {
         LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_SUBTREE_ATTRIBUTES) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             INodeAttributesDataAccess<INodeAttributes> dataAccess =
                 (INodeAttributesDataAccess) StorageFactory.getDataAccess(INodeAttributesDataAccess.class);
             INodeAttributes attributes = dataAccess.findAttributesByPk(node.getId());
@@ -7767,7 +7785,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         if (!node.isDirectory() && !node.isSymlink()) {
           LightWeightRequestHandler handler = new LightWeightRequestHandler(HDFSOperationType.GET_CHILD_INODES) {
             @Override
-            public Object performTask() throws PersistanceException, IOException {
+            public Object performTask() throws StorageException, IOException {
               BlockInfoDataAccess<BlockInfo> dataAccess =
                   (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
               List<BlockInfo> children = dataAccess.findByInodeId(node.getId());
@@ -7800,11 +7818,13 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
    * This method id for testing only! Do not rely on it.
    * @param path The path of the subtree
    * @return A FileTree instance reprecenting the path
-   * @throws PersistanceException
+   * @throws se.sics.hop.exception.StorageException
    * @throws UnresolvedPathException
    */
   @VisibleForTesting
-  FileTree createFileTreeFromPath(String path) throws PersistanceException, UnresolvedPathException {
+  FileTree createFileTreeFromPath(String path)
+      throws StorageException, UnresolvedPathException,
+      TransactionContextException {
     LinkedList<INode> nodes = new LinkedList<INode>();
     boolean[] fullyResovled = new boolean[1];
     INodeUtil.resolvePathWithNoTransaction(path, false, nodes,fullyResovled);
@@ -8143,7 +8163,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
     LightWeightRequestHandler removeHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.DELETE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockChecksumDataAccess blockChecksumDataAccess = (BlockChecksumDataAccess)
             StorageFactory.getDataAccess(BlockChecksumDataAccess.class);
         EncodingStatusDataAccess encodingStatusDataAccess = (EncodingStatusDataAccess)
@@ -8227,7 +8247,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             INode targetNode = getINode(sourceFile);
             EncodingStatus encodingStatus = EntityManager.find(EncodingStatus.Finder.ByInodeId, targetNode.getId());
             if (status != null) {
@@ -8248,7 +8268,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
         }.handle();
   }
 
-  public INode getINode(String path) throws UnresolvedLinkException, PersistanceException {
+  public INode getINode(String path) throws UnresolvedLinkException,
+      StorageException, TransactionContextException {
     INode[] inodes =  dir.getExistingPathINodes(path);
     return inodes[inodes.length-1];
   }

@@ -6,8 +6,8 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.util.Daemon;
 import se.sics.hop.common.HopQuotaUpdateIdGen;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
@@ -75,7 +75,7 @@ public class QuotaUpdateManager {
   }
 
   public void addUpdate(final int inodeId, final long namespaceDelta, final long diskspaceDelta)
-      throws PersistanceException {
+      throws StorageException, TransactionContextException {
 
     QuotaUpdate update = new QuotaUpdate(nextId(), inodeId, namespaceDelta, diskspaceDelta);
     EntityManager.add(update);

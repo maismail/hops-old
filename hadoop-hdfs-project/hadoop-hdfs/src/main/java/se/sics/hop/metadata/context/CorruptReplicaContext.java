@@ -1,21 +1,30 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
@@ -35,7 +44,7 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   }
 
   @Override
-  public void add(HopCorruptReplica entity) throws PersistanceException {
+  public void add(HopCorruptReplica entity) throws TransactionContextException {
     if (removedCorruptReplicas.get(entity) != null) {
       throw new TransactionContextException("Removed corrupt replica passed to be persisted");
     }
@@ -63,17 +72,18 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   }
 
   @Override
-  public int count(CounterType<HopCorruptReplica> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopCorruptReplica> counter, Object... params) {
     throw new RuntimeException(UNSUPPORTED_COUNTER);
   }
 
   @Override
-  public HopCorruptReplica find(FinderType<HopCorruptReplica> finder, Object... params) throws PersistanceException {
+  public HopCorruptReplica find(FinderType<HopCorruptReplica> finder, Object... params) {
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
 
   @Override
-  public Collection<HopCorruptReplica> findList(FinderType<HopCorruptReplica> finder, Object... params) throws PersistanceException {
+  public Collection<HopCorruptReplica> findList(FinderType<HopCorruptReplica> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopCorruptReplica.Finder cFinder = (HopCorruptReplica.Finder) finder;
 
     switch (cFinder) {
@@ -155,7 +165,8 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
     }
 
   @Override
-  public void remove(HopCorruptReplica entity) throws PersistanceException {
+  public void remove(HopCorruptReplica entity)
+      throws TransactionContextException {
     if (!blockCorruptReplicas.get(entity.getBlockId()).contains(entity)) {
        // This is not necessary for invalidated-block
        throw new TransactionContextException("Unattached corrupt-block passed to be removed");
@@ -175,24 +186,24 @@ public class CorruptReplicaContext extends EntityContext<HopCorruptReplica> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(HopCorruptReplica entity) throws PersistanceException {
+  public void update(HopCorruptReplica entity) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Corrupt Replicas",newCorruptReplicas.size(),0,removedCorruptReplicas.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

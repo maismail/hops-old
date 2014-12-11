@@ -35,9 +35,8 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
@@ -150,7 +149,7 @@ public class TestCorruptReplicaInfo {
        INodeIdentifier inodeIdentifier;
 
        @Override
-       public void setUp() throws PersistanceException, IOException {
+       public void setUp() throws StorageException, IOException {
          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
        }
 
@@ -162,7 +161,7 @@ public class TestCorruptReplicaInfo {
        }
 
        @Override
-       public Object performTask() throws PersistanceException, IOException {
+       public Object performTask() throws StorageException, IOException {
          crm.addToCorruptReplicasMap(blk, dn, reason);
          return null;
        }
@@ -174,7 +173,7 @@ public class TestCorruptReplicaInfo {
        INodeIdentifier inodeIdentifier;
 
        @Override
-       public void setUp() throws PersistanceException, IOException {
+       public void setUp() throws StorageException, IOException {
          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
        }
 
@@ -186,7 +185,7 @@ public class TestCorruptReplicaInfo {
        }
 
        @Override
-       public Object performTask() throws PersistanceException, IOException {
+       public Object performTask() throws StorageException, IOException {
           crm.removeFromCorruptReplicasMap(blk);
         return null;
        }

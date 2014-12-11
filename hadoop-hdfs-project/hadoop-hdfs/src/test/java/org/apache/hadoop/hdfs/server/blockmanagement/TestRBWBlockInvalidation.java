@@ -37,7 +37,7 @@ import org.apache.hadoop.hdfs.server.datanode.DataNode;
 import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
@@ -57,7 +57,7 @@ public class TestRBWBlockInvalidation {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
       }
 
@@ -69,7 +69,7 @@ public class TestRBWBlockInvalidation {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
 

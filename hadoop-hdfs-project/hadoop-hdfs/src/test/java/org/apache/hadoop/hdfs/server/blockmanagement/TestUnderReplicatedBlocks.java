@@ -34,9 +34,8 @@ import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
@@ -79,7 +78,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           DatanodeDescriptor dn = bm.blocksMap.nodeIterator(b.getLocalBlock()).next();
           bm.addToInvalidates(b.getLocalBlock(), dn);
 
@@ -115,7 +114,7 @@ public class TestUnderReplicatedBlocks {
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           DatanodeDescriptor dn = (DatanodeDescriptor) getParams()[0];
           // Remove the record from blocksMap
           bm.blocksMap.removeNode(b.getLocalBlock(), dn);

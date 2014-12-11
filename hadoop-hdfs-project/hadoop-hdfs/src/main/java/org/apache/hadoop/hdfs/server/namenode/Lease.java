@@ -1,13 +1,14 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
-import com.google.common.annotations.VisibleForTesting;
+
 import java.util.Collection;
 import java.util.TreeSet;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 
 /**
  * **********************************************************
@@ -69,11 +70,13 @@ public class Lease implements Comparable<Lease> {
     return this.holderID;
   }
 
-  public boolean removePath(HopLeasePath lPath) throws PersistanceException {
+  public boolean removePath(HopLeasePath lPath)
+      throws StorageException, TransactionContextException {
     return getPaths().remove(lPath);
   }
 
-  public void addPath(HopLeasePath lPath) throws PersistanceException {
+  public void addPath(HopLeasePath lPath)
+      throws StorageException, TransactionContextException {
     getPaths().add(lPath);
   }
 
@@ -85,7 +88,7 @@ public class Lease implements Comparable<Lease> {
   /**
    * Does this lease contain any path?
    */
-  boolean hasPath() throws PersistanceException {
+  boolean hasPath() throws StorageException, TransactionContextException {
     return !this.getPaths().isEmpty();
   }
 
@@ -144,7 +147,8 @@ public class Lease implements Comparable<Lease> {
     return holder.hashCode();
   }
 
-  public Collection<HopLeasePath> getPaths() throws PersistanceException {
+  public Collection<HopLeasePath> getPaths()
+      throws StorageException, TransactionContextException {
     if (paths == null) {
       paths = EntityManager.findList(HopLeasePath.Finder.ByHolderId, holderID);
     }
@@ -156,7 +160,8 @@ public class Lease implements Comparable<Lease> {
     return holder;
   }
 
-  void replacePath(HopLeasePath oldpath, HopLeasePath newpath) throws PersistanceException {
+  void replacePath(HopLeasePath oldpath, HopLeasePath newpath) throws
+      StorageException, TransactionContextException {
     getPaths().remove(oldpath);
     getPaths().add(newpath);
   }

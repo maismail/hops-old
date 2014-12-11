@@ -25,9 +25,10 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.hadoop.hdfs.protocol.Block;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
@@ -52,7 +53,8 @@ class BlocksMap {
     // Empty blocks once GSet#clear is implemented (HDFS-3940)
   }
 
-  BlockCollection getBlockCollection(Block b) throws PersistanceException {
+  BlockCollection getBlockCollection(Block b)
+      throws StorageException, TransactionContextException {
     BlockInfo info = getStoredBlock(b);
     return (info != null) ? info.getBlockCollection() : null;
   }
@@ -60,7 +62,8 @@ class BlocksMap {
   /**
    * Add block b belonging to the specified block collection to the map.
    */
-  BlockInfo addBlockCollection(BlockInfo b, BlockCollection bc) throws PersistanceException {
+  BlockInfo addBlockCollection(BlockInfo b, BlockCollection bc) throws
+      StorageException, TransactionContextException {
     b.setBlockCollection(bc);
     return b;
   }
@@ -70,7 +73,8 @@ class BlocksMap {
    * remove it from all data-node lists it belongs to;
    * and remove all data-node locations associated with the block.
    */
-  void removeBlock(Block block) throws PersistanceException {
+  void removeBlock(Block block)
+      throws StorageException, TransactionContextException {
     BlockInfo blockInfo = getStoredBlock(block);
     if (blockInfo == null)
       return;  
@@ -79,7 +83,8 @@ class BlocksMap {
   }
   
   /** Returns the block object it it exists in the map. */
-  BlockInfo getStoredBlock(Block b) throws PersistanceException {
+  BlockInfo getStoredBlock(Block b)
+      throws StorageException, TransactionContextException {
     // TODO STEFFEN - This is a workaround to prevent NullPointerExceptions for me. Not sure how to actually fix the bug.
     if (b == null) {
       return null;
@@ -94,7 +99,8 @@ class BlocksMap {
    * Searches for the block in the BlocksMap and 
    * returns Iterator that iterates through the nodes the block belongs to.
    */
-  Iterator<DatanodeDescriptor> nodeIterator(Block b) throws PersistanceException {
+  Iterator<DatanodeDescriptor> nodeIterator(Block b) throws
+      StorageException, TransactionContextException {
     BlockInfo blockInfo = getStoredBlock(b);
     return nodeIterator(blockInfo);
   }
@@ -103,7 +109,8 @@ class BlocksMap {
    * For a block that has already been retrieved from the BlocksMap
    * returns Iterator that iterates through the nodes the block belongs to.
    */
-  Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) throws PersistanceException {
+  Iterator<DatanodeDescriptor> nodeIterator(BlockInfo storedBlock) throws
+      StorageException, TransactionContextException {
     if (storedBlock == null) {
       return null;
     }
@@ -116,7 +123,7 @@ class BlocksMap {
   }
 
   /** counts number of containing nodes. Better than using iterator. */
-  int numNodes(Block b) throws PersistanceException {
+  int numNodes(Block b) throws StorageException, TransactionContextException {
     BlockInfo info = getStoredBlock(b);
     return info == null ? 0 : info.numNodes(datanodeManager);
   }
@@ -126,7 +133,8 @@ class BlocksMap {
    * Remove the block from the block map
    * only if it does not belong to any file and data-nodes.
    */
-  boolean removeNode(Block b, DatanodeDescriptor node) throws PersistanceException {
+  boolean removeNode(Block b, DatanodeDescriptor node) throws
+      StorageException, TransactionContextException {
     BlockInfo info = getStoredBlock(b);
     if (info == null)
       return false;
@@ -139,7 +147,7 @@ class BlocksMap {
   int size() throws IOException {
     LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS_SIZE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.countAll();
       }
@@ -150,7 +158,7 @@ class BlocksMap {
   int sizeCompleteOnly() throws IOException {
     LightWeightRequestHandler getAllBlocksSizeHander = new LightWeightRequestHandler(HDFSOperationType.GET_COMPLETE_BLOCKS_TOTAL) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.countAllCompleteBlocks();
       }
@@ -161,7 +169,7 @@ class BlocksMap {
   Iterable<BlockInfo> getBlocks() throws IOException {
     LightWeightRequestHandler getAllBlocksHander = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         BlockInfoDataAccess bida = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return bida.findAllBlocks();
       }
@@ -188,7 +196,7 @@ class BlocksMap {
   List<INodeIdentifier> getAllINodeFiles(final long offset, final long count) throws IOException {
     return (List<INodeIdentifier>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INODES) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         return ida.getAllINodeFiles(offset, count);
       }
@@ -198,7 +206,7 @@ class BlocksMap {
   boolean haveFilesWithIdGreaterThan(final long id) throws IOException {
     return (Boolean) new LightWeightRequestHandler(HDFSOperationType.HAVE_FILES_WITH_IDS_GREATER_THAN) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         return ida.haveFilesWithIdsGreaterThan(id);
       }
@@ -208,7 +216,7 @@ class BlocksMap {
    boolean haveFilesWithIdBetween(final long startId, final long endId) throws IOException {
     return (Boolean) new LightWeightRequestHandler(HDFSOperationType.HAVE_FILES_WITH_IDS_BETWEEN) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         return ida.haveFilesWithIdsBetween(startId, endId);
       }
@@ -218,7 +226,7 @@ class BlocksMap {
   long getMinFileId() throws IOException {
     return (Long) new LightWeightRequestHandler(HDFSOperationType.GET_MIN_FILE_ID) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         return ida.getMinFileId();
       }
@@ -228,7 +236,7 @@ class BlocksMap {
   int countAllFiles() throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNTALL_FILES) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         INodeDataAccess ida = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         return ida.countAllFiles();
       }

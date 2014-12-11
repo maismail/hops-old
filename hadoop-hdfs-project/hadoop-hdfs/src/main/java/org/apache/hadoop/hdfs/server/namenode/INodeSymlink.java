@@ -23,8 +23,9 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 
 /**
  * An INode representing a symbolic link.
@@ -66,7 +67,8 @@ public class INodeSymlink extends INode {
   }
   
   @Override
-  int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException {
+  int collectSubtreeBlocksAndClear(List<Block> v)
+      throws StorageException, TransactionContextException {
     //HOP:
     EntityManager.remove(this);
     return 1;

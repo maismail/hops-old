@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.StorageIdMapDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopStorageId;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
@@ -66,7 +66,7 @@ public class StorageIdMap {
   private void initialize() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.INITIALIZE_SID_MAP) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         StorageIdMapDataAccess<HopStorageId> da = (StorageIdMapDataAccess) StorageFactory.getDataAccess(StorageIdMapDataAccess.class);
         Collection<HopStorageId> sids = da.findAll();
         for (HopStorageId h : sids) {
@@ -87,7 +87,7 @@ public class StorageIdMap {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         int currSIdCount = Variables.getSIdCounter();
         StorageIdMapDataAccess<HopStorageId> da = (StorageIdMapDataAccess) StorageFactory.getDataAccess(StorageIdMapDataAccess.class);
         HopStorageId h = da.findByPk(storageId);

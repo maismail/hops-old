@@ -30,6 +30,12 @@ import org.apache.hadoop.classification.InterfaceStability;
 public class RecoveryInProgressException extends IOException {
   private static final long serialVersionUID = 1L;
 
+  public static class NonAbortingRecoveryInProgressException extends RecoveryInProgressException {
+    public NonAbortingRecoveryInProgressException(String msg) {
+      super(msg);
+    }
+  }
+
   public RecoveryInProgressException(String msg) {
     super(msg);
   }

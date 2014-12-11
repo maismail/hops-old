@@ -17,27 +17,28 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import com.google.common.base.Preconditions;
+import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import org.apache.hadoop.util.Daemon;
+import org.junit.Assert;
+import se.sics.hop.common.INodeUtil;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.INodeIdentifier;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
-import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.util.Daemon;
-import org.junit.Assert;
-
-import com.google.common.base.Preconditions;
-import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.common.INodeUtil;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
-import se.sics.hop.transaction.lock.HopsLockFactory;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class BlockManagerTestUtil {
   public static void setNodeReplicationLimit(final BlockManager blockManager,
@@ -75,7 +76,7 @@ public class BlockManagerTestUtil {
       return (int[]) new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
            INodeIdentifier inodeIdentifier;
         @Override
-        public void setUp() throws PersistanceException, IOException {
+        public void setUp() throws StorageException, IOException {
           inodeIdentifier = INodeUtil.resolveINodeFromBlock(b);
         }  
         
@@ -104,7 +105,7 @@ public class BlockManagerTestUtil {
    * are also ignored
    */
   private static int getNumberOfRacks(final BlockManager blockManager,
-      final Block b) throws PersistanceException {
+      final Block b) throws StorageException, TransactionContextException {
     final Set<String> rackSet = new HashSet<String>(0);
     final Collection<DatanodeDescriptor> corruptNodes = 
        getCorruptReplicas(blockManager).getNodes(blockManager.blocksMap.getStoredBlock(b));

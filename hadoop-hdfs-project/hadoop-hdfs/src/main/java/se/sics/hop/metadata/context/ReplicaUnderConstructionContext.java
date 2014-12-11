@@ -1,27 +1,28 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.util.ArrayList;
 import java.util.Arrays;
-import se.sics.hop.metadata.hdfs.dal.ReplicaUnderConstructionDataAccess;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.ReplicaUnderConstruction;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -43,7 +44,8 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
 
   @Override
-  public void add(ReplicaUnderConstruction replica) throws PersistanceException {
+  public void add(ReplicaUnderConstruction replica)
+      throws TransactionContextException {
     if (removedReplicasUc.containsKey(replica)) {
       throw new TransactionContextException("Removed  under constructionreplica passed to be persisted");
     }
@@ -69,12 +71,13 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
 
   @Override
-  public int count(CounterType counter, Object... params) throws PersistanceException {
+  public int count(CounterType counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public List<ReplicaUnderConstruction> findList(FinderType<ReplicaUnderConstruction> finder, Object... params) throws PersistanceException {
+  public List<ReplicaUnderConstruction> findList(FinderType<ReplicaUnderConstruction> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
 
     ReplicaUnderConstruction.Finder rFinder = (ReplicaUnderConstruction.Finder) finder;
     List<ReplicaUnderConstruction> result = null;
@@ -151,7 +154,7 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
   
   @Override
-  public ReplicaUnderConstruction find(FinderType<ReplicaUnderConstruction> finder, Object... params) throws PersistanceException {
+  public ReplicaUnderConstruction find(FinderType<ReplicaUnderConstruction> finder, Object... params) {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
   }
 
@@ -161,7 +164,8 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
 
   @Override
-  public void remove(ReplicaUnderConstruction replica) throws PersistanceException {
+  public void remove(ReplicaUnderConstruction replica)
+      throws TransactionContextException {
 
     boolean removed = false;
     if (blockReplicasUCAll.containsKey(replica.getBlockId())) {
@@ -174,7 +178,8 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
     }
     if (!removed) {
 
-      throw new StorageException("Trying to delete row in ruc table that was not locked. ruc bid " + replica.getBlockId()
+      throw new TransactionContextException("Trying to delete row in ruc table that was not locked. " +
+          "ruc bid " + replica.getBlockId()
               + " sid " + replica.getStorageId());
     }
     newReplicasUc.remove(replica);
@@ -186,23 +191,23 @@ public class ReplicaUnderConstructionContext extends EntityContext<ReplicaUnderC
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
   }
 
   @Override
-  public void update(ReplicaUnderConstruction replica) throws PersistanceException {
+  public void update(ReplicaUnderConstruction replica) {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Replicas Under Construction",newReplicasUc.size(),0,removedReplicasUc.size());
     return stat;
   }
 
    @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

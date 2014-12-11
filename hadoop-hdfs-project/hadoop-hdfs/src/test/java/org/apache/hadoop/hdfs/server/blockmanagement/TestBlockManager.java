@@ -53,9 +53,8 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
@@ -394,7 +393,7 @@ public class TestBlockManager {
     return (BlockInfo) new HopsTransactionalRequestHandler(HDFSOperationType.BLOCK_ON_NODES) {
       INodeIdentifier inodeIdentifier;
         @Override
-        public void setUp() throws PersistanceException, IOException {
+        public void setUp() throws StorageException, IOException {
           inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blkId);
         }   
       @Override
@@ -444,7 +443,7 @@ public class TestBlockManager {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlockID(blockId);
       }
 
@@ -455,7 +454,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         bm.blocksMap.addBlockCollection(blockInfo, bc);
         return null;
       }
@@ -482,7 +481,7 @@ public class TestBlockManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         // list for priority 1
         List<Block> list_p1 = new ArrayList<Block>();
         list_p1.add(block);

@@ -17,8 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.IOException;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -28,10 +26,10 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.MutableBlockCollection;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+
+import java.io.IOException;
 
 /**
  * I-node for file being written.
@@ -92,7 +90,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   protected INodeFileUnderConstruction(INodeFile file,
                              String clientName,
                              String clientMachine,
-                             DatanodeID clientNode) throws PersistanceException {
+                             DatanodeID clientNode) throws
+      StorageException, TransactionContextException {
     super(file);
     this.clientName = clientName;
     this.clientMachine = clientMachine;
@@ -103,7 +102,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
     return clientName;
   }
 
-  void setClientName(String clientName) throws PersistanceException {
+  void setClientName(String clientName)
+      throws StorageException, TransactionContextException {
     this.clientName = clientName;
     save();
   }
@@ -128,7 +128,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   // converts a INodeFileUnderConstruction into a INodeFile
   // use the modification time as the access time
   //
-  INodeFile convertToInodeFile() throws PersistanceException {
+  INodeFile convertToInodeFile()
+      throws StorageException, TransactionContextException {
     assert allBlocksComplete() : "Can't finalize inode " + this
       + " since it contains non-complete blocks! Blocks are "
       + getBlocks();
@@ -141,7 +142,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   /**
    * @return true if all of the blocks in this file are marked as completed.
    */
-  private boolean allBlocksComplete() throws PersistanceException {
+  private boolean allBlocksComplete()
+      throws StorageException, TransactionContextException {
     for (BlockInfo b : getBlocks()) {
       if (!b.isComplete()) {
         return false;
@@ -154,7 +156,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
    * Remove a block from the block list. This block should be
    * the last one on the list.
    */
-  void removeLastBlock(Block oldblock) throws IOException, PersistanceException {
+  void removeLastBlock(Block oldblock) throws IOException,
+      StorageException {
     final BlockInfo[] blocks = getBlocks();
     if (blocks == null) {
       throw new IOException("Trying to delete non-existant block " + oldblock);
@@ -173,7 +176,7 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
    */
   @Override
   public BlockInfoUnderConstruction setLastBlock(BlockInfo lastBlock,
-      DatanodeDescriptor[] targets) throws IOException, PersistanceException {
+      DatanodeDescriptor[] targets) throws IOException, StorageException {
     if (numBlocks() == 0) {
       throw new IOException("Failed to set last block: File is empty.");
     }
@@ -192,7 +195,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
    *          The length of the last block reported from client
    * @throws IOException
    */
-  void updateLengthOfLastBlock(long lastBlockLength) throws IOException, PersistanceException {
+  void updateLengthOfLastBlock(long lastBlockLength) throws IOException,
+      StorageException {
     BlockInfo lastBlock = this.getLastBlock();
     assert (lastBlock != null) : "The last block for path "
         + this.getFullPathName() + " is null when updating its length";
@@ -203,7 +207,8 @@ public class INodeFileUnderConstruction extends INodeFile implements MutableBloc
   }
  
   //START_HOP_CODE
-  public void removeBlock(BlockInfo block) throws PersistanceException {
+  public void removeBlock(BlockInfo block)
+      throws StorageException, TransactionContextException {
     BlockInfo[] blks = getBlocks();
     int index = block.getBlockIndex();
 

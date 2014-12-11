@@ -17,14 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
@@ -35,9 +27,15 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockCollection;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
-import se.sics.hop.Common;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /** I-node for closed file. */
 @InterfaceAudience.Private
@@ -77,7 +75,8 @@ public class INodeFile extends INode implements BlockCollection {
   }
   
    //HOP:
-  public INodeFile(INodeFile other) throws PersistanceException {
+  public INodeFile(INodeFile other)
+      throws StorageException, TransactionContextException {
     super(other);
 //HOP    setBlocks(other.getBlocks());
     setReplicationNoPersistance(other.getBlockReplication());
@@ -91,7 +90,8 @@ public class INodeFile extends INode implements BlockCollection {
    * the {@link FsAction#EXECUTE} action, if any, is ignored.
    */
   @Override
-  void setPermission(FsPermission permission) throws PersistanceException {
+  void setPermission(FsPermission permission)
+      throws StorageException, TransactionContextException {
     super.setPermission(permission.applyUMask(UMASK));
   }
 
@@ -129,7 +129,8 @@ public class INodeFile extends INode implements BlockCollection {
 
   /** @return the blocks of the file. */
   @Override
-  public BlockInfo[] getBlocks() throws PersistanceException {
+  public BlockInfo[] getBlocks()
+      throws StorageException, TransactionContextException {
     if(getId() == INode.NON_EXISTING_ID) return BlockInfo.EMPTY_ARRAY;
     List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByInodeId, id);
     if (blocks != null) {
@@ -144,7 +145,9 @@ public class INodeFile extends INode implements BlockCollection {
   /**
    * append array of blocks to this.blocks
    */
-  List<BlockInfo> appendBlocks(INodeFile[] inodes, int totalAddedBlocks /*HOP not used*/) throws PersistanceException {
+  List<BlockInfo> appendBlocks(INodeFile[] inodes, int totalAddedBlocks /*HOP not used*/)
+      throws
+      StorageException, TransactionContextException {
     List<BlockInfo> oldBlks = new ArrayList<BlockInfo>();
     for (INodeFile srcInode : inodes) {
       for (BlockInfo block : srcInode.getBlocks()) {
@@ -160,24 +163,27 @@ public class INodeFile extends INode implements BlockCollection {
   /**
    * add a block to the block list
    */
-  void addBlock(BlockInfo newblock) throws PersistanceException {
+  void addBlock(BlockInfo newblock)
+      throws StorageException, TransactionContextException {
     //BlockInfo[] blks = getBlocks();
     BlockInfo maxBlk = findMaxBlk();
     newblock.setBlockIndex(maxBlk.getBlockIndex()+1);
   }
 
   /** Set the block of the file at the given index. */
-  public void setBlock(int idx, BlockInfo blk) throws PersistanceException {
+  public void setBlock(int idx, BlockInfo blk)
+      throws StorageException, TransactionContextException {
     blk.setBlockIndex(idx);    
   }
 
   /** Set the blocks. */
-  public void setBlocks(BlockInfo[] blocks) {
+  public void setBlocks(BlockInfo[] blocks)  {
 //    this.blocks = blocks;
   }
 
   @Override
-  int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException {
+  int collectSubtreeBlocksAndClear(List<Block> v)
+      throws StorageException, TransactionContextException {
     parent = null;
     BlockInfo[] blocks = getBlocks();
     if(blocks != null && v != null) {
@@ -191,14 +197,15 @@ public class INodeFile extends INode implements BlockCollection {
   }
   
   @Override
-  public String getName() throws PersistanceException {
+  public String getName() throws StorageException, TransactionContextException {
     // Get the full path name of this inode.
     return getFullPathName();
   }
 
 
   @Override
-  long[] computeContentSummary(long[] summary) throws PersistanceException {
+  long[] computeContentSummary(long[] summary)
+      throws StorageException, TransactionContextException {
     summary[0] += computeFileSize(true);
     summary[1]++;
     summary[3] += diskspaceConsumed();
@@ -208,12 +215,13 @@ public class INodeFile extends INode implements BlockCollection {
   /** Compute file size.
    * May or may not include BlockInfoUnderConstruction.
    */
-  long computeFileSize(boolean includesBlockInfoUnderConstruction) throws PersistanceException {
+  long computeFileSize(boolean includesBlockInfoUnderConstruction) throws
+      StorageException, TransactionContextException {
     return computeFileSize(includesBlockInfoUnderConstruction, getBlocks());
   }
 
   static long computeFileSize(boolean includesBlockInfoUnderConstruction, BlockInfo[] blocks)
-      throws PersistanceException {
+      throws StorageException {
     if (blocks == null || blocks.length == 0) {
       return 0;
     }
@@ -229,13 +237,15 @@ public class INodeFile extends INode implements BlockCollection {
   }
 
   @Override
-  DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
+  DirCounts spaceConsumedInTree(DirCounts counts)
+      throws StorageException, TransactionContextException {
     counts.nsCount += 1;
     counts.dsCount += diskspaceConsumed();
     return counts;
   }
 
-  long diskspaceConsumed() throws PersistanceException {
+  long diskspaceConsumed() throws StorageException,
+      TransactionContextException {
     return diskspaceConsumed(getBlocks());
   }
   
@@ -267,7 +277,8 @@ public class INodeFile extends INode implements BlockCollection {
   /**
    * Return the penultimate allocated block for this file.
    */
-  BlockInfo getPenultimateBlock() throws PersistanceException {
+  BlockInfo getPenultimateBlock()
+      throws StorageException, TransactionContextException {
     BlockInfo[] blocks = getBlocks();    
     if (blocks == null || blocks.length <= 1) {
       return null;
@@ -276,13 +287,13 @@ public class INodeFile extends INode implements BlockCollection {
   }
 
   @Override
-  public BlockInfo getLastBlock() throws IOException, PersistanceException {
+  public BlockInfo getLastBlock() throws IOException, StorageException {
     BlockInfo[] blocks = getBlocks();
     return blocks == null || blocks.length == 0? null: blocks[blocks.length-1];
   }
 
   @Override
-  public int numBlocks() throws PersistanceException {
+  public int numBlocks() throws StorageException, TransactionContextException {
     BlockInfo[] blocks = getBlocks();
     return blocks == null ? 0 : blocks.length;
   }
@@ -301,20 +312,22 @@ public class INodeFile extends INode implements BlockCollection {
     return header & ~HEADERMASK;
   }
   
-  void setReplication(short replication) throws PersistanceException {
+  void setReplication(short replication)
+      throws StorageException, TransactionContextException {
     setReplicationNoPersistance(replication);
     save();
   }
  
   public INodeFileUnderConstruction convertToUnderConstruction(String clientName, 
-          String clientMachine,DatanodeID clientNode) throws PersistanceException {
+          String clientMachine,DatanodeID clientNode) throws
+      StorageException, TransactionContextException {
     INodeFileUnderConstruction ucfile = new INodeFileUnderConstruction(this, clientName, clientMachine, clientNode);
     save(ucfile);
     return ucfile;
   }
   
-  public BlockInfo findMaxBlk() throws PersistanceException
-  {
+  public BlockInfo findMaxBlk()
+      throws StorageException, TransactionContextException {
     BlockInfo maxBlk = (BlockInfo)EntityManager.find(BlockInfo.Finder.MAX_BLK_INDX, this.getId());
     return maxBlk;
   }
@@ -327,7 +340,8 @@ public class INodeFile extends INode implements BlockCollection {
     this.generationStamp = generationStamp;
   }
   
-  public int nextGenerationStamp() throws PersistanceException{
+  public int nextGenerationStamp()
+      throws StorageException, TransactionContextException {
     generationStamp++;
     save();
     return generationStamp;

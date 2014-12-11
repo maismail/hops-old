@@ -59,7 +59,7 @@ import org.apache.hadoop.security.ShellBasedUnixGroupsMapping;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.util.VersionInfo;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
@@ -371,7 +371,7 @@ public class DFSTestUtil {
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             return ns.getBlockManager().numCorruptReplicas(b.getLocalBlock());
           }
         };

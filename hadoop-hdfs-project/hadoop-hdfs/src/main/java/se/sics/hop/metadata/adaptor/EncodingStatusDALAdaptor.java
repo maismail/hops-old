@@ -19,7 +19,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
-  public HopEncodingStatus convertHDFStoDAL(EncodingStatus encodingStatus) throws StorageException {
+  public HopEncodingStatus convertHDFStoDAL(EncodingStatus encodingStatus)
+      throws StorageException {
     if (encodingStatus == null) {
       return null;
     }
@@ -41,7 +42,8 @@ public class EncodingStatusDALAdaptor extends DALAdaptor<EncodingStatus, HopEnco
   }
 
   @Override
-  public EncodingStatus convertDALtoHDFS(HopEncodingStatus hopEncodingStatus) throws StorageException {
+  public EncodingStatus convertDALtoHDFS(HopEncodingStatus hopEncodingStatus)
+      throws StorageException {
     if (hopEncodingStatus == null) {
       return null;
     }

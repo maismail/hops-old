@@ -27,8 +27,9 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.util.Daemon;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
@@ -38,7 +39,6 @@ import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
-import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -100,7 +100,8 @@ public class LeaseManager {
 
   LeaseManager(FSNamesystem fsnamesystem) {this.fsnamesystem = fsnamesystem;}
 
-  Lease getLease(String holder) throws PersistanceException {
+  Lease getLease(String holder)
+      throws StorageException, TransactionContextException {
     return EntityManager.find(Lease.Finder.ByPKey, holder);
   }
   
@@ -112,7 +113,7 @@ public class LeaseManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         LeaseDataAccess<Lease> da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.findAll();
       }
@@ -121,7 +122,8 @@ public class LeaseManager {
   }
 
   /** @return the lease containing src */
-  public Lease getLeaseByPath(String src) throws PersistanceException {
+  public Lease getLeaseByPath(String src)
+      throws StorageException, TransactionContextException {
     HopLeasePath leasePath = EntityManager.find(HopLeasePath.Finder.ByPKey, src);
     if (leasePath != null) {
       int holderID = leasePath.getHolderId();
@@ -136,7 +138,7 @@ public class LeaseManager {
   public int countLease() throws IOException {
      return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_LEASE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return da.countAll();
       }
@@ -146,14 +148,15 @@ public class LeaseManager {
   /** This method is never called in the stateless implementation 
    * @return the number of paths contained in all leases 
    */
-  int countPath() throws PersistanceException {
+  int countPath() throws StorageException, TransactionContextException {
     return EntityManager.count(Lease.Counter.All);
   }
   
   /**
    * Adds (or re-adds) the lease for the specified file.
    */
-  Lease addLease(String holder, String src) throws PersistanceException {
+  Lease addLease(String holder, String src)
+      throws StorageException, TransactionContextException {
     Lease lease = getLease(holder);
     if (lease == null) {
       int holderID = DFSUtil.getRandom().nextInt();
@@ -173,7 +176,8 @@ public class LeaseManager {
   /**
    * Remove the specified lease and src.
    */
-  void removeLease(Lease lease, HopLeasePath src) throws PersistanceException {
+  void removeLease(Lease lease, HopLeasePath src)
+      throws StorageException, TransactionContextException {
     if (lease.removePath(src)) {
       EntityManager.remove(src);
     } else {
@@ -188,7 +192,8 @@ public class LeaseManager {
   /**
    * Remove the lease for the specified holder and src
    */
-  void removeLease(String holder, String src) throws PersistanceException {
+  void removeLease(String holder, String src)
+      throws StorageException, TransactionContextException {
     Lease lease = getLease(holder);
     if (lease != null) {
       removeLease(lease, new HopLeasePath(src, lease.getHolderID()));
@@ -201,7 +206,7 @@ public class LeaseManager {
   void removeAllLeases() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.REMOVE_ALL_LEASES) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         LeaseDataAccess lda = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         LeasePathDataAccess lpda = (LeasePathDataAccess) StorageFactory.getDataAccess(LeasePathDataAccess.class);
         lda.removeAll();
@@ -214,7 +219,8 @@ public class LeaseManager {
   /**
    * Reassign lease for file src to the new holder.
    */
-  Lease reassignLease(Lease lease, String src, String newHolder) throws PersistanceException {
+  Lease reassignLease(Lease lease, String src, String newHolder) throws
+      StorageException, TransactionContextException {
     assert newHolder != null : "new lease holder is null";
     if (lease != null) {
       // Removing lease-path souldn't be persisted in entity-manager since we want to add it to another lease.
@@ -275,10 +281,12 @@ public class LeaseManager {
   /**
    * Renew the lease(s) held by the given client
    */
-  void renewLease(String holder) throws PersistanceException {
+  void renewLease(String holder)
+      throws StorageException, TransactionContextException {
     renewLease(getLease(holder));
   }
-  void renewLease(Lease lease) throws PersistanceException {
+  void renewLease(Lease lease)
+      throws StorageException, TransactionContextException {
     if (lease != null) {
       lease.setLastUpdate(now());
       EntityManager.update(lease);
@@ -296,7 +304,8 @@ public class LeaseManager {
   }
 
   //HOP: method arguments changed for bug fix HDFS-4248
-  void changeLease(String src, String dst) throws PersistanceException {
+  void changeLease(String src, String dst)
+      throws StorageException, TransactionContextException {
     if (LOG.isDebugEnabled()) {
       LOG.debug(getClass().getSimpleName() + ".changelease: " +
                " src=" + src + ", dest=" + dst);
@@ -319,7 +328,8 @@ public class LeaseManager {
     
   }
 
-  void removeLeaseWithPrefixPath(String prefix) throws PersistanceException {
+  void removeLeaseWithPrefixPath(String prefix)
+      throws StorageException, TransactionContextException {
     for(Map.Entry<HopLeasePath, Lease> entry
         : findLeaseWithPrefixPath(prefix).entrySet()) {
       if (LOG.isDebugEnabled()) {
@@ -331,7 +341,8 @@ public class LeaseManager {
   }
   
   //HOP: bug fix changes HDFS-4242
-  private Map<HopLeasePath, Lease> findLeaseWithPrefixPath(String prefix) throws PersistanceException {
+  private Map<HopLeasePath, Lease> findLeaseWithPrefixPath(String prefix) throws
+      StorageException, TransactionContextException {
     if (LOG.isDebugEnabled()) {
       LOG.debug(LeaseManager.class.getSimpleName() + ".findLease: prefix=" + prefix);
     }
@@ -416,14 +427,14 @@ public class LeaseManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return fsnamesystem.isInSafeMode();
       }
     };
     
     LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         long expiredTime = now() - hardLimit;
         LeaseDataAccess da = (LeaseDataAccess) StorageFactory.getDataAccess(LeaseDataAccess.class);
         return new TreeSet<Lease>(da.findByTimeLimit(expiredTime));
@@ -458,7 +469,7 @@ public class LeaseManager {
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             String holder = (String) getParams()[0];
             if (holder != null) {
               checkLeases(holder);
@@ -497,7 +508,8 @@ public class LeaseManager {
   /** Check the leases beginning from the oldest.
    *  @return true is sync is needed.
    */
-  private boolean checkLeases(String holder) throws PersistanceException {
+  private boolean checkLeases(String holder)
+      throws StorageException, TransactionContextException {
     boolean needSync = false;
     assert fsnamesystem.hasWriteLock();
     

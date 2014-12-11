@@ -1,25 +1,21 @@
 package se.sics.hop.metadata.context;
 
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
-import se.sics.hop.exception.LockUpgradeException;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.StorageCallPreventedException;
-import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.metadata.hdfs.dal.LeasePathDataAccess;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.HopsLeasePathLock;
-import se.sics.hop.transaction.lock.HopsLock;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -41,7 +37,7 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
 
   @Override
-  public void add(HopLeasePath lPath) throws PersistanceException {
+  public void add(HopLeasePath lPath) throws TransactionContextException {
     if (removedLPaths.containsKey(lPath)  || modifiedLPaths.containsKey(lPath)) {
       throw new TransactionContextException("Removed/modified lease-path passed to be persisted");
     }
@@ -75,12 +71,13 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
 
   @Override
-  public int count(CounterType counter, Object... params) throws PersistanceException {
+  public int count(CounterType counter, Object... params) {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
   }
 
   @Override
-  public HopLeasePath find(FinderType<HopLeasePath> finder, Object... params) throws PersistanceException {
+  public HopLeasePath find(FinderType<HopLeasePath> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
     HopLeasePath result = null;
 
@@ -106,7 +103,8 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
 
   @Override
-  public Collection<HopLeasePath> findList(FinderType<HopLeasePath> finder, Object... params) throws PersistanceException {
+  public Collection<HopLeasePath> findList(FinderType<HopLeasePath> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
     Collection<HopLeasePath> result = new TreeSet<HopLeasePath>();
 
@@ -175,7 +173,7 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
     }
 
   @Override
-  public void remove(HopLeasePath lPath) throws PersistanceException {
+  public void remove(HopLeasePath lPath) throws TransactionContextException {
     if (leasePaths.remove(lPath) == null) {
       throw new TransactionContextException("Unattached lease-path passed to be removed");
     }
@@ -195,12 +193,12 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() throws StorageException {
     dataAccess.removeAll();
   }
 
   @Override
-  public void update(HopLeasePath lPath) throws PersistanceException {
+  public void update(HopLeasePath lPath) throws TransactionContextException {
     if (removedLPaths.containsKey(lPath)) {
       throw new TransactionContextException("Removed lease-path passed to be persisted");
     }
@@ -276,13 +274,13 @@ public class LeasePathContext extends EntityContext<HopLeasePath> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Lease Path",newLPaths.size(),modifiedLPaths.size(),removedLPaths.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     
   }
 }

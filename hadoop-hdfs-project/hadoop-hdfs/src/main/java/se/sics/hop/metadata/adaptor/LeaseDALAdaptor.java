@@ -70,7 +70,7 @@ public class LeaseDALAdaptor extends DALAdaptor<Lease, HopLease> implements Leas
   }
 
   @Override
-  public HopLease convertHDFStoDAL(Lease hdfsClass) {
+  public HopLease convertHDFStoDAL(Lease hdfsClass) throws StorageException {
     if (hdfsClass != null) {
       return new HopLease(hdfsClass.getHolder(), hdfsClass.getHolderID(), hdfsClass.getLastUpdate());
     } else {
@@ -79,7 +79,7 @@ public class LeaseDALAdaptor extends DALAdaptor<Lease, HopLease> implements Leas
   }
 
   @Override
-  public Lease convertDALtoHDFS(HopLease dalClass) {
+  public Lease convertDALtoHDFS(HopLease dalClass) throws StorageException {
     if (dalClass != null) {
       return new Lease(dalClass.getHolder(), dalClass.getHolderId(), dalClass.getLastUpdate());
     } else {

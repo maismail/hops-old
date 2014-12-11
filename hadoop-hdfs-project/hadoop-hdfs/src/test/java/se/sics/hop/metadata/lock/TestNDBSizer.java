@@ -22,26 +22,19 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import org.junit.Before;
-import org.junit.Test;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
-import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.transaction.handler.RequestHandler;
-import se.sics.hop.transaction.handler.RequestHandler.OperationType;
 
 /**
  *
@@ -67,7 +60,7 @@ public class TestNDBSizer {
     insertData();
   }
 
-  private void insertData() throws StorageException, PersistanceException, IOException {
+  private void insertData() throws StorageException, StorageException, IOException {
     System.out.println("Building the data...");
 
 
@@ -93,7 +86,7 @@ public class TestNDBSizer {
         final int j = i;
         new LightWeightRequestHandler(HDFSOperationType.TEST) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
             da.prepare(new LinkedList<INode>(), newFiles, new LinkedList<INode>());
             newFiles.clear();
@@ -119,7 +112,7 @@ public class TestNDBSizer {
         final int j = i;
         new LightWeightRequestHandler(HDFSOperationType.TEST) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             BlockInfoDataAccess bda = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
             bda.prepare(new LinkedList<BlockInfo>(), newBlocks, new LinkedList<BlockInfo>());
             newBlocks.clear();
@@ -141,7 +134,7 @@ public class TestNDBSizer {
         final int j = i;
         new LightWeightRequestHandler(HDFSOperationType.TEST) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             ReplicaDataAccess rda = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
             rda.prepare(new LinkedList<HopIndexedReplica>(), replicas, new LinkedList<HopIndexedReplica>());
             //StorageFactory.getConnector().commit();

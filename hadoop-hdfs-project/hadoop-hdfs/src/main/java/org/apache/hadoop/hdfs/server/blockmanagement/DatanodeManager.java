@@ -76,7 +76,6 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.net.InetAddresses;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageIdMap;
 import se.sics.hop.common.INodeUtil;
@@ -1254,7 +1253,7 @@ public class DatanodeManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return b.getExpectedLocations(datanodeManager);
       }
     }.handle();

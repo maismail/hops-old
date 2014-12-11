@@ -39,9 +39,8 @@ import org.apache.hadoop.hdfs.server.datanode.DataNodeTestUtils;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
 import se.sics.hop.common.INodeUtil;
@@ -248,7 +247,7 @@ public class TestPendingReplication {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
@@ -260,7 +259,7 @@ public class TestPendingReplication {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ById, block.getBlockId());
         if (inc) {
           pendingReplications.increment(blockInfo, numReplicas);
@@ -277,7 +276,7 @@ public class TestPendingReplication {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
@@ -289,7 +288,7 @@ public class TestPendingReplication {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ById, block.getBlockId());
         return pendingReplications.getNumReplicas(blockInfo);
       }
@@ -393,7 +392,7 @@ public class TestPendingReplication {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.add(blockInfo);
         return null;
       }

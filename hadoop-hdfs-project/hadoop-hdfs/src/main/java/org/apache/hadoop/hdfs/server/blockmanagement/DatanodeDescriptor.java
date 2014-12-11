@@ -30,8 +30,9 @@ import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -235,7 +236,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Add datanode to the block.
    * Add block to the head of the list of blocks belonging to the data-node.
    */
-  public boolean addBlock(BlockInfo b) throws PersistanceException {
+  public boolean addBlock(BlockInfo b)
+      throws StorageException, TransactionContextException {
     if(b.hasReplicaIn(this))
       return false;
     b.addReplica(this, b);
@@ -247,7 +249,8 @@ public class DatanodeDescriptor extends DatanodeInfo {
    * Remove block from the list of blocks belonging to the data-node.
    * Remove datanode from the block.
    */
-  public boolean removeBlock(BlockInfo b) throws PersistanceException {
+  public boolean removeBlock(BlockInfo b)
+      throws StorageException, TransactionContextException {
     if(b.removeReplica(this) != null){
 //      numBlocks--;
       return true;
@@ -320,7 +323,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
 //    return numBlocks;
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_REPLICAS_ON_NODE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         ReplicaDataAccess da = (ReplicaDataAccess) StorageFactory.getDataAccess(ReplicaDataAccess.class);
         return da.countAllReplicasForStorageId(getSId());
       }
@@ -380,7 +383,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
   private List<BlockInfo> getAllMachineBlockInfos() throws IOException {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         StorageFactory.getConnector().beginTransaction();
         List<BlockInfo> list = da.findByStorageId(getSId());
@@ -394,7 +397,7 @@ public class DatanodeDescriptor extends DatanodeInfo {
   public Set<Long> getAllMachineBlocks() throws IOException {
     LightWeightRequestHandler findBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_MACHINE_BLOCKS_IDS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         BlockInfoDataAccess da = (BlockInfoDataAccess) StorageFactory.getDataAccess(BlockInfoDataAccess.class);
         return da.findByStorageIdOnlyIds(getSId());
       }

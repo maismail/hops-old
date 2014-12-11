@@ -17,7 +17,7 @@ package se.sics.hop.metadata.adaptor;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
+
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import se.sics.hop.metadata.DALAdaptor;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
@@ -49,7 +49,8 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public HopINodeAttributes convertHDFStoDAL(INodeAttributes attribute) throws StorageException {
+  public HopINodeAttributes convertHDFStoDAL(INodeAttributes attribute)
+      throws StorageException {
     if (attribute != null) {
       HopINodeAttributes hia = new HopINodeAttributes(
               attribute.getInodeId(),
@@ -64,7 +65,8 @@ public class INodeAttributeDALAdaptor extends DALAdaptor<INodeAttributes, HopINo
   }
 
   @Override
-  public INodeAttributes convertDALtoHDFS(HopINodeAttributes hia) throws StorageException {
+  public INodeAttributes convertDALtoHDFS(HopINodeAttributes hia)
+      throws StorageException {
     if (hia != null) {
       INodeAttributes iNodeAttributes = new INodeAttributes(
               hia.getInodeId(),

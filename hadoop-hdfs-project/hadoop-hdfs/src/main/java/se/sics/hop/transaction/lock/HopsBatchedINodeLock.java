@@ -15,11 +15,12 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.EntityManager;
 
@@ -38,7 +39,7 @@ public class HopsBatchedINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     if (inodeIdentifiers != null && !inodeIdentifiers.isEmpty()) {
       String[] names = new String[inodeIdentifiers.size()];
       int[] parentIds = new int[inodeIdentifiers.size()];
@@ -59,7 +60,7 @@ public class HopsBatchedINodeLock extends HopsBaseINodeLock {
           TransactionLockTypes.INodeLockType lock,
           String[] names,
           int[] parentIds)
-          throws PersistanceException {
+      throws StorageException, TransactionContextException {
     setINodeLockType(lock);
     Collection<INode> inodes = EntityManager.findList(INode.Finder.ByPKS, names, parentIds);
     for (INode inode : inodes) {

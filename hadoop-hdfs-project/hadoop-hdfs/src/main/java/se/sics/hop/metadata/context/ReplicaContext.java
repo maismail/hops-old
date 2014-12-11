@@ -1,7 +1,21 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,20 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.metadata.hdfs.dal.ReplicaDataAccess;
-import se.sics.hop.exception.StorageException;
-import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
-import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -46,7 +46,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
 
   @Override
-  public void add(HopIndexedReplica replica) throws PersistanceException {
+  public void add(HopIndexedReplica replica)
+      throws TransactionContextException {
     if (removedReplicas.containsKey(replica) || modifiedReplicas.containsKey(replica)) {
       throw new TransactionContextException("Removed/Modified replica passed to be persisted");
     }
@@ -76,7 +77,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
 
   @Override
-  public int count(CounterType counter, Object... params) throws PersistanceException {
+  public int count(CounterType counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -86,7 +87,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
     }
 
   @Override
-  public void remove(HopIndexedReplica replica) throws PersistanceException {
+  public void remove(HopIndexedReplica replica)
+      throws TransactionContextException {
     if (!blocksReplicas.get(replica.getBlockId()).get(replica.getStorageId()).equals(replica)) {
       throw new TransactionContextException("Unattached replica passed to be removed, inodeId="+replica.getInodeId()+" bid="+replica.getBlockId()+" sid="+replica.getStorageId()+" index="+replica.getIndex());
     }
@@ -106,7 +108,7 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
 
   @Override
-  public HopIndexedReplica find(FinderType<HopIndexedReplica> finder, Object... params) throws PersistanceException {
+  public HopIndexedReplica find(FinderType<HopIndexedReplica> finder, Object... params) {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
     switch (iFinder) {
       case ByPK:
@@ -124,7 +126,8 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
 
   @Override
-  public List<HopIndexedReplica> findList(FinderType<HopIndexedReplica> finder, Object... params) throws PersistanceException {
+  public List<HopIndexedReplica> findList(FinderType<HopIndexedReplica> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
     
     switch (iFinder) {
@@ -249,12 +252,13 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   } 
   
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(HopIndexedReplica replica) throws PersistanceException {
+  public void update(HopIndexedReplica replica)
+      throws TransactionContextException {
     if (removedReplicas.containsKey(replica)) {
       throw new TransactionContextException("Removed replica passed to be persisted");
     }
@@ -273,13 +277,13 @@ public class ReplicaContext extends EntityContext<HopIndexedReplica> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Replicas",newReplicas.size(),modifiedReplicas.size(),removedReplicas.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

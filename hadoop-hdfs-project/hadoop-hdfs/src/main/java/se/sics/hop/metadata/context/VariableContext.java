@@ -1,21 +1,22 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.Collection;
-import java.util.EnumMap;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
-import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
 import se.sics.hop.exception.LockUpgradeException;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.lock.HopsLock;
 import se.sics.hop.transaction.lock.HopsVariablesLock;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.Collection;
+import java.util.EnumMap;
 
 /**
  *
@@ -34,7 +35,7 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public void add(HopVariable entity) throws PersistanceException {
+  public void add(HopVariable entity) {
     newVariables.put(entity.getType(), entity);
     variables.put(entity.getType(), entity);
   }
@@ -47,12 +48,13 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public int count(CounterType<HopVariable> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopVariable> counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public HopVariable find(FinderType<HopVariable> finder, Object... params) throws PersistanceException {
+  public HopVariable find(FinderType<HopVariable> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopVariable.Finder varType = (HopVariable.Finder) finder;
     HopVariable var = null;
     if (variables.containsKey(varType)) {
@@ -68,12 +70,13 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public Collection<HopVariable> findList(FinderType<HopVariable> finder, Object... params) throws PersistanceException {
+  public Collection<HopVariable> findList(FinderType<HopVariable> finder, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
+  public void prepare(TransactionLocks lks)
+      throws LockUpgradeException, StorageException {
     if (lks.containsLock(HopsLock.Type.Variable)) {
       HopsVariablesLock hlk = (HopsVariablesLock) lks.getLock(HopsLock.Type.Variable);
       checkLockUpgrade(hlk, modifiedVariables);
@@ -91,17 +94,17 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
   
   @Override
-  public void remove(HopVariable var) throws PersistanceException {
+  public void remove(HopVariable var) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(HopVariable var) throws PersistanceException {
+  public void update(HopVariable var) {
     modifiedVariables.put(var.getType(), var);
     variables.put(var.getType(), var);
     log(
@@ -111,7 +114,7 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Variables",newVariables.size(),modifiedVariables.size(),0);
     StringBuilder additionalInfo  = new StringBuilder();
     for(HopVariable variable : newVariables.values()){
@@ -125,7 +128,7 @@ public class VariableContext extends EntityContext<HopVariable> {
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     
   }
 }

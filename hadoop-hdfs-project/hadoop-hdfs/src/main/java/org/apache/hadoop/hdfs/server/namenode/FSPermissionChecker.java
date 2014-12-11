@@ -17,13 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.fs.UnresolvedLinkException;
@@ -31,11 +24,18 @@ import org.apache.hadoop.fs.permission.FsAction;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.io.DataInputBuffer;
-import org.apache.hadoop.io.DataOutputBuffer;
-import se.sics.hop.exception.PersistanceException;
 import org.apache.hadoop.security.AccessControlException;
 import org.apache.hadoop.security.UserGroupInformation;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Stack;
 
 /** 
  * Class that helps in checking file system permission.
@@ -125,8 +125,9 @@ class FSPermissionChecker {
    */
   void checkPermission(String path, INodeDirectory root, boolean doCheckOwner,
       FsAction ancestorAccess, FsAction parentAccess, FsAction access,
-      FsAction subAccess) 
-      throws AccessControlException, UnresolvedLinkException, PersistanceException {
+      FsAction subAccess)
+      throws AccessControlException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     if (LOG.isDebugEnabled()) {
       LOG.debug("ACCESS CHECK: " + this
           + ", doCheckOwner=" + doCheckOwner
@@ -182,7 +183,8 @@ class FSPermissionChecker {
 
   /** Guarded by {@link FSNamesystem#readLock()} */
   private void checkSubAccess(INode inode, FsAction access
-      ) throws AccessControlException, PersistanceException {
+      ) throws AccessControlException, StorageException,
+      TransactionContextException {
     if (inode == null || !inode.isDirectory()) {
       return;
     }

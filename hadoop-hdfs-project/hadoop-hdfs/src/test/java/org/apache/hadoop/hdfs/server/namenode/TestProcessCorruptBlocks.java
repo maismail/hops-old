@@ -34,7 +34,7 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSCluster.DataNodeProperties;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.blockmanagement.NumberReplicas;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import org.junit.Test;
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -266,7 +266,7 @@ public class TestProcessCorruptBlocks {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
       }
 
@@ -278,7 +278,7 @@ public class TestProcessCorruptBlocks {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return namesystem.getBlockManager().countNodes(block.getLocalBlock());
       }
 

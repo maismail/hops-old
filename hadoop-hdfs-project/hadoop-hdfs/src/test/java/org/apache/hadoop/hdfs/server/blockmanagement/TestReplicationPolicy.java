@@ -45,7 +45,7 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
@@ -1015,7 +1015,7 @@ public class TestReplicationPolicy {
       INodeIdentifier inodeIdentifier;
 
       @Override
-      public void setUp() throws PersistanceException, IOException {
+      public void setUp() throws StorageException, IOException {
         inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
       }
 
@@ -1027,7 +1027,7 @@ public class TestReplicationPolicy {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.add(new BlockInfo(block,
                 inodeIdentifier != null ? inodeIdentifier.getInodeId() : INode.NON_EXISTING_ID));
         return queue.add(block, curReplicas, decomissionedReplicas, expectedReplicas);

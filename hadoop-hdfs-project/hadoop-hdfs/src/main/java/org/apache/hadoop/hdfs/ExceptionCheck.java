@@ -23,9 +23,8 @@ import java.net.NoRouteToHostException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import se.sics.hop.exception.PersistanceException;
-import org.apache.hadoop.ipc.RemoteException;
 import se.sics.hop.exception.StorageException;
+import org.apache.hadoop.ipc.RemoteException;
 
 /**
  *
@@ -72,8 +71,7 @@ public class ExceptionCheck {
             || e instanceof SocketTimeoutException
             || e instanceof NoRouteToHostException
             || (e instanceof IOException && e.getMessage().contains("Failed on local exception"))
-            || e instanceof NoAliveNamenodeException
-            || e instanceof NullPointerException) { // Nullpointer exception as caused by dead locks
+            || e instanceof NoAliveNamenodeException) {
       return true;
     }
 
@@ -84,7 +82,7 @@ public class ExceptionCheck {
       }
 
       if (unwrappedException != null && !(unwrappedException instanceof RemoteException)) {
-        if (unwrappedException instanceof PersistanceException
+        if (unwrappedException instanceof StorageException
                 || unwrappedException instanceof StorageException) {
           return true;
         }

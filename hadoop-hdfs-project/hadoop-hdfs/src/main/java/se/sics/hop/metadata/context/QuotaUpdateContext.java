@@ -2,14 +2,22 @@ package se.sics.hop.metadata.context;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.QuotaUpdateDataAccess;
-import se.sics.hop.metadata.hdfs.entity.*;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
-
-import java.util.*;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   public static final Log LOG = LogFactory.getLog(QuotaUpdateContext.class);
@@ -59,7 +67,7 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
 
   @Override
-  public void add(QuotaUpdate quotaUpdate) throws PersistanceException {
+  public void add(QuotaUpdate quotaUpdate) {
     QuotaUpdateWrapper wrapper = new QuotaUpdateWrapper(quotaUpdate, CacheRowStatus.ADDED);
     cachedRows.put(quotaUpdate.getId(), wrapper);
   }
@@ -72,18 +80,18 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
 
   @Override
-  public int count(CounterType<QuotaUpdate> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<QuotaUpdate> counter, Object... params) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public QuotaUpdate find(FinderType<QuotaUpdate> finder, Object... params) throws PersistanceException {
+  public QuotaUpdate find(FinderType<QuotaUpdate> finder, Object... params) {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public Collection<QuotaUpdate> findList(FinderType<QuotaUpdate> finder, Object... params)
-      throws PersistanceException {
+      throws StorageCallPreventedException, StorageException {
     Integer inodeId = (Integer) params[0];
     QuotaUpdate.Finder qFinder = (QuotaUpdate.Finder) finder;
     List<QuotaUpdate> list = new ArrayList<QuotaUpdate>();
@@ -127,7 +135,7 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
 
   @Override
-  public void remove(QuotaUpdate quotaUpdate) throws PersistanceException {
+  public void remove(QuotaUpdate quotaUpdate) {
     if (cachedRows.containsKey(quotaUpdate.getId())) {
       cachedRows.get(quotaUpdate.getId()).setStatus(CacheRowStatus.DELETED);
       log("removed-quotaUpdate", CacheHitState.NA, new String[]{"id", Integer.toString(quotaUpdate.getId())});
@@ -138,17 +146,17 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  public void update(QuotaUpdate quotaUpdate) throws PersistanceException {
+  public void update(QuotaUpdate quotaUpdate) {
     throw new UnsupportedOperationException();
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     List<QuotaUpdate> added = new ArrayList<QuotaUpdate>();
     List<QuotaUpdate> deleted = new ArrayList<QuotaUpdate>();
     for (QuotaUpdateWrapper wrapper : cachedRows.values()) {
@@ -167,8 +175,7 @@ public class QuotaUpdateContext extends EntityContext<QuotaUpdate> {
   }
   
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params)
-      throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
 
   }
 }

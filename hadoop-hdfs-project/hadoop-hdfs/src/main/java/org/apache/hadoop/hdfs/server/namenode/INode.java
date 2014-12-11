@@ -17,8 +17,7 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.util.*;
-
+import com.google.common.primitives.SignedBytes;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.Path;
@@ -26,21 +25,22 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.util.StringUtils;
-
-import com.google.common.primitives.SignedBytes;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import se.sics.hop.Common;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
-import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.HopsException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
 
-import static org.apache.hadoop.hdfs.server.namenode.FSNamesystem.LOG;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * We keep an in-memory representation of the file/block hierarchy.
@@ -170,7 +170,7 @@ public abstract class INode implements Comparable<byte[]> {
    * 
    * @param other Other node to be copied
    */
-  INode(INode other) throws PersistanceException {
+  INode(INode other) throws StorageException, TransactionContextException {
     setLocalNameNoPersistance(other.getLocalName());
     this.parent = other.getParent();
     setPermissionStatusNoPersistance(other.getPermissionStatus());
@@ -249,10 +249,12 @@ public abstract class INode implements Comparable<byte[]> {
    * Count and return the number of files in the sub tree.
    * Also clears references since this INode is deleted.
    */
-  abstract int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException;
+  abstract int collectSubtreeBlocksAndClear(List<Block> v) throws
+      StorageException, TransactionContextException;
 
   /** Compute {@link ContentSummary}. */
-  public final ContentSummary computeContentSummary() throws PersistanceException{
+  public final ContentSummary computeContentSummary() throws
+      StorageException, TransactionContextException {
     long[] a = computeContentSummary(new long[]{0,0,0,0});
     return new ContentSummary(a[0], a[1], a[2], getNsQuota(), 
                               a[3], getDsQuota());
@@ -261,21 +263,24 @@ public abstract class INode implements Comparable<byte[]> {
    * @return an array of three longs. 
    * 0: length, 1: file count, 2: directory count 3: disk space
    */
-  abstract long[] computeContentSummary(long[] summary) throws PersistanceException;
+  abstract long[] computeContentSummary(long[] summary) throws
+      StorageException, TransactionContextException;
   
   /**
    * Get the quota set for this inode
    * @return the quota if it is set; -1 otherwise
    */
-  public long getNsQuota() throws PersistanceException{
+  public long getNsQuota() throws StorageException,
+      TransactionContextException {
     return -1;
   }
 
-  public long getDsQuota() throws PersistanceException{
+  public long getDsQuota() throws StorageException,
+      TransactionContextException {
     return -1;
   }
   
-  boolean isQuotaSet() throws PersistanceException{
+  boolean isQuotaSet() throws StorageException, TransactionContextException {
     return getNsQuota() >= 0 || getDsQuota() >= 0;
   }
   
@@ -284,7 +289,8 @@ public abstract class INode implements Comparable<byte[]> {
    * this tree to counts.
    * Returns updated counts object.
    */
-  abstract DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException;
+  abstract DirCounts spaceConsumedInTree(DirCounts counts) throws
+      StorageException, TransactionContextException;
   
   /**
    * Get local file name
@@ -295,7 +301,8 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
 
-  String getLocalParentDir() throws PersistanceException {
+  String getLocalParentDir()
+      throws StorageException, TransactionContextException {
     INode inode = isRoot() ? this : getParent();
     String parentDir = "";
     if (inode != null) {
@@ -328,7 +335,8 @@ public abstract class INode implements Comparable<byte[]> {
     this.name = name;
   }
   
-  public String getFullPathName() throws PersistanceException{
+  public String getFullPathName()
+      throws StorageException, TransactionContextException {
     // Get the full path name of this inode.
     return FSDirectory.getFullPathName(this);
   }
@@ -339,7 +347,7 @@ public abstract class INode implements Comparable<byte[]> {
     return "\"" + getFullPathName() + "\":"
     + getUserName() + ":" + getGroupName() + ":"
     + (isDirectory()? "d": "-") + getFsPermission();
-      } catch (PersistanceException ex) {
+      } catch (HopsException ex) {
           Logger.getLogger(INode.class.getName()).log(Level.SEVERE, null, ex);
       }
       return null;
@@ -349,7 +357,8 @@ public abstract class INode implements Comparable<byte[]> {
    * Get parent directory 
    * @return parent INode
    */
-  INodeDirectory getParent() throws PersistanceException{
+  INodeDirectory getParent()
+      throws StorageException, TransactionContextException {
     //START_HOP_CODE
     if(isRoot()){
       return null;
@@ -468,7 +477,7 @@ public abstract class INode implements Comparable<byte[]> {
   }
 
 
-  boolean removeNode() throws PersistanceException {
+  boolean removeNode() throws StorageException, TransactionContextException {
     if (parent == null) {
       return false;
     } else {
@@ -554,7 +563,8 @@ public abstract class INode implements Comparable<byte[]> {
     return this.id;
   }
   
-  public void setParent(INodeDirectory p) throws PersistanceException {
+  public void setParent(INodeDirectory p)
+      throws StorageException, TransactionContextException {
     setParentNoPersistance(p);
     save();
   }
@@ -577,74 +587,84 @@ public abstract class INode implements Comparable<byte[]> {
   }
   
    /** Set user */
-  protected void setUser(String user) throws PersistanceException {
+  protected void setUser(String user)
+      throws StorageException, TransactionContextException {
     setUserNoPersistance(user);
     save();
   }
 
-  protected void setGroup(String group) throws PersistanceException {
+  protected void setGroup(String group)
+      throws StorageException, TransactionContextException {
     setGroupNoPersistance(group);
     save();
   }
 
-  void setPermission(FsPermission permission) throws PersistanceException {
+  void setPermission(FsPermission permission)
+      throws StorageException, TransactionContextException {
     setPermissionNoPersistance(permission);
     save();
   }
 
-  protected void setPermissionStatus(PermissionStatus ps) throws PersistanceException {
+  protected void setPermissionStatus(PermissionStatus ps) throws
+      StorageException, TransactionContextException {
     setUser(ps.getUserName());
     setGroup(ps.getGroupName());
     setPermission(ps.getPermission());
   }
 
-  public void setLocalName(String name) throws PersistanceException {
+  public void setLocalName(String name)
+      throws StorageException, TransactionContextException {
     setLocalNameNoPersistance(name);
     save();
   }
   
-  public void setLocalName(byte[] name) throws PersistanceException {
+  public void setLocalName(byte[] name)
+      throws StorageException, TransactionContextException {
     setLocalNameNoPersistance(name);
     save();
   }
   
-  public void setModificationTime(long modtime) throws PersistanceException {
+  public void setModificationTime(long modtime)
+      throws StorageException, TransactionContextException {
     setModificationTimeNoPersistance(modtime);
     save();
   }
 
-  public void setAccessTime(long atime) throws PersistanceException {
+  public void setAccessTime(long atime)
+      throws StorageException, TransactionContextException {
     setAccessTimeNoPersistance(atime);
     save();
   }
 
-  void setModificationTimeForce(long modtime) throws PersistanceException {
+  void setModificationTimeForce(long modtime)
+      throws StorageException, TransactionContextException {
     setModificationTimeForceNoPersistance(modtime);
     save();
   }
   
   public boolean exists(){
-    if(id == NON_EXISTING_ID)
-    {
+    if(id == NON_EXISTING_ID) {
       return false;
     }
     
     return true;
   }
 
-  protected void save() throws PersistanceException {
+  protected void save() throws StorageException, TransactionContextException {
     save(this);
   }
 
-  protected void save(INode node) throws PersistanceException {
+  protected void save(INode node)
+      throws StorageException, TransactionContextException {
     EntityManager.update(node);
   }
 
-  protected void remove() throws PersistanceException {
+  protected void remove() throws StorageException, TransactionContextException {
     remove(this);
   }
 
-  protected void remove(INode node) throws PersistanceException {
+  protected void remove(INode node)
+      throws StorageException, TransactionContextException {
     EntityManager.remove(node);
     //if This inode is of type INodeDirectoryWithQuota then also delete the INode Attribute table
     if(node instanceof INodeDirectoryWithQuota){
@@ -653,7 +673,8 @@ public abstract class INode implements Comparable<byte[]> {
     cleanParity(node);
   }
 
-  private void cleanParity(INode node) throws PersistanceException {
+  private void cleanParity(INode node)
+      throws StorageException, TransactionContextException {
     if (ErasureCodingManager.isEnabled()) {
       EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, node.getId());
       if (status != null) {

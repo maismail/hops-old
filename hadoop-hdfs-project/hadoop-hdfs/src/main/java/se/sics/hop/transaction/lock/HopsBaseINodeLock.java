@@ -28,8 +28,8 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.EntityManager;
@@ -148,7 +148,9 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     return allLockedInodesInTx.get(inode);
   }
 
-  protected INode find(TransactionLockTypes.INodeLockType lock, String name, int parentId) throws PersistanceException {
+  protected INode find(TransactionLockTypes.INodeLockType lock, String name, int parentId)
+      throws
+      StorageException, TransactionContextException {
     setINodeLockType(lock);
     INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId);
     addLockedINodes(inode, lock);
@@ -158,7 +160,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
   protected INode find(
           TransactionLockTypes.INodeLockType lock,
           int id)
-          throws PersistanceException {
+      throws StorageException, TransactionContextException {
     setINodeLockType(lock);
     INode inode = EntityManager.find(INode.Finder.ByINodeID, id);
     addLockedINodes(inode, lock);
@@ -191,7 +193,8 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     }
   }
 
-  protected void acquireINodeAttributes() throws PersistanceException {
+  protected void acquireINodeAttributes()
+      throws StorageException, TransactionContextException {
     List<HopINodeCandidatePK> pks = new ArrayList<HopINodeCandidatePK>();
     for (INode inode : getAllResolvedINodes()) {
       if (inode instanceof INodeDirectoryWithQuota) {

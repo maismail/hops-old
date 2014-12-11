@@ -25,7 +25,6 @@ import com.google.common.base.Joiner;
 import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,7 +32,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.apache.hadoop.net.DNS;
 import org.apache.hadoop.util.Time;
@@ -138,7 +137,7 @@ public class StorageInfo {
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           return Variables.getStorageInfo();
         }
       }.handle();
@@ -158,7 +157,7 @@ public class StorageInfo {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Configuration conf = new Configuration();
         String bpid = newBlockPoolID();
         storageInfo = new StorageInfo(HdfsConstants.LAYOUT_VERSION,

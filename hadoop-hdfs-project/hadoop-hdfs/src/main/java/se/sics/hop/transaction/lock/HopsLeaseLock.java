@@ -15,6 +15,7 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -46,7 +47,7 @@ public final class HopsLeaseLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     Set<String> hldrs = new HashSet<String>();
     if (leaseHolder != null) {
       hldrs.add(leaseHolder);

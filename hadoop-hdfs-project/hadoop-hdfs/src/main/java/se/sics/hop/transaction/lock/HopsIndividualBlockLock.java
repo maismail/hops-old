@@ -19,6 +19,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -40,7 +42,7 @@ class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     if (blockId != NON_EXISTING_BLOCK) {
       BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ById, blockId, inodeId);
       if (result != null) {

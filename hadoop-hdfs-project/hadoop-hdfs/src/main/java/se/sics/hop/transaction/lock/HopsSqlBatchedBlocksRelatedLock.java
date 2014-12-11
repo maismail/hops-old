@@ -23,6 +23,9 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
+
+import java.io.IOException;
+
 import static se.sics.hop.transaction.lock.HopsLock.Type.CorruptReplica;
 import static se.sics.hop.transaction.lock.HopsLock.Type.ExcessReplica;
 import static se.sics.hop.transaction.lock.HopsLock.Type.InvalidatedBlock;
@@ -41,7 +44,7 @@ final class HopsSqlBatchedBlocksRelatedLock extends HopsLockWithType {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     HopsLock inodeLock = locks.getLock(Type.INode);
     if (inodeLock instanceof HopsBatchedINodeLock) {
       int[] inodeIds = ((HopsBatchedINodeLock) inodeLock).getINodeIds();

@@ -16,6 +16,8 @@
 package se.sics.hop.transaction.handler;
 
 import java.io.IOException;
+
+import org.apache.hadoop.hdfs.protocol.RecoveryInProgressException;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.transaction.TransactionInfo;
@@ -26,7 +28,7 @@ import se.sics.hop.transaction.lock.TransactionLockAcquirer;
  *
  * @author Mahmoud Ismail <maism@sics.se>
  */
-public abstract class HopsTransactionalRequestHandler extends TransactionalRequestHandler{
+public abstract class HopsTransactionalRequestHandler extends TransactionalRequestHandler {
 
   private final String path;
   
@@ -78,5 +80,13 @@ public abstract class HopsTransactionalRequestHandler extends TransactionalReque
 
   public void setUp() throws IOException {
 
+  }
+
+  @Override
+  protected final boolean shouldAbort(Exception e) {
+    if (e instanceof RecoveryInProgressException.NonAbortingRecoveryInProgressException) {
+      return false;
+    }
+    return true;
   }
 }

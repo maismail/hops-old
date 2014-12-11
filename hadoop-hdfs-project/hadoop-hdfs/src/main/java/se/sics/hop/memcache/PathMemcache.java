@@ -28,7 +28,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.transaction.handler.HDFSOperationType;
@@ -199,7 +199,7 @@ public class PathMemcache {
   private List<INode> getINodes(final String[] names, final int[] parentIds) throws IOException {
     return (List<INode>) new LightWeightRequestHandler(HDFSOperationType.GET_INODES_BATCH) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
         StorageFactory.getConnector().beginTransaction();
         List<INode> inodes = da.getINodesPkBatched(names, parentIds);

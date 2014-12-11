@@ -15,6 +15,7 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
@@ -76,7 +77,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     //[S] consider src = /a/b/c and dst = /d
     //during the acquire lock of src write locks will be acquired on parent of c and c
     //during the acquire lock of dst write lock on the root will be acquired but the snapshot 

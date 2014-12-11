@@ -5,7 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.junit.Test;
 import se.sics.hop.DALDriver;
 import se.sics.hop.DALStorageFactory;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
@@ -58,7 +58,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.add(statusToAdd);
         return null;
       }
@@ -76,7 +76,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Integer id = (Integer) getParams()[0];
         return EntityManager.find(EncodingStatus.Finder.ByInodeId, id);
       }
@@ -97,7 +97,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.remove(statusToAdd);
         return null;
       }
@@ -120,7 +120,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.add(statusToAdd);
         return null;
       }
@@ -141,7 +141,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Integer id = (Integer) getParams()[0];
         EntityManager.update(updatedStatus);
         return null;
@@ -161,7 +161,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Integer id = (Integer) getParams()[0];
         return EntityManager.find(EncodingStatus.Finder.ByInodeId, id);
       }
@@ -182,7 +182,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.remove(statusToAdd);
         return null;
       }
@@ -210,7 +210,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         for (EncodingStatus status : statusToAdd) {
           EntityManager.add(status);
         }
@@ -227,7 +227,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return EntityManager.count(EncodingStatus.Counter.RequestedEncodings);
       }
     };
@@ -241,7 +241,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         for (EncodingStatus status : statusToAdd) {
           EntityManager.remove(status);
         }
@@ -268,7 +268,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         for (EncodingStatus status : statusToAdd) {
           EntityManager.add(status);
         }
@@ -281,7 +281,7 @@ public class TestEncodingStatus extends TestCase {
         EncodingStatusOperationType.FIND_BY_INODE_ID) {
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EncodingStatusDataAccess dataAccess = (EncodingStatusDataAccess) StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         Long limit = (Long) getParams()[0];
         return dataAccess.findRequestedEncodings(limit);
@@ -305,7 +305,7 @@ public class TestEncodingStatus extends TestCase {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         for (EncodingStatus status : statusToAdd) {
           EntityManager.remove(status);
         }

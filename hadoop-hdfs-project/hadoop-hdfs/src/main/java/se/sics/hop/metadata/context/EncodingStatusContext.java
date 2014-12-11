@@ -1,18 +1,18 @@
 package se.sics.hop.metadata.context;
 
 import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class EncodingStatusContext extends EntityContext<EncodingStatus> {
 
@@ -39,32 +39,32 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public void add(EncodingStatus entity) throws PersistanceException {
+  public void add(EncodingStatus entity) {
     inodeIdToEncodingStatusToAdd.put(entity.getInodeId(), entity);
   }
 
   @Override
-  public void remove(EncodingStatus entity) throws PersistanceException {
+  public void remove(EncodingStatus entity) {
     inodeIdToEncodingStatusToDelete.put(entity.getInodeId(), entity);
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(EncodingStatus entity) throws PersistanceException {
+  public void update(EncodingStatus entity) {
     inodeIdToEncodingStatusToUpdate.put(entity.getInodeId(), entity);
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params)
-      throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
   }
 
   @Override
-  public EncodingStatus find(FinderType<EncodingStatus> finder, Object... params) throws PersistanceException {
+  public EncodingStatus find(FinderType<EncodingStatus> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     EncodingStatus.Finder eFinder = (EncodingStatus.Finder) finder;
     EncodingStatus result;
 
@@ -102,7 +102,7 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public Collection<EncodingStatus> findList(FinderType<EncodingStatus> finder, Object... params) throws PersistanceException {
+  public Collection<EncodingStatus> findList(FinderType<EncodingStatus> finder, Object... params) {
     return null;
   }
 
@@ -122,7 +122,8 @@ public class EncodingStatusContext extends EntityContext<EncodingStatus> {
   }
 
   @Override
-  public int count(CounterType<EncodingStatus> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<EncodingStatus> counter, Object... params)
+      throws StorageException {
     EncodingStatus.Counter eCounter = (EncodingStatus.Counter) counter;
     switch (eCounter) {
       case RequestedEncodings:

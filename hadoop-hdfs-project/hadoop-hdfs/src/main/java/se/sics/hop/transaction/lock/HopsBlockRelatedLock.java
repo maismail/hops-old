@@ -26,6 +26,8 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -38,7 +40,7 @@ final class HopsBlockRelatedLock extends HopsLockWithType {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     // FIXME handle null block
     HopsLock lock = locks.getLock(Type.Block);
     if (lock instanceof HopsBaseIndividualBlockLock) {

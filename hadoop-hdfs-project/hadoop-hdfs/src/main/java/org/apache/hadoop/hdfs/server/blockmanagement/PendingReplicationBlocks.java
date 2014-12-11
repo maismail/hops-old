@@ -19,21 +19,22 @@ package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Collections2;
-import java.io.IOException;
-import static org.apache.hadoop.util.Time.now;
+import org.apache.commons.logging.Log;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.sql.Time;
 import java.util.Collection;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
-import se.sics.hop.metadata.StorageFactory;
+import static org.apache.hadoop.util.Time.now;
 
 /***************************************************
  * PendingReplicationBlocks does the bookkeeping of all
@@ -67,7 +68,8 @@ class PendingReplicationBlocks {
   /**
    * Add a block to the list of pending Replications
    */
-  void increment(BlockInfo block, int numReplicas) throws PersistanceException {
+  void increment(BlockInfo block, int numReplicas)
+      throws StorageException, TransactionContextException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found == null) {
       addPendingBlockInfo(new PendingBlockInfo(block.getBlockId(),block.getInodeId(),now(), numReplicas));
@@ -83,7 +85,8 @@ class PendingReplicationBlocks {
    * Decrement the number of pending replication requests
    * for this block.
    */
-  void decrement(BlockInfo block) throws PersistanceException {
+  void decrement(BlockInfo block)
+      throws StorageException, TransactionContextException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       if (LOG.isDebugEnabled()) {
@@ -103,7 +106,8 @@ class PendingReplicationBlocks {
    * @param block The given block whose pending replication requests need to be
    *              removed
    */
-  void remove(BlockInfo block) throws PersistanceException {
+  void remove(BlockInfo block)
+      throws StorageException, TransactionContextException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null) {
       removePendingBlockInfo(found);
@@ -113,7 +117,7 @@ class PendingReplicationBlocks {
   public void clear() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_PENDING_REPL_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
         da.removeAll();
         return null;
@@ -127,7 +131,7 @@ class PendingReplicationBlocks {
   int size() throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_ALL_VALID_PENDING_REPL_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
         return da.countValidPendingBlocks(getTimeLimit());
       }
@@ -137,7 +141,8 @@ class PendingReplicationBlocks {
   /**
    * How many copies of this block is pending replication?
    */
-  int getNumReplicas(BlockInfo block) throws PersistanceException {
+  int getNumReplicas(BlockInfo block)
+      throws StorageException, TransactionContextException {
     PendingBlockInfo found = getPendingBlock(block);
     if (found != null && !isTimedout(found)) {
       return found.getNumReplicas();
@@ -153,7 +158,7 @@ class PendingReplicationBlocks {
   long[] getTimedOutBlocks() throws IOException {
     List<PendingBlockInfo> timedOutItems = (List<PendingBlockInfo>) new LightWeightRequestHandler(HDFSOperationType.GET_TIMED_OUT_PENDING_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         long timeLimit = getTimeLimit();
         PendingBlockDataAccess da = (PendingBlockDataAccess) StorageFactory.getDataAccess(PendingBlockDataAccess.class);
         List<PendingBlockInfo> timedoutPendings = (List<PendingBlockInfo>) da.findByTimeLimitLessThan(timeLimit);
@@ -193,7 +198,8 @@ class PendingReplicationBlocks {
   /**
    * Iterate through all items and print them.
    */
-  void metaSave(PrintWriter out) throws PersistanceException {
+  void metaSave(PrintWriter out)
+      throws StorageException, TransactionContextException {
     List<PendingBlockInfo> pendingBlocks = getAllPendingBlocks();
     if (pendingBlocks != null) {
       out.println("Metasave: Blocks being replicated: "
@@ -222,27 +228,33 @@ class PendingReplicationBlocks {
     return now() - timeout;
   }
 
-  private PendingBlockInfo getPendingBlock(BlockInfo block) throws PersistanceException {
+  private PendingBlockInfo getPendingBlock(BlockInfo block) throws
+      StorageException, TransactionContextException {
     return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId());
   }
 
-  private List<PendingBlockInfo> getAllPendingBlocks() throws PersistanceException {
+  private List<PendingBlockInfo> getAllPendingBlocks() throws
+      StorageException, TransactionContextException {
     return (List<PendingBlockInfo>) EntityManager.findList(PendingBlockInfo.Finder.All);
   }
 
-  private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws PersistanceException {
+  private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws
+      StorageException, TransactionContextException {
     return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId() );
   }
 
-  private void addPendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+  private void addPendingBlockInfo(PendingBlockInfo pbi) throws
+      StorageException, TransactionContextException {
     EntityManager.add(pbi);
   }
 
-  private void updatePendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+  private void updatePendingBlockInfo(PendingBlockInfo pbi) throws
+      StorageException, TransactionContextException {
     EntityManager.update(pbi);
   }
 
-  private void removePendingBlockInfo(PendingBlockInfo pbi) throws PersistanceException {
+  private void removePendingBlockInfo(PendingBlockInfo pbi) throws
+      StorageException, TransactionContextException {
     EntityManager.remove(pbi);
   }
 }

@@ -17,9 +17,11 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -45,7 +47,7 @@ public final class HopsLeasePathLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     if (locks.containsLock(Type.NameNodeLease)) {
       HopsNameNodeLeaseLock nameNodeLeaseLock = (HopsNameNodeLeaseLock) locks.getLock(Type.NameNodeLease);
       if (nameNodeLeaseLock.getNameNodeLease() != null) {
@@ -64,7 +66,8 @@ public final class HopsLeasePathLock extends HopsLock {
     }
   }
 
-  private void acquireLeasePaths(Lease lease) throws PersistanceException {
+  private void acquireLeasePaths(Lease lease)
+      throws StorageException, TransactionContextException {
     Collection<HopLeasePath> result = acquireLockList(lockType, HopLeasePath.Finder.ByHolderId, lease.getHolderID());
     if (!lease.getHolder().equals(HdfsServerConstants.NAMENODE_LEASE_HOLDER)) { // We don't need to keep the lps result for namenode-lease.
       leasePaths.addAll(result);

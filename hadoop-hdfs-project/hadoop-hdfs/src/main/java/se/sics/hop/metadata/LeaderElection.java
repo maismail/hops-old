@@ -1,6 +1,24 @@
 package se.sics.hop.metadata;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
+import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
+import se.sics.hop.transaction.lock.HopsLockFactory;
+import se.sics.hop.transaction.lock.TransactionLockTypes;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,22 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
-import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
-import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
-import se.sics.hop.transaction.lock.HopsLockFactory;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -76,7 +78,7 @@ public class LeaderElection extends Thread {
             }
 
             @Override
-            public Object performTask() throws PersistanceException, IOException {
+            public Object performTask() throws StorageException, IOException {
               LOG.info(hostname + ") Leader Election initializing ... ");
               determineAndSetLeader();
               return null;
@@ -96,7 +98,8 @@ public class LeaderElection extends Thread {
 
     /* Determines the leader */
     //--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    public void determineAndSetLeader() throws IOException, PersistanceException {
+    public void determineAndSetLeader() throws IOException,
+        StorageException {
         // Reset the leader (can be the same or new leader)
         leaderId = getLeader();
 
@@ -126,7 +129,7 @@ public class LeaderElection extends Thread {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         updateCounter();
         // Determine the next leader and set it
         // if this is the leader, also remove previous leaders
@@ -181,7 +184,7 @@ public class LeaderElection extends Thread {
         } // main while loop
     }
 
-    public long getLeader() throws IOException, PersistanceException {
+    public long getLeader() throws IOException {
         List<HopLeader> oldLeaders = history.get(historyCounter - missedHeartBeatThreshold - 1);
         List<HopLeader> newLeaders = getAllNameNodes();
         Collections.sort(newLeaders);
@@ -205,7 +208,7 @@ public class LeaderElection extends Thread {
                             newLeader = newLeaders.get(j);
                         } else {
                             LOG.error("LeaderElection:"+ hostname + ") No alive nodes in the table");
-                            throw new PersistanceException(hostname + "the leaders table should not only contain dead nodes") { };
+                            throw new Error(hostname + "the leaders table should not only contain dead nodes");
                         }
                     }
                 }
@@ -216,7 +219,7 @@ public class LeaderElection extends Thread {
         return LeaderElection.LEADER_INITIALIZATION_ID;
     }
 
-    protected void updateCounter() throws IOException, PersistanceException {
+    protected void updateCounter() throws IOException, StorageException {
         // retrieve counter in [COUNTER] table
         // Use EXCLUSIVE lock
         long counter = getMaxNamenodeCounter();
@@ -243,12 +246,14 @@ public class LeaderElection extends Thread {
         history.put(historyCounter, leaders);
     }
 
-    long getMaxNamenodeCounter() throws PersistanceException {
+    long getMaxNamenodeCounter()
+        throws StorageException, TransactionContextException {
         List<HopLeader> namenodes = getAllNameNodes();
         return getMaxNamenodeCounter(namenodes);
     }
 
-    List<HopLeader> getAllNameNodes() throws PersistanceException {
+    List<HopLeader> getAllNameNodes()
+        throws StorageException, TransactionContextException {
         return (List<HopLeader>) EntityManager.findList(HopLeader.Finder.All);
     }
 
@@ -263,7 +268,8 @@ public class LeaderElection extends Thread {
         return maxCounter;
     }
 
-    private boolean doesNamenodeExist(long leaderId) throws PersistanceException {
+    private boolean doesNamenodeExist(long leaderId) throws
+        StorageException, TransactionContextException {
 
         HopLeader leader = EntityManager.find(HopLeader.Finder.ById, leaderId, HopLeader.DEFAULT_PARTITION_VALUE);
 
@@ -274,13 +280,15 @@ public class LeaderElection extends Thread {
         }
     }
 
-    private long getNewNamenondeID() throws PersistanceException {
+    private long getNewNamenondeID()
+        throws StorageException, TransactionContextException {
         long newId = Variables.getMaxNNID() + 1;
         Variables.setMaxNNID(newId);
         return newId;
     }
 
-    private void updateCounter(long counter, long id, String hostname, String httpAddress) throws IOException, PersistanceException {
+    private void updateCounter(long counter, long id, String hostname, String httpAddress) throws IOException,
+        StorageException {
         // update the counter in [Leader]
         // insert the row. if it exists then update it
         // otherwise create a new row
@@ -290,7 +298,7 @@ public class LeaderElection extends Thread {
         EntityManager.add(leader);
     }
 
-    SortedActiveNamenodeList getActiveNamenodes() throws PersistanceException, IOException {
+    SortedActiveNamenodeList getActiveNamenodes() throws IOException {
         List<HopLeader> nns = new ArrayList<HopLeader>();
 
         List<HopLeader> oldLeaders = history.get(historyCounter - missedHeartBeatThreshold - 1);
@@ -321,7 +329,7 @@ public class LeaderElection extends Thread {
         return makeSortedActiveNamenodeList(nns);
     }
 
-    private void removeDeadNameNodes() throws PersistanceException, IOException {
+    private void removeDeadNameNodes() throws IOException {
         List<HopLeader> oldLeaders = history.get(historyCounter - missedHeartBeatThreshold - 1);
         List<HopLeader> newLeaders = getAllNameNodes();
         Collections.sort(newLeaders);
@@ -348,7 +356,8 @@ public class LeaderElection extends Thread {
         }
     }
 
-    private void removeLeaderRow(HopLeader leader) throws PersistanceException {
+    private void removeLeaderRow(HopLeader leader)
+        throws StorageException, TransactionContextException {
         EntityManager.remove(leader);
     }
 

@@ -1,6 +1,6 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess;
 import se.sics.hop.metadata.hdfs.entity.CounterType;
@@ -8,12 +8,17 @@ import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
+import se.sics.hop.transaction.lock.TransactionLocks;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
-import java.util.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static se.sics.hop.metadata.hdfs.dal.BlockChecksumDataAccess.KeyTuple;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class BlockChecksumContext extends EntityContext<BlockChecksum> {
   private BlockChecksumDataAccess<BlockChecksum> dataAccess;
@@ -39,37 +44,37 @@ public class BlockChecksumContext extends EntityContext<BlockChecksum> {
   }
 
   @Override
-  public int count(CounterType<BlockChecksum> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<BlockChecksum> counter, Object... params) {
     throw new NotImplementedException();
   }
 
   @Override
-  public void add(BlockChecksum blockChecksum) throws PersistanceException {
+  public void add(BlockChecksum blockChecksum) {
     added.put(new KeyTuple(blockChecksum.getInodeId(), blockChecksum.getBlockIndex()), blockChecksum);
   }
 
   @Override
-  public void remove(BlockChecksum blockChecksum) throws PersistanceException {
+  public void remove(BlockChecksum blockChecksum) {
     deleted.put(new KeyTuple(blockChecksum.getInodeId(), blockChecksum.getBlockIndex()), blockChecksum);
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(BlockChecksum blockChecksum) throws PersistanceException {
+  public void update(BlockChecksum blockChecksum) {
     updated.put(new KeyTuple(blockChecksum.getInodeId(), blockChecksum.getBlockIndex()), blockChecksum);
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params)
-      throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
   }
 
   @Override
-  public BlockChecksum find(FinderType<BlockChecksum> finder, Object... params) throws PersistanceException {
+  public BlockChecksum find(FinderType<BlockChecksum> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     BlockChecksum.Finder eFinder = (BlockChecksum.Finder) finder;
     BlockChecksum result;
 
@@ -97,7 +102,7 @@ public class BlockChecksumContext extends EntityContext<BlockChecksum> {
 
   @Override
   public Collection<BlockChecksum> findList(FinderType<BlockChecksum> finder, Object... params)
-      throws PersistanceException {
+      throws StorageCallPreventedException, StorageException {
     BlockChecksum.Finder eFinder = (BlockChecksum.Finder) finder;
 
     switch (eFinder) {

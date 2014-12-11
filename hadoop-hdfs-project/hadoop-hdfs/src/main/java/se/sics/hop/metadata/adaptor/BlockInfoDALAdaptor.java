@@ -91,7 +91,8 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass) throws StorageException {
+  public HopBlockInfo convertHDFStoDAL(BlockInfo hdfsClass)
+      throws StorageException {
     if(hdfsClass != null){
     HopBlockInfo hopBlkInfo = new HopBlockInfo(hdfsClass.getBlockId(), hdfsClass.getBlockIndex(), hdfsClass.getInodeId(), hdfsClass.getNumBytes(),
             hdfsClass.getGenerationStamp(), hdfsClass.getBlockUCState().ordinal(), hdfsClass.getTimestamp());
@@ -107,7 +108,8 @@ public class BlockInfoDALAdaptor extends DALAdaptor<BlockInfo, HopBlockInfo> imp
   }
 
   @Override
-  public BlockInfo convertDALtoHDFS(HopBlockInfo dalClass) throws StorageException {
+  public BlockInfo convertDALtoHDFS(HopBlockInfo dalClass)
+      throws StorageException {
     if(dalClass != null){
     Block b = new Block(dalClass.getBlockId(), dalClass.getNumBytes(), dalClass.getGenerationStamp());
     BlockInfo blockInfo = null;

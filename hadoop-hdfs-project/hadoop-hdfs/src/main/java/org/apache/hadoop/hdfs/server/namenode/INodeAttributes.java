@@ -15,9 +15,10 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.transaction.EntityManager;
 
 /**
  *
@@ -87,27 +88,32 @@ public class INodeAttributes {
     return diskspace;
   }
 
-  public void setInodeId(Integer inodeId) throws PersistanceException {
+  public void setInodeId(Integer inodeId)
+      throws StorageException, TransactionContextException {
     setInodeIdNoPersistance(inodeId);
     saveAttributes();
   }
 
-  public void setNsQuota(Long nsQuota) throws PersistanceException {
+  public void setNsQuota(Long nsQuota)
+      throws StorageException, TransactionContextException {
     setNsQuotaNoPersistance(nsQuota);
     saveAttributes();
   }
 
-  public void setNsCount(Long nsCount) throws PersistanceException {
+  public void setNsCount(Long nsCount)
+      throws StorageException, TransactionContextException {
     setNsCountNoPersistance(nsCount);
     saveAttributes();
   }
 
-  public void setDsQuota(Long dsQuota) throws PersistanceException {
+  public void setDsQuota(Long dsQuota)
+      throws StorageException, TransactionContextException {
     setDsQuotaNoPersistance(dsQuota);
     saveAttributes();
   }
 
-  public void setDiskspace(Long diskspace) throws PersistanceException {
+  public void setDiskspace(Long diskspace)
+      throws StorageException, TransactionContextException {
     setDiskspaceNoPersistance(diskspace);
     saveAttributes();
   }
@@ -132,11 +138,13 @@ public class INodeAttributes {
     this.inodeId = inodeId;
   }
 
-  protected void saveAttributes() throws PersistanceException {
+  protected void saveAttributes()
+      throws StorageException, TransactionContextException {
     EntityManager.update(this);
   }
 
-  protected void removeAttributes() throws PersistanceException {
+  protected void removeAttributes()
+      throws StorageException, TransactionContextException {
     EntityManager.remove(this);
   }
 }

@@ -21,7 +21,8 @@ import java.io.IOException;
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.fs.ContentSummary;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 
 /** 
  * This interface is used by the block manager to expose a
@@ -32,22 +33,23 @@ public interface BlockCollection {
   /**
    * Get the last block of the collection.
    */
-  public BlockInfo getLastBlock() throws IOException, PersistanceException;
+  public BlockInfo getLastBlock() throws IOException, StorageException;
 
   /** 
    * Get content summary.
    */
-  public ContentSummary computeContentSummary() throws PersistanceException;
+  public ContentSummary computeContentSummary() throws StorageException, TransactionContextException;
 
   /**
    * @return the number of blocks
    */ 
-  public int numBlocks() throws PersistanceException;
+  public int numBlocks() throws StorageException, TransactionContextException;
 
   /**
    * Get the blocks.
    */
-  public BlockInfo[] getBlocks() throws PersistanceException;
+  public BlockInfo[] getBlocks()
+      throws StorageException, TransactionContextException;
 
   /**
    * Get preferred block size for the collection 
@@ -64,7 +66,7 @@ public interface BlockCollection {
   /**
    * Get the name of the collection.
    */
-  public String getName() throws PersistanceException;
+  public String getName() throws StorageException, TransactionContextException;
   
   /** HOP:
    * Get the Id of associated INode

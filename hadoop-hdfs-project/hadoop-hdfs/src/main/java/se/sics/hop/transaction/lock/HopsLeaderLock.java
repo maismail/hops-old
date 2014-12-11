@@ -23,6 +23,8 @@ import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import se.sics.hop.transaction.EntityManager;
 
+import java.io.IOException;
+
 final class HopsLeaderLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
 
@@ -31,7 +33,7 @@ final class HopsLeaderLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     setPartitioningKey();
     acquireLockList(lockType, HopLeader.Finder.All);
   }

@@ -22,7 +22,8 @@ import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeSymlink;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 
 import java.util.NoSuchElementException;
 
@@ -57,7 +58,8 @@ public class INodeResolver {
     return count + 1 < components.length;
   }
 
-  public INode next() throws UnresolvedPathException, PersistanceException {
+  public INode next() throws UnresolvedPathException, StorageException,
+      TransactionContextException {
     boolean lastComp = (count == components.length - 1);
     if (currentInode.isSymlink() && (!lastComp || (lastComp && resolveLink))) {
       final String symPath = INodeUtil.constructPath(components, 0,

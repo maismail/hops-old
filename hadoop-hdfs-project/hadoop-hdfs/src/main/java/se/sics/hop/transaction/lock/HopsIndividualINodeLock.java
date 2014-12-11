@@ -15,13 +15,14 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import se.sics.hop.common.INodeUtil;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.transaction.lock.TransactionLockTypes.*;
 
@@ -52,7 +53,7 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     setPartitioningKey(inodeIdentifier.getInodeId());
 
     INode inode = null;
@@ -80,7 +81,8 @@ final class HopsIndividualINodeLock extends HopsBaseINodeLock {
     acquireINodeAttributes();
   }
 
-  private List<INode> readUpInodes(INode leaf) throws PersistanceException {
+  private List<INode> readUpInodes(INode leaf)
+      throws StorageException, TransactionContextException {
     LinkedList<INode> pathInodes = new LinkedList<INode>();
     pathInodes.add(leaf);
     INode curr = leaf;

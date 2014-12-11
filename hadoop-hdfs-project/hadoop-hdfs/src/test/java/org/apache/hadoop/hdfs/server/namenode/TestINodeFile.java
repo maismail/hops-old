@@ -29,8 +29,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import org.junit.Test;
+import se.sics.hop.exception.TransactionContextException;
 
 public class TestINodeFile {
 
@@ -128,7 +129,8 @@ public class TestINodeFile {
   }
 
 //  @Test
-  public void testGetFullPathName() throws PersistanceException {
+  public void testGetFullPathName()
+      throws StorageException, TransactionContextException {
     PermissionStatus perms = new PermissionStatus(
       userName, null, FsPermission.getDefault());
 
@@ -158,7 +160,8 @@ public class TestINodeFile {
   }
   
 //  @Test
-  public void testAppendBlocks() throws PersistanceException {
+  public void testAppendBlocks()
+      throws StorageException, TransactionContextException {
     INodeFile origFile = createINodeFiles(1, "origfile")[0];
     assertEquals("Number of blocks didn't match", origFile.numBlocks(), 1L);
 
@@ -172,7 +175,8 @@ public class TestINodeFile {
    * @param files Array of INode files
    * @return total count of blocks
    */
-  private int getTotalBlocks(INodeFile[] files) throws PersistanceException {
+  private int getTotalBlocks(INodeFile[] files)
+      throws StorageException, TransactionContextException {
     int nBlocks=0;
     for(int i=0; i < files.length; i++) {
        nBlocks += files[i].numBlocks();
@@ -186,7 +190,8 @@ public class TestINodeFile {
    * @return Array of INode files
    */
   static int blkid = 0;
-  private INodeFile[] createINodeFiles(int nCount, String fileNamePrefix) throws PersistanceException {
+  private INodeFile[] createINodeFiles(int nCount, String fileNamePrefix) throws
+      StorageException, TransactionContextException {
     
     if(nCount <= 0)
       return new INodeFile[1];

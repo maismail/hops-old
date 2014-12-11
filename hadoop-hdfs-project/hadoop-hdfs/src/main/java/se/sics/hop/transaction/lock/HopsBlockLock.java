@@ -16,6 +16,8 @@
 package se.sics.hop.transaction.lock;
 
 import com.google.common.collect.Iterables;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -44,7 +46,7 @@ final class HopsBlockLock extends HopsIndividualBlockLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     HopsBaseINodeLock inodeLock = (HopsBaseINodeLock) locks.getLock(Type.INode);
     Iterable blks = Collections.EMPTY_LIST;
     for (INode inode :  inodeLock.getAllResolvedINodes()) {
@@ -62,7 +64,7 @@ final class HopsBlockLock extends HopsIndividualBlockLock {
     return files;
   }
   
-  private void fixTheCache(TransactionLocks locks, Iterable<BlockInfo> blks) throws Exception{
+  private void fixTheCache(TransactionLocks locks, Iterable<BlockInfo> blks) throws IOException{
     if(!contains(blks, blockId)){
       super.acquire(locks);
     }

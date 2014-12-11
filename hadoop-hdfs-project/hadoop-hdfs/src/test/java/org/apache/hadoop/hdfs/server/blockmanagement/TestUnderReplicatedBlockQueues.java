@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Assert;
@@ -123,7 +123,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EntityManager.add(new BlockInfo(block));
         return null;
       }
@@ -144,7 +144,7 @@ public class TestUnderReplicatedBlockQueues extends Assert {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         return queues.add(block, curReplicas, decomissionedReplicas, expectedReplicas);
       }
     }.handle();

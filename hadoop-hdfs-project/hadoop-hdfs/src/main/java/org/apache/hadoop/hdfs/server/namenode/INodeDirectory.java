@@ -17,20 +17,20 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.hadoop.fs.UnresolvedLinkException;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import se.sics.hop.common.HopINodeIdGen;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Directory INode class.
@@ -77,7 +77,8 @@ public class INodeDirectory extends INode {
    * 
    * @param other
    */
-  INodeDirectory(INodeDirectory other) throws PersistanceException {
+  INodeDirectory(INodeDirectory other)
+      throws StorageException, TransactionContextException {
     super(other);
     //this.children = other.getChildren();
     //HOP: FIXME: Mahmoud: the new directory has the same id as the "other" directory
@@ -90,7 +91,8 @@ public class INodeDirectory extends INode {
     return true;
   }
 
-  INode removeChild(INode node) throws PersistanceException {
+  INode removeChild(INode node)
+      throws StorageException, TransactionContextException {
     INode existingInode = getChildINode(node.getLocalNameBytes());    
     if (existingInode != null) {
       remove(existingInode);
@@ -103,7 +105,8 @@ public class INodeDirectory extends INode {
    * 
    * @param newChild Child node to be added
    */
-  void replaceChild(INode newChild) throws PersistanceException {
+  void replaceChild(INode newChild)
+      throws StorageException, TransactionContextException {
     //HOP: Mahmoud: equals based on the inode name
     INode existingINode = getChildINode(newChild.getLocalNameBytes());
     if (existingINode== null) {
@@ -117,11 +120,13 @@ public class INodeDirectory extends INode {
     }
   }
   
-  INode getChild(String name) throws PersistanceException {
+  INode getChild(String name)
+      throws StorageException, TransactionContextException {
     return getChildINode(DFSUtil.string2Bytes(name));
   }
 
-  private INode getChildINode(byte[] name) throws PersistanceException {
+  private INode getChildINode(byte[] name)
+      throws StorageException, TransactionContextException {
      INode existingInode = EntityManager.find(INode.Finder.ByPK_NameAndParentId,
               DFSUtil.bytes2String(name), getId());
     if (existingInode != null && existingInode.exists()) {
@@ -135,7 +140,8 @@ public class INodeDirectory extends INode {
    * component does not exist.
    */
   private INode getNode(byte[][] components, boolean resolveLink
-      ) throws UnresolvedLinkException, PersistanceException {
+      ) throws UnresolvedLinkException, StorageException,
+      TransactionContextException {
     INode[] inode  = new INode[1];
     getExistingPathINodes(components, inode, resolveLink);
     return inode[0];
@@ -144,8 +150,9 @@ public class INodeDirectory extends INode {
   /**
    * This is the external interface
    */
-  INode getNode(String path, boolean resolveLink) 
-    throws UnresolvedLinkException, PersistanceException {
+  INode getNode(String path, boolean resolveLink)
+      throws UnresolvedLinkException, StorageException,
+      TransactionContextException {
     return getNode(getPathComponents(path), resolveLink);
   }
 
@@ -192,7 +199,8 @@ public class INodeDirectory extends INode {
    * @return number of existing INodes in the path
    */
   int getExistingPathINodes(byte[][] components, INode[] existing, 
-      boolean resolveLink) throws UnresolvedLinkException, PersistanceException {
+      boolean resolveLink) throws UnresolvedLinkException,
+      StorageException, TransactionContextException {
     assert this.compareTo(components[0]) == 0 :
         "Incorrect name " + getLocalName() + " expected "
         + (components[0] == null? null: DFSUtil.bytes2String(components[0]));
@@ -249,8 +257,9 @@ public class INodeDirectory extends INode {
    *         
    * @see #getExistingPathINodes(byte[][], INode[])
    */
-  INode[] getExistingPathINodes(String path, boolean resolveLink) 
-    throws UnresolvedLinkException, PersistanceException {
+  INode[] getExistingPathINodes(String path, boolean resolveLink)
+      throws UnresolvedLinkException, StorageException,
+      TransactionContextException {
     byte[][] components = getPathComponents(path);
     INode[] inodes = new INode[components.length];
 
@@ -265,7 +274,8 @@ public class INodeDirectory extends INode {
    * @param name a child's name
    * @return the index of the next child
    */
-  int nextChild(byte[] name) throws PersistanceException {
+  int nextChild(byte[] name)
+      throws StorageException, TransactionContextException {
     if (name.length == 0) { // empty name
       return 0;
     }
@@ -286,7 +296,8 @@ public class INodeDirectory extends INode {
    * @return  null if the child with this name already exists; 
    *          node, otherwise
    */
-  <T extends INode> T addChild(final T node, boolean setModTime) throws PersistanceException {
+  <T extends INode> T addChild(final T node, boolean setModTime) throws
+      StorageException, TransactionContextException {
     INode existingInode = getChildINode(node.name);
     if (existingInode != null) {
       return null;
@@ -327,7 +338,8 @@ public class INodeDirectory extends INode {
    * is not a directory.
    */
   <T extends INode> T addNode(String path, T newNode
-      ) throws FileNotFoundException, UnresolvedLinkException, PersistanceException  {
+      ) throws FileNotFoundException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     byte[][] pathComponents = getPathComponents(path);        
     return addToParent(pathComponents, newNode, true) == null? null: newNode;
   }
@@ -345,7 +357,8 @@ public class INodeDirectory extends INode {
                               INode newNode,
                               INodeDirectory parent,
                               boolean propagateModTime
-                              ) throws FileNotFoundException, PersistanceException {
+                              ) throws FileNotFoundException,
+      StorageException, TransactionContextException {
     // insert into the parent children list
     newNode.setLocalNameNoPersistance(localname);
     if(parent.addChild(newNode, propagateModTime) == null)
@@ -354,7 +367,8 @@ public class INodeDirectory extends INode {
   }
 
   INodeDirectory getParent(byte[][] pathComponents
-      ) throws FileNotFoundException, UnresolvedLinkException, PersistanceException {
+      ) throws FileNotFoundException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     if (pathComponents.length < 2)  // add root
       return null;
     // Gets the parent INode
@@ -382,7 +396,9 @@ public class INodeDirectory extends INode {
    *          is not a directory.
    */
   INodeDirectory addToParent(byte[][] pathComponents, INode newNode,
-      boolean propagateModTime) throws FileNotFoundException, UnresolvedLinkException, PersistanceException {
+      boolean propagateModTime)
+      throws FileNotFoundException, UnresolvedLinkException,
+      StorageException, TransactionContextException {
     if (pathComponents.length < 2) { // add root
       return null;
     }
@@ -393,7 +409,8 @@ public class INodeDirectory extends INode {
   }
 
   @Override
-  DirCounts spaceConsumedInTree(DirCounts counts) throws PersistanceException {
+  DirCounts spaceConsumedInTree(DirCounts counts)
+      throws StorageException, TransactionContextException {
     counts.nsCount += 1;
       if (getId() != INode.NON_EXISTING_ID) {
           List<INode> children = getChildren();
@@ -408,7 +425,8 @@ public class INodeDirectory extends INode {
   }
 
   @Override
-  long[] computeContentSummary(long[] summary) throws PersistanceException {
+  long[] computeContentSummary(long[] summary)
+      throws StorageException, TransactionContextException {
     // Walk through the children of this node, using a new summary array
     // for the (sub)tree rooted at this node
     assert 4 == summary.length;
@@ -445,18 +463,21 @@ public class INodeDirectory extends INode {
    *         otherwise, return the children list.
    *         The returned list should not be modified.
    */
-  public List<INode> getChildrenList() throws PersistanceException {
+  public List<INode> getChildrenList()
+      throws StorageException, TransactionContextException {
     List<INode> children = getChildren();
     return children==null ? EMPTY_LIST : children;
   }
   /** @return the children list which is possibly null. */
-  public List<INode> getChildren() throws PersistanceException {
+  public List<INode> getChildren()
+      throws StorageException, TransactionContextException {
     if(getId() == INode.NON_EXISTING_ID) return null;
     return (List<INode>) EntityManager.findList(INode.Finder.ParentId, getId());
   }
 
   @Override
-  int collectSubtreeBlocksAndClear(List<Block> v) throws PersistanceException {
+  int collectSubtreeBlocksAndClear(List<Block> v)
+      throws StorageException, TransactionContextException {
     int total = 1;
     List<INode> children = getChildren();
     if (children == null) {

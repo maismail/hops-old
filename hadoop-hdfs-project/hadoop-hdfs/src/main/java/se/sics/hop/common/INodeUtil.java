@@ -11,8 +11,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfoUnderConstruction;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.INodeIdentifier;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.adaptor.INodeDALAdaptor;
@@ -54,7 +54,7 @@ public class INodeUtil {
       byte[] name,
       int parentId,
       boolean transactional)
-      throws PersistanceException {
+      throws StorageException, TransactionContextException {
     String nameString = DFSUtil.bytes2String(name);
     if (transactional) {
       return EntityManager
@@ -80,7 +80,8 @@ public class INodeUtil {
   public static void resolvePathWithNoTransaction(String path,
       boolean resolveLink, LinkedList<INode> preTxResolvedINodes,
       boolean[] isPathFullyResolved)
-      throws UnresolvedPathException, PersistanceException {
+      throws UnresolvedPathException, StorageException,
+      TransactionContextException {
     preTxResolvedINodes.clear();
     isPathFullyResolved[0] = false;
 
@@ -152,7 +153,7 @@ public class INodeUtil {
 
   public static void findPathINodesById(int inodeId,
       LinkedList<INode> preTxResolvedINodes, boolean[] isPreTxPathFullyResolved)
-      throws PersistanceException {
+      throws StorageException {
     if (inodeId != INode.NON_EXISTING_ID) {
       INode inode = indexINodeScanById(inodeId);
       if (inode == null) {
@@ -199,7 +200,8 @@ public class INodeUtil {
     return paths;
   }
 
-  private static INode getRoot() throws StorageException, PersistanceException {
+  private static INode getRoot()
+      throws StorageException, TransactionContextException {
     return getNode(INodeDirectory.ROOT_NAME.getBytes(),
         INodeDirectory.ROOT_PARENT_ID, false);
   }
@@ -215,7 +217,7 @@ public class INodeUtil {
 
   //puts the indoes in the list in reverse order
   private static void readFromLeafToRoot(INode inode, LinkedList<INode> list)
-      throws PersistanceException {
+      throws StorageException {
     INode temp = inode;
     while (temp != null &&
         temp.getParentId() != INodeDirectory.ROOT_PARENT_ID) {
@@ -229,11 +231,11 @@ public class INodeUtil {
 
   public static INodeIdentifier resolveINodeFromBlockID(final long bid)
       throws StorageException {
-    INodeIdentifier inodeIdentifier = null;
+    INodeIdentifier inodeIdentifier;
     LightWeightRequestHandler handler = new LightWeightRequestHandler(
         HDFSOperationType.RESOLVE_INODE_FROM_BLOCKID) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
 
         BlockLookUpDataAccess<HopBlockLookUp> da =
             (BlockLookUpDataAccess) StorageFactory
@@ -285,7 +287,7 @@ public class INodeUtil {
     LightWeightRequestHandler handler =
         new LightWeightRequestHandler(HDFSOperationType.GET_INODEIDS_FOR_BLKS) {
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws IOException {
             BlockLookUpDataAccess<HopBlockLookUp> da =
                 (BlockLookUpDataAccess) StorageFactory
                     .getDataAccess(BlockLookUpDataAccess.class);
@@ -307,7 +309,7 @@ public class INodeUtil {
         new LightWeightRequestHandler(HDFSOperationType.RESOLVE_INODE_FROM_ID) {
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             INodeDALAdaptor ida = (INodeDALAdaptor) StorageFactory
                 .getDataAccess(INodeDataAccess.class);
             INode inode = ida.indexScanfindInodeById(id);

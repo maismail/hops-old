@@ -1,21 +1,28 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.exception.LockUpgradeException;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.transaction.lock.HopsBaseINodeLock;
 import se.sics.hop.transaction.lock.HopsLock;
-import se.sics.hop.transaction.lock.TransactionLockTypes.*;
+import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -39,7 +46,7 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void add(INode inode) throws PersistanceException {
+  public void add(INode inode) throws TransactionContextException {
     if (removedInodes.containsKey(inode.getId()) || modifiedInodes.containsKey(inode.getId())) {
       log("added-removed-inode", CacheHitState.NA,
               new String[]{"id", Integer.toString(inode.getId()), "name", inode.getLocalName(),
@@ -57,7 +64,7 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public int count(CounterType<INode> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<INode> counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -73,7 +80,8 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public INode find(FinderType<INode> finder, Object... params) throws PersistanceException {
+  public INode find(FinderType<INode> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     INode.Finder iFinder = (INode.Finder) finder;
     INode result = null;
     switch (iFinder) {
@@ -142,7 +150,8 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public Collection<INode> findList(FinderType<INode> finder, Object... params) throws PersistanceException {
+  public Collection<INode> findList(FinderType<INode> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     INode.Finder iFinder = (INode.Finder) finder;
     List<INode> result = null;
     switch (iFinder) {
@@ -172,7 +181,8 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException {
+  public void prepare(TransactionLocks lks)
+      throws LockUpgradeException, StorageException {
     // if the list is not empty then check for the lock types
     // lock type is checked after when list lenght is checked 
     // because some times in the tx handler the acquire lock 
@@ -202,7 +212,7 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void remove(INode inode) throws PersistanceException {
+  public void remove(INode inode) {
     inodesIdIndex.remove(inode.getId());
     inodesNameParentIndex.remove(inode.nameParentKey());
     newInodes.remove(inode.getId());
@@ -212,12 +222,12 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(INode inode) throws PersistanceException {
+  public void update(INode inode) throws TransactionContextException {
 
     if (removedInodes.containsKey(inode.getId())) {
       throw new TransactionContextException("Removed  inode passed to be persisted.");
@@ -288,13 +298,13 @@ public class INodeContext extends EntityContext<INode> {
   }
 
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("INode Context", newInodes.size(), modifiedInodes.size(), removedInodes.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

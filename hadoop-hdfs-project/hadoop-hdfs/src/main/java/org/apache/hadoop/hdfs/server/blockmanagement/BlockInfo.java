@@ -16,23 +16,23 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.hdfs.entity.hop.HopReplica;
-import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
-import se.sics.hop.Common;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
+import se.sics.hop.metadata.hdfs.entity.hop.HopReplica;
+import se.sics.hop.transaction.EntityManager;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 /**
  * Internal class for block metadata. BlockInfo class maintains for a given
@@ -155,7 +155,8 @@ public class BlockInfo extends Block {
     this.inodeId = from.inodeId;
   }
   
-  public BlockCollection getBlockCollection() throws PersistanceException {
+  public BlockCollection getBlockCollection()
+      throws StorageException, TransactionContextException {
     //Every time get block collection is called, get it from DB
     //Why? some times it happens that the inode is deleted and copy 
     //of the block is lying around is some secondary data structure ( not block_info )
@@ -169,7 +170,8 @@ public class BlockInfo extends Block {
     return bc;
   }
   
-  public void setBlockCollection(BlockCollection bc) throws PersistanceException {
+  public void setBlockCollection(BlockCollection bc) throws
+      StorageException, TransactionContextException {
     this.bc = bc;
     if (bc != null) {
       setINodeId(bc.getId());  
@@ -184,17 +186,20 @@ public class BlockInfo extends Block {
   /**
    * Count the number of data-nodes the block belongs to.
    */
-  public int numNodes(DatanodeManager datanodeMgr) throws PersistanceException {
+  public int numNodes(DatanodeManager datanodeMgr)
+      throws StorageException, TransactionContextException {
     return getReplicas(datanodeMgr).size();
   }
 
-  public DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr) throws PersistanceException{
+  public DatanodeDescriptor[] getDatanodes(DatanodeManager datanodeMgr) throws
+      StorageException, TransactionContextException {
     List<HopIndexedReplica> replicas = getReplicas(datanodeMgr);
     return getDatanodes(datanodeMgr, replicas);
   }
   
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
-  List<HopIndexedReplica> getReplicasNoCheck() throws PersistanceException {
+  List<HopIndexedReplica> getReplicasNoCheck()
+      throws StorageException, TransactionContextException {
     List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
@@ -205,7 +210,8 @@ public class BlockInfo extends Block {
   }
 
     //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
-  List<HopIndexedReplica> getReplicas(DatanodeManager datanodeMgr) throws PersistanceException {
+  List<HopIndexedReplica> getReplicas(DatanodeManager datanodeMgr) throws
+      StorageException, TransactionContextException {
     List<HopIndexedReplica> replicas = getReplicasNoCheck();
     getDatanodes(datanodeMgr, replicas);
     Collections.sort(replicas, HopIndexedReplica.Order.ByIndex);
@@ -216,13 +222,15 @@ public class BlockInfo extends Block {
   /**
    * Adds new replica for this block.
    */
-  HopIndexedReplica addReplica(DatanodeDescriptor dn, BlockInfo b) throws PersistanceException {
+  HopIndexedReplica addReplica(DatanodeDescriptor dn, BlockInfo b) throws
+      StorageException, TransactionContextException {
     HopIndexedReplica replica = new HopIndexedReplica(getBlockId(), dn.getSId(), b.getInodeId(), getReplicasNoCheck().size());
     add(replica);    
     return replica;
   }
 
-  public void removeAllReplicas() throws PersistanceException {
+  public void removeAllReplicas()
+      throws StorageException, TransactionContextException {
     for (HopIndexedReplica replica : getReplicasNoCheck()) {
       remove(replica);
     }
@@ -230,10 +238,10 @@ public class BlockInfo extends Block {
   /**
    * removes a replica of this block related to storageId
    *
-   * @param storageId
    * @return
    */
-  HopIndexedReplica removeReplica(DatanodeDescriptor dn) throws PersistanceException {
+  HopIndexedReplica removeReplica(DatanodeDescriptor dn) throws
+      StorageException, TransactionContextException {
     List<HopIndexedReplica> replicas = getReplicasNoCheck();
     HopIndexedReplica replica = null;
     int index = -1;
@@ -257,7 +265,8 @@ public class BlockInfo extends Block {
     return replica;
   }
   
-  int findDatanode(DatanodeDescriptor dn) throws PersistanceException {
+  int findDatanode(DatanodeDescriptor dn)
+      throws StorageException, TransactionContextException {
     HopIndexedReplica replica = EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId());
     if (replica == null) {
       return -1;
@@ -265,7 +274,8 @@ public class BlockInfo extends Block {
     return replica.getIndex();
   }
 
-  boolean hasReplicaIn(DatanodeDescriptor dn) throws PersistanceException {
+  boolean hasReplicaIn(DatanodeDescriptor dn)
+      throws StorageException, TransactionContextException {
     return EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId()) != null;
   }
 
@@ -295,7 +305,8 @@ public class BlockInfo extends Block {
    * @return BlockInfoUnderConstruction - an under construction block.
    */
   public BlockInfoUnderConstruction convertToBlockUnderConstruction(
-          BlockUCState s, DatanodeDescriptor[] targets) throws PersistanceException {
+          BlockUCState s, DatanodeDescriptor[] targets) throws
+      StorageException, TransactionContextException {
     if (isComplete()) {
       return new BlockInfoUnderConstruction(this, this.getInodeId(), s, targets);
     }
@@ -314,7 +325,8 @@ public class BlockInfo extends Block {
     this.inodeId = id;
   }
   
-  public void setINodeId(int id) throws PersistanceException {
+  public void setINodeId(int id)
+      throws StorageException, TransactionContextException {
     setINodeIdNoPersistance(id);
     save();
   }
@@ -327,7 +339,8 @@ public class BlockInfo extends Block {
     this.blockIndex = bindex;
   }
   
-  public void setBlockIndex(int bindex) throws PersistanceException {
+  public void setBlockIndex(int bindex)
+      throws StorageException, TransactionContextException {
     setBlockIndexNoPersistance(bindex);
     save();
   }
@@ -340,7 +353,8 @@ public class BlockInfo extends Block {
     this.timestamp = ts;
   }
   
-  public void setTimestamp(long ts) throws PersistanceException {
+  public void setTimestamp(long ts)
+      throws StorageException, TransactionContextException {
     setTimestampNoPersistance(ts);
     save();
   }
@@ -360,15 +374,18 @@ public class BlockInfo extends Block {
     return list.toArray(locations);
   }
     
-  protected void add(HopIndexedReplica replica) throws PersistanceException {
+  protected void add(HopIndexedReplica replica)
+      throws StorageException, TransactionContextException {
     EntityManager.add(replica);
   }
   
-  protected void remove(HopIndexedReplica replica) throws PersistanceException {
+  protected void remove(HopIndexedReplica replica)
+      throws StorageException, TransactionContextException {
     EntityManager.remove(replica);
   }
   
-  protected void save(HopIndexedReplica replica) throws PersistanceException {
+  protected void save(HopIndexedReplica replica)
+      throws StorageException, TransactionContextException {
     EntityManager.update(replica);
   }
   
@@ -390,43 +407,50 @@ public class BlockInfo extends Block {
   }
   //START_HOP_CODE
   
-  public void setBlockId(long bid) throws PersistanceException {
+  public void setBlockId(long bid)
+      throws StorageException, TransactionContextException {
     setBlockIdNoPersistance(bid);
     save();
   }
 
-  public void setNumBytes(long len) throws PersistanceException {
+  public void setNumBytes(long len)
+      throws StorageException, TransactionContextException {
     setNumBytesNoPersistance(len);
     save();
   }
 
-  public void setGenerationStamp(long stamp) throws PersistanceException {
+  public void setGenerationStamp(long stamp)
+      throws StorageException, TransactionContextException {
     setGenerationStampNoPersistance(stamp);
     save();
   }
 
-  public void set(long blkid, long len, long genStamp) throws PersistanceException {
+  public void set(long blkid, long len, long genStamp) throws
+      StorageException, TransactionContextException {
     setNoPersistance(blkid, len, genStamp);
     save();
   }
   
-  protected void save() throws PersistanceException {
+  protected void save() throws StorageException, TransactionContextException {
     save(this);
   }
 
-  protected void save(BlockInfo blk) throws PersistanceException {
+  protected void save(BlockInfo blk)
+      throws StorageException, TransactionContextException {
     EntityManager.update(blk);
   }
 
-  protected void remove() throws PersistanceException {
+  protected void remove() throws StorageException, TransactionContextException {
     remove(this);
   }
 
-  protected void remove(BlockInfo blk) throws PersistanceException {
+  protected void remove(BlockInfo blk)
+      throws StorageException, TransactionContextException {
     EntityManager.remove(blk);
   }
   
-  public static BlockInfo cloneBlock(BlockInfo block) throws PersistanceException{
+  public static BlockInfo cloneBlock(BlockInfo block) throws
+      StorageException {
     if(block instanceof BlockInfo){
       return new BlockInfo(((BlockInfo)block),((BlockInfo)block).getInodeId());
     }

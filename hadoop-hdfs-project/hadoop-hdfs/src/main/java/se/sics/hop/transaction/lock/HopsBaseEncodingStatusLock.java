@@ -20,6 +20,7 @@ package se.sics.hop.transaction.lock;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.erasure_coding.EncodingStatus;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 abstract class HopsBaseEncodingStatusLock extends HopsLock {
@@ -50,7 +51,7 @@ abstract class HopsBaseEncodingStatusLock extends HopsLock {
     }
 
     @Override
-    protected void acquire(TransactionLocks locks) throws Exception {
+    protected void acquire(TransactionLocks locks) throws IOException {
       HopsINodeLock iNodeLock = (HopsINodeLock) locks.getLock(Type.INode);
       Arrays.sort(targets);
       for (String target : targets) {
@@ -71,7 +72,7 @@ abstract class HopsBaseEncodingStatusLock extends HopsLock {
     }
 
     @Override
-    protected void acquire(TransactionLocks locks) throws Exception {
+    protected void acquire(TransactionLocks locks) throws IOException {
       // TODO STEFFEN - Should only acquire the locks if we know it has a status and also not twice.
       // Maybe add a flag to iNode specifying whether it's encoded or a parity file
       EncodingStatus status = acquireLock(getLockType(),

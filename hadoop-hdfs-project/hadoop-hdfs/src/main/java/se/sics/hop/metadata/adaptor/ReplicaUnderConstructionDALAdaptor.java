@@ -59,7 +59,8 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
   }
 
   @Override
-  public HopReplicaUnderConstruction convertHDFStoDAL(ReplicaUnderConstruction hdfsClass) throws StorageException {
+  public HopReplicaUnderConstruction convertHDFStoDAL(ReplicaUnderConstruction hdfsClass)
+      throws StorageException {
     if (hdfsClass != null) {
       return new HopReplicaUnderConstruction(hdfsClass.getState().ordinal(), hdfsClass.getStorageId(), hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getIndex());
     } else {
@@ -68,7 +69,8 @@ public class ReplicaUnderConstructionDALAdaptor extends DALAdaptor<ReplicaUnderC
   }
 
   @Override
-  public ReplicaUnderConstruction convertDALtoHDFS(HopReplicaUnderConstruction dalClass) throws StorageException {
+  public ReplicaUnderConstruction convertDALtoHDFS(HopReplicaUnderConstruction dalClass)
+      throws StorageException {
     if (dalClass != null) {
       return new ReplicaUnderConstruction(HdfsServerConstants.ReplicaState.values()[dalClass.getState()], dalClass.getStorageId(), dalClass.getBlockId(), dalClass.getInodeId(),  dalClass.getIndex());
     } else {

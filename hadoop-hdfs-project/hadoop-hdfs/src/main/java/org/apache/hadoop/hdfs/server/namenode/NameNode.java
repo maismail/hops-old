@@ -63,7 +63,6 @@ import org.apache.hadoop.tools.GetUserMappingsProtocol;
 import org.apache.hadoop.util.ExitUtil.ExitException;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.LeaderElection;
@@ -532,7 +531,7 @@ public class NameNode {
 
         try {
             startCommonServices(conf);
-        } catch (PersistanceException e) {
+        } catch (StorageException e) {
             throw new RuntimeException(e.getMessage());
         }
     }
@@ -571,7 +570,8 @@ public class NameNode {
     /**
      * Start the services common to active and standby states
      */
-    private void startCommonServices(Configuration conf) throws IOException, PersistanceException {
+    private void startCommonServices(Configuration conf) throws IOException,
+        StorageException {
         namesystem.startCommonServices(conf, haContext);
         startHttpServer(conf);
         rpcServer.start();
@@ -868,7 +868,7 @@ public class NameNode {
             StorageFactory.formatStorage();
           }
             StorageInfo.storeStorageInfoToDB(clusterId);  //this adds new row to the db
-        } catch (PersistanceException e) {
+        } catch (StorageException e) {
             throw new RuntimeException(e.getMessage());
         }
     //END_HOP_CODE

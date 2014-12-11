@@ -16,17 +16,18 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.BlockUCState;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.exception.PersistanceException;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Represents a block that is currently being constructed.<br>
@@ -74,7 +75,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * Create a block that is currently being constructed.
    */
   public BlockInfoUnderConstruction(Block blk, int inodeId, BlockUCState state,
-          DatanodeDescriptor[] targets) throws PersistanceException {
+          DatanodeDescriptor[] targets)
+      throws StorageException, TransactionContextException {
     this(blk, inodeId, state);
     setExpectedLocations(targets);
   }
@@ -87,7 +89,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * length) has not been committed by the client or it does not have at least a
    * minimal number of replicas reported from data-nodes.
    */
-  BlockInfo convertToCompleteBlock() throws  PersistanceException {
+  BlockInfo convertToCompleteBlock()
+      throws StorageException, TransactionContextException {
     assert getBlockUCState() != BlockUCState.COMPLETE :
             "Trying to convert a COMPLETE block";
     complete();
@@ -97,7 +100,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   /**
    * Set expected locations
    */
-  public void setExpectedLocations(DatanodeDescriptor[] targets) throws PersistanceException {
+  public void setExpectedLocations(DatanodeDescriptor[] targets) throws
+      StorageException, TransactionContextException {
     for (DatanodeDescriptor dn : targets) {
       addExpectedReplica(dn.getSId(), ReplicaState.RBW);
     }
@@ -109,7 +113,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    */
   //HOP: since we don't store the DataNodeDescriptor inside the ReplicaUnderConstruction
   //we'll add a DataNodeManager argument
-  public DatanodeDescriptor[] getExpectedLocations(DatanodeManager datanodeMgr) throws PersistanceException {
+  public DatanodeDescriptor[] getExpectedLocations(DatanodeManager datanodeMgr)
+      throws
+      StorageException, TransactionContextException {
     List<ReplicaUnderConstruction> rpls = getExpectedReplicas();
     return getDatanodes(datanodeMgr, rpls);
   }
@@ -118,7 +124,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   /**
    * Get the number of expected locations
    */
-  public int getNumExpectedLocations() throws PersistanceException {
+  public int getNumExpectedLocations()
+      throws StorageException, TransactionContextException {
     return getExpectedReplicas().size();
   }
 
@@ -150,7 +157,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * @param block - contains client reported block length and generation
    * @throws IOException if block ids are inconsistent.
    */
-  void commitBlock(Block block) throws IOException, PersistanceException {
+  void commitBlock(Block block) throws IOException {
     if (getBlockId() != block.getBlockId()) {
       throw new IOException("Trying to commit inconsistent block: id = "
               + block.getBlockId() + ", expected id = " + getBlockId());
@@ -164,7 +171,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
    * starting from the previous primary and make it primary.
    */
   //HOP: add  DatanodeManager datanodeMgr argument beacause we don't store the datanodedescriptors
-  public void initializeBlockRecovery(long recoveryId, DatanodeManager datanodeMgr) throws PersistanceException {
+  public void initializeBlockRecovery(long recoveryId, DatanodeManager datanodeMgr)
+      throws
+      StorageException, TransactionContextException {
     setBlockUCState(BlockUCState.UNDER_RECOVERY);
     List<ReplicaUnderConstruction> replicas = getExpectedReplicas();
     //blockRecoveryId = recoveryId;
@@ -194,7 +203,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
   //HOP: FIXME: ?!
   void addReplicaIfNotPresent(DatanodeDescriptor dn,
           Block block,
-          ReplicaState rState) throws PersistanceException {
+          ReplicaState rState)
+      throws StorageException, TransactionContextException {
     for (ReplicaUnderConstruction r : getExpectedReplicas()) {
       if (r.getStorageId() == dn.getSId()) {
         return;
@@ -243,7 +253,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
      sb.append("]}");*/
   }
 
-  private List<ReplicaUnderConstruction> getExpectedReplicas() throws PersistanceException {
+  private List<ReplicaUnderConstruction> getExpectedReplicas() throws
+      StorageException, TransactionContextException {
     List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId(), getInodeId());
     if (replicas != null) {
       Collections.sort(replicas, ReplicaUnderConstruction.Order.ByIndex);
@@ -253,7 +264,9 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return replicas;
   }
 
-  private ReplicaUnderConstruction addExpectedReplica(int storageId, ReplicaState rState) throws PersistanceException {
+  private ReplicaUnderConstruction addExpectedReplica(int storageId, ReplicaState rState)
+      throws
+      StorageException, TransactionContextException {
     if (hasExpectedReplicaIn(storageId)) {
       NameNode.blockStateChangeLog.warn("BLOCK* Trying to store multiple blocks of the file on one DataNode. Returning null");
       return null;
@@ -263,7 +276,8 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return replica;
   }
 
-  private boolean hasExpectedReplicaIn(int storageId) throws PersistanceException {
+  private boolean hasExpectedReplicaIn(int storageId) throws
+      StorageException, TransactionContextException {
     for (ReplicaUnderConstruction replica : getExpectedReplicas()) {
       if (replica.getStorageId() == storageId) {
         return true;
@@ -284,23 +298,26 @@ public class BlockInfoUnderConstruction extends BlockInfo {
     return this.primaryNodeIndex;
   }
 
-  private void complete() throws PersistanceException {
+  private void complete() throws StorageException, TransactionContextException {
     for (ReplicaUnderConstruction rep : getExpectedReplicas()) {
       EntityManager.remove(rep);
     }
   }
 
-  public void setBlockUCState(BlockUCState s) throws PersistanceException {
+  public void setBlockUCState(BlockUCState s)
+      throws StorageException, TransactionContextException {
     setBlockUCStateNoPersistance(s);
     save();
   }
 
-  public void setBlockRecoveryId(long recoveryId) throws PersistanceException {
+  public void setBlockRecoveryId(long recoveryId)
+      throws StorageException, TransactionContextException {
     setBlockRecoveryIdNoPersistance(recoveryId);
     save();
   }
 
-  public void setPrimaryNodeIndex(int nodeIndex) throws PersistanceException {
+  public void setPrimaryNodeIndex(int nodeIndex)
+      throws StorageException, TransactionContextException {
     setPrimaryNodeIndexNoPersistance(nodeIndex);
     save();
   }

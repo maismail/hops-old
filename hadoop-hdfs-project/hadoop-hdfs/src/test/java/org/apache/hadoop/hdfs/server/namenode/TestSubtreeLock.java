@@ -10,6 +10,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.*;
 import org.apache.hadoop.ipc.RemoteException;
 import org.junit.Test;
+import se.sics.hop.transaction.handler.RequestHandler;
 import se.sics.hop.transaction.lock.SubtreeLockedException;
 
 import java.io.FileNotFoundException;
@@ -200,10 +201,9 @@ public class TestSubtreeLock extends TestCase {
     MiniDFSCluster cluster = null;
     Thread lockKeeper = null;
     try {
-      final int RETRY_WAIT = 1000;
+      final long RETRY_WAIT = RequestHandler.BASE_WAIT_TIME;
+      final long RETRY_COUNT = RequestHandler.RETRY_COUNT;
       Configuration conf = new HdfsConfiguration();
-      conf.setInt(DFSConfigKeys.DFS_CLIENT_INITIAL_WAIT_ON_RETRY_IN_MS_KEY, RETRY_WAIT);
-      conf.setInt(DFSConfigKeys.DFS_CLIENT_RETRIES_ON_FAILURE_KEY, 10);
       cluster = new MiniDFSCluster.Builder(conf).numDataNodes(1).build();
       cluster.waitActive();
 
@@ -217,7 +217,7 @@ public class TestSubtreeLock extends TestCase {
         public void run() {
           super.run();
           try {
-            Thread.sleep(5 * RETRY_WAIT);
+            Thread.sleep((RETRY_COUNT - 1) * RETRY_WAIT);
             namesystem.unlockSubtree(path1.toUri().getPath());
           } catch (Exception e) {
             e.printStackTrace();
@@ -233,7 +233,7 @@ public class TestSubtreeLock extends TestCase {
       namesystem.lockSubtree(path1.toUri().getPath());
       lockKeeper.start();
 
-      dfs.delete(path1, true);
+      assertTrue(dfs.delete(path1, true));
     } finally {
       if (cluster != null) {
         cluster.shutdown();

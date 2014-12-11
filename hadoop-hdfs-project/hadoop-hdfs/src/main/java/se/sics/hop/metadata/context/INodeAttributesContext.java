@@ -1,25 +1,25 @@
 package se.sics.hop.metadata.context;
 
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
-import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -74,7 +74,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public void add(INodeAttributes entity) throws PersistanceException {
+  public void add(INodeAttributes entity) {
     //even if it already exists overwite it with modified flag
     AttributeWrapper wrapper = new AttributeWrapper(entity, CacheRowStatus.MODIFIED);
     HopINodeCandidatePK pk = new HopINodeCandidatePK(entity.getInodeId());
@@ -88,12 +88,13 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public int count(CounterType<INodeAttributes> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<INodeAttributes> counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public INodeAttributes find(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
+  public INodeAttributes find(FinderType<INodeAttributes> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
     
 
@@ -121,7 +122,8 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public Collection<INodeAttributes> findList(FinderType<INodeAttributes> finder, Object... params) throws PersistanceException {
+  public Collection<INodeAttributes> findList(FinderType<INodeAttributes> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
     List<HopINodeCandidatePK> inodePks = (List<HopINodeCandidatePK>) params[0];
     switch (qfinder) {
@@ -176,7 +178,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public void remove(INodeAttributes var) throws PersistanceException {
+  public void remove(INodeAttributes var) {
     HopINodeCandidatePK pk = new HopINodeCandidatePK(var.getInodeId());
     if (cachedRows.containsKey(pk)) {
       cachedRows.get(pk).setStatus(CacheRowStatus.DELETED);
@@ -187,13 +189,12 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(INodeAttributes var) throws PersistanceException {
-
+  public void update(INodeAttributes var) {
     if (var.getInodeId() == INode.NON_EXISTING_ID) {
       log("updated-attributes -- IGNORED as id is not set");
     } else {
@@ -205,7 +206,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
         //there will be no checking for locks
     List<INodeAttributes> modified = new ArrayList<INodeAttributes>();
     List<INodeAttributes> deleted = new ArrayList<INodeAttributes>();
@@ -225,7 +226,7 @@ public class INodeAttributesContext extends EntityContext<INodeAttributes> {
   }
   
    @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

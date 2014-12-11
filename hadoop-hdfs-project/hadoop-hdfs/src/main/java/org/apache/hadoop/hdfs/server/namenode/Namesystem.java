@@ -20,7 +20,7 @@ package org.apache.hadoop.hdfs.server.namenode;
 import java.io.IOException;
 import java.util.Set;
 import org.apache.hadoop.classification.InterfaceAudience;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import org.apache.hadoop.hdfs.util.RwLock;
 import org.apache.hadoop.security.AccessControlException;
 
@@ -38,7 +38,8 @@ public interface Namesystem extends RwLock, SafeMode {
 
   public boolean isInStandbyState();
 
-  public boolean isGenStampInFuture(long generationStamp) throws PersistanceException;
+  public boolean isGenStampInFuture(long generationStamp) throws
+      StorageException;
 
   public void adjustSafeModeBlockTotals(int deltaSafe, int deltaTotal) throws IOException;
   

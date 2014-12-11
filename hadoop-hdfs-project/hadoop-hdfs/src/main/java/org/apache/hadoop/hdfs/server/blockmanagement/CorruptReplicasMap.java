@@ -17,20 +17,24 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
-import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
-import java.io.IOException;
 import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.Server;
-
-import java.util.*;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hop.HopCorruptReplica;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
 
 /**
  * Stores information about all corrupt blocks in the File System.
@@ -57,7 +61,7 @@ public class CorruptReplicasMap{
    * @param reason a textual reason (for logging purposes)
    */
   public void addToCorruptReplicasMap(BlockInfo blk, DatanodeDescriptor dn,
-      String reason) throws PersistanceException {
+      String reason) throws StorageException, TransactionContextException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     
     String reasonText;
@@ -89,7 +93,8 @@ public class CorruptReplicasMap{
    *
    * @param blk Block to be removed
    */
-  void removeFromCorruptReplicasMap(BlockInfo blk) throws PersistanceException {
+  void removeFromCorruptReplicasMap(BlockInfo blk)
+      throws StorageException, TransactionContextException {
     Collection<HopCorruptReplica> corruptReplicas = getCorruptReplicas(blk);
     if (corruptReplicas != null) {
       for (HopCorruptReplica cr : corruptReplicas) {
@@ -105,7 +110,9 @@ public class CorruptReplicasMap{
    * @return true if the removal is successful; 
              false if the replica is not in the map
    */ 
-  boolean removeFromCorruptReplicasMap(BlockInfo blk, DatanodeDescriptor datanode) throws PersistanceException {  
+  boolean removeFromCorruptReplicasMap(BlockInfo blk, DatanodeDescriptor datanode)
+      throws
+      StorageException, TransactionContextException {
     Collection<DatanodeDescriptor> datanodes = getNodes(blk);
     if (datanodes == null) {
       return false;
@@ -126,7 +133,8 @@ public class CorruptReplicasMap{
    * @param blk Block for which nodes are requested
    * @return collection of nodes. Null if does not exists
    */
-  Collection<DatanodeDescriptor> getNodes(BlockInfo blk) throws PersistanceException {
+  Collection<DatanodeDescriptor> getNodes(BlockInfo blk) throws
+      StorageException, TransactionContextException {
    
     //HOPS datanodeMgr is null in some tests
     if (datanodeMgr == null) return new ArrayList<DatanodeDescriptor>();  
@@ -151,12 +159,14 @@ public class CorruptReplicasMap{
    * @param node DatanodeDescriptor which holds the replica
    * @return true if replica is corrupt, false if does not exists in this map
    */
-  boolean isReplicaCorrupt(BlockInfo blk, DatanodeDescriptor node) throws PersistanceException {
+  boolean isReplicaCorrupt(BlockInfo blk, DatanodeDescriptor node) throws
+      StorageException, TransactionContextException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return ((nodes != null) && (nodes.contains(node)));
   }
 
-  public int numCorruptReplicas(BlockInfo blk) throws PersistanceException {
+  public int numCorruptReplicas(BlockInfo blk)
+      throws StorageException, TransactionContextException {
     Collection<DatanodeDescriptor> nodes = getNodes(blk);
     return (nodes == null) ? 0 : nodes.size();
   }
@@ -164,7 +174,7 @@ public class CorruptReplicasMap{
   public int size() throws IOException{
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.COUNT_CORRUPT_REPLICAS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         CorruptReplicaDataAccess da = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
         return da.countAllUniqueBlk();
       }
@@ -235,14 +245,15 @@ public class CorruptReplicasMap{
     return ret;
   }  
   
-  private Collection<HopCorruptReplica> getCorruptReplicas(BlockInfo blk) throws PersistanceException {
+  private Collection<HopCorruptReplica> getCorruptReplicas(BlockInfo blk) throws
+      StorageException, TransactionContextException {
     return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId(),blk.getInodeId());
   }
 
   private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {
     return (Collection<HopCorruptReplica>) new LightWeightRequestHandler(HDFSOperationType.GET_ALL_CORRUPT_REPLICAS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         CorruptReplicaDataAccess crDa = (CorruptReplicaDataAccess) StorageFactory.getDataAccess(CorruptReplicaDataAccess.class);
         return crDa.findAll();
       }
@@ -250,11 +261,13 @@ public class CorruptReplicasMap{
   }
   
   
-  private void addCorruptReplicaToDB(HopCorruptReplica cr) throws PersistanceException {
+  private void addCorruptReplicaToDB(HopCorruptReplica cr) throws
+      StorageException, TransactionContextException {
     EntityManager.add(cr);
   }
 
-  private void removeCorruptReplicaFromDB(HopCorruptReplica cr) throws PersistanceException {
+  private void removeCorruptReplicaFromDB(HopCorruptReplica cr) throws
+      StorageException, TransactionContextException {
     EntityManager.remove(cr);
   }
 }

@@ -68,7 +68,7 @@ public class TestLease {
     }
 
     @Override
-    protected void acquire(TransactionLocks locks) throws Exception {
+    protected void acquire(TransactionLocks locks) throws IOException {
       HopLeasePath lp = acquireLock(leasePathLock, HopLeasePath.Finder.ByPKey, leasePath);
       if (lp != null) {
         acquireLock(leaseLock, Lease.Finder.ByHolderId, lp.getHolderId());

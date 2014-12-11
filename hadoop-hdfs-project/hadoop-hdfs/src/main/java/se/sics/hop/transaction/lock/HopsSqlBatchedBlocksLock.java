@@ -17,6 +17,8 @@ package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -24,7 +26,7 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 final class HopsSqlBatchedBlocksLock extends HopsBaseIndividualBlockLock{
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     HopsLock inodeLock = locks.getLock(Type.INode);
     if(inodeLock instanceof HopsBatchedINodeLock){
       int[] inodeIds = ((HopsBatchedINodeLock)inodeLock).getINodeIds();

@@ -20,6 +20,8 @@ import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -35,7 +37,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     HopsLock blockLock = locks.getLock(Type.Block);
     if (blockLock instanceof HopsBatchedBlockLock) {
       Pair<int[], long[]> inodeBlockIds = ((HopsBatchedBlockLock) blockLock).getINodeBlockIds();

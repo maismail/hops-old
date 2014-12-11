@@ -21,10 +21,11 @@ import java.util.TreeSet;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.transaction.EntityManager;
 import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
 import se.sics.hop.metadata.StorageFactory;
@@ -56,7 +57,8 @@ public class ExcessReplicasMap {
     return excessBlocks;
   }
 
-  public boolean put(String dn, BlockInfo excessBlk) throws PersistanceException {
+  public boolean put(String dn, BlockInfo excessBlk) throws
+      StorageException, TransactionContextException {
     HopExcessReplica er = getExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk);
     if (er == null) {
       addExcessReplicaToDB(new HopExcessReplica(datanodeManager.getDatanode(dn).getSId(), excessBlk.getBlockId(), excessBlk.getInodeId()));
@@ -65,7 +67,8 @@ public class ExcessReplicasMap {
     return false;
   }
 
-  public boolean remove(String dn, BlockInfo block) throws PersistanceException {
+  public boolean remove(String dn, BlockInfo block) throws
+      StorageException, TransactionContextException {
     HopExcessReplica er = getExcessReplica(datanodeManager.getDatanode(dn).getSId(), block);
     if (er != null) {
       removeExcessReplicaFromDB(er);
@@ -75,7 +78,8 @@ public class ExcessReplicasMap {
     }
   }
 
-  public Collection<String> get(BlockInfo blk) throws PersistanceException {
+  public Collection<String> get(BlockInfo blk)
+      throws StorageException, TransactionContextException {
     Collection<HopExcessReplica> excessReplicas = getExcessReplicas(blk);
     if (excessReplicas == null) {
       return null;
@@ -87,7 +91,8 @@ public class ExcessReplicasMap {
     return stIds;
   }
 
-  public boolean contains(String dn, BlockInfo blk) throws PersistanceException {
+  public boolean contains(String dn, BlockInfo blk) throws
+      StorageException, TransactionContextException {
     Collection<HopExcessReplica> ers = getExcessReplicas(blk);
     if (ers == null) {
       return false;
@@ -98,7 +103,7 @@ public class ExcessReplicasMap {
   public void clear() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_EXCESS_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         ExcessReplicaDataAccess da = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
         da.removeAll();
         return null;
@@ -109,26 +114,30 @@ public class ExcessReplicasMap {
   private Collection<HopExcessReplica> getExcessReplicas(final int dn) throws IOException {
     return (Collection<HopExcessReplica>) new LightWeightRequestHandler(HDFSOperationType.GET_EXCESS_RELPLICAS_BY_STORAGEID) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         ExcessReplicaDataAccess da = (ExcessReplicaDataAccess) StorageFactory.getDataAccess(ExcessReplicaDataAccess.class);
         return da.findExcessReplicaByStorageId(dn);
       }
     }.handle();
   }
 
-  private void addExcessReplicaToDB(HopExcessReplica er) throws PersistanceException {
+  private void addExcessReplicaToDB(HopExcessReplica er) throws
+      StorageException, TransactionContextException {
     EntityManager.add(er);
   }
 
-  private void removeExcessReplicaFromDB(HopExcessReplica er) throws PersistanceException {
+  private void removeExcessReplicaFromDB(HopExcessReplica er) throws
+      StorageException, TransactionContextException {
     EntityManager.remove(er);
   }
 
-  private Collection<HopExcessReplica> getExcessReplicas(BlockInfo blk) throws PersistanceException {
+  private Collection<HopExcessReplica> getExcessReplicas(BlockInfo blk) throws
+      StorageException, TransactionContextException {
     return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
   }
 
-  private HopExcessReplica getExcessReplica(int dn, BlockInfo block) throws PersistanceException {
+  private HopExcessReplica getExcessReplica(int dn, BlockInfo block) throws
+      StorageException, TransactionContextException {
     return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn, block.getInodeId());
   }
 }

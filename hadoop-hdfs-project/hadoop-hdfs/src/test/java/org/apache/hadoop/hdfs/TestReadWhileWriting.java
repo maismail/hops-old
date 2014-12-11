@@ -123,7 +123,7 @@ public class TestReadWhileWriting {
       try {
         return fs.append(p);
       } catch(RemoteException re) {
-        if (re.getClassName().equals(RecoveryInProgressException.class.getName())) {
+        if (re.getClassName().equals(RecoveryInProgressException.NonAbortingRecoveryInProgressException.class.getName())) {
           AppendTestUtil.LOG.info("Will sleep and retry, i=" + i +", p="+p, re);
           Thread.sleep(1000);
         }

@@ -18,7 +18,8 @@
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
 import java.io.IOException;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 
 /** 
  * This interface is used by the block manager to expose a
@@ -28,12 +29,13 @@ public interface MutableBlockCollection extends BlockCollection {
   /**
    * Set the block at the given index.
    */
-  public void setBlock(int index, BlockInfo blk) throws PersistanceException;
+  public void setBlock(int index, BlockInfo blk) throws
+      TransactionContextException, StorageException;
 
   /**
    * Convert the last block of the collection to an under-construction block
    * and set the locations.
    */
   public BlockInfoUnderConstruction setLastBlock(BlockInfo lastBlock,
-      DatanodeDescriptor[] locations) throws IOException, PersistanceException;
+      DatanodeDescriptor[] locations) throws IOException, StorageException;
 }

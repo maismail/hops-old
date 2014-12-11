@@ -15,22 +15,23 @@
  */
 package se.sics.hop.metadata.context;
 
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
+import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
+import se.sics.hop.transaction.lock.TransactionLocks;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
-import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.TransactionLocks;
 
 /**
  *
@@ -50,7 +51,7 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public void add(HopLeader leader) throws PersistanceException {
+  public void add(HopLeader leader) throws TransactionContextException {
     if (removedLeaders.containsKey(leader.getId())) {
       throw new TransactionContextException("Removed leader passed for persistance");
     }
@@ -80,7 +81,8 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public int count(CounterType<HopLeader> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopLeader> counter, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopLeader.Counter lCounter = (HopLeader.Counter) counter;
 
     switch (lCounter) {
@@ -151,7 +153,8 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public HopLeader find(FinderType<HopLeader> finder, Object... params) throws PersistanceException {
+  public HopLeader find(FinderType<HopLeader> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopLeader.Finder lFinder = (HopLeader.Finder) finder;
     HopLeader leader;
 
@@ -177,7 +180,8 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public Collection<HopLeader> findList(FinderType<HopLeader> finder, Object... params) throws PersistanceException {
+  public Collection<HopLeader> findList(FinderType<HopLeader> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopLeader.Finder lFinder = (HopLeader.Finder) finder;
     Collection<HopLeader> leaders = null;
 
@@ -263,7 +267,7 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public void remove(HopLeader leader) throws PersistanceException {
+  public void remove(HopLeader leader) {
     removedLeaders.put(leader.getId(), leader);
 
     if (allReadLeaders.containsKey(leader.getId())) {
@@ -277,12 +281,12 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException(NOT_SUPPORTED_YET);
   }
 
   @Override
-  public void update(HopLeader leader) throws PersistanceException {
+  public void update(HopLeader leader) throws TransactionContextException {
     if (removedLeaders.containsKey(leader.getId())) {
       throw new TransactionContextException("Trying to update a removed leader record");
     }
@@ -302,13 +306,13 @@ public class LeaderContext extends EntityContext<HopLeader> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Leader",newLeaders.size(),modifiedLeaders.size(),removedLeaders.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     
   }
 }

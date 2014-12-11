@@ -38,8 +38,8 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceede
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
 import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
-import se.sics.hop.exception.PersistanceException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Before;
@@ -91,7 +91,8 @@ public class TestFsLimits {
     
     @Override
     public <T extends INode> void verifyFsLimits(INode[] pathComponents,
-        int pos, T child) throws FSLimitException, PersistanceException {
+        int pos, T child)
+        throws FSLimitException, StorageException, TransactionContextException {
       super.verifyFsLimits(pathComponents, pos, child);
     }
   }
@@ -187,7 +188,7 @@ public class TestFsLimits {
     }
 
     @Override
-    public Object performTask() throws PersistanceException, IOException {
+    public Object performTask() throws StorageException, IOException {
       // have to create after the caller has had a chance to set conf values
     if (fs == null) fs = new TestFSDirectory();
 

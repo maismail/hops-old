@@ -1,23 +1,26 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.TransactionContext;
+import org.apache.log4j.Logger;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
-import se.sics.hop.exception.StorageException;
-import org.apache.log4j.Logger;
-import static se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds.INodePKChanged;
-import static se.sics.hop.metadata.hdfs.entity.EntityContext.log;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.transaction.TransactionContext;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  *
@@ -40,7 +43,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public void add(BlockInfo block) throws PersistanceException {
+  public void add(BlockInfo block) throws TransactionContextException {
     if (removedBlocks.containsKey(block.getBlockId()) || modifiedBlocks.containsKey(block.getBlockId())) {
       throw new TransactionContextException("Removed/Modified block passed to be persisted");
     }
@@ -67,7 +70,8 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public int count(CounterType<BlockInfo> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<BlockInfo> counter, Object... params)
+      throws StorageException {
     BlockInfo.Counter bCounter = (BlockInfo.Counter) counter;
     switch (bCounter) {
       case All:
@@ -84,7 +88,8 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public BlockInfo find(FinderType<BlockInfo> finder, Object... params) throws PersistanceException {
+  public BlockInfo find(FinderType<BlockInfo> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     BlockInfo.Finder bFinder = (BlockInfo.Finder) finder;
     BlockInfo result = null;
     switch (bFinder) {
@@ -127,7 +132,8 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public List<BlockInfo> findList(FinderType<BlockInfo> finder, Object... params) throws PersistanceException {
+  public List<BlockInfo> findList(FinderType<BlockInfo> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     BlockInfo.Finder bFinder = (BlockInfo.Finder) finder;
     List<BlockInfo> result = null;
     switch (bFinder) {
@@ -193,7 +199,7 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
     }
 
   @Override
-  public void remove(BlockInfo block) throws PersistanceException {
+  public void remove(BlockInfo block) throws TransactionContextException {
 //    if (block.getBlockId() == 0l) {
 //      throw new TransactionContextException("Unassigned-Id block passed to be removed");
 //    }
@@ -213,12 +219,12 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(BlockInfo block) throws PersistanceException {
+  public void update(BlockInfo block) throws TransactionContextException {
     if (removedBlocks.containsKey(block.getBlockId())) {
       throw new TransactionContextException("Removed block passed to be persisted");
     }
@@ -340,13 +346,13 @@ public class BlockInfoContext extends EntityContext<BlockInfo> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Blocks", newBlocks.size(),modifiedBlocks.size(),removedBlocks.size());
     return stat;
   }
   
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

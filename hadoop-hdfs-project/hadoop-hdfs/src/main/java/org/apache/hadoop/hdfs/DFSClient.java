@@ -78,6 +78,7 @@ import java.util.Random;
 
 import javax.net.SocketFactory;
 
+import com.sun.tools.hat.internal.model.StackTrace;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
@@ -2717,9 +2718,8 @@ public class DFSClient implements java.io.Closeable {
     //client side to avoid contacting dead NNs
     List<ActiveNamenode> blackListedNamenodes = new ArrayList<ActiveNamenode>();
 
-    Exception exception = null;
+    IOException exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
-    boolean success = false;
     int waitTime = dfsClientConf.dfsClientInitialWaitOnRetry;
     for (int i = 0; i <= MAX_RPC_RETRIES; i++) { // min value of MAX_RPC_RETRIES is 0
       try {
@@ -2727,10 +2727,9 @@ public class DFSClient implements java.io.Closeable {
 
         LOG.debug(thisFnID + ") " + callerID + " sending RPC to " + handle.getNamenode() + " tries left (" + (MAX_RPC_RETRIES - i) + ")");
         Object obj = handler.doAction(handle.getRPCHandle());
-        success = true;
-        //no exception 
+        //no exception
         return obj;
-      } catch (Exception e) {
+      } catch (IOException e) {
         exception = e;
         if (ExceptionCheck.isLocalConnectException(e)) {
           //black list the namenode 
@@ -2750,37 +2749,13 @@ public class DFSClient implements java.io.Closeable {
           } catch (InterruptedException ex) {
           }
           continue;
-        } else if (e instanceof RemoteException
-            && ((RemoteException) e).unwrapRemoteException() instanceof SubtreeLockedException) {
-          LOG.debug(thisFnID+") " + callerID + " RPC failed. Subtree was locked, retries left (" + (MAX_RPC_RETRIES - (i)) + ")", e);
-          try {
-            LOG.debug(thisFnID + ") RPC failed. Sleep " + waitTime);
-            Thread.sleep(waitTime);
-            waitTime *= 2;
-          } catch (InterruptedException ex) {
-          }
         } else {
           break;
         }
       }
     }
-    if (!success) {
-      //print the fn call trace to figure out with RPC failed
-      for (int j = 0; j < Thread.currentThread().getStackTrace().length; j++) {
-        LOG.warn(thisFnID+") " + callerID + " Failed RPC Trace, " + Thread.currentThread().getStackTrace()[j]);
-      }
-
-      LOG.warn(thisFnID+") "+callerID+" Exception was ", exception);
-      exception.printStackTrace();
-      if (exception != null) {
-        if (exception instanceof RemoteException) {
-          throw (RemoteException) exception;
-        } else {
-          throw (IOException) exception;
-        }
-      }
-    }
-    return null;
+    LOG.warn(thisFnID + ") " + callerID + " RPC failed", exception);
+    throw exception; // Did not return so RPC failed
   }
    
     /**

@@ -66,7 +66,8 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   }
 
   @Override
-  public HopPendingBlockInfo convertHDFStoDAL(PendingBlockInfo hdfsClass) throws StorageException {
+  public HopPendingBlockInfo convertHDFStoDAL(PendingBlockInfo hdfsClass)
+      throws StorageException {
     if (hdfsClass != null) {
       return new HopPendingBlockInfo(hdfsClass.getBlockId(), hdfsClass.getInodeId(), hdfsClass.getTimeStamp(), hdfsClass.getNumReplicas());
     } else {
@@ -75,7 +76,8 @@ public class PendingBlockInfoDALAdaptor extends DALAdaptor<PendingBlockInfo, Hop
   }
 
   @Override
-  public PendingBlockInfo convertDALtoHDFS(HopPendingBlockInfo dalClass) throws StorageException {
+  public PendingBlockInfo convertDALtoHDFS(HopPendingBlockInfo dalClass)
+      throws StorageException {
     if (dalClass != null) {
       return new PendingBlockInfo(dalClass.getBlockId(), dalClass.getInodeId(), dalClass.getTimeStamp(), dalClass.getNumReplicas());
     } else {

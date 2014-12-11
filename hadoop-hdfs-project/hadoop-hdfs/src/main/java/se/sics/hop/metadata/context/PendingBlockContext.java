@@ -1,21 +1,29 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -36,7 +44,8 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
 
   @Override
-  public void add(PendingBlockInfo pendingBlock) throws PersistanceException {
+  public void add(PendingBlockInfo pendingBlock)
+      throws TransactionContextException {
     if (removedPendings.containsKey(pendingBlock.getBlockId()) || modifiedPendings.containsKey(pendingBlock.getBlockId())) {
       throw new TransactionContextException("Removed/Modified pending-block passed to be persisted");
     }
@@ -60,12 +69,13 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
 
   @Override
-  public int count(CounterType counter, Object... params) throws PersistanceException {
+  public int count(CounterType counter, Object... params) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public List<PendingBlockInfo> findList(FinderType<PendingBlockInfo> finder, Object... params) throws PersistanceException {
+  public List<PendingBlockInfo> findList(FinderType<PendingBlockInfo> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     PendingBlockInfo.Finder pFinder = (PendingBlockInfo.Finder) finder;
     List<PendingBlockInfo> result = null;
     switch (pFinder) {
@@ -121,7 +131,8 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
 
   @Override
-  public PendingBlockInfo find(FinderType<PendingBlockInfo> finder, Object... params) throws PersistanceException {
+  public PendingBlockInfo find(FinderType<PendingBlockInfo> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     PendingBlockInfo.Finder pFinder = (PendingBlockInfo.Finder) finder;
     PendingBlockInfo result = null;
     switch (pFinder) {
@@ -168,7 +179,8 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
     }
 
   @Override
-  public void remove(PendingBlockInfo pendingBlock) throws PersistanceException {
+  public void remove(PendingBlockInfo pendingBlock)
+      throws TransactionContextException {
     if (!pendings.containsKey(pendingBlock.getBlockId())) {  
       throw new TransactionContextException("Unattached pending-block passed to be removed id "+pendingBlock.getBlockId());
     }
@@ -180,12 +192,13 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(PendingBlockInfo pendingBlock) throws PersistanceException {
+  public void update(PendingBlockInfo pendingBlock)
+      throws TransactionContextException {
     if (removedPendings.containsKey(pendingBlock.getBlockId())) {
       throw new TransactionContextException("Removed pending-block passed to be persisted");
     }
@@ -228,13 +241,13 @@ public class PendingBlockContext extends EntityContext<PendingBlockInfo> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Pending Blocks",newPendings.size(),modifiedPendings.size(),removedPendings.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

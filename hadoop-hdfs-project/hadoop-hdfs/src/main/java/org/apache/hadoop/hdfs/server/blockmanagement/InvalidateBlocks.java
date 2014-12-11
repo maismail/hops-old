@@ -17,7 +17,20 @@
  */
 package org.apache.hadoop.hdfs.server.blockmanagement;
 
+import org.apache.hadoop.classification.InterfaceAudience;
+import org.apache.hadoop.hdfs.protocol.Block;
+import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
+import org.apache.hadoop.hdfs.server.namenode.INode;
+import org.apache.hadoop.hdfs.server.namenode.NameNode;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.StorageFactory;
+import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
@@ -26,18 +39,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-
-import org.apache.hadoop.classification.InterfaceAudience;
-import org.apache.hadoop.hdfs.protocol.Block;
-import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import se.sics.hop.transaction.EntityManager;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
-import se.sics.hop.metadata.StorageFactory;
 
 /**
  * Keeps a Collection for every named machine containing blocks
@@ -57,7 +58,7 @@ class InvalidateBlocks {
   long numBlocks() throws IOException {
     return (Integer) new LightWeightRequestHandler(HDFSOperationType.GET_NUM_INVALIDATED_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         return da.countAll();
       }
@@ -73,7 +74,8 @@ class InvalidateBlocks {
    * @param the block to look for
    * 
    */
-  boolean contains(final String storageID, final BlockInfo block) throws PersistanceException {
+  boolean contains(final String storageID, final BlockInfo block) throws
+      StorageException, TransactionContextException {
     HopInvalidatedBlock blkFound = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId());
     if (blkFound == null) {
       return false;
@@ -86,7 +88,7 @@ class InvalidateBlocks {
    * which will be invalidated on the specified datanode.
    */
   void add(final BlockInfo block, final DatanodeInfo datanode,
-      final boolean log) throws PersistanceException {
+      final boolean log) throws StorageException, TransactionContextException {
     HopInvalidatedBlock invBlk = new HopInvalidatedBlock(datanodeManager.getDatanode(datanode.getStorageID()).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId());
     if (add(invBlk)) {
       if (log) {
@@ -102,7 +104,8 @@ class InvalidateBlocks {
   }
 
   /** Remove the block from the specified storage. */
-  void remove(final String storageID, final BlockInfo block) throws PersistanceException {
+  void remove(final String storageID, final BlockInfo block) throws
+      StorageException, TransactionContextException {
     HopInvalidatedBlock invBlok = findBlock(block.getBlockId(), datanodeManager.getDatanode(storageID).getSId(), block.getInodeId());
     if(invBlok!=null){
       removeInvalidatedBlockFromDB(new HopInvalidatedBlock(datanodeManager.getDatanode(storageID).getSId(), block.getBlockId(), block.getGenerationStamp(), block.getNumBytes(),block.getInodeId()));
@@ -110,7 +113,8 @@ class InvalidateBlocks {
   }
 
   /** Print the contents to out. */
-  void dump(final PrintWriter out) throws PersistanceException {
+  void dump(final PrintWriter out)
+      throws StorageException, TransactionContextException {
     List<HopInvalidatedBlock> invBlocks = findAllInvalidatedBlocks();
     HashSet<Integer> storageIds = new HashSet<Integer>();
     for (HopInvalidatedBlock ib : invBlocks) {
@@ -140,7 +144,7 @@ class InvalidateBlocks {
   List<String> getStorageIDs() throws IOException {
     LightWeightRequestHandler getAllInvBlocksHandler = new LightWeightRequestHandler(HDFSOperationType.GET_ALL_INV_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         return da.findAllInvalidatedBlocks();
       }
@@ -199,7 +203,7 @@ class InvalidateBlocks {
   void clear() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.DEL_ALL_INV_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         da.removeAll();
         return null;
@@ -211,7 +215,7 @@ class InvalidateBlocks {
   void add(final Collection<Block> blocks, final DatanodeDescriptor dn) throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.ADD_INV_BLOCKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         List<HopInvalidatedBlock> invblks = new ArrayList<HopInvalidatedBlock>();
         for (Block blk : blocks) {
@@ -223,7 +227,8 @@ class InvalidateBlocks {
     }.handle();
   }
 
-  private boolean add(HopInvalidatedBlock invBlk) throws PersistanceException {
+  private boolean add(HopInvalidatedBlock invBlk)
+      throws StorageException, TransactionContextException {
     HopInvalidatedBlock found = findBlock(invBlk.getBlockId(), invBlk.getStorageId(),invBlk.getInodeId());
     if (found == null) {
       addInvalidatedBlockToDB(invBlk);
@@ -235,7 +240,7 @@ class InvalidateBlocks {
   private List<HopInvalidatedBlock> findInvBlocksbyStorageId(final int sid) throws IOException {
     return (List<HopInvalidatedBlock>) new LightWeightRequestHandler(HDFSOperationType.GET_INV_BLKS_BY_STORAGEID) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
         return da.findInvalidatedBlockByStorageId(sid);
       }
@@ -245,7 +250,7 @@ class InvalidateBlocks {
   private void removeInvBlocks(final List<HopInvalidatedBlock> blks) throws IOException {    
      new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
        InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
        da.prepare(blks, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
        return null;
@@ -256,7 +261,7 @@ class InvalidateBlocks {
    private void removeInvBlocks(final int storageId) throws IOException {    
      new LightWeightRequestHandler(HDFSOperationType.RM_INV_BLKS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
        InvalidateBlockDataAccess da = (InvalidateBlockDataAccess) StorageFactory.getDataAccess(InvalidateBlockDataAccess.class);
        da.removeAllByStorageId(storageId);
        return null;
@@ -264,19 +269,24 @@ class InvalidateBlocks {
     }.handle();
   }
    
-  private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId) throws PersistanceException {
+  private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId)
+      throws
+      StorageException, TransactionContextException {
     return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId);
   }
   
-  private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws PersistanceException {
+  private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws
+      StorageException, TransactionContextException {
     EntityManager.add(invBlk);
   }
   
-  private void removeInvalidatedBlockFromDB(HopInvalidatedBlock invBlk) throws PersistanceException {
+  private void removeInvalidatedBlockFromDB(HopInvalidatedBlock invBlk) throws
+      StorageException, TransactionContextException {
     EntityManager.remove(invBlk);
   }
   
-  private List<HopInvalidatedBlock> findAllInvalidatedBlocks() throws PersistanceException{
+  private List<HopInvalidatedBlock> findAllInvalidatedBlocks() throws
+      StorageException, TransactionContextException {
     return (List<HopInvalidatedBlock>) EntityManager.findList(HopInvalidatedBlock.Finder.All);
   }
   

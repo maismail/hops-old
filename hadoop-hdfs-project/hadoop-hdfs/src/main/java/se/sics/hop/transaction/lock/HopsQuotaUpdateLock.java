@@ -18,9 +18,11 @@
 package se.sics.hop.transaction.lock;
 
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.entity.hop.QuotaUpdate;
 
+import java.io.IOException;
 import java.util.List;
 
 final class HopsQuotaUpdateLock extends HopsLock {
@@ -37,7 +39,7 @@ final class HopsQuotaUpdateLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     HopsINodeLock inodeLock = (HopsINodeLock) locks.getLock(Type.INode);
     for (String target : targets) {
       acquireQuotaUpdate(inodeLock.getTargetINode(target));
@@ -47,13 +49,15 @@ final class HopsQuotaUpdateLock extends HopsLock {
     }
   }
 
-  private void acquireQuotaUpdate(List<INode> iNodes) throws PersistanceException {
+  private void acquireQuotaUpdate(List<INode> iNodes) throws
+      StorageException, TransactionContextException {
     for (INode iNode : iNodes) {
       acquireQuotaUpdate(iNode);
     }
   }
 
-  private void acquireQuotaUpdate(INode iNode) throws PersistanceException {
+  private void acquireQuotaUpdate(INode iNode)
+      throws StorageException, TransactionContextException {
     acquireLockList(DEFAULT_LOCK_TYPE, QuotaUpdate.Finder.ByInodeId,
         iNode.getId());
   }

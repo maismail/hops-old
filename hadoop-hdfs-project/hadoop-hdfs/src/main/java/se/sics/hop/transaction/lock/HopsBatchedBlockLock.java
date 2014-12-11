@@ -19,6 +19,8 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.memcache.Pair;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -38,7 +40,7 @@ final class HopsBatchedBlockLock extends HopsBaseIndividualBlockLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     if(inodeIds == null){
       inodeIds = INodeUtil.resolveINodesFromBlockIds(blockIds);
     }

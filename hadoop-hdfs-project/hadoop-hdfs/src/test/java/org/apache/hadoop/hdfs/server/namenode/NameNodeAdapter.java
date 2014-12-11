@@ -34,7 +34,7 @@ import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.security.AccessControlException;
 import org.mockito.Mockito;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
@@ -108,7 +108,8 @@ public class NameNodeAdapter {
   }
 
   public static HeartbeatResponse sendHeartBeat(DatanodeRegistration nodeReg,
-      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException, PersistanceException {
+      DatanodeDescriptor dd, FSNamesystem namesystem) throws IOException,
+      StorageException {
     return namesystem.handleHeartbeat(nodeReg, dd.getCapacity(), 
         dd.getDfsUsed(), dd.getRemaining(), dd.getBlockPoolUsed(), 0, 0, 0);
   }
@@ -137,7 +138,7 @@ public class NameNodeAdapter {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Lease l = namenode.getNamesystem().leaseManager.getLeaseByPath(path);
         return l == null ? null : l.getHolder();
       }
@@ -157,7 +158,7 @@ public class NameNodeAdapter {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         LeaseManager lm = nn.getNamesystem().leaseManager;
         Lease l = lm.getLeaseByPath(path);
         if (l == null) {

@@ -1,21 +1,30 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  *
@@ -37,7 +46,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public void add(HopUnderReplicatedBlock entity) throws PersistanceException {
+  public void add(HopUnderReplicatedBlock entity)
+      throws TransactionContextException {
     if (removedurBlocks.get(entity.getBlockId()) != null ) {
         removedurBlocks.remove(entity.getBlockId());  
     }
@@ -68,7 +78,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public int count(CounterType counter, Object... params) throws PersistanceException {
+  public int count(CounterType counter, Object... params)
+      throws StorageException {
     HopUnderReplicatedBlock.Counter urCounter = (HopUnderReplicatedBlock.Counter) counter;
 
     switch (urCounter) {
@@ -89,7 +100,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public Collection<HopUnderReplicatedBlock> findList(FinderType<HopUnderReplicatedBlock> finder, Object... params) throws PersistanceException {
+  public Collection<HopUnderReplicatedBlock> findList(FinderType<HopUnderReplicatedBlock> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopUnderReplicatedBlock.Finder urFinder = (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
       case All:
@@ -154,7 +166,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public HopUnderReplicatedBlock find(FinderType<HopUnderReplicatedBlock> finder, Object... params) throws PersistanceException {
+  public HopUnderReplicatedBlock find(FinderType<HopUnderReplicatedBlock> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopUnderReplicatedBlock.Finder urFinder = (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
       case ByBlockId:
@@ -200,7 +213,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public void remove(HopUnderReplicatedBlock entity) throws PersistanceException {
+  public void remove(HopUnderReplicatedBlock entity)
+      throws TransactionContextException {
 
     if (!urBlocks.containsKey(entity.getBlockId())) {
       throw new TransactionContextException("Unattached under replica [blk:" + entity.getBlockId() + ", level: " + entity.getLevel() + " ] passed to be removed");
@@ -218,7 +232,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() throws StorageCallPreventedException,
+      StorageException {
     clear();
     aboutToAccessStorage();
     dataAccess.removeAll();
@@ -226,7 +241,8 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
 
   @Override
-  public void update(HopUnderReplicatedBlock entity) throws PersistanceException {
+  public void update(HopUnderReplicatedBlock entity)
+      throws TransactionContextException {
     if (removedurBlocks.get(entity.getBlockId()) != null) {
       throw new TransactionContextException("Removed under replica passed to be persisted");
     }
@@ -274,13 +290,13 @@ public class UnderReplicatedBlockContext extends EntityContext<HopUnderReplicate
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Under Replicated Blocks",newurBlocks.size(),modifiedurBlocks.size(),removedurBlocks.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

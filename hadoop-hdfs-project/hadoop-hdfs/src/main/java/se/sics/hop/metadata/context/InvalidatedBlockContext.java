@@ -1,22 +1,31 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.metadata.hdfs.entity.hop.HopBlockLookUp;
+import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
@@ -38,7 +47,8 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public void add(HopInvalidatedBlock invBlock) throws PersistanceException {
+  public void add(HopInvalidatedBlock invBlock)
+      throws TransactionContextException {
     if (removedInvBlocks.containsKey(invBlock)) {
       throw new TransactionContextException("Removed invalidated-block passed to be persisted");
     }
@@ -77,7 +87,7 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public int count(CounterType<HopInvalidatedBlock> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopInvalidatedBlock> counter, Object... params) {
 //    HopInvalidatedBlock.Counter iCounter = (HopInvalidatedBlock.Counter) counter;
 //    switch (iCounter) {
 //      case All:
@@ -95,7 +105,8 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public HopInvalidatedBlock find(FinderType<HopInvalidatedBlock> finder, Object... params) throws PersistanceException {
+  public HopInvalidatedBlock find(FinderType<HopInvalidatedBlock> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopInvalidatedBlock.Finder iFinder = (HopInvalidatedBlock.Finder) finder;
 
     switch (iFinder) {
@@ -144,7 +155,8 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public Collection<HopInvalidatedBlock> findList(FinderType<HopInvalidatedBlock> finder, Object... params) throws PersistanceException {
+  public Collection<HopInvalidatedBlock> findList(FinderType<HopInvalidatedBlock> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopInvalidatedBlock.Finder iFinder = (HopInvalidatedBlock.Finder) finder;
     
     switch (iFinder) {
@@ -242,12 +254,13 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public void prepare(TransactionLocks lks) throws StorageException { 
+  public void prepare(TransactionLocks lks) throws StorageException {
     dataAccess.prepare(removedInvBlocks.values(), newInvBlocks.values(), new ArrayList<HopInvalidatedBlock>());
   }
 
   @Override
-  public void remove(HopInvalidatedBlock invBlock) throws TransactionContextException {
+  public void remove(HopInvalidatedBlock invBlock)
+      throws TransactionContextException {
     if (!invBlocks.containsKey(invBlock)) {
        // This is not necessary for invalidated-block
        throw new TransactionContextException("Unattached invalidated-block passed to be removed");
@@ -266,12 +279,12 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(HopInvalidatedBlock entity) throws TransactionContextException {
+  public void update(HopInvalidatedBlock entity) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
   
@@ -322,13 +335,13 @@ public class InvalidatedBlockContext extends EntityContext<HopInvalidatedBlock> 
 
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Invalidated Blocks",newInvBlocks.size(),0,removedInvBlocks.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

@@ -11,7 +11,7 @@ import org.apache.hadoop.hdfs.security.token.block.BlockTokenSecretManager;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import org.apache.hadoop.util.Time;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
@@ -197,7 +197,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Variables.updateBlockTokenKeys(currentKey, nextKey);
         return null;
       }
@@ -241,7 +241,7 @@ public class NameNodeBlockTokenSecretManager extends BlockTokenSecretManager {
       }
 
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         Map<Integer, BlockKey> keys = Variables.getAllBlockTokenKeysByType();
         if (keys.isEmpty()) {
           log.debug("keys is not generated yet to be updated");

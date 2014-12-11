@@ -65,9 +65,8 @@ import org.apache.hadoop.util.VersionInfo;
 import org.znerd.xmlenc.XMLOutputter;
 
 import se.sics.hop.common.INodeUtil;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
@@ -828,14 +827,15 @@ class NamenodeJspHelper {
           }
 
           @Override
-          public Object performTask() throws PersistanceException, IOException {
+          public Object performTask() throws StorageException, IOException {
             return blockManager.getBlockCollection(block);
           }
         }.handle();
       }
     }
 
-    public void toXML(XMLOutputter doc) throws IOException, PersistanceException {
+    public void toXML(XMLOutputter doc) throws IOException,
+        StorageException {
       doc.startTag("block_info");
       if (block == null) {
         doc.startTag("error");

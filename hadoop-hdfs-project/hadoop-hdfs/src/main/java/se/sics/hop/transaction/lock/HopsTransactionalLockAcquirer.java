@@ -15,6 +15,8 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
+
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -29,7 +31,7 @@ public final class HopsTransactionalLockAcquirer extends TransactionLockAcquirer
   }
 
   @Override
-  public void acquire() throws Exception {
+  public void acquire() throws IOException {
     for (HopsLock lock : locks.getSortedLocks()) {
       lock.acquire(locks);
     }

@@ -30,7 +30,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.server.common.GenerationStamp;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Test;
@@ -100,7 +100,7 @@ public class TestDatanodeDescriptor {
        INodeIdentifier inodeIdentifier;
 
        @Override
-       public void setUp() throws PersistanceException, IOException {
+       public void setUp() throws StorageException, IOException {
          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
        }
 
@@ -112,7 +112,7 @@ public class TestDatanodeDescriptor {
        }
 
        @Override
-       public Object performTask() throws PersistanceException, IOException {
+       public Object performTask() throws StorageException, IOException {
          return dn.addBlock(blk);
        }
 
@@ -124,7 +124,7 @@ public class TestDatanodeDescriptor {
        INodeIdentifier inodeIdentifier;
 
        @Override
-       public void setUp() throws PersistanceException, IOException {
+       public void setUp() throws StorageException, IOException {
          inodeIdentifier = INodeUtil.resolveINodeFromBlock(blk);
        }
 
@@ -136,7 +136,7 @@ public class TestDatanodeDescriptor {
        }
 
        @Override
-       public Object performTask() throws PersistanceException, IOException {
+       public Object performTask() throws StorageException, IOException {
          return dn.removeBlock(blk);
        }
 

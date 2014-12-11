@@ -1,21 +1,30 @@
 package se.sics.hop.metadata.context;
 
 import com.google.common.primitives.Ints;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.ExcessReplicaDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
+import se.sics.hop.metadata.hdfs.entity.hop.HopExcessReplica;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 /**
  *
@@ -36,7 +45,8 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
 
   @Override
-  public void add(HopExcessReplica exReplica) throws TransactionContextException {
+  public void add(HopExcessReplica exReplica)
+      throws TransactionContextException {
     if (removedExReplica.containsKey(exReplica)) {
       throw new TransactionContextException("Removed excess-replica passed to be persisted");
     }
@@ -70,7 +80,7 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
 
   @Override
-  public int count(CounterType<HopExcessReplica> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<HopExcessReplica> counter, Object... params) {
 //    HopExcessReplica.Counter eCounter = (HopExcessReplica.Counter) counter;
 //    switch (eCounter) {
 //      case All:
@@ -82,7 +92,8 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
 
   @Override
   public HopExcessReplica find(FinderType<HopExcessReplica> finder,
-          Object... params) throws PersistanceException {
+          Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
     HopExcessReplica result = null;
 
@@ -138,7 +149,8 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
 
   @Override
-  public Collection<HopExcessReplica> findList(FinderType<HopExcessReplica> finder, Object... params) throws PersistanceException {
+  public Collection<HopExcessReplica> findList(FinderType<HopExcessReplica> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
 
     switch (eFinder) {
@@ -216,7 +228,8 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
     }
 
   @Override
-  public void remove(HopExcessReplica exReplica) throws PersistanceException {
+  public void remove(HopExcessReplica exReplica)
+      throws TransactionContextException {
     if (exReplicas.remove(exReplica) == null) {
       throw new TransactionContextException("Unattached excess-replica passed to be removed");
     }
@@ -233,12 +246,12 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
   @Override
-  public void update(HopExcessReplica entity) throws PersistanceException {
+  public void update(HopExcessReplica entity) {
     throw new UnsupportedOperationException("Not supported yet.");
   }
 
@@ -261,13 +274,13 @@ public class ExcessReplicaContext extends EntityContext<HopExcessReplica> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Excess Replicas",newExReplica.size(),0,removedExReplica.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     HOPTransactionContextMaintenanceCmds hopCmds = (HOPTransactionContextMaintenanceCmds) cmds;
     switch (hopCmds) {
       case INodePKChanged:

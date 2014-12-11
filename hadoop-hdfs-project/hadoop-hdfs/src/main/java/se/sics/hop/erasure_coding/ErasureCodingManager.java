@@ -12,7 +12,7 @@ import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.StringUtils;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.transaction.EntityManager;
@@ -26,11 +26,9 @@ import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -188,7 +186,7 @@ public class ErasureCodingManager extends Configured{
         private String parityPath;
 
         @Override
-        public void setUp() throws PersistanceException, IOException {
+        public void setUp() throws StorageException, IOException {
           super.setUp();
           EncodingStatus status = namesystem.getEncodingStatus(path);
           // TODO How to handle the case that status was not found?
@@ -207,7 +205,7 @@ public class ErasureCodingManager extends Configured{
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           INode sourceInode = namesystem.getINode(path);
           INode parityInode = namesystem.getINode(parityPath);
           // TODO How to make sure that all blocks are available at this very moment?
@@ -269,7 +267,7 @@ public class ErasureCodingManager extends Configured{
     LightWeightRequestHandler findHandler = new LightWeightRequestHandler(
         EncodingStatusOperationType.FIND_REQUESTED_ENCODINGS) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         EncodingStatusDataAccess<EncodingStatus> dataAccess = (EncodingStatusDataAccess)
             StorageFactory.getDataAccess(EncodingStatusDataAccess.class);
         return dataAccess.findRequestedEncodings(limit);

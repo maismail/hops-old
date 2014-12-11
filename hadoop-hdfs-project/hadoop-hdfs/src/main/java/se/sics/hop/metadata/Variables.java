@@ -1,5 +1,21 @@
 package se.sics.hop.metadata;
 
+import org.apache.commons.io.output.ByteArrayOutputStream;
+import org.apache.hadoop.hdfs.security.token.block.BlockKey;
+import org.apache.hadoop.hdfs.server.common.StorageInfo;
+import se.sics.hop.common.CountersQueue;
+import se.sics.hop.exception.StorageException;
+import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopLongVariable;
+import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
+import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.handler.HDFSOperationType;
+import se.sics.hop.transaction.handler.LightWeightRequestHandler;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -9,20 +25,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.commons.io.output.ByteArrayOutputStream;
-import org.apache.hadoop.hdfs.security.token.block.BlockKey;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
-import se.sics.hop.transaction.EntityManager;
-import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import se.sics.hop.common.CountersQueue;
-import se.sics.hop.metadata.hdfs.dal.VariableDataAccess;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopArrayVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopByteArrayVariable;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopLongVariable;
-import se.sics.hop.exception.PersistanceException;
-import se.sics.hop.metadata.hdfs.entity.hop.var.HopIntVariable;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**
  *
@@ -33,7 +35,7 @@ public class Variables {
   public static CountersQueue.Counter incrementBlockIdCounter(final int increment) throws IOException {
     return (CountersQueue.Counter) new LightWeightRequestHandler(HDFSOperationType.UPDATE_BLOCK_ID_COUNTER) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().writeLock();
         long oldValue = ((HopLongVariable) vd.getVariable(HopVariable.Finder.BlockID)).getValue();
@@ -48,7 +50,7 @@ public class Variables {
   public static CountersQueue.Counter incrementINodeIdCounter(final int increment) throws IOException {
     return (CountersQueue.Counter) new LightWeightRequestHandler(HDFSOperationType.UPDATE_INODE_ID_COUNTER) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().writeLock();
         int oldValue = ((HopIntVariable) vd.getVariable(HopVariable.Finder.INodeID)).getValue();
@@ -67,7 +69,7 @@ public class Variables {
   public static Long incrementMisReplicatedIndex(final int increment) throws IOException {
     return (Long) new LightWeightRequestHandler(HDFSOperationType.INCREMENT_MIS_REPLICATED_FILES_INDEX) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().writeLock();
         HopLongVariable var = (HopLongVariable) vd.getVariable(HopVariable.Finder.MisReplicatedFilesIndex);
@@ -83,7 +85,7 @@ public class Variables {
   public static void enterClusterSafeMode() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.ENTER_CLUSTER_SAFE_MODE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().writeLock();
         vd.setVariable(new HopIntVariable(HopVariable.Finder.ClusterInSafeMode, 1));
@@ -96,7 +98,7 @@ public class Variables {
     public static void exitClusterSafeMode() throws IOException {
     new LightWeightRequestHandler(HDFSOperationType.EXIT_CLUSTER_SAFE_MODE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().writeLock();
         vd.setVariable(new HopIntVariable(HopVariable.Finder.ClusterInSafeMode, 0));
@@ -109,7 +111,7 @@ public class Variables {
   public static boolean isClusterInSafeMode() throws IOException {
     Boolean safemode = (Boolean) new LightWeightRequestHandler(HDFSOperationType.GET_CLUSTER_SAFE_MODE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         StorageFactory.getConnector().readLock();
         HopIntVariable var = (HopIntVariable) vd.getVariable(HopVariable.Finder.ClusterInSafeMode);
@@ -134,15 +136,18 @@ public class Variables {
     }.handle();
   }
 
-  public static void setReplicationIndex(List<Integer> indeces) throws PersistanceException {
+  public static void setReplicationIndex(List<Integer> indeces) throws
+      StorageException, TransactionContextException {
     updateVariable(new HopArrayVariable(HopVariable.Finder.ReplicationIndex, indeces));
   }
 
-  public static List<Integer> getReplicationIndex() throws PersistanceException {
+  public static List<Integer> getReplicationIndex() throws
+      StorageException, TransactionContextException {
     return (List<Integer>) ((HopArrayVariable) getVariable(HopVariable.Finder.ReplicationIndex)).getVarsValue();
   }
 
-  public static void setStorageInfo(StorageInfo storageInfo) throws PersistanceException {
+  public static void setStorageInfo(StorageInfo storageInfo) throws
+      StorageException, TransactionContextException {
     List<Object> vals = new ArrayList<Object>();
     vals.add(storageInfo.getLayoutVersion());
     vals.add(storageInfo.getNamespaceID());
@@ -152,18 +157,21 @@ public class Variables {
     updateVariable(new HopArrayVariable(HopVariable.Finder.StorageInfo, vals));
   }
 
-  public static StorageInfo getStorageInfo() throws PersistanceException {
+  public static StorageInfo getStorageInfo()
+      throws StorageException, TransactionContextException {
     HopArrayVariable var = (HopArrayVariable) getVariable(HopVariable.Finder.StorageInfo);
     List<Object> vals = (List<Object>) var.getVarsValue();
     return new StorageInfo((Integer) vals.get(0), (Integer) vals.get(1), (String) vals.get(2), (Long) vals.get(3), (String) vals.get(4));
   }
 
   
-  public static void updateBlockTokenKeys(BlockKey curr, BlockKey next) throws PersistanceException, IOException {
+  public static void updateBlockTokenKeys(BlockKey curr, BlockKey next) throws
+      IOException {
     updateBlockTokenKeys(curr, next, null);
   }
   
-  public static void updateBlockTokenKeys(BlockKey curr, BlockKey next, BlockKey simple) throws PersistanceException, IOException {
+  public static void updateBlockTokenKeys(BlockKey curr, BlockKey next, BlockKey simple) throws
+      IOException {
     HopArrayVariable arr = new HopArrayVariable(HopVariable.Finder.BlockTokenKeys);
     arr.addVariable(serializeBlockKey(curr, HopVariable.Finder.BTCurrKey));
     arr.addVariable(serializeBlockKey(next, HopVariable.Finder.BTNextKey));
@@ -189,19 +197,23 @@ public class Variables {
     return getAllBlockTokenKeys(false, true);
   }
 
-  public static int getSIdCounter() throws PersistanceException {
+  public static int getSIdCounter()
+      throws StorageException, TransactionContextException {
     return (Integer) getVariable(HopVariable.Finder.SIdCounter).getValue();
   }
 
-  public static void setSIdCounter(int sid) throws PersistanceException {
+  public static void setSIdCounter(int sid)
+      throws StorageException, TransactionContextException {
     updateVariable(new HopIntVariable(HopVariable.Finder.SIdCounter, sid));
   }
     
-  public static long getMaxNNID() throws PersistanceException {
+  public static long getMaxNNID()
+      throws StorageException, TransactionContextException {
       return (Long) getVariable(HopVariable.Finder.MaxNNID).getValue();
   }
   
-  public static void setMaxNNID(long val) throws PersistanceException {
+  public static void setMaxNNID(long val)
+      throws StorageException, TransactionContextException {
       updateVariable(new HopLongVariable(HopVariable.Finder.MaxNNID, val));
   }
   
@@ -246,18 +258,20 @@ public class Variables {
   private static HopVariable getVariableLightWeight(final HopVariable.Finder varType) throws IOException {
     return (HopVariable) new LightWeightRequestHandler(HDFSOperationType.GET_VARIABLE) {
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws IOException {
         VariableDataAccess vd = (VariableDataAccess) StorageFactory.getDataAccess(VariableDataAccess.class);
         return vd.getVariable(varType);
       }
     }.handle();
   }
     
-  private static void updateVariable(HopVariable var) throws PersistanceException {
+  private static void updateVariable(HopVariable var) throws
+      StorageException, TransactionContextException {
     EntityManager.update(var);
   }
 
-  private static HopVariable getVariable(HopVariable.Finder varType) throws PersistanceException {
+  private static HopVariable getVariable(HopVariable.Finder varType) throws
+      StorageException, TransactionContextException {
     return EntityManager.find(varType);
   }
   

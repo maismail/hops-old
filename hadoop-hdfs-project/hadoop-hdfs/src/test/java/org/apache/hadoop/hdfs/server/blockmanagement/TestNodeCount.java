@@ -35,7 +35,7 @@ import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import se.sics.hop.metadata.INodeIdentifier;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.apache.hadoop.util.Time;
 import org.junit.Test;
@@ -111,7 +111,7 @@ public class TestNodeCount {
         INodeIdentifier inodeIdentifier;
 
         @Override
-        public void setUp() throws PersistanceException, IOException {
+        public void setUp() throws StorageException, IOException {
           inodeIdentifier = INodeUtil.resolveINodeFromBlock(block.getLocalBlock());
         }
 
@@ -123,7 +123,7 @@ public class TestNodeCount {
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           final Iterator<DatanodeDescriptor> iter = bm.blocksMap.nodeIterator(block.getLocalBlock());
           BlockInfo blkInfo = new BlockInfo(block.getLocalBlock(), inodeIdentifier.getInodeId());
           Collection<String> excessDns = bm.excessReplicateMap.get(blkInfo);
@@ -207,7 +207,7 @@ public class TestNodeCount {
         INodeIdentifier inodeIdentifier;
 
         @Override
-        public void setUp() throws PersistanceException, IOException {
+        public void setUp() throws StorageException, IOException {
           inodeIdentifier = INodeUtil.resolveINodeFromBlock(block);
         }
 
@@ -219,7 +219,7 @@ public class TestNodeCount {
         }
 
         @Override
-        public Object performTask() throws PersistanceException, IOException {
+        public Object performTask() throws StorageException, IOException {
           lastBlock = block;
           lastNum = namesystem.getBlockManager().countNodes(block);
           return lastNum;

@@ -30,7 +30,7 @@ import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import org.junit.Test;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
@@ -80,7 +80,7 @@ public class TestFSNamesystem {
       }
       
       @Override
-      public Object performTask() throws PersistanceException, IOException {
+      public Object performTask() throws StorageException, IOException {
         leaseMan.addLease(holder, src);
         return null;
       }

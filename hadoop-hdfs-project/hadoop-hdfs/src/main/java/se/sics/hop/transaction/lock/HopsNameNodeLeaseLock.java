@@ -20,6 +20,8 @@ package se.sics.hop.transaction.lock;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
 
+import java.io.IOException;
+
 final class HopsNameNodeLeaseLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
   private Lease nameNodeLease;
@@ -29,7 +31,7 @@ final class HopsNameNodeLeaseLock extends HopsLock {
   }
 
   @Override
-  protected void acquire(TransactionLocks locks) throws Exception {
+  protected void acquire(TransactionLocks locks) throws IOException {
     nameNodeLease = acquireLock(lockType, Lease.Finder.ByPKey,
         HdfsServerConstants.NAMENODE_LEASE_HOLDER);
   }

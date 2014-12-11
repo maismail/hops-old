@@ -1,21 +1,22 @@
 package se.sics.hop.metadata.context;
 
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
-import java.util.*;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
-import se.sics.hop.metadata.hdfs.entity.FinderType;
 import org.apache.hadoop.hdfs.server.namenode.Lease;
-import se.sics.hop.exception.LockUpgradeException;
-import se.sics.hop.exception.PersistanceException;
+import se.sics.hop.exception.StorageCallPreventedException;
+import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.metadata.hdfs.dal.LeaseDataAccess;
-import se.sics.hop.exception.StorageException;
+import se.sics.hop.metadata.hdfs.entity.CounterType;
+import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.EntityContextStat;
+import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
-import se.sics.hop.transaction.lock.HopsLeaseLock;
-import se.sics.hop.transaction.lock.HopsLock;
-import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 /**
  *
@@ -41,7 +42,7 @@ public class LeaseContext extends EntityContext<Lease> {
   }
 
   @Override
-  public void add(Lease lease) throws PersistanceException {
+  public void add(Lease lease) throws TransactionContextException {
     if (removedLeases.containsKey(lease) || modifiedLeases.containsKey(lease)) {
       throw new TransactionContextException("Removed/modified lease passed to be persisted");
     }
@@ -74,7 +75,8 @@ public class LeaseContext extends EntityContext<Lease> {
   }
 
   @Override
-  public int count(CounterType<Lease> counter, Object... params) throws PersistanceException {
+  public int count(CounterType<Lease> counter, Object... params)
+      throws StorageException {
     Lease.Counter lCounter = (Lease.Counter) counter;
     switch (lCounter) {
       case All:
@@ -91,7 +93,8 @@ public class LeaseContext extends EntityContext<Lease> {
   }
 
   @Override
-  public Lease find(FinderType<Lease> finder, Object... params) throws PersistanceException {
+  public Lease find(FinderType<Lease> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     Lease.Finder lFinder = (Lease.Finder) finder;
     Lease result = null;
     switch (lFinder) {
@@ -142,7 +145,8 @@ public class LeaseContext extends EntityContext<Lease> {
   }
 
   @Override
-  public Collection<Lease> findList(FinderType<Lease> finder, Object... params) throws PersistanceException {
+  public Collection<Lease> findList(FinderType<Lease> finder, Object... params)
+      throws StorageCallPreventedException, StorageException {
     Lease.Finder lFinder = (Lease.Finder) finder;
     Collection<Lease> result = null;
     switch (lFinder) {
@@ -198,7 +202,7 @@ public class LeaseContext extends EntityContext<Lease> {
     }
 
   @Override
-  public void remove(Lease lease) throws PersistanceException {
+  public void remove(Lease lease) throws TransactionContextException {
     if (leases.remove(lease.getHolder()) == null) {
       throw new TransactionContextException("Unattached lease passed to be removed");
     }
@@ -210,12 +214,12 @@ public class LeaseContext extends EntityContext<Lease> {
   }
 
   @Override
-  public void removeAll() throws PersistanceException {
+  public void removeAll() throws StorageException {
     dataAccess.removeAll();
   }
 
   @Override
-  public void update(Lease lease) throws PersistanceException {
+  public void update(Lease lease) throws TransactionContextException {
     if (removedLeases.containsKey(lease)) {
       throw new TransactionContextException("Removed lease passed to be persisted");
     }
@@ -259,13 +263,13 @@ public class LeaseContext extends EntityContext<Lease> {
   }
   
   @Override
-  public EntityContextStat collectSnapshotStat() throws PersistanceException {
+  public EntityContextStat collectSnapshotStat() {
     EntityContextStat stat = new EntityContextStat("Lease",newLeases.size(),modifiedLeases.size(),removedLeases.size());
     return stat;
   }
 
   @Override
-  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) throws PersistanceException {
+  public void snapshotMaintenance(TransactionContextMaintenanceCmds cmds, Object... params) {
     
   }
 }

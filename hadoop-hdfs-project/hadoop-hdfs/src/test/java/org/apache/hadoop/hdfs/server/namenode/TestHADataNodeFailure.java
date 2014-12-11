@@ -1,30 +1,20 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
-import java.io.EOFException;
 import java.io.IOException;
-import java.net.ConnectException;
-import java.util.List;
-import java.util.concurrent.TimeoutException;
+
 import org.apache.commons.logging.Log;
-import se.sics.hop.exception.PersistanceException;
 
 import org.apache.log4j.Level;
 import org.apache.commons.logging.LogFactory;
 import org.apache.commons.logging.impl.Log4JLogger;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FSDataInputStream;
-import org.apache.hadoop.fs.FSDataOutputStream;
-import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.AppendTestUtil;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
-import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
-import se.sics.hop.transaction.EntityManager;
-import org.apache.hadoop.io.IOUtils;
 import org.junit.Test;
 
 /**
