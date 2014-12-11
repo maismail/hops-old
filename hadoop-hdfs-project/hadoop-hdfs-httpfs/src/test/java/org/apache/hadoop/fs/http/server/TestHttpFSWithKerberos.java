@@ -55,6 +55,7 @@ import java.net.URI;
 import java.net.URL;
 import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.Callable;
+import org.junit.Ignore;
 
 public class TestHttpFSWithKerberos extends HFSTestCase {
 
@@ -114,6 +115,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testValidHttpFSAccess() throws Exception {
     createHttpFSServer();
 
@@ -135,6 +137,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testInvalidadHttpFSAccess() throws Exception {
     createHttpFSServer();
 
@@ -149,6 +152,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testDelegationTokenHttpFSAccess() throws Exception {
     createHttpFSServer();
 
@@ -258,6 +262,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testDelegationTokenWithHttpFSFileSystem() throws Exception {
     testDelegationTokenWithinDoAs(HttpFSFileSystem.class, false);
   }
@@ -266,6 +271,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testDelegationTokenWithWebhdfsFileSystem() throws Exception {
     testDelegationTokenWithinDoAs(WebHdfsFileSystem.class, false);
   }
@@ -274,6 +280,7 @@ public class TestHttpFSWithKerberos extends HFSTestCase {
   @TestDir
   @TestJetty
   @TestHdfs
+  @Ignore
   public void testDelegationTokenWithHttpFSFileSystemProxyUser()
     throws Exception {
     testDelegationTokenWithinDoAs(HttpFSFileSystem.class, true);

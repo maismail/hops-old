@@ -1258,5 +1258,14 @@ public class DatanodeManager {
       }
     }.handle();
   }
+  
+  // only for testing
+  @VisibleForTesting
+  void addDnToStorageMapInDB(DatanodeDescriptor nodeDescr ) throws IOException{
+   if(storageIdMap == null){ 
+    storageIdMap = new StorageIdMap();
+   }
+   storageIdMap.update(nodeDescr);
+  }
   //END_HOP_CODE
 }

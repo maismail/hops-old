@@ -41,11 +41,11 @@ for f in $HADOOP_HOME/contrib/capacity-scheduler/*.jar; do
 done
 
 # The maximum amount of heap to use, in MB. Default is 1000.
-export HADOOP_HEAPSIZE=8000
+export HADOOP_HEAPSIZE=2000
 export HADOOP_NAMENODE_INIT_HEAPSIZE=1000
 
 # Extra Java runtime options.  Empty by default.
-export HADOOP_OPTS="-XX:MaxDirectMemorySize=1000m -XX:+HeapDumpOnOutOfMemoryError -Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
+export HADOOP_OPTS="-XX:MaxDirectMemorySize=1000m -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp/hops-hdfs-dump.hprof -Djava.net.preferIPv4Stack=true $HADOOP_CLIENT_OPTS"
 
 # Command specific options appended to HADOOP_OPTS when specified
 export HADOOP_NAMENODE_OPTS="-Dhadoop.security.logger=${HADOOP_SECURITY_LOGGER:-INFO,RFAS} -Dhdfs.audit.logger=${HDFS_AUDIT_LOGGER:-INFO,NullAppender} $HADOOP_NAMENODE_OPTS"

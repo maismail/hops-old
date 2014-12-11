@@ -1751,7 +1751,7 @@ public class MiniDFSCluster {
   public boolean isNameNodeUp(int nnIndex) throws IOException {
     NameNode nameNode = nameNodes[nnIndex].nameNode;
     if (nameNode == null) {
-        return true;        // this node was shut down so return true
+        return false;
     }
     long[] sizes;
     sizes = NameNodeAdapter.getStats(nameNode.getNamesystem());

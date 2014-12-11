@@ -202,16 +202,19 @@ public class NamenodeSelector extends Thread {
     int rrIndex = 0;
 
     public NamenodeSelector.NamenodeHandle getNextNamenode() throws IOException {
+      
+      
+                
         if (nnList == null || nnList.isEmpty()) {
             asyncNNListUpdate();
-            throw new NoAliveNamenodeException();
+            throw new NoAliveNamenodeException("Every thing is null why");
         }
 
         NamenodeSelector.NamenodeHandle handle = getNextNNBasedOnPolicy();
         if (handle == null || handle.getRPCHandle() == null) {
             //update the list right now 
             asyncNNListUpdate();
-            throw new NoAliveNamenodeException();
+            throw new NoAliveNamenodeException(" Started an asynchronous update of the namenode list. ");
         }
         //LOG.debug("Returning " + handle + " for next RPC call. RRIndex " + index);
         //LOG.debug(printNamenodes());

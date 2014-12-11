@@ -47,6 +47,7 @@ import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -470,7 +471,7 @@ public class TestDecommission {
    * Tests cluster storage statistics during decommissioning for
    * federated cluster
    */
-  @Test
+  @Ignore // HOP federation not supported
   public void testClusterStatsFederation() throws Exception {
     testClusterStats(3);
   }
@@ -518,7 +519,7 @@ public class TestDecommission {
    * in the include file are allowed to connect to the namenode in a 
    * federated cluster.
    */
-  @Test
+  @Ignore //hop federation not supported
   public void testHostsFileFederation() throws IOException, InterruptedException {
     // Test for 3 namenode federated cluster
     testHostsFile(3);

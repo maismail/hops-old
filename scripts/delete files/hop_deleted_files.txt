@@ -54,3 +54,10 @@ FSEditLogOpCodes.java
 FSEditLogLoader.java
 FSEditLogOp.java
 TestDeleteBlockPool.java
+TestBalancerWithMultipleNameNodes.java
+TestBPOfferService.java
+TestDataNodeExit.java
+TestDFSHAAdminMiniCluster.java
+TestMultipleNNDataBlockScanner.java
+TestDFSStartupVersions.java
+
