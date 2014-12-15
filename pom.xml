@@ -480,7 +480,7 @@
         <dependency>
           <groupId>com.mysql.ndb</groupId>
           <artifactId>clusterj-platform</artifactId>
-          <version>7.4.2</version>
+          <version>7.3.5</version>
           <classifier>natives-linux</classifier>
         </dependency>
       </dependencies>
