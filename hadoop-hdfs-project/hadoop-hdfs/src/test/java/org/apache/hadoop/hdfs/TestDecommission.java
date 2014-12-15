@@ -360,7 +360,7 @@ public class TestDecommission {
   /**
    * Test decommission for federeated cluster
    */
-  @Test
+  @Ignore
   public void testDecommissionFederation() throws IOException {
     testDecommission(2, 2);
   }
