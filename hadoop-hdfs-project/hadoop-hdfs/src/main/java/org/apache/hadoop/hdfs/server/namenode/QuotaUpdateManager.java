@@ -190,7 +190,7 @@ public class QuotaUpdateManager {
       @Override
       public void acquireLock(TransactionLocks locks) throws IOException {
         HopsLockFactory lf = HopsLockFactory.getInstance();
-        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.READ, iNodeIdentifier));
+        locks.add(lf.getIndividualINodeLock(TransactionLockTypes.INodeLockType.WRITE, iNodeIdentifier));
       }
 
       @Override
