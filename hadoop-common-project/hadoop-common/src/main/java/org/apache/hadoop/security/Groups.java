@@ -18,7 +18,6 @@
 package org.apache.hadoop.security;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,8 +49,6 @@ public class Groups {
   
   private final Map<String, CachedGroups> userToGroupsMap = 
     new ConcurrentHashMap<String, CachedGroups>();
-  private final Map<String, List<String>> staticUserToGroupsMap = 
-      new HashMap<String, List<String>>();
   private final long cacheTimeout;
 
   public Groups(Configuration conf) {
@@ -77,11 +74,6 @@ public class Groups {
    * @throws IOException
    */
   public List<String> getGroups(String user) throws IOException {
-    // No need to lookup for groups of static users
-    List<String> staticMapping = staticUserToGroupsMap.get(user);
-    if (staticMapping != null) {
-      return staticMapping;
-    }
     // Return cached value if available
     CachedGroups groups = userToGroupsMap.get(user);
     long now = Time.now();
