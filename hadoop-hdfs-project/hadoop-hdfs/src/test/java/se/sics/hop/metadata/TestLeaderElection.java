@@ -22,7 +22,6 @@ import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSTestUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,7 +30,6 @@ import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.metadata.hdfs.entity.hop.var.HopVariable;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
-import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -46,6 +44,9 @@ import static org.apache.hadoop.fs.FileSystem.FS_DEFAULT_NAME_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import se.sics.hop.leaderElection.LeaderElection;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.transaction.lock.LeaderLockFactory;
 
 /**
  *
@@ -120,7 +121,7 @@ public class TestLeaderElection {
             isaList.add(nn.getNameNodeAddress());
         }
         //verify that the number of active nn is equal to the number of started NN
-        List<ActiveNamenode> activesNNs = getActiveNN(nnList.get(0).getLeaderElectionInstance());
+        List<ActiveNode> activesNNs = getActiveNN(nnList.get(0).getLeaderElectionInstance());
         assertTrue("wrong number of active NN " + activesNNs.size(), activesNNs.size() == nnList.size());
         //verify that there is one and only one leader.
         int leaderId = 0;
@@ -155,7 +156,7 @@ public class TestLeaderElection {
 
         //verify that the stoped leader is not in the active list anymore
         activesNNs = getActiveNN(nnList.get(newLeaderId).getLeaderElectionInstance());
-        for (ActiveNamenode ann : activesNNs) {
+        for (ActiveNode ann : activesNNs) {
             assertFalse("previous is stil in active nn", ann.getInetSocketAddress().equals(isaList.get(leaderId)));
         }
 
@@ -171,7 +172,7 @@ public class TestLeaderElection {
         //verify that the killed NN is not in the active NN list anymore
         activesNNs = getActiveNN(nnList.get(newLeaderId).getLeaderElectionInstance());
         assertTrue("wrong nb of active nn " + activesNNs.size(), activesNNs.size() == 8);
-        for (ActiveNamenode ann : activesNNs) {
+        for (ActiveNode ann : activesNNs) {
             assertFalse("killed nn is stil in active nn", ann.getInetSocketAddress().equals(isaList.get(tokill)));
         }
 
@@ -191,7 +192,7 @@ public class TestLeaderElection {
             nnList.add(nn);
         }
         //verify that the number of active nn is equal to the number of started NN
-        List<ActiveNamenode> activesNNs = getActiveNN(nnList.get(9).getLeaderElectionInstance());
+        List<ActiveNode> activesNNs = getActiveNN(nnList.get(9).getLeaderElectionInstance());
         assertTrue("wrong number of actives NN " + activesNNs.size(), activesNNs.size() == nnList.size());
         //verify that there is one and only one leader.
         int leaderId = 0;
@@ -208,7 +209,9 @@ public class TestLeaderElection {
         //slowdown leader NN by suspending its thread during 10s 
         nnList.get(leaderId).getLeaderElectionInstance().pause();
 
-        Thread.sleep(leaderCheckInterval * (leaderMissedHB + 2));
+        int sleepTime = leaderCheckInterval * (leaderMissedHB + 2);
+        LOG.info("sleep:" + sleepTime);
+        Thread.sleep(sleepTime);
 
         nnList.get(leaderId).getLeaderElectionInstance().pause();
 
@@ -221,7 +224,7 @@ public class TestLeaderElection {
             }
         }
         assertTrue("there is no leader", nbLeaders > 0);
-        assertTrue("there is more than one leader", nbLeaders == 1);
+        assertTrue("there is more than one leader " + nbLeaders, nbLeaders == 1);
 
     }
 
@@ -270,7 +273,7 @@ public class TestLeaderElection {
 
         long startingTime = System.currentTimeMillis();
         String s = "";
-        while (System.currentTimeMillis() - startingTime < 10 * 60 * 1000) {
+        while (System.currentTimeMillis() - startingTime < 1 * 60 * 1000) {
             //stop random number of random NN
             int nbStop = rand.nextInt(activNNList.size() - 1);
             for (int i = 0; i < nbStop; i++) {
@@ -333,21 +336,22 @@ public class TestLeaderElection {
         }
     }
 
-    private List<ActiveNamenode> getActiveNN(final LeaderElection leaderElector) throws IOException {
-        return (List<ActiveNamenode>) new HopsTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
+    private List<ActiveNode> getActiveNN(final LeaderElection leaderElector) throws IOException {
+        return (List<ActiveNode>) new HopsTransactionalRequestHandler(HDFSOperationType.LEADER_ELECTION) {
 
             @Override
             public void acquireLock(TransactionLocks locks) throws IOException {
-                HopsLockFactory lf = HopsLockFactory.getInstance();
+                LeaderLockFactory lf = LeaderLockFactory.getInstance();
                 locks.add(lf.getLeaderLock(TransactionLockTypes.LockType.WRITE))
                     .add(lf.getVariableLock(HopVariable.Finder.MaxNNID, TransactionLockTypes.LockType.WRITE));
             }
 
-            @Override
-            public Object performTask() throws IOException {
-                List<ActiveNamenode> ann = leaderElector.getActiveNamenodes().getActiveNamenodes();
-                return ann;
-            }
+          @Override
+          public Object performTask() throws IOException {
+            List<ActiveNode> ann = leaderElector.
+                    getActiveNodes().getActiveNodes();
+            return ann;
+          }
         }.handle();
     }
 

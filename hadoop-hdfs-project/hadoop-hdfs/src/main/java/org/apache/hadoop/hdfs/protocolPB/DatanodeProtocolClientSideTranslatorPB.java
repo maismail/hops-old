@@ -69,14 +69,12 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
 
 /**
  * This class is the client side translator to translate the requests made on
@@ -304,12 +302,12 @@ public class DatanodeProtocolClientSideTranslatorPB implements
 
   //START_HOP_CODE
   @Override
-  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+  public SortedActiveNodeList getActiveNamenodes() throws IOException {
 
     try {
       ActiveNamenodeListRequestProto.Builder request = ActiveNamenodeListRequestProto.newBuilder();
       ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodes(NULL_CONTROLLER, request.build());
-      SortedActiveNamenodeList anl = PBHelper.convert(response);
+      SortedActiveNodeList anl = PBHelper.convert(response);
       return anl;
     } catch (ServiceException se) {
       throw ProtobufHelper.getRemoteException(se);
@@ -317,12 +315,12 @@ public class DatanodeProtocolClientSideTranslatorPB implements
   }
 
   @Override
-  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
+  public ActiveNode getNextNamenodeToSendBlockReport() throws IOException {
 
     NameNodeAddressRequestForBlockReportingProto.Builder request = NameNodeAddressRequestForBlockReportingProto.newBuilder();
     try {
-      ActiveNamenodeProto response = rpcProxy.getNextNamenodeToSendBlockReport(NULL_CONTROLLER, request.build());
-      ActiveNamenode aNamenode = PBHelper.convert(response);
+      ActiveNodeProto response = rpcProxy.getNextNamenodeToSendBlockReport(NULL_CONTROLLER, request.build());
+      ActiveNode aNamenode = PBHelper.convert(response);
       return aNamenode;
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);

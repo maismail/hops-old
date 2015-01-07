@@ -26,10 +26,10 @@ import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.protocol.UnresolvedPathException;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.common.INodeResolver;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.leaderElection.node.ActiveNode;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeLockType;
 import se.sics.hop.transaction.lock.TransactionLockTypes.INodeResolveType;
 
@@ -43,14 +43,14 @@ class HopsINodeLock extends HopsBaseINodeLock {
   private final INodeResolveType resolveType;
   private final boolean resolveLink;
   protected final String[] paths;
-  private final Collection<ActiveNamenode> activeNamenodes;
+  private final Collection<ActiveNode> activeNamenodes;
   private final boolean ignoreLocalSubtreeLocks;
   private final long namenodeId;
 
 
   HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
       boolean resolveLink, boolean ignoreLocalSubtreeLocks, long namenodeId,
-      Collection<ActiveNamenode> activeNamenodes, String... paths) {
+      Collection<ActiveNode> activeNamenodes, String... paths) {
     super();
     this.lockType = lockType;
     this.resolveType = resolveType;
@@ -62,13 +62,13 @@ class HopsINodeLock extends HopsBaseINodeLock {
   }
 
   HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
-      boolean resolveLink, Collection<ActiveNamenode> activeNamenodes,
+      boolean resolveLink, Collection<ActiveNode> activeNamenodes,
       String... paths) {
     this(lockType, resolveType, resolveLink, false, -1, activeNamenodes, paths);
   }
 
   HopsINodeLock(INodeLockType lockType, INodeResolveType resolveType,
-      Collection<ActiveNamenode> activeNamenodes, String... paths) {
+      Collection<ActiveNode> activeNamenodes, String... paths) {
     this(lockType, resolveType, true, false, -1, activeNamenodes, paths);
   }
 

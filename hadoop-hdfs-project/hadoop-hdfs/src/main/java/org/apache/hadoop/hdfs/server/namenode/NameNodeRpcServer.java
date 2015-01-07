@@ -125,12 +125,12 @@ import org.apache.hadoop.util.VersionUtil;
 import com.google.protobuf.BlockingService;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
 import se.sics.hop.erasure_coding.ErasureCodingManager;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**
  * This class is responsible for handling all of the RPC calls to the NameNode.
@@ -1136,12 +1136,12 @@ class NameNodeRpcServer implements NamenodeProtocols {
   
   // HOP_CODE_START
   @Override
-  public SortedActiveNamenodeList getActiveNamenodes() throws IOException {
+  public SortedActiveNodeList getActiveNamenodes() throws IOException {
     return nn.getActiveNamenodes();
   }
 
   @Override
-  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
+  public ActiveNode getNextNamenodeToSendBlockReport() throws IOException {
     return nn.getNextNamenodeToSendBlockReport();
   }
   
@@ -1150,7 +1150,7 @@ class NameNodeRpcServer implements NamenodeProtocols {
   }
   
   @Override
-  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException{
+  public SortedActiveNodeList getActiveNamenodesForClient() throws IOException{
     return nn.getActiveNamenodes();
   }
 

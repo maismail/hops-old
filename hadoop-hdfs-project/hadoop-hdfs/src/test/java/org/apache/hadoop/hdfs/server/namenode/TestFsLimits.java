@@ -37,13 +37,14 @@ import org.apache.hadoop.hdfs.protocol.FSLimitException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.MaxDirectoryItemsExceededException;
 import org.apache.hadoop.hdfs.protocol.FSLimitException.PathComponentTooLongException;
 import org.apache.hadoop.hdfs.protocol.QuotaExceededException;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.transaction.lock.TransactionLockTypes;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.metadata.StorageFactory;
 import org.junit.Before;
 import org.junit.Test;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.node.SortedActiveNodeListPBImpl;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
@@ -68,7 +69,7 @@ public class TestFsLimits {
          new PermissionStatus("root", "wheel", FsPermission.getDefault())
     );
     NameNode nn = mock(NameNode.class);
-    when(nn.getActiveNamenodes()).thenReturn(new SortedActiveNamenodeList
+    when(nn.getActiveNamenodes()).thenReturn(new SortedActiveNodeListPBImpl
         (Collections.EMPTY_LIST));
     fsn.setNameNode(nn);
     when(fsn.getNameNode()).thenReturn(nn);

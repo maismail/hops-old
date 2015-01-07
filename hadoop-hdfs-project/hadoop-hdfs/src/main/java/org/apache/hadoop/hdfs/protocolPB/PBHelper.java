@@ -141,11 +141,14 @@ import com.google.common.collect.Lists;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.CodedInputStream;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.leaderElection.LeaderElectionProtos;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
+import se.sics.hop.leaderElection.node.ActiveNodePBImpl;
+import se.sics.hop.leaderElection.node.SortedActiveNodeListPBImpl;
 
 /**
  * Utilities for converting protobuf classes to and from implementation classes
@@ -1360,40 +1363,40 @@ public class PBHelper {
   }
   
 //HOP_CODE_START
-  public static SortedActiveNamenodeList convert(ActiveNamenodeListResponseProto p) {
-    List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
-    List<ActiveNamenodeProto> anlp = p.getNamenodesList();
+  public static SortedActiveNodeList convert(ActiveNamenodeListResponseProto p) {
+    List<ActiveNode> anl = new ArrayList<ActiveNode>();
+    List<ActiveNodeProto> anlp = p.getNamenodesList();
     for (int i = 0; i < anlp.size(); i++) {
-      ActiveNamenode an = PBHelper.convert(anlp.get(i));
+      ActiveNode an = PBHelper.convert(anlp.get(i));
       anl.add(an);
     }
-    return new SortedActiveNamenodeList(anl);
+    return new SortedActiveNodeListPBImpl(anl);
   }
   
-  public static ActiveNamenode convert(ActiveNamenodeProto p)
+  public static ActiveNode convert(ActiveNodeProto p)
   {
-    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
+    ActiveNode an = new ActiveNodePBImpl(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
     return an;
   }
   
-  public static ActiveNamenodeProto convert(ActiveNamenode p)
+  public static ActiveNodeProto convert(ActiveNode p)
   {
-    ActiveNamenodeProto.Builder anp = ActiveNamenodeProto.newBuilder();
+    ActiveNodeProto.Builder anp = ActiveNodeProto.newBuilder();
     anp.setId(p.getId());
     anp.setHostname(p.getHostname());
-    anp.setIpAddress(p.getRpcIpAddress());
-    anp.setPort(p.getRpcPort());
+    anp.setIpAddress(p.getIpAddress());
+    anp.setPort(p.getPort());
     anp.setHttpAddress(p.getHttpAddress());
     return anp.build();
   }
   
-  public static ActiveNamenodeListResponseProto convert(SortedActiveNamenodeList anlWrapper)
+  public static ActiveNamenodeListResponseProto convert(SortedActiveNodeList anlWrapper)
   {
-    List<ActiveNamenode> anl = anlWrapper.getActiveNamenodes();
+    List<ActiveNode> anl = anlWrapper.getActiveNodes();
     ActiveNamenodeListResponseProto.Builder anlrpb = ActiveNamenodeListResponseProto.newBuilder();
     for(int i = 0; i < anl.size(); i++)
     {
-       ActiveNamenodeProto anp = PBHelper.convert(anl.get(i));
+       ActiveNodeProto anp = PBHelper.convert(anl.get(i));
        anlrpb.addNamenodes(anp);
     }
     return anlrpb.build();

@@ -18,17 +18,17 @@
 package se.sics.hop.transaction.lock;
 
 import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.LeaderElection;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hop.HopLeader;
 import se.sics.hop.transaction.EntityManager;
 
 import java.io.IOException;
+import se.sics.hop.leaderElection.LeaderElection;
 
-final class HopsLeaderLock extends HopsLock {
+final class LeaderLock extends HopsLock {
   private final TransactionLockTypes.LockType lockType;
 
-  HopsLeaderLock(TransactionLockTypes.LockType lockType) {
+  LeaderLock(TransactionLockTypes.LockType lockType) {
     this.lockType = lockType;
   }
 

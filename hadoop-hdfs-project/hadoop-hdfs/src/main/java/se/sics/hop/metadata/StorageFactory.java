@@ -1,5 +1,6 @@
 package se.sics.hop.metadata;
 
+import se.sics.hop.metadata.context.VariableContext;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;

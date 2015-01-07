@@ -88,7 +88,6 @@ import org.apache.hadoop.hdfs.server.namenode.ha.HAState;
 import org.apache.hadoop.hdfs.server.namenode.metrics.FSNamesystemMBean;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
 import org.apache.hadoop.hdfs.server.namenode.web.resources.NamenodeWebHdfsMethods;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
@@ -259,6 +258,7 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUBTREE_EXECUTOR_LIMIT_KE
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_SUPPORT_APPEND_KEY;
 import static org.apache.hadoop.util.Time.now;
+import se.sics.hop.leaderElection.node.ActiveNode;
 import static se.sics.hop.transaction.lock.HopsLockFactory.BLK;
 import static se.sics.hop.transaction.lock.HopsLockFactory.getInstance;
 
@@ -7526,8 +7526,8 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
             }
 
             for (ProjectedINode inode : children) {
-              List<ActiveNamenode> activeNamenodes =
-                  nameNode.getActiveNamenodes().getActiveNamenodes();
+              List<ActiveNode> activeNamenodes =
+                  nameNode.getActiveNamenodes().getActiveNodes();
               if (SubtreeLockHelper.isSubtreeLocked(
                   inode.isSubtreeLocked(),
                   inode.getSubtreeLockOwner(),

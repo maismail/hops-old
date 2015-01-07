@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
+import se.sics.hop.leaderElection.node.ActiveNode;
 
 /**
  *
@@ -47,7 +47,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
   public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
       boolean ignoreLocalSubtreeLocks, long namenodeId,
-      Collection<ActiveNamenode> activeNamenodes, String src, String dst,
+      Collection<ActiveNode> activeNamenodes, String src, String dst,
       boolean legacyRename) {
     super(lockType, resolveType, false, ignoreLocalSubtreeLocks, namenodeId,
         activeNamenodes, src, dst);
@@ -56,7 +56,7 @@ final class HopsRenameINodeLock extends HopsINodeLock {
 
   public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
-      Collection<ActiveNamenode> activeNamenodes, String src, String dst,
+      Collection<ActiveNode> activeNamenodes, String src, String dst,
       boolean legacyRename) {
     super(lockType, resolveType, false, activeNamenodes, src, dst);
     this.legacyRename = legacyRename;
@@ -65,14 +65,14 @@ final class HopsRenameINodeLock extends HopsINodeLock {
   public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
       boolean ignoreLocalSubtreeLocks, long namenodeId,
-      List<ActiveNamenode> activeNamenodes, String src, String dst) {
+      List<ActiveNode> activeNamenodes, String src, String dst) {
     this(lockType, resolveType, ignoreLocalSubtreeLocks, namenodeId,
         activeNamenodes, src, dst, false);
   }
 
   public HopsRenameINodeLock(TransactionLockTypes.INodeLockType lockType,
       TransactionLockTypes.INodeResolveType resolveType,
-      Collection<ActiveNamenode> activeNamenodes, String src, String dst) {
+      Collection<ActiveNode> activeNamenodes, String src, String dst) {
     this(lockType, resolveType, activeNamenodes, src, dst, false);
   }
 

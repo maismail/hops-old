@@ -166,10 +166,10 @@ import org.apache.hadoop.hdfs.NamenodeSelector.NamenodeHandle;
 import org.apache.hadoop.hdfs.protocol.AlreadyBeingCreatedException;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.server.namenode.NotReplicatedYetException;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 import se.sics.hop.transaction.lock.SubtreeLockedException;
 
 /********************************************************
@@ -2668,11 +2668,11 @@ public class DFSClient implements java.io.Closeable {
   }
 
   private interface NameNodeFetcher {
-    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException;
+    public NamenodeHandle getNextNameNode(List<ActiveNode> blackList) throws IOException;
   }
 
   private final NameNodeFetcher defaultNameNodeFetcher = new NameNodeFetcher() {
-    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
+    public NamenodeHandle getNextNameNode(List<ActiveNode> blackList) throws IOException {
       NamenodeSelector.NamenodeHandle handle = null;
       for (int i = 0; i < 10; i++) {
         handle = namenodeSelector.getNextNamenode();
@@ -2685,7 +2685,7 @@ public class DFSClient implements java.io.Closeable {
   };
 
   private final NameNodeFetcher leaderNameNodeFetcher = new NameNodeFetcher() {
-    public NamenodeHandle getNextNameNode(List<ActiveNamenode> blackList) throws IOException {
+    public NamenodeHandle getNextNameNode(List<ActiveNode> blackList) throws IOException {
       NamenodeHandle leader = namenodeSelector.getLeadingNameNode();
       if (blackList.contains(leader)) {
         return null;
@@ -2716,7 +2716,7 @@ public class DFSClient implements java.io.Closeable {
     //for dead Namenodes (depends on the convergence rate of Leader Election). 
     //To avoid contacting a dead node a list of black listed namenodes is also maintained on the 
     //client side to avoid contacting dead NNs
-    List<ActiveNamenode> blackListedNamenodes = new ArrayList<ActiveNamenode>();
+    List<ActiveNode> blackListedNamenodes = new ArrayList<ActiveNode>();
 
     IOException exception = null;
     NamenodeSelector.NamenodeHandle handle = null;
@@ -2782,14 +2782,14 @@ public class DFSClient implements java.io.Closeable {
     return true;
   }
   
-  public SortedActiveNamenodeList getActiveNamenodes() throws IOException{
+  public SortedActiveNodeList getActiveNodes() throws IOException{
     ClientActionHandler handler = new ClientActionHandler(){
         @Override
         public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
             return namenode.getActiveNamenodesForClient();
         }
     };
-    return (SortedActiveNamenodeList) doClientActionWithRetry(handler, "getActiveNamenodes");
+    return (SortedActiveNodeList) doClientActionWithRetry(handler, "getActiveNodes");
   }
 
     public LocatedBlock getAdditionalDatanode(final String src, final ExtendedBlock blk,

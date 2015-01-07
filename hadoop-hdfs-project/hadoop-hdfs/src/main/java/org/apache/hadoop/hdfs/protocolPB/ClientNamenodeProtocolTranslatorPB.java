@@ -122,12 +122,15 @@ import java.util.ArrayList;
 import java.util.List;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingRequestProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.mortbay.log.Log;
 import se.sics.hop.erasure_coding.Codec;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.ActiveNodePBImpl;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
+import se.sics.hop.leaderElection.node.SortedActiveNodeListPBImpl;
 
 /**
  * This class forwards NN's ClientProtocol calls as RPC calls to the NN server
@@ -939,11 +942,11 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException {
+  public SortedActiveNodeList getActiveNamenodesForClient() throws IOException {
     try {
       ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto.Builder request = ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto.newBuilder();
       ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto response = rpcProxy.getActiveNamenodesForClient(null, request.build());
-      SortedActiveNamenodeList anl = convertProtoANListToANList(response);
+      SortedActiveNodeList anl = convertProtoANListToANList(response);
       return anl;
     } catch (ServiceException se) {
       throw ProtobufHelper.getRemoteException(se);
@@ -1008,19 +1011,19 @@ public class ClientNamenodeProtocolTranslatorPB implements
     }
   }
 
-  private SortedActiveNamenodeList convertProtoANListToANList(ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto p) {
-    List<ActiveNamenode> anl = new ArrayList<ActiveNamenode>();
-    List<ClientNamenodeProtocolProtos.ActiveNamenodeProto> anlp = p.getNamenodesList();
+  private SortedActiveNodeList convertProtoANListToANList(ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto p) {
+    List<ActiveNode> anl = new ArrayList<ActiveNode>();
+    List<ActiveNodeProto> anlp = p.getNamenodesList();
     for (int i = 0; i < anlp.size(); i++) {
-      ActiveNamenode an = convertProtoANToAN(anlp.get(i));
+      ActiveNode an = convertProtoANToAN(anlp.get(i));
       anl.add(an);
     }
-    return new SortedActiveNamenodeList(anl);
+    return new SortedActiveNodeListPBImpl(anl);
   }
   
-  private ActiveNamenode convertProtoANToAN(ClientNamenodeProtocolProtos.ActiveNamenodeProto p)
+  private ActiveNode convertProtoANToAN(ActiveNodeProto p)
   {
-    ActiveNamenode an = new ActiveNamenode(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
+    ActiveNode an = new ActiveNodePBImpl(p.getId(),p.getHostname(),p.getIpAddress(),p.getPort(),p.getHttpAddress());
     return an;
   }
   

@@ -43,13 +43,11 @@ import org.apache.hadoop.hdfs.server.namenode.ha.HAContext;
 import org.apache.hadoop.hdfs.server.namenode.ha.HAState;
 import org.apache.hadoop.hdfs.server.namenode.ha.StandbyState;
 import org.apache.hadoop.hdfs.server.namenode.metrics.NameNodeMetrics;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.JournalProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
@@ -65,7 +63,7 @@ import org.apache.hadoop.util.ServicePlugin;
 import org.apache.hadoop.util.StringUtils;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.StorageInitializtionException;
-import se.sics.hop.metadata.LeaderElection;
+import se.sics.hop.leaderElection.LeaderElection;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.metadata.hdfs.dal.CorruptReplicaDataAccess;
@@ -118,6 +116,9 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.FS_TRASH_INTERVAL_DEFAULT;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.FS_TRASH_INTERVAL_KEY;
 import static org.apache.hadoop.util.ExitUtil.terminate;
 import static org.apache.hadoop.util.ToolRunner.confirmPrompt;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.Node;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 //import org.apache.hadoop.hdfs.server.namenode.ha.BootstrapStandby;
 
@@ -160,7 +161,7 @@ import static org.apache.hadoop.util.ToolRunner.confirmPrompt;
  *********************************************************
  */
 @InterfaceAudience.Private
-public class NameNode {
+public class NameNode implements Node{
 
     static {
         HdfsConfiguration.init();
@@ -320,7 +321,7 @@ public class NameNode {
     private long id = LeaderElection.LEADER_INITIALIZATION_ID;
     private Object leaderSyncObj = new Object();
     protected LeaderElection leaderElection;
-    private SortedActiveNamenodeList nnList = null;
+    private SortedActiveNodeList nnList = null;
     //END_HOP_CODE
 
     /**
@@ -519,7 +520,19 @@ public class NameNode {
 
     //START_HOP_CODE
         // Initialize the leader election algorithm (only once rpc server is created)
-        leaderElection = new LeaderElection(conf, this);
+      long leadercheckInterval = conf.getInt(
+              DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_KEY,
+              DFSConfigKeys.DFS_LEADER_CHECK_INTERVAL_IN_MS_DEFAULT);
+      int missedHeartBeatThreshold = conf.getInt(
+              DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_KEY,
+              DFSConfigKeys.DFS_LEADER_MISSED_HB_THRESHOLD_DEFAULT);
+      String httpAddress = conf.get(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY,
+              DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_DEFAULT);
+      leaderElection = new LeaderElection(leadercheckInterval,
+              missedHeartBeatThreshold, this, httpAddress,
+              rpcServer.getRpcAddress().getAddress().getHostAddress() + ":"
+              + rpcServer.getRpcAddress().getPort());
+      leaderElection.start();
     //END_HOP_CODE
 
         try {
@@ -1624,6 +1637,14 @@ public class NameNode {
         return leaderElection;
     }
 
+    @Override
+    public void setLeader(boolean isLeader){
+      if(isLeader){
+        setRole(NamenodeRole.LEADER);
+      }else{
+        setRole(NamenodeRole.NAMENODE);
+      }
+    }
     /**
      * Set the role for Namenode
      */
@@ -1635,7 +1656,8 @@ public class NameNode {
       }
     }
 
-    public void setNameNodeList(SortedActiveNamenodeList list) {
+    @Override
+    public void setNodesList(SortedActiveNodeList list) {
       synchronized(leaderSyncObj){
         this.nnList = list;
       }
@@ -1646,6 +1668,7 @@ public class NameNode {
         if (role.equals(NamenodeRole.LEADER)) {
             long elapsedTime = System.currentTimeMillis() - roleSince;
             if( elapsedTime < leaderWindow){
+              LOG.debug( id + " is leader with elapsedTime: " + elapsedTime);
                 return true;
             }else{
                 LOG.warn("LeaderElection: Lease Expired. "+id + " elapsedTime: " + elapsedTime + " window " + leaderWindow);
@@ -1657,29 +1680,29 @@ public class NameNode {
       }
     }
 
-    public SortedActiveNamenodeList getActiveNamenodes(){
+    public SortedActiveNodeList getActiveNamenodes(){
         // return (SortedActiveNamenodeList) selectAllNameNodesHandler.handle();
       synchronized(leaderSyncObj){
-        return nnList;
+        return  nnList;
       }
     }
 
     protected volatile int nnIndex = 0;
 
-    public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException {
-        List<ActiveNamenode> allNodes = getActiveNamenodes().getActiveNamenodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
+    public ActiveNode getNextNamenodeToSendBlockReport() throws IOException {
+        List<ActiveNode> allNodes = getActiveNamenodes().getActiveNodes();//((SortedActiveNamenodeList) selectAllNameNodesHandler.handle()).getActiveNamenodes();
         if (this.isLeader()) {
             // Use the modulo to roundrobin b/w namenodes
             nnIndex = ++nnIndex % allNodes.size();
-            ActiveNamenode ann = allNodes.get(nnIndex);
+            ActiveNode ann = allNodes.get(nnIndex);
             //LOG.debug("Returning "+ann.getIpAddress()+" for Next Block report");
             return ann;
         } else {
             // random allocation of NN
             Random rand = new Random();
             rand.setSeed(System.currentTimeMillis());
-            ActiveNamenode ann = allNodes.get(rand.nextInt(allNodes.size()));
-            LOG.debug("XXX Returning " + ann.getRpcIpAddress() + " for Next Block report");
+            ActiveNode ann = allNodes.get(rand.nextInt(allNodes.size()));
+            LOG.debug("XXX Returning " + ann.getIpAddress() + " for Next Block report");
             return ann;
         }
     }
@@ -1696,22 +1719,28 @@ public class NameNode {
     }
 
     public boolean isNameNodeAlive(long namenodeId) {
-      List<ActiveNamenode> activeNamenodes = getActiveNamenodes().getActiveNamenodes();
+      List<ActiveNode> activeNamenodes = getActiveNamenodes().getActiveNodes();
       return isNameNodeAlive(activeNamenodes, namenodeId);
     }
 
-    public static boolean isNameNodeAlive(Collection<ActiveNamenode> activeNamenodes, long namenodeId) {
+    public static boolean isNameNodeAlive(Collection<ActiveNode> activeNamenodes, long namenodeId) {
       if (activeNamenodes == null) {
         // We do not know yet, be conservative
         return true;
       }
 
-      for (ActiveNamenode namenode : activeNamenodes) {
+      for (ActiveNode namenode : activeNamenodes) {
         if (namenode.getId() == namenodeId) {
           return true;
         }
       }
       return false;
     }
+    
+    @Override
+    public boolean isRunning(){
+      return getNamesystem().isRunning();
+    }
+    
   //END_HOP_CODE
 }

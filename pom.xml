@@ -92,6 +92,7 @@
   </properties>
 
   <modules>
+    <module>hop-leader-election</module>
     <module>hadoop-project</module>
     <module>hadoop-project-dist</module>
     <module>hadoop-assemblies</module>

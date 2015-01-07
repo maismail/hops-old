@@ -136,9 +136,10 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.PingResponseProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
 
 /**
  * This class is used on the server side. Calls come across the wire for the
@@ -1000,7 +1001,7 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   public ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto getActiveNamenodesForClient(RpcController controller, ClientNamenodeProtocolProtos.ActiveNamenodeListRequestProto request) throws ServiceException {
         try
     {
-        SortedActiveNamenodeList anl = server.getActiveNamenodesForClient();
+        SortedActiveNodeList anl = server.getActiveNamenodesForClient();
         ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto response = convertANListToResponseProto(anl);
         return response;  
     }catch (IOException e)
@@ -1009,25 +1010,25 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
     }
   }
   
-  private ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto convertANListToResponseProto(SortedActiveNamenodeList anlWrapper)
+  private ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto convertANListToResponseProto(SortedActiveNodeList anlWrapper)
   {
-    List<ActiveNamenode> anl = anlWrapper.getActiveNamenodes();
+    List<ActiveNode> anl = anlWrapper.getActiveNodes();
     ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto.Builder anlrpb = ClientNamenodeProtocolProtos.ActiveNamenodeListResponseProto.newBuilder();
     for(int i = 0; i < anl.size(); i++)
     {
-       ClientNamenodeProtocolProtos.ActiveNamenodeProto anp = convertANToResponseProto(anl.get(i));
+       ActiveNodeProto anp = convertANToResponseProto(anl.get(i));
        anlrpb.addNamenodes(anp);
     }
     return anlrpb.build();
   }
   
-  private ClientNamenodeProtocolProtos.ActiveNamenodeProto convertANToResponseProto(ActiveNamenode p)
+  private ActiveNodeProto convertANToResponseProto(ActiveNode p)
   {
-    ClientNamenodeProtocolProtos.ActiveNamenodeProto.Builder anp = ClientNamenodeProtocolProtos.ActiveNamenodeProto.newBuilder();
+    ActiveNodeProto.Builder anp = ActiveNodeProto.newBuilder();
     anp.setId(p.getId());
     anp.setHostname(p.getHostname());
-    anp.setIpAddress(p.getRpcIpAddress());
-    anp.setPort(p.getRpcPort());
+    anp.setIpAddress(p.getIpAddress());
+    anp.setPort(p.getPort());
     anp.setHttpAddress(p.getHttpAddress());
     return anp.build();
   }

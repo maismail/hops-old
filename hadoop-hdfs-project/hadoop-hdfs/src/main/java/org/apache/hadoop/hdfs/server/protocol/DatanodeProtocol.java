@@ -26,6 +26,8 @@ import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.ExtendedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.security.KerberosInfo;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**********************************************************************
  * Protocol that a DFS datanode uses to communicate with the NameNode.
@@ -167,13 +169,13 @@ public interface DatanodeProtocol {
    * The datanodes periodically asks the leader namenode for the list of
    * actively running namenodes
    */
-  public SortedActiveNamenodeList getActiveNamenodes() throws IOException;
+  public SortedActiveNodeList getActiveNamenodes() throws IOException;
 
   /**
    * The BPOfferService that corresponds to the leader Namenode asks it which
    * 'namenode' to send the block reports to This is a feature added to do load
    * balancing of block reports among namenodes
    */
-  public ActiveNamenode getNextNamenodeToSendBlockReport() throws IOException;
+  public ActiveNode getNextNamenodeToSendBlockReport() throws IOException;
   //END_HOP_CODE
 }

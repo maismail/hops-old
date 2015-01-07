@@ -199,7 +199,7 @@ public class QuotaUpdateManager {
         if (dir != null && SubtreeLockHelper.isSubtreeLocked(
             dir.isSubtreeLocked(),
             dir.getSubtreeLockOwner(),
-            namesystem.getNameNode().getActiveNamenodes().getActiveNamenodes())) {
+            namesystem.getNameNode().getActiveNamenodes().getActiveNodes())) {
           /*
            * We cannot process updates to keep move operations consistent. Otherwise the calculated size of the subtree
            * could differ from the view of the parent if outstanding quota updates are applied after being considered
