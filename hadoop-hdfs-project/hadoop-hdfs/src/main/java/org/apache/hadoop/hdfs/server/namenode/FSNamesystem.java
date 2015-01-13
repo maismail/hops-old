@@ -136,7 +136,7 @@ import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
+import se.sics.hop.transaction.context.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.transaction.EntityManager;

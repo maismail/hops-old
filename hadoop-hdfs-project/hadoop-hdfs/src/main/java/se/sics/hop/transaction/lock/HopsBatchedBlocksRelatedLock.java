@@ -15,7 +15,7 @@
  */
 package se.sics.hop.transaction.lock;
 
-import se.sics.hop.memcache.Pair;
+import se.sics.hop.common.Pair;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopInvalidatedBlock;

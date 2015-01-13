@@ -582,8 +582,12 @@ public abstract class INode implements Comparable<byte[]> {
     return this.parentId;
   }
 
+  public static String nameParentKey(Integer parentId, String name){
+    return parentId + name;
+  }
+
   public String nameParentKey() {
-    return parentId + getLocalName();
+    return nameParentKey(parentId, getLocalName());
   }
   
    /** Set user */

@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package se.sics.hop.metadata.context;
-import se.sics.hop.metadata.hdfs.entity.TransactionContextMaintenanceCmds;
+package se.sics.hop.transaction.context;
+import se.sics.hop.transaction.context.TransactionContextMaintenanceCmds;
 /**
  *
  * @author salman
