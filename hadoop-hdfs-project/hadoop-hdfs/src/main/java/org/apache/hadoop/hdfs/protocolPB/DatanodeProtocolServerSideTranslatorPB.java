@@ -59,10 +59,10 @@ import com.google.protobuf.RpcController;
 import com.google.protobuf.ServiceException;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NameNodeAddressRequestForBlockReportingProto;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
+import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
 
 public class DatanodeProtocolServerSideTranslatorPB implements
     DatanodeProtocolPB {
@@ -259,7 +259,7 @@ public class DatanodeProtocolServerSideTranslatorPB implements
     
     try
     {
-        SortedActiveNamenodeList anl = impl.getActiveNamenodes();
+        SortedActiveNodeList anl = impl.getActiveNamenodes();
         ActiveNamenodeListResponseProto response = PBHelper.convert(anl);
         return response;  
     }catch (IOException e)
@@ -270,11 +270,11 @@ public class DatanodeProtocolServerSideTranslatorPB implements
   }
 
   @Override
-  public ActiveNamenodeProto getNextNamenodeToSendBlockReport(RpcController controller, NameNodeAddressRequestForBlockReportingProto request) throws ServiceException {
+  public ActiveNodeProto getNextNamenodeToSendBlockReport(RpcController controller, NameNodeAddressRequestForBlockReportingProto request) throws ServiceException {
     try
     {
-         ActiveNamenode response = impl.getNextNamenodeToSendBlockReport();
-         ActiveNamenodeProto responseProto = PBHelper.convert(response);
+         ActiveNode response = impl.getNextNamenodeToSendBlockReport();
+         ActiveNodeProto responseProto = PBHelper.convert(response);
         return responseProto;  
     }catch (IOException e)
     {

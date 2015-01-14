@@ -51,14 +51,15 @@ import java.util.Map;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.ExceptionCheck;
 import org.apache.hadoop.hdfs.protocol.BlockListAsLongs;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.hdfs.server.protocol.StorageBlockReport;
 import org.apache.hadoop.hdfs.server.protocol.StorageReceivedDeletedBlocks;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.util.Time;
 import static org.apache.hadoop.util.Time.now;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.ActiveNodePBImpl;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**
  * One instance per block-pool/namespace on the DN, which handles the heartbeats
@@ -113,7 +114,7 @@ class BPOfferService implements Runnable {
   private volatile long lastBlockReport = 0;
   private boolean resetBlockReportTime = true;
   private BPServiceActor blkReportHander = null;
-  private List<ActiveNamenode> nnList = new CopyOnWriteArrayList<ActiveNamenode>();
+  private List<ActiveNode> nnList = new CopyOnWriteArrayList<ActiveNode>();
   private List<InetSocketAddress> blackListNN = new CopyOnWriteArrayList<InetSocketAddress>();
   private volatile int rpcRoundRobinIndex = 0; // you have bunch of NNs, which one to send the incremental block report
   private volatile int refreshNNRoundRobinIndex = 0; //in a heart beat only one actor should talk to name node and get the updated list of NNs
@@ -136,7 +137,7 @@ class BPOfferService implements Runnable {
 
     for (InetSocketAddress addr : nnAddrs) {
       this.bpServices.add(new BPServiceActor(addr, this)); 
-      nnList.add(new ActiveNamenode(0, "", addr.getAddress().getHostAddress(), addr.getPort(), ""));
+      nnList.add(new ActiveNodePBImpl(0, "", addr.getAddress().getHostAddress(), addr.getPort(), ""));
     }
     //START_HOP_CODE
     dnConf = dn.getDnConf();
@@ -403,8 +404,8 @@ class BPOfferService implements Runnable {
     bpServices.remove(actor);
     
     // remove from nnList
-    for(ActiveNamenode ann : nnList){
-      if(ann.getRpcIpAddress().equals(actor.getNNSocketAddress())){
+    for(ActiveNode ann : nnList){
+      if(ann.getIpAddress().equals(actor.getNNSocketAddress())){
         nnList.remove(ann);
         break;
       }
@@ -871,7 +872,7 @@ class BPOfferService implements Runnable {
         new DatanodeStorage(bpRegistration.getStorageID()),
         bReport.getBlockListAsLongs())};
 
-      ActiveNamenode an = nextNNForBlkReport();
+      ActiveNode an = nextNNForBlkReport();
       if (an != null) {
         blkReportHander = getAnActor(an.getInetSocketAddress());
         if (blkReportHander == null || !blkReportHander.isInitialized()) {
@@ -959,10 +960,10 @@ class BPOfferService implements Runnable {
     }
   }
 
-  void updateNNList(SortedActiveNamenodeList list) throws IOException {
+  void updateNNList(SortedActiveNodeList list) throws IOException {
     ArrayList<InetSocketAddress> nnAddresses = new ArrayList<InetSocketAddress>();
-    for (ActiveNamenode ann : list.getActiveNamenodes()) {
-      InetSocketAddress socketAddress = new InetSocketAddress(ann.getRpcIpAddress(), ann.getRpcPort());
+    for (ActiveNode ann : list.getActiveNodes()) {
+      InetSocketAddress socketAddress = new InetSocketAddress(ann.getIpAddress(), ann.getPort());
       nnAddresses.add(socketAddress);
     }
 
@@ -973,7 +974,7 @@ class BPOfferService implements Runnable {
     }
 
     nnList.clear();
-    nnList.addAll(list.getActiveNamenodes());
+    nnList.addAll(list.getActiveNodes());
     blackListNN.clear();
   }
 
@@ -986,7 +987,7 @@ class BPOfferService implements Runnable {
       refreshNNRoundRobinIndex = 0;
     }
     
-    ActiveNamenode an = nnList.get(refreshNNRoundRobinIndex);
+    ActiveNode an = nnList.get(refreshNNRoundRobinIndex);
     if (an.getInetSocketAddress().equals(address)) {
       return true;
     } else {
@@ -1097,7 +1098,7 @@ class BPOfferService implements Runnable {
     for (int i = 0; i < 10; i++) {
       try {
         rpcRoundRobinIndex = ++rpcRoundRobinIndex % nnList.size();
-        ActiveNamenode ann = nnList.get(rpcRoundRobinIndex);
+        ActiveNode ann = nnList.get(rpcRoundRobinIndex);
         if (!this.blackListNN.contains(ann.getInetSocketAddress())) {
           BPServiceActor actor = getAnActor(ann.getInetSocketAddress());
           if (actor != null) {
@@ -1112,13 +1113,13 @@ class BPOfferService implements Runnable {
     return null;
   }
 
-  private ActiveNamenode nextNNForBlkReport() {
+  private ActiveNode nextNNForBlkReport() {
     if (nnList == null || nnList.isEmpty()) {
       return null;
     }
 
-    ActiveNamenode ann = null;
-    for (ActiveNamenode leader : nnList) {  // first element is the leader. if it does not work then ask non leader nodes
+    ActiveNode ann = null;
+    for (ActiveNode leader : nnList) {  // first element is the leader. if it does not work then ask non leader nodes
       try {
         BPServiceActor leaderActor = this.getAnActor(leader.getInetSocketAddress());
         LOG.debug("XXX nextNNForBlkReport called 5");
@@ -1141,7 +1142,7 @@ class BPOfferService implements Runnable {
             // watch out for black listed NN
             for (int i = 0; i < 10; i++) {
                 refreshNNRoundRobinIndex = ++refreshNNRoundRobinIndex % nnList.size();
-                ActiveNamenode ann = nnList.get(refreshNNRoundRobinIndex);
+                ActiveNode ann = nnList.get(refreshNNRoundRobinIndex);
                 if (!this.blackListNN.contains(ann.getInetSocketAddress())) {
                     return;
                 }

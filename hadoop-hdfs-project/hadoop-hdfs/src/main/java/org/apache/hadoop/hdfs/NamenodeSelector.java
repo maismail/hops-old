@@ -5,24 +5,19 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem.Statistics;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import org.apache.hadoop.ipc.RPC;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.ActiveNodePBImpl;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**
  * **************************************************************
@@ -56,9 +51,9 @@ public class NamenodeSelector extends Thread {
     public static class NamenodeHandle {
 
         final private ClientProtocol namenodeRPCHandle;
-        final private ActiveNamenode namenode;
+        final private ActiveNode namenode;
 
-        NamenodeHandle(ClientProtocol proto, ActiveNamenode an) {
+        NamenodeHandle(ClientProtocol proto, ActiveNode an) {
             this.namenode = an;
             this.namenodeRPCHandle = proto;
         }
@@ -67,7 +62,7 @@ public class NamenodeSelector extends Thread {
             return this.namenodeRPCHandle;
         }
 
-        public ActiveNamenode getNamenode() {
+        public ActiveNode getNamenode() {
             return this.namenode;
         }
 
@@ -105,7 +100,7 @@ public class NamenodeSelector extends Thread {
     //only for testing
     NamenodeSelector(Configuration conf, ClientProtocol namenode) throws IOException {
         this.defaultUri = null;
-        ActiveNamenode dummyActiveNamenode = new ActiveNamenode(1,"localhost","127.0.0.1",9999, "0.0.0.0:50070");
+        ActiveNode dummyActiveNamenode = new ActiveNodePBImpl(1,"localhost","127.0.0.1",9999, "0.0.0.0:50070");
         this.nnList.add(new NamenodeSelector.NamenodeHandle(namenode, dummyActiveNamenode));
         this.conf = conf;
         this.policy = NamenodeSelector.NNSelectionPolicy.ROUND_ROBIN;
@@ -269,7 +264,7 @@ public class NamenodeSelector extends Thread {
      * for list of Namenodes in the syste.
      */
     private void createNamenodeClinetsFromList() throws IOException {
-        SortedActiveNamenodeList anl = null;
+        SortedActiveNodeList anl = null;
         ClientProtocol handle = null;
         if (defaultUri != null) {
             try {
@@ -299,7 +294,7 @@ public class NamenodeSelector extends Thread {
                             anl = handle.getActiveNamenodesForClient();
                             RPC.stopProxy(handle);
                         }
-                        if (anl != null && !anl.getActiveNamenodes().isEmpty()) {
+                        if (anl != null && !anl.getActiveNodes().isEmpty()) {
                             
                             break; // we got the list
                         }
@@ -328,7 +323,7 @@ public class NamenodeSelector extends Thread {
      * try to connect to defaults namenode provided at the initialization phase.
      */
     private synchronized void periodicNamenodeClientsUpdate() throws IOException {
-        SortedActiveNamenodeList anl = null;
+        SortedActiveNodeList anl = null;
         if (!nnList.isEmpty()) {
             for (NamenodeSelector.NamenodeHandle namenode : nnList) { //TODO dont try with black listed nodes
                 try {
@@ -361,7 +356,7 @@ public class NamenodeSelector extends Thread {
         return namenodes.split(",");
     }
 
-    private synchronized void refreshNamenodeList(SortedActiveNamenodeList anl) {
+    private synchronized void refreshNamenodeList(SortedActiveNodeList anl) {
         if (anl == null) {
             return;
         }
@@ -371,13 +366,13 @@ public class NamenodeSelector extends Thread {
         //make sets objects of old and new lists
         Set<InetSocketAddress> oldClients = Sets.newHashSet();
         for (NamenodeSelector.NamenodeHandle namenode : nnList) {
-            ActiveNamenode ann = namenode.getNamenode();
+            ActiveNode ann = namenode.getNamenode();
             oldClients.add(ann.getInetSocketAddress());
         }
 
         //new list
         Set<InetSocketAddress> updatedClients = Sets.newHashSet();
-        for (ActiveNamenode ann : anl.getActiveNamenodes()) {
+        for (ActiveNode ann : anl.getActiveNodes()) {
             updatedClients.add(ann.getInetSocketAddress());
         }
 
@@ -395,7 +390,7 @@ public class NamenodeSelector extends Thread {
         // start threads for new NNs
         if (newNNs.size() != 0) {
             for (InetSocketAddress newNNAddr : newNNs) {
-                addDFSClient(newNNAddr, anl.getActiveNamenode(newNNAddr));
+                addDFSClient(newNNAddr, anl.getActiveNode(newNNAddr));
             }
         }
 
@@ -417,7 +412,7 @@ public class NamenodeSelector extends Thread {
     }
     //thse are synchronized using external methods
 
-    private void addDFSClient(InetSocketAddress address, ActiveNamenode ann) {
+    private void addDFSClient(InetSocketAddress address, ActiveNode ann) {
         if (address == null || ann == null) {
             LOG.warn("Unable to add proxy for namenode. ");
             return;

@@ -26,7 +26,7 @@ option java_generate_equals_and_hash = true;
 package hadoop.hdfs;
 
 import "hdfs.proto";
-
+import "leader_election_protos.proto";
 /**
  * Information to identify a datanode to a namenode
  */
@@ -323,17 +323,6 @@ message CommitBlockSynchronizationResponseProto {
 // HOP_CODE_START
 
 /**
-* messages for getting list of all name nodes from the leader
-*/
-message ActiveNamenodeProto {
-  required uint64 id = 1;    
-  required string hostname = 2;    
-  required string ipAddress = 3;    
-  required int32 port = 4; 
-  required string httpAddress = 5;
-}
-
-/**
  * void request
  */
 message ActiveNamenodeListRequestProto {
@@ -343,7 +332,7 @@ message ActiveNamenodeListRequestProto {
  * void response
  */
 message ActiveNamenodeListResponseProto {
-  repeated ActiveNamenodeProto namenodes = 1;
+  repeated ActiveNodeProto namenodes = 1;
 }
 
 
@@ -420,6 +409,6 @@ service DatanodeProtocolService {
 /**
  * Ask the leader which namenode the datanode should report to.
  */ 
-  rpc getNextNamenodeToSendBlockReport(NameNodeAddressRequestForBlockReportingProto) returns(ActiveNamenodeProto);
+  rpc getNextNamenodeToSendBlockReport(NameNodeAddressRequestForBlockReportingProto) returns(ActiveNodeProto);
 //HOP_CODE_END
 }

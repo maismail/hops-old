@@ -17,13 +17,11 @@ import se.sics.hop.exception.StorageInitializtionException;
 import se.sics.hop.log.NDCWrapper;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.adaptor.*;
-import se.sics.hop.metadata.context.*;
 import se.sics.hop.metadata.hdfs.dal.*;
-import se.sics.hop.metadata.hdfs.entity.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hop.*;
 import se.sics.hop.metadata.hdfs.entity.hop.var.*;
-import se.sics.hop.transaction.ContextInitializer;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.context.*;
 
 import java.io.File;
 import java.io.IOException;

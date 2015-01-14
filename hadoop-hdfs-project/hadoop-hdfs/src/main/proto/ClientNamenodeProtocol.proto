@@ -24,7 +24,7 @@ package hadoop.hdfs;
 
 import "Security.proto";
 import "hdfs.proto";
-
+import "leader_election_protos.proto";
 /**
  * The ClientNamenodeProtocol Service defines the interface between a client 
  * (as runnign inside a MR Task) and the Namenode.
@@ -460,17 +460,12 @@ message PingRequestProto { // empty request
 message PingResponseProto { // void response
 }
 
-message ActiveNamenodeProto {
-  required uint64 id = 1;    
-  required string hostname = 2;    
-  required string ipAddress = 3;    
-  required int32 port = 4;
-  required string httpAddress = 5;    
-}
+
 message ActiveNamenodeListRequestProto {
 }
+
 message ActiveNamenodeListResponseProto {
-  repeated ActiveNamenodeProto namenodes = 1;
+  repeated ActiveNodeProto namenodes = 1;
 }
 
 message EncodingStatusProto {

@@ -54,7 +54,7 @@ import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
 import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.context.HOPTransactionContextMaintenanceCmds;
+import se.sics.hop.transaction.context.HOPTransactionContextMaintenanceCmds;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;

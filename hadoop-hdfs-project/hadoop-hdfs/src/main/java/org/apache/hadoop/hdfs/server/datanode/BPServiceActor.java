@@ -59,8 +59,8 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import java.util.ArrayList;
 import java.util.List;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
+import se.sics.hop.leaderElection.node.ActiveNode;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**
  * A thread per active or standby namenode to perform:
@@ -605,7 +605,7 @@ class BPServiceActor implements Runnable {
         if(!bpos.canUpdateNNList(nnAddr))
             return;
         
-        SortedActiveNamenodeList list = this.bpNamenode.getActiveNamenodes();
+        SortedActiveNodeList list = this.bpNamenode.getActiveNamenodes();
         bpos.updateNNList(list);
         
     }
@@ -622,9 +622,9 @@ class BPServiceActor implements Runnable {
     return bpNamenode.blockReport(registration, poolId, reports);
   }
 
-  public ActiveNamenode nextNNForBlkReport() throws IOException {
+  public ActiveNode nextNNForBlkReport() throws IOException {
     if (bpNamenode != null) {
-      ActiveNamenode an = bpNamenode.getNextNamenodeToSendBlockReport();
+      ActiveNode an = bpNamenode.getNextNamenodeToSendBlockReport();
       return an;
     } else {
       return null;

@@ -13,8 +13,8 @@
   limitations under the License. See accompanying LICENSE file.
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
     <artifactId>hadoop-mapreduce-client</artifactId>
@@ -96,25 +96,30 @@
       <artifactId>hsqldb</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.apache.hadoop</groupId>
+      <artifactId>hop-leader-election</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
- <profiles>
-  <profile>
-    <id>clover</id>
-    <activation>
-      <activeByDefault>false</activeByDefault>
-      <property>
-        <name>clover</name>
-      </property>
-    </activation>
-    <dependencies>
-      <dependency>
-        <groupId>com.cenqua.clover</groupId>
-        <artifactId>clover</artifactId>
-      </dependency>
-    </dependencies>
-  </profile>
-</profiles>
+  <profiles>
+    <profile>
+      <id>clover</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>clover</name>
+        </property>
+      </activation>
+      <dependencies>
+        <dependency>
+          <groupId>com.cenqua.clover</groupId>
+          <artifactId>clover</artifactId>
+        </dependency>
+      </dependencies>
+    </profile>
+  </profiles>
   <build>
     <plugins>
       <plugin>
@@ -128,11 +133,11 @@
           </execution>
         </executions>
         <configuration>       
-         <archive>
-          <manifest>
-           <mainClass>org.apache.hadoop.test.MapredTestDriver</mainClass>
-         </manifest>
-         </archive>
+          <archive>
+            <manifest>
+              <mainClass>org.apache.hadoop.test.MapredTestDriver</mainClass>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
       <plugin>

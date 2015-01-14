@@ -50,7 +50,6 @@ import org.apache.hadoop.hdfs.server.blockmanagement.BlockManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeManager;
 import org.apache.hadoop.hdfs.server.common.JspHelper;
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 //import org.apache.hadoop.hdfs.server.namenode.JournalSet.JournalAndStream;    //HOP
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.http.HttpConfig;
@@ -66,6 +65,7 @@ import org.znerd.xmlenc.XMLOutputter;
 
 import se.sics.hop.common.INodeUtil;
 import se.sics.hop.exception.StorageException;
+import se.sics.hop.leaderElection.node.ActiveNode;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
@@ -148,10 +148,10 @@ class NamenodeJspHelper {
         + "</td></tr>\n  <tr><td class='col1'>Cluster ID:</td><td>" + fsn.getClusterId()
         + "</td></tr>\n  <tr><td class='col1'>Block Pool ID:</td><td>" + fsn.getBlockPoolId()
         + "</td></tr>\n  <tr><td class='col1'>Path Ancestor Lock Type:</td><td>" + fsn.getFilePathAncestorLockType()   
-        + "</td></tr>\n  <tr><td class='col1'>"+nn.getActiveNamenodes().size()+" NN(s):</td><td>" + getAllActiveNNs(nn.getActiveNamenodes().getActiveNamenodes())
+        + "</td></tr>\n  <tr><td class='col1'>"+nn.getActiveNamenodes().size()+" NN(s):</td><td>" + getAllActiveNNs(nn.getActiveNamenodes().getActiveNodes())
         + "</td></tr>\n</table></div>";
   }
-  private static String getAllActiveNNs(List<ActiveNamenode> list){
+  private static String getAllActiveNNs(List<ActiveNode> list){
       StringBuilder sb = new StringBuilder("");
       for(int i = 0; i<list.size();i++){
           if(i%3 == 0){

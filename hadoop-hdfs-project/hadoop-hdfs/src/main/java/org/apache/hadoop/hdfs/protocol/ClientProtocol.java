@@ -46,9 +46,9 @@ import org.apache.hadoop.security.token.TokenInfo;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSelector;
-import org.apache.hadoop.hdfs.server.protocol.SortedActiveNamenodeList;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
+import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 
 /**********************************************************************
  * ClientProtocol is used by user code via 
@@ -1020,7 +1020,7 @@ public interface ClientProtocol {
   
   //START_HOP_CODE
   public void ping() throws IOException ;   // client checks if the NN is alive
-  public SortedActiveNamenodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
+  public SortedActiveNodeList getActiveNamenodesForClient() throws IOException;  // clinet get a updated list of NNs
   public void changeConf(List<String> props, List<String> newVals) throws IOException;
   public void testDBLocking(final List<String> params) throws IOException;
   //END_HOP_CODE

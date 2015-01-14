@@ -1,22 +1,22 @@
 package se.sics.hop.transaction.lock;
 
-import org.apache.hadoop.hdfs.server.protocol.ActiveNamenode;
 import se.sics.hop.exception.TransientStorageException;
 
 import java.util.Collection;
+import se.sics.hop.leaderElection.node.ActiveNode;
 
 public class SubtreeLockedException extends TransientStorageException {
 
 
 
-  public SubtreeLockedException(Collection<ActiveNamenode> namenodes) {
+  public SubtreeLockedException(Collection<ActiveNode> namenodes) {
     super(createMessage(namenodes));
   }
 
-  private static String createMessage(Collection<ActiveNamenode> namenodes) {
+  private static String createMessage(Collection<ActiveNode> namenodes) {
     StringBuilder builder = new StringBuilder();
     builder.append("Active NameNode were ");
-    for (ActiveNamenode namenode : namenodes) {
+    for (ActiveNode namenode : namenodes) {
       builder.append(namenode.toString() + ", ");
     }
     return builder.toString();
