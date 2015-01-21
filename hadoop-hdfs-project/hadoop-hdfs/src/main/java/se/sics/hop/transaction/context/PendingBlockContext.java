@@ -18,7 +18,6 @@
 package se.sics.hop.transaction.context;
 
 
-import com.google.common.primitives.Ints;
 import org.apache.hadoop.hdfs.server.blockmanagement.PendingBlockInfo;
 import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
@@ -48,16 +47,15 @@ public class PendingBlockContext extends
   public void update(PendingBlockInfo pendingBlockInfo)
       throws TransactionContextException {
     super.update(pendingBlockInfo);
-    log("added-pending", CacheHitState.NA,
-        new String[]{"bid", Long.toString(pendingBlockInfo.getBlockId()),
-            "numInProgress", Integer.toString(pendingBlockInfo.getNumReplicas())});
+    log("added-pending","bid", pendingBlockInfo.getBlockId(),
+            "numInProgress", pendingBlockInfo.getNumReplicas());
   }
 
   @Override
   public void remove(PendingBlockInfo pendingBlockInfo)
       throws TransactionContextException {
     super.remove(pendingBlockInfo);
-    log("removed-pending", CacheHitState.NA, new String[]{"bid", Long.toString(pendingBlockInfo.getBlockId())});
+    log("removed-pending", "bid", pendingBlockInfo.getBlockId());
   }
 
   @Override
@@ -65,7 +63,7 @@ public class PendingBlockContext extends
       Object... params) throws TransactionContextException, StorageException {
     PendingBlockInfo.Finder pFinder = (PendingBlockInfo.Finder) finder;
     switch (pFinder) {
-      case ByBlockId: return findByBlockId(params);
+      case ByBlockIdAndINodeId: return findByBlockId(pFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -76,9 +74,9 @@ public class PendingBlockContext extends
       throws TransactionContextException, StorageException {
     PendingBlockInfo.Finder pFinder = (PendingBlockInfo.Finder) finder;
     switch (pFinder) {
-      case All: return findAll();
-      case ByInodeId: return findByINodeId(params);
-      case ByInodeIds: return findByINodeIds(params);
+      case All: return findAll(pFinder);
+      case ByINodeId: return findByINodeId(pFinder, params);
+      case ByINodeIds: return findByINodeIds(pFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -112,13 +110,13 @@ public class PendingBlockContext extends
         pendingBlockInfo.getInodeId());
   }
 
-  private PendingBlockInfo findByBlockId(Object[] params)
+  private PendingBlockInfo findByBlockId(PendingBlockInfo.Finder pFinder,
+      Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     PendingBlockInfo result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-pending-by-pk", CacheHitState.HIT, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
       List<PendingBlockInfo> pblks = getByBlock(blockId);
       if (pblks != null) {
         if (pblks.size() > 1) {
@@ -128,57 +126,57 @@ public class PendingBlockContext extends
         if(!pblks.isEmpty()){
           result = pblks.get(0);
         }
-    }
+      }
+      hit(pFinder, result, "bid", blockId,"inodeid", inodeId);
     } else {
-      log("find-pending-by-pk", CacheHitState.LOSS, new String[]{"bid", Long.toString(blockId),"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
-      result = dataAccess.findByPKey(blockId,inodeId);
+      result = dataAccess.findByPKey(blockId, inodeId);
       gotFromDB(new BlockPK(blockId, inodeId), result);
+      miss(pFinder, result, "bid", blockId, "inodeid", inodeId);
     }
     return result;
   }
 
-  private  List<PendingBlockInfo> findAll()
+  private  List<PendingBlockInfo> findAll(PendingBlockInfo.Finder pFinder)
       throws StorageCallPreventedException, StorageException {
     List<PendingBlockInfo> result = null;
     if (allPendingRead) {
-      log("find-all-pendings", CacheHitState.HIT);
       result = new ArrayList<PendingBlockInfo>(getAll());
+      hit(pFinder, result);
     } else {
-      log("find-all-pendings", CacheHitState.LOSS);
       aboutToAccessStorage();
       result = dataAccess.findAll();
       gotFromDB(result);
       allPendingRead = true;
+      miss(pFinder, result);
     }
     return result;
   }
 
-  private List<PendingBlockInfo> findByINodeId(Object[] params)
+  private List<PendingBlockInfo> findByINodeId(PendingBlockInfo.Finder pFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<PendingBlockInfo> result = null;
     if(containsByINode(inodeId)){
-      log("find-pendings-by-inode-id", CacheHitState.HIT, new String[]{"inode_id", Integer.toString(inodeId)});
       result = getByINode(inodeId);
+      hit(pFinder, result, "inodeid", inodeId);
     }else{
-      log("find-pendings-by-inode-id", CacheHitState.LOSS, new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(pFinder, result, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<PendingBlockInfo> findByINodeIds(Object[] params)
+  private List<PendingBlockInfo> findByINodeIds(PendingBlockInfo.Finder pFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int[] inodeIds = (int[]) params[0];
     List<PendingBlockInfo> result = null;
-    log("find-pendings-by-inode-ids", CacheHitState.LOSS, new String[]{"inode_ids", Arrays
-        .toString(inodeIds)});
     aboutToAccessStorage();
     result = dataAccess.findByINodeIds(inodeIds);
     gotFromDB(BlockPK.getBlockKeys(inodeIds), result);
+    miss(pFinder, result, "inodeids", Arrays.toString(inodeIds));
     return result;
   }
 }

@@ -51,7 +51,7 @@ final class HopsBlockLock extends HopsIndividualBlockLock {
     Iterable blks = Collections.EMPTY_LIST;
     for (INode inode :  inodeLock.getAllResolvedINodes()) {
       if (inode instanceof INodeFile) {
-        Collection<BlockInfo> inodeBlocks = acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByInodeId, inode.getId());
+        Collection<BlockInfo> inodeBlocks = acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByINodeId, inode.getId());
         blks = Iterables.concat(blks, inodeBlocks);
         files.add((INodeFile) inode);
       }

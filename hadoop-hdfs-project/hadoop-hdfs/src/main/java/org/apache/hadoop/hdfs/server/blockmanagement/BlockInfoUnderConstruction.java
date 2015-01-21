@@ -255,7 +255,7 @@ public class BlockInfoUnderConstruction extends BlockInfo {
 
   private List<ReplicaUnderConstruction> getExpectedReplicas() throws
       StorageException, TransactionContextException {
-    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockId, getBlockId(), getInodeId());
+    List<ReplicaUnderConstruction> replicas = (List<ReplicaUnderConstruction>) EntityManager.findList(ReplicaUnderConstruction.Finder.ByBlockIdAndINodeId, getBlockId(), getInodeId());
     if (replicas != null) {
       Collections.sort(replicas, ReplicaUnderConstruction.Order.ByIndex);
     } else {

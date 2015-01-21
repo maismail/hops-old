@@ -30,12 +30,23 @@ public class INodeAttributes {
 
   public static enum Finder implements FinderType<INodeAttributes> {
 
-    ByPKey, ByPKList/*batch read*/;
+    ByINodeId,
+    ByINodeIds;
 
     @Override
     public Class getType() {
       return INodeAttributes.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByINodeId: return Annotation.PrimaryKey;
+        case ByINodeIds: return Annotation.Batched;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
   private Integer inodeId;
   private Long nsQuota; /// NameSpace quota

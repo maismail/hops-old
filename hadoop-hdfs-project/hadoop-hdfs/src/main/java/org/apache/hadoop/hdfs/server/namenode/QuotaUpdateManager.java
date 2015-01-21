@@ -195,7 +195,7 @@ public class QuotaUpdateManager {
 
       @Override
       public Object performTask() throws IOException {
-        INodeDirectory dir = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeID, updates.get(0).getInodeId());
+        INodeDirectory dir = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeId, updates.get(0).getInodeId());
         if (dir != null && SubtreeLockHelper.isSubtreeLocked(
             dir.isSubtreeLocked(),
             dir.getSubtreeLockOwner(),

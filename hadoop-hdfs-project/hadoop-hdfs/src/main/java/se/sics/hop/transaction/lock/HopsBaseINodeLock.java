@@ -152,7 +152,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
       throws
       StorageException, TransactionContextException {
     setINodeLockType(lock);
-    INode inode = EntityManager.find(INode.Finder.ByPK_NameAndParentId, name, parentId);
+    INode inode = EntityManager.find(INode.Finder.ByNameAndParentId, name, parentId);
     addLockedINodes(inode, lock);
     return inode;
   }
@@ -162,7 +162,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
           int id)
       throws StorageException, TransactionContextException {
     setINodeLockType(lock);
-    INode inode = EntityManager.find(INode.Finder.ByINodeID, id);
+    INode inode = EntityManager.find(INode.Finder.ByINodeId, id);
     addLockedINodes(inode, lock);
     return inode;
   }
@@ -202,7 +202,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
         pks.add(pk);
       }
     }
-    acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByPKList, pks);
+    acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByINodeIds, pks);
   }
     
   //TODO check if it does work or not and connect it to memchached

@@ -260,7 +260,7 @@ public class TestPendingReplication {
 
       @Override
       public Object performTask() throws StorageException, IOException {
-        BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ById, block.getBlockId());
+        BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, block.getBlockId());
         if (inc) {
           pendingReplications.increment(blockInfo, numReplicas);
         } else {
@@ -289,7 +289,7 @@ public class TestPendingReplication {
 
       @Override
       public Object performTask() throws StorageException, IOException {
-        BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ById, block.getBlockId());
+        BlockInfo blockInfo = EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, block.getBlockId());
         return pendingReplications.getNumReplicas(blockInfo);
       }
     }.handle();

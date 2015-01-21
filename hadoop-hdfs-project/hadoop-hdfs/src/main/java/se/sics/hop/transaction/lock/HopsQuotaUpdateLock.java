@@ -58,7 +58,7 @@ final class HopsQuotaUpdateLock extends HopsLock {
 
   private void acquireQuotaUpdate(INode iNode)
       throws StorageException, TransactionContextException {
-    acquireLockList(DEFAULT_LOCK_TYPE, QuotaUpdate.Finder.ByInodeId,
+    acquireLockList(DEFAULT_LOCK_TYPE, QuotaUpdate.Finder.ByINodeId,
         iNode.getId());
   }
 

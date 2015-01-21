@@ -54,6 +54,7 @@ import org.junit.Test;
 import se.sics.hop.metadata.StorageFactory;
 import se.sics.hop.metadata.Variables;
 import se.sics.hop.transaction.EntityManager;
+import se.sics.hop.transaction.context.TransactionsStats;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsLockFactory;
@@ -1446,7 +1447,7 @@ public class TestFileCreation {
           @Override
           public Object performTask() throws IOException {
 
-            Lease lease = EntityManager.find(Lease.Finder.ByPKey, holder);
+            Lease lease = EntityManager.find(Lease.Finder.ByHolder, holder);
             if (lease != null) {
               FSNamesystem.LOG.debug("XXXXXXXXXXX Got the lock " + lockType +
                   "Lease. Holder is: " + lease.getHolder() + " ID: " +

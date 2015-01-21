@@ -669,7 +669,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
   
   private HopUnderReplicatedBlock getUnderReplicatedBlock(BlockInfo blk) throws
       StorageException, TransactionContextException {
-    return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
+    return EntityManager.find(HopUnderReplicatedBlock.Finder.ByBlockIdAndINodeId, blk.getBlockId(), blk.getInodeId());
   }
 
   private void addUnderReplicatedBlock(HopUnderReplicatedBlock urb) throws

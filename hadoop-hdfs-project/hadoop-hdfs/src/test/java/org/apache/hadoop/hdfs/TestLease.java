@@ -40,7 +40,6 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopLeasePath;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
 import se.sics.hop.transaction.lock.HopsBaseTestLock;
-import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
@@ -69,7 +68,7 @@ public class TestLease {
 
     @Override
     protected void acquire(TransactionLocks locks) throws IOException {
-      HopLeasePath lp = acquireLock(leasePathLock, HopLeasePath.Finder.ByPKey, leasePath);
+      HopLeasePath lp = acquireLock(leasePathLock, HopLeasePath.Finder.ByPath, leasePath);
       if (lp != null) {
         acquireLock(leaseLock, Lease.Finder.ByHolderId, lp.getHolderId());
       }

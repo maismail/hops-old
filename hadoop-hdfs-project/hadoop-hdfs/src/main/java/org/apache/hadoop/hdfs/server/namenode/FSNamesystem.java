@@ -136,7 +136,6 @@ import se.sics.hop.metadata.hdfs.dal.EncodingStatusDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeAttributesDataAccess;
 import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
 import se.sics.hop.metadata.hdfs.dal.SafeBlocksDataAccess;
-import se.sics.hop.transaction.context.EntityContext;
 import se.sics.hop.metadata.hdfs.entity.hdfs.ProjectedINode;
 import se.sics.hop.metadata.hdfs.entity.hop.BlockChecksum;
 import se.sics.hop.transaction.EntityManager;
@@ -5728,7 +5727,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
               checkUCBlock(block, clientName);
 
               INodeFile pendingFile = (INodeFile) EntityManager
-                  .find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+                  .find(INode.Finder.ByINodeId, inodeIdentifier.getInodeId());
 
               // get a new generation stamp and an access token
               block.setGenerationStamp(pendingFile.nextGenerationStamp());
@@ -6028,8 +6027,6 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
           break;
         }
       }
-      EntityContext.log("LIST_CORRUPT_BLOCKS", EntityContext.CacheHitState.LOSS,
-          "uncomment this part");
 
       cookieTab[0] = String.valueOf(skip[0]);
       LOG.info("list corrupt file blocks returned: " + count[0]);
@@ -7948,11 +7945,11 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //          
 //          for(int i = 0; i < parameters.size()-1; i++){
 //              EntityManager.writeLock();
-//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//              EntityManager.find(INode.Finder.ByNameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
 //          }
 //          
 ////          EntityManager.writeLock();
-////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          EntityManager.find(Lease.Finder.ByBlockIdStorageIdAndINodeId, parameters.get(parameters.size()-1));
 ////          EntityManager.writeLock();
 ////          EntityManager.findList(HopLeasePath.Finder.ByHolderId, Integer.parseInt(parameters.get(parameters.size()-1)));
 ////          
@@ -7966,7 +7963,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //      @Override
 //      public Object performTask() throws PersistanceException, IOException {
 //        for(int i = 0; i < parameters.size()-1; i++){
-//              EntityManager.find(INode.Finder.ByPK_NameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
+//              EntityManager.find(INode.Finder.ByNameAndParentId, pname(parameters.get(i)), pid(parameters.get(i)));
 //              INodeFile file =new INodeFile(new PermissionStatus("asf", "asdf", new FsPermission("777")), null, (short) 1 , 1L, 1L, 1L);
 //              file.setIdNoPersistance(pid(parameters.get(i)));
 //              file.setParentIdNoPersistance(pid(parameters.get(i)));
@@ -7976,7 +7973,7 @@ public class FSNamesystem implements Namesystem, FSClusterStats,
 //          //LOG.error("Total new Inodes are "+count);
 //          
 //        
-////          EntityManager.find(Lease.Finder.ByPKey, parameters.get(parameters.size()-1));
+////          EntityManager.find(Lease.Finder.ByBlockIdStorageIdAndINodeId, parameters.get(parameters.size()-1));
 ////          Lease lease =new Lease(parameters.get(parameters.size()-1), Integer.parseInt(parameters.get(parameters.size()-1)),0);  
 ////          EntityManager.add(lease);
 ////          

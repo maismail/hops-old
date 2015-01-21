@@ -88,7 +88,13 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   
   public static final String DFS_NAMENODE_PROCESS_MISREPLICATED_NO_OF_BATCHS = "dfs.namenode.misreplicated.noofbatches";
   public static final int DFS_NAMENODE_PROCESS_MISREPLICATED_NO_OF_BATCHS_DEFAULT = 10;
-  
+
+  public static final String DFS_TRANSACTION_STATS_ENABLED = "dfs.transaction.stats.enabled";
+  public static final boolean DFS_TRANSACTION_STATS_ENABLED_DEFAULT = false;
+
+  public static final String DFS_TRANSACTION_STATS_DIR = "dfs.transaction.stats.dir";
+  public static final String DFS_TRANSACTION_STATS_DIR_DEFAULT = "/tmp/hopsstats";
+
   /*for client failover api*/
   public static final String  DFS_NAMENODES_RPC_ADDRESS_KEY = "dfs.namenodes.rpc.addresses";  // format {ip:port, ip:port, ip:port} comma separated
   public static final String  DFS_NAMENODES_RPC_ADDRESS_DEFAULT = "";

@@ -29,7 +29,7 @@ import java.util.Map;
 
 
 abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
-    BaseEntityContext<Key, Entity>{
+    BaseEntityContext<Key, Entity> {
 
   private Map<Long, Map<Key, Entity>> blocksToReplicas = new
       HashMap<Long, Map<Key, Entity>>();
@@ -48,12 +48,12 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
     super.remove(entity);
     BlockPK key = getKey(entity);
     Map<Key, Entity> entityMap = blocksToReplicas.get(key.getBlockId());
-    if(entityMap != null){
+    if (entityMap != null) {
       entityMap.remove(key);
     }
 
     entityMap = inodesToReplicas.get(key.getBlockId());
-    if(entityMap != null){
+    if (entityMap != null) {
       entityMap.remove(key);
     }
   }
@@ -71,13 +71,13 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
     addInternal(entityKey, entity);
   }
 
-  private void addInternal(Entity entity){
+  private void addInternal(Entity entity) {
     addInternal(getKey(entity), entity);
   }
 
-  private void addInternal(Key key, Entity entity){
+  private void addInternal(Key key, Entity entity) {
     Map<Key, Entity> entityMap;
-    if(key.hasBlockId()) {
+    if (key.hasBlockId()) {
       entityMap = blocksToReplicas.get(key.getBlockId());
       if (entityMap == null) {
         entityMap = new HashMap<Key, Entity>();
@@ -85,7 +85,7 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
       }
       entityMap.put(key, entity);
     }
-    if(key.hasINodeId()) {
+    if (key.hasINodeId()) {
       entityMap = inodesToReplicas.get(key.getInodeId());
       if (entityMap == null) {
         entityMap = new HashMap<Key, Entity>();
@@ -95,60 +95,62 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
     }
   }
 
-  final void gotFromDB(BlockPK key, List<Entity> entities){
-    if(key.hasBlockId()){
+  final void gotFromDB(BlockPK key, List<Entity> entities) {
+    if (key.hasBlockId()) {
       Map<Key, Entity> entityMap = blocksToReplicas.get(key.getBlockId());
-      if(entityMap == null){
+      if (entityMap == null) {
         blocksToReplicas.put(key.getBlockId(), null);
       }
     }
-    if(key.hasINodeId()){
+    if (key.hasINodeId()) {
       Map<Key, Entity> entityMap = inodesToReplicas.get(key.getInodeId());
-      if(entityMap == null){
+      if (entityMap == null) {
         inodesToReplicas.put(key.getInodeId(), null);
       }
     }
-    if(entities != null) {
+    if (entities != null) {
       for (Entity entity : entities) {
         gotFromDB(entity);
       }
     }
   }
 
-  final void gotFromDB(List<Key> keys, List<Entity> entities){
-    if(entities != null) {
+  final void gotFromDB(List<Key> keys, List<Entity> entities) {
+    if (entities != null) {
       for (Entity entity : entities) {
         Key key = getKey(entity);
         gotFromDB(key, entity);
         keys.remove(key);
       }
     }
-    for(Key key : keys){
-      gotFromDB(key, (Entity)null);
+    for (Key key : keys) {
+      gotFromDB(key, (Entity) null);
     }
   }
 
-  final boolean containsByBlock(long blockId){
+  final boolean containsByBlock(long blockId) {
     return blocksToReplicas.containsKey(blockId);
   }
 
-  final boolean containsByINode(int inodeId){
+  final boolean containsByINode(int inodeId) {
     return inodesToReplicas.containsKey(inodeId);
   }
 
 
-  final List<Entity> getByBlock(long blockId){
+  final List<Entity> getByBlock(long blockId) {
     Map<Key, Entity> entityMap = blocksToReplicas.get(blockId);
-    if(entityMap == null)
-      return  null;
-    return  new ArrayList<Entity>(entityMap.values());
+    if (entityMap == null) {
+      return null;
+    }
+    return new ArrayList<Entity>(entityMap.values());
   }
 
-  final List<Entity> getByINode(int inodeId){
+  final List<Entity> getByINode(int inodeId) {
     Map<Key, Entity> entityMap = inodesToReplicas.get(inodeId);
-    if(entityMap == null)
-      return  null;
-    return  new ArrayList<Entity>(entityMap.values());
+    if (entityMap == null) {
+      return null;
+    }
+    return new ArrayList<Entity>(entityMap.values());
   }
 
 
@@ -189,7 +191,7 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
     }
   }
 
-  protected boolean snapshotChanged(){
+  protected boolean snapshotChanged() {
     return !getAdded().isEmpty() || !getModified().isEmpty() || !getRemoved()
         .isEmpty();
   }
@@ -201,8 +203,9 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
     toBeDeletedSrcs.remove(trg_param);
     for (HopINodeCandidatePK src : toBeDeletedSrcs) {
       List<Entity> replicas = getByINode(src.getInodeId());
-      if(replicas == null)
+      if (replicas == null) {
         continue;
+      }
       for (Entity replica : replicas) {
         Entity toBeDeleted = cloneEntity(replica);
         Entity toBeAdded = cloneEntity(replica, trg_param.getInodeId());
@@ -210,18 +213,19 @@ abstract class BaseReplicaContext<Key extends BlockPK, Entity> extends
         Key toBeAddedKey = getKey(toBeAdded);
 
         remove(toBeDeleted);
-        log("snapshot-maintenance-removed-replica", CacheHitState.NA,
-            new String[]{"bid", Long.toString(toBeDeletedKey.getBlockId()),
-                "inodeId", Integer.toString(toBeDeletedKey.getInodeId())});
+        log("snapshot-maintenance-removed-replica", "bid", toBeDeletedKey
+                .getBlockId(),
+            "inodeId", toBeDeletedKey.getInodeId());
 
         add(toBeAdded);
-        log("snapshot-maintenance-added-replica", CacheHitState.NA,
-            new String[]{"bid", Long.toString(toBeAddedKey.getBlockId()),
-                "inodeId", Integer.toString(toBeAddedKey.getInodeId())});
+        log("snapshot-maintenance-added-replica", "bid",
+            toBeAddedKey.getBlockId(),
+            "inodeId", toBeAddedKey.getInodeId());
       }
     }
   }
 
   abstract Entity cloneEntity(Entity entity);
+
   abstract Entity cloneEntity(Entity entity, int inodeId);
 }

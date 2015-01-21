@@ -30,7 +30,7 @@ final class HopsSqlBatchedBlocksLock extends HopsBaseIndividualBlockLock{
     HopsLock inodeLock = locks.getLock(Type.INode);
     if(inodeLock instanceof HopsBatchedINodeLock){
       int[] inodeIds = ((HopsBatchedINodeLock)inodeLock).getINodeIds();
-      blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByInodeIds, inodeIds));
+      blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByINodeIds, inodeIds));
     }else{
       throw new TransactionLocks.LockNotAddedException("HopsBatchedINodeLock wasn't added");
     }

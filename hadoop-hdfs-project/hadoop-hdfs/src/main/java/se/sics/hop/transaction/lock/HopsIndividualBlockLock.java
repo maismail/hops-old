@@ -44,7 +44,7 @@ class HopsIndividualBlockLock extends HopsBaseIndividualBlockLock {
   @Override
   protected void acquire(TransactionLocks locks) throws IOException {
     if (blockId != NON_EXISTING_BLOCK) {
-      BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ById, blockId, inodeId);
+      BlockInfo result = acquireLock(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByBlockIdAndINodeId, blockId, inodeId);
       if (result != null) {
         blocks.add(result);
       } else {

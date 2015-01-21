@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 package se.sics.hop.transaction.context;
-import se.sics.hop.transaction.context.TransactionContextMaintenanceCmds;
 /**
  *
  * @author salman

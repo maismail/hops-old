@@ -32,12 +32,22 @@ public class Lease implements Comparable<Lease> {
 
   public static enum Finder implements FinderType<Lease> {
 
-    ByPKey, ByHolderId, All, ByTimeLimit;
+    ByHolder, ByHolderId;
 
     @Override
     public Class getType() {
       return Lease.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByHolder: return Annotation.PrimaryKey;
+        case ByHolderId: return Annotation.PrunedIndexScan;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
   private final String holder;
   private long lastUpdate;

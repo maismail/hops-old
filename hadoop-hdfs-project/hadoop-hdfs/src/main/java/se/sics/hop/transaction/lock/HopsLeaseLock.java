@@ -67,7 +67,7 @@ public final class HopsLeaseLock extends HopsLock {
     Collections.sort(holders);
     
     for (String h : holders) {
-      Lease lease = acquireLock(lockType, Lease.Finder.ByPKey, h);
+      Lease lease = acquireLock(lockType, Lease.Finder.ByHolder, h);
       if (lease != null) {
         leases.add(lease);
       }

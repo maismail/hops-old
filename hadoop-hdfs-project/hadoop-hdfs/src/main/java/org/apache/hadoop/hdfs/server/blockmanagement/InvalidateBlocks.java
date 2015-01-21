@@ -272,7 +272,7 @@ class InvalidateBlocks {
   private HopInvalidatedBlock findBlock(long blkId, int storageID, int inodeId)
       throws
       StorageException, TransactionContextException {
-    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByPK, blkId, storageID, inodeId);
+    return (HopInvalidatedBlock) EntityManager.find(HopInvalidatedBlock.Finder.ByBlockIdStorageIdAndINodeId, blkId, storageID, inodeId);
   }
   
   private void addInvalidatedBlockToDB(HopInvalidatedBlock invBlk) throws

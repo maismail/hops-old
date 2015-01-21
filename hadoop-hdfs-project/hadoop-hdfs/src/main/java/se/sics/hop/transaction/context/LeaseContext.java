@@ -43,9 +43,7 @@ public class LeaseContext extends BaseEntityContext<String, Lease> {
   public void update(Lease lease) throws TransactionContextException {
     super.update(lease);
     idToLease.put(lease.getHolderID(), lease);
-    log("added-lease", CacheHitState.NA,
-        new String[]{"holder", lease.getHolder(),
-            "hid", String.valueOf(lease.getHolderID())});
+    log("added-lease", "holder", lease.getHolder(), "hid", lease.getHolderID());
   }
 
   @Override
@@ -54,7 +52,7 @@ public class LeaseContext extends BaseEntityContext<String, Lease> {
     Lease.Counter lCounter = (Lease.Counter) counter;
     switch (lCounter) {
       case All:
-        log("count-all-leases", CacheHitState.LOSS);
+        log("count-all-leases");
         return dataAccess.countAll();
     }
     throw new RuntimeException(UNSUPPORTED_COUNTER);
@@ -65,10 +63,10 @@ public class LeaseContext extends BaseEntityContext<String, Lease> {
       throws TransactionContextException, StorageException {
     Lease.Finder lFinder = (Lease.Finder) finder;
     switch (lFinder) {
-      case ByPKey:
-        return findByHolder(params);
+      case ByHolder:
+        return findByHolder(lFinder, params);
       case ByHolderId:
-        return findByHolderId(params);
+        return findByHolderId(lFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -77,8 +75,7 @@ public class LeaseContext extends BaseEntityContext<String, Lease> {
   public void remove(Lease lease) throws TransactionContextException {
     super.remove(lease);
     idToLease.remove(lease.getHolderID());
-    log("removed-lease", CacheHitState.NA,
-        new String[]{"holder", lease.getHolder()});
+    log("removed-lease", "holder", lease.getHolder());
   }
 
   @Override
@@ -98,42 +95,38 @@ public class LeaseContext extends BaseEntityContext<String, Lease> {
     return lease.getHolder();
   }
 
-  private Lease findByHolder(Object[] params)
+  private Lease findByHolder(Lease.Finder lFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final String holder = (String) params[0];
     Lease result = null;
     if (contains(holder)) {
-      log("find-lease-by-pk", CacheHitState.HIT,
-          new String[]{"holder", holder});
       result = get(holder);
+      hit(lFinder, result, "holder", holder);
     } else {
-      log("find-lease-by-pk", CacheHitState.LOSS,
-          new String[]{"holder", holder});
       aboutToAccessStorage();
       result = dataAccess.findByPKey(holder);
       gotFromDB(holder, result);
       if (result != null) {
         idToLease.put(result.getHolderID(), result);
       }
+      miss(lFinder, result, "holder", holder);
     }
     return result;
   }
 
-  private Lease findByHolderId(Object[] params)
+  private Lease findByHolderId(Lease.Finder lFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int holderId = (Integer) params[0];
     Lease result = null;
     if (idToLease.containsKey(holderId)) {
-      log("find-lease-by-holderid", CacheHitState.HIT,
-          new String[]{"hid", Integer.toString(holderId)});
       result = idToLease.get(holderId);
+      hit(lFinder, result, "hid", holderId);
     } else {
-      log("find-lease-by-holderid", CacheHitState.LOSS,
-          new String[]{"hid", Integer.toString(holderId)});
       aboutToAccessStorage();
       result = dataAccess.findByHolderId(holderId);
       gotFromDB(result);
       idToLease.put(holderId, result);
+      miss(lFinder, result, "hid", holderId);
     }
     return result;
   }

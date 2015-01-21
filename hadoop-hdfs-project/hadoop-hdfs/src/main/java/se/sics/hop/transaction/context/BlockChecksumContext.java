@@ -17,6 +17,7 @@
  */
 package se.sics.hop.transaction.context;
 
+import org.apache.hadoop.io.ObjectWritable;
 import se.sics.hop.exception.StorageCallPreventedException;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
@@ -62,7 +63,7 @@ public class BlockChecksumContext extends
     BlockChecksum.Finder eFinder = (BlockChecksum.Finder) finder;
     switch (eFinder) {
       case ByKeyTuple:
-        return findByKeyTuple(params);
+        return findByKeyTuple(eFinder, params);
       default:
         throw new RuntimeException(UNSUPPORTED_FINDER);
     }
@@ -74,7 +75,7 @@ public class BlockChecksumContext extends
     BlockChecksum.Finder eFinder = (BlockChecksum.Finder) finder;
     switch (eFinder) {
       case ByInodeId:
-        return findByINodeId(params);
+        return findByINodeId(eFinder, params);
       default:
         throw new RuntimeException(UNSUPPORTED_FINDER);
     }
@@ -106,7 +107,8 @@ public class BlockChecksumContext extends
         .getBlockIndex());
   }
 
-  private BlockChecksum findByKeyTuple(Object[] params)
+  private BlockChecksum findByKeyTuple(BlockChecksum.Finder eFinder, Object[]
+      params)
       throws StorageCallPreventedException, StorageException {
     final KeyTuple key = (KeyTuple) params[0];
     if (key == null) {
@@ -114,30 +116,31 @@ public class BlockChecksumContext extends
     }
     BlockChecksum result = null;
     if (contains(key)) {
-      log("find-block-checksum-by-keyTuple", CacheHitState.HIT,
-          new String[]{"KeyTuple", key.toString()});
       result = get(key);
+      hit(eFinder, result, "KeyTuple", key);
     } else {
-      log("find-block-checksum-by-keyTuple", CacheHitState.LOSS,
-          new String[]{"KeyTuple", key.toString()});
       aboutToAccessStorage();
       result = dataAccess.find(key.getInodeId(), key.getBlockIndex());
       gotFromDB(key, result);
+      miss(eFinder, result, "KeyTuple", key);
     }
     return result;
   }
 
-  private Collection<BlockChecksum> findByINodeId(Object[] params)
+  private Collection<BlockChecksum> findByINodeId(BlockChecksum.Finder
+      eFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     Collection<BlockChecksum> result = null;
     if (inodeToBlockChecksums.containsKey(inodeId)) {
       result = inodeToBlockChecksums.get(inodeId);
+      hit(eFinder, result, "inodeId", inodeId);
     } else {
       aboutToAccessStorage();
       result = dataAccess.findAll((Integer) params[0]);
       gotFromDB(result);
       inodeToBlockChecksums.put(inodeId, result);
+      miss(eFinder, result, "inodeId", inodeId);
     }
     return result;
   }

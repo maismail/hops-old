@@ -46,18 +46,16 @@ public class CorruptReplicaContext extends
   public void update(HopCorruptReplica hopCorruptReplica)
       throws TransactionContextException {
     super.update(hopCorruptReplica);
-    log("added-corrupt", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopCorruptReplica.getBlockId()),
-            "sid", Integer.toString(hopCorruptReplica.getStorageId())});
+    log("added-corrupt", "bid", hopCorruptReplica.getBlockId(),
+        "sid", hopCorruptReplica.getStorageId());
   }
 
   @Override
   public void remove(HopCorruptReplica hopCorruptReplica)
       throws TransactionContextException {
     super.remove(hopCorruptReplica);
-    log("removed-corrupt", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopCorruptReplica.getBlockId()),
-            "sid", Integer.toString(hopCorruptReplica.getStorageId())});
+    log("removed-corrupt", "bid", hopCorruptReplica.getBlockId(),
+        "sid", hopCorruptReplica.getStorageId());
   }
 
   @Override
@@ -72,12 +70,12 @@ public class CorruptReplicaContext extends
       throws TransactionContextException, StorageException {
     HopCorruptReplica.Finder cFinder = (HopCorruptReplica.Finder) finder;
     switch (cFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(cFinder, params);
       case ByINodeId:
-        return findByINodeId(params);
+        return findByINodeId(cFinder, params);
       case ByINodeIds:
-        return findByINodeIds(params);
+        return findByINodeIds(cFinder, params);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -102,54 +100,49 @@ public class CorruptReplicaContext extends
         .getStorageId());
   }
 
-  private List<HopCorruptReplica> findByBlockId(Object[] params)
+  private List<HopCorruptReplica> findByBlockId(HopCorruptReplica.Finder
+      cFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     List<HopCorruptReplica> result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-corrupts-by-bid", CacheHitState.HIT,
-          new String[]{"bid", Long.toString(blockId), "inodeid",
-              Integer.toString(inodeId)});
       result = getByBlock(blockId);
+      hit(cFinder, result, "bid", blockId,"inodeid",inodeId);
     } else {
-      log("find-corrupts-by-bid", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId), "inodeid",
-              Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByBlockId(blockId, inodeId);
       Collections.sort(result);
       gotFromDB(new BlockPK(blockId), result);
+      miss(cFinder, result, "bid", blockId, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<HopCorruptReplica> findByINodeId(Object[] params)
+  private List<HopCorruptReplica> findByINodeId(HopCorruptReplica.Finder
+      cFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<HopCorruptReplica> result = null;
     if (containsByINode(inodeId)) {
-      log("find-corrupts-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       result = getByINode(inodeId);
+      hit(cFinder, result, "inodeid", inodeId);
     } else {
-      log("find-corrupts-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(cFinder, result, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<HopCorruptReplica> findByINodeIds(Object[] params)
+  private List<HopCorruptReplica> findByINodeIds(HopCorruptReplica.Finder
+      cFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int[] inodeIds = (int[]) params[0];
-    log("find-corrupts-by-inode-ids", CacheHitState.LOSS,
-        new String[]{"inode_ids", Arrays
-            .toString(inodeIds)});
     aboutToAccessStorage();
     List<HopCorruptReplica> result = dataAccess.findByINodeIds(inodeIds);
+    miss(cFinder, result, "inodeids", Arrays.toString(inodeIds));
     gotFromDB(BlockPK.ReplicaPK.getKeys(inodeIds), result);
     return result;
   }

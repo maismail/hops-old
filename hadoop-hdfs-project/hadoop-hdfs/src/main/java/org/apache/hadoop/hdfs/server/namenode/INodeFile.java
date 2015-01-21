@@ -132,7 +132,7 @@ public class INodeFile extends INode implements BlockCollection {
   public BlockInfo[] getBlocks()
       throws StorageException, TransactionContextException {
     if(getId() == INode.NON_EXISTING_ID) return BlockInfo.EMPTY_ARRAY;
-    List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByInodeId, id);
+    List<BlockInfo> blocks = (List<BlockInfo>) EntityManager.findList(BlockInfo.Finder.ByINodeId, id);
     if (blocks != null) {
       Collections.sort(blocks, BlockInfo.Order.ByBlockIndex);
       BlockInfo[] blks= new BlockInfo[blocks.size()];
@@ -328,7 +328,7 @@ public class INodeFile extends INode implements BlockCollection {
   
   public BlockInfo findMaxBlk()
       throws StorageException, TransactionContextException {
-    BlockInfo maxBlk = (BlockInfo)EntityManager.find(BlockInfo.Finder.MAX_BLK_INDX, this.getId());
+    BlockInfo maxBlk = (BlockInfo)EntityManager.find(BlockInfo.Finder.ByMaxBlockIndexForINode, this.getId());
     return maxBlk;
   }
   

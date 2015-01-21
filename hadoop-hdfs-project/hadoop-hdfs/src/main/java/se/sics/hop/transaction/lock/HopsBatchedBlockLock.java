@@ -44,7 +44,7 @@ final class HopsBatchedBlockLock extends HopsBaseIndividualBlockLock {
     if(inodeIds == null){
       inodeIds = INodeUtil.resolveINodesFromBlockIds(blockIds);
     }
-    blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByIds, blockIds, inodeIds));
+    blocks.addAll(acquireLockList(DEFAULT_LOCK_TYPE, BlockInfo.Finder.ByBlockIdsAndINodeIds, blockIds, inodeIds));
   }
   
   Pair<int[], long[]> getINodeBlockIds(){

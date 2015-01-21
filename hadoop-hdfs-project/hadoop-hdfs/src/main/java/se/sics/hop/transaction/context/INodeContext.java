@@ -64,10 +64,10 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
       throws TransactionContextException, StorageException {
     INode.Finder iFinder = (INode.Finder) finder;
     switch (iFinder) {
-      case ByINodeID:
-        return findByInodeId(params);
-      case ByPK_NameAndParentId:
-        return findByNameAndParentId(params);
+      case ByINodeId:
+        return findByInodeId(iFinder, params);
+      case ByNameAndParentId:
+        return findByNameAndParentId(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -77,10 +77,10 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
       throws TransactionContextException, StorageException {
     INode.Finder iFinder = (INode.Finder) finder;
     switch (iFinder) {
-      case ParentId:
-        return findByParentId(params);
-      case ByPKS:
-        return findBatch(params);
+      case ByParentId:
+        return findByParentId(iFinder, params);
+      case ByNamesAndParentIds:
+        return findBatch(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -89,18 +89,14 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
   public void remove(INode iNode) throws TransactionContextException {
     super.remove(iNode);
     inodesNameParentIndex.remove(iNode.nameParentKey());
-    log("removed-inode", CacheHitState.NA,
-        new String[]{"id", Integer.toString(iNode.getId()), "name",
-            iNode.getLocalName()});
+    log("removed-inode", "id", iNode.getId(), "name", iNode.getLocalName());
   }
 
   @Override
   public void update(INode iNode) throws TransactionContextException {
     super.update(iNode);
     inodesNameParentIndex.put(iNode.nameParentKey(), iNode);
-    log("updated-inode", CacheHitState.NA,
-        new String[]{"id", Integer.toString(iNode.getId()), "name",
-            iNode.getLocalName()});
+    log("updated-inode", "id", iNode.getId(), "name", iNode.getLocalName());
   }
 
   @Override
@@ -165,18 +161,16 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
         INode inodeAfterChange = (INode) params[1];
         super.remove(inodeBeforeChange);
         renamedInodes.add(inodeAfterChange);
-        log("snapshot-maintenance-inode-pk-change", CacheHitState.NA,
-            new String[]{"Before inodeId",
-                Integer.toString(inodeBeforeChange.getId()), "name",
-                inodeBeforeChange.getLocalName(), "pid",
-                Integer.toString(inodeBeforeChange.getParentId()),
-                "After inodeId", Integer.toString(inodeAfterChange.getId()),
-                "name", inodeAfterChange.getLocalName(), "pid",
-                Integer.toString(inodeAfterChange.getParentId())});
-        log("snapshot-maintenance-removed-inode", CacheHitState.NA,
-            new String[]{"name", inodeBeforeChange.getLocalName(), "inodeId",
-                Integer.toString(inodeBeforeChange.getId()), "pid",
-                Integer.toString(inodeBeforeChange.getParentId())});
+        log("snapshot-maintenance-inode-pk-change", "Before inodeId",
+            inodeBeforeChange.getId(), "name",
+            inodeBeforeChange.getLocalName(), "pid",
+            inodeBeforeChange.getParentId(),
+            "After inodeId", inodeAfterChange.getId(),
+            "name", inodeAfterChange.getLocalName(), "pid",
+            inodeAfterChange.getParentId());
+        log("snapshot-maintenance-removed-inode", "name",
+            inodeBeforeChange.getLocalName(), "inodeId",
+            inodeBeforeChange.getId(), "pid", inodeBeforeChange.getParentId());
         break;
       case Concat:
         // do nothing
@@ -193,28 +187,26 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
   }
 
 
-  private INode findByInodeId(Object[] params)
+  private INode findByInodeId(INode.Finder inodeFinder, Object[] params)
       throws TransactionContextException, StorageException {
     INode result = null;
     final Integer inodeId = (Integer) params[0];
     if (contains(inodeId)) {
-      log("find-inode-by-id", CacheHitState.LOSS, new String[]{"id",
-          Integer.toString(inodeId)});
       result = get(inodeId);
+      hit(inodeFinder, result, "id", inodeId);
     } else {
-      log("find-inode-by-id", CacheHitState.LOSS, new String[]{"id",
-          Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.indexScanfindInodeById(inodeId);
       gotFromDB(inodeId, result);
       if (result != null) {
         inodesNameParentIndex.put(result.nameParentKey(), result);
       }
+      miss(inodeFinder, result, "id", inodeId);
     }
     return result;
   }
 
-  private INode findByNameAndParentId(Object[] params)
+  private INode findByNameAndParentId(INode.Finder inodeFinder, Object[] params)
       throws TransactionContextException, StorageException {
 
     INode result = null;
@@ -227,16 +219,13 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
       if (!preventStorageCalls() &&
           (currentLockMode.get() == LockMode.WRITE_LOCK)) {
         //trying to upgrade lock. re-read the row from DB
-        log("find-inode-by-name-parentid-LOCK_UPGRADE",
-            CacheHitState.LOSS_LOCK_UPGRADE,
-            new String[]{"name", name, "pid", Integer.toString(parentId)});
         aboutToAccessStorage();
         result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
         gotFromDB(result);
         inodesNameParentIndex.put(nameParentKey, result);
+        missUpgrade(inodeFinder, result, "name", name, "pid", parentId);
       } else {
-        log("find-inode-by-name-parentid", CacheHitState.HIT,
-            new String[]{"name", name, "pid", Integer.toString(parentId)});
+        hit(inodeFinder, result, "name", name, "pid", parentId);
       }
 
     } else {
@@ -246,41 +235,39 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
         result = dataAccess.pkLookUpFindInodeByNameAndParentId(name, parentId);
         gotFromDB(result);
         inodesNameParentIndex.put(nameParentKey, result);
-        log("find-inode-by-name-parentid", CacheHitState.LOSS,
-            new String[]{"name", name, "pid", Integer.toString(parentId)});
+        miss(inodeFinder, result, "name", name, "pid", parentId);
       }
     }
     return result;
   }
 
-  private List<INode> findByParentId(Object[] params) throws
+  private List<INode> findByParentId(INode.Finder inodeFinder, Object[]
+      params) throws
       TransactionContextException, StorageException {
     final Integer parentId = (Integer) params[0];
     List<INode> result = null;
     if (inodesParentIndex.containsKey(parentId)) {
-      log("find-inodes-by-parentid", CacheHitState.HIT,
-          new String[]{"pid", Integer.toString(parentId)});
       result = inodesParentIndex.get(parentId);
+      hit(inodeFinder, result, "pid", parentId);
     } else {
-      log("find-inodes-by-parentid", CacheHitState.LOSS,
-          new String[]{"pid", Integer.toString(parentId)});
       aboutToAccessStorage();
       result = syncInodeInstances(
           dataAccess.indexScanFindInodesByParentId(parentId));
       inodesParentIndex.put(parentId, result);
+      miss(inodeFinder, result, "pid", parentId);
     }
     return result;
   }
 
-  private List<INode> findBatch(Object[] params) throws
+  private List<INode> findBatch(INode.Finder inodeFinder, Object[] params)
+      throws
       TransactionContextException, StorageException {
     final String[] names = (String[]) params[0];
     final int[] parentIds = (int[]) params[1];
-    log("find-inodes-by-name-parentid", CacheHitState.LOSS,
-        new String[]{"name", Arrays.toString(
-            names), "pid", Arrays.toString(parentIds)});
-    return syncInodeInstances(dataAccess.getINodesPkBatched
-        (names, parentIds));
+    List<INode> batch = dataAccess.getINodesPkBatched(names, parentIds);
+    miss(inodeFinder, batch, "name", Arrays
+        .toString(names), "pid", Arrays.toString(parentIds));
+    return syncInodeInstances(batch);
   }
 
   private List<INode> syncInodeInstances(List<INode> newInodes) {

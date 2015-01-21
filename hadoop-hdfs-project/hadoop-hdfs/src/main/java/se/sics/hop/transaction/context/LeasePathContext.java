@@ -49,9 +49,8 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
       throws TransactionContextException {
     super.update(hopLeasePath);
     addInternal(hopLeasePath);
-    log("added-lpath", CacheHitState.NA,
-        new String[]{"path", hopLeasePath.getPath(), "hid",
-            Long.toString(hopLeasePath.getHolderId())});
+    log("added-lpath", "path", hopLeasePath.getPath(), "hid",
+        hopLeasePath.getHolderId());
   }
 
   @Override
@@ -59,8 +58,7 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
       throws TransactionContextException {
     super.remove(hopLeasePath);
     removeInternal(hopLeasePath);
-    log("removed-lpath", CacheHitState.NA,
-        new String[]{"path", hopLeasePath.getPath()});
+    log("removed-lpath", "path", hopLeasePath.getPath());
   }
 
   @Override
@@ -68,8 +66,8 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
       throws TransactionContextException, StorageException {
     HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
     switch (lFinder) {
-      case ByPKey:
-        return findByPrimaryKey(params);
+      case ByPath:
+        return findByPrimaryKey(lFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -80,9 +78,9 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
     HopLeasePath.Finder lFinder = (HopLeasePath.Finder) finder;
     switch (lFinder) {
       case ByHolderId:
-        return findByHolderId(params);
+        return findByHolderId(lFinder, params);
       case ByPrefix:
-        return findByPrefix(params);
+        return findByPrefix(lFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -104,41 +102,42 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
     return hopLeasePath.getPath();
   }
 
-  private HopLeasePath findByPrimaryKey(Object[] params)
+  private HopLeasePath findByPrimaryKey(HopLeasePath.Finder lFinder, Object[]
+      params)
       throws StorageCallPreventedException, StorageException {
     final String path = (String) params[0];
     HopLeasePath result = null;
     if (contains(path)) {
-      log("find-lpath-by-pk", CacheHitState.HIT, new String[]{"path", path});
       result = get(path);
+      hit(lFinder, result, "path", path);
     } else {
-      log("find-lpath-by-pk", CacheHitState.LOSS, new String[]{"path", path});
       aboutToAccessStorage();
       result = dataAccess.findByPKey(path);
       gotFromDB(path, result);
+      miss(lFinder, result, "path", path);
     }
     return result;
   }
 
-  private Collection<HopLeasePath> findByHolderId(Object[] params)
+  private Collection<HopLeasePath> findByHolderId(HopLeasePath.Finder
+      lFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int holderId = (Integer) params[0];
     Collection<HopLeasePath> result = null;
     if (holderIdToLeasePath.containsKey(holderId)) {
-      log("find-lpaths-by-holderid", CacheHitState.HIT,
-          new String[]{"hid", Long.toString(holderId)});
       result = new ArrayList<HopLeasePath>(holderIdToLeasePath.get(holderId));
+      hit(lFinder, result, "hid", holderId);
     } else {
-      log("find-lpaths-by-holderid", CacheHitState.LOSS,
-          new String[]{"hid", Long.toString(holderId)});
       aboutToAccessStorage();
       result = dataAccess.findByHolderId(holderId);
       gotFromDB(holderId, result);
+      miss(lFinder, result, "hid", holderId);
     }
     return result;
   }
 
-  private Collection<HopLeasePath> findByPrefix(Object[] params)
+  private Collection<HopLeasePath> findByPrefix(HopLeasePath.Finder lFinder,
+      Object[] params)
       throws StorageCallPreventedException, StorageException {
     final String prefix = (String) params[0];
     Collection<HopLeasePath> result = null;
@@ -146,15 +145,11 @@ public class LeasePathContext extends BaseEntityContext<String, HopLeasePath> {
       aboutToAccessStorage();
       result = dataAccess.findByPrefix(prefix);
       gotFromDB(result);
-      log("find-lpaths-by-prefix", CacheHitState.LOSS,
-          new String[]{"prefix", prefix, "numOfLps",
-              String.valueOf(result.size())});
+      miss(lFinder, result, "prefix", prefix, "numOfLps", result.size());
     } catch (StorageCallPreventedException ex) {
       // This is allowed in querying lease-path by prefix, this is needed in delete operation for example.
       result = getFilteredByPrefix(prefix);
-      log("find-lpaths-by-prefix", CacheHitState.HIT,
-          new String[]{"prefix", prefix, "numOfLps",
-              String.valueOf(result.size())});
+      hit(lFinder, result, "prefix", prefix, "numOfLps", result.size());
     }
     return result;
   }

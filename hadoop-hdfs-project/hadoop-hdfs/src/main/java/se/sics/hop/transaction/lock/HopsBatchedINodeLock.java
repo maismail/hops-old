@@ -62,7 +62,7 @@ public class HopsBatchedINodeLock extends HopsBaseINodeLock {
           int[] parentIds)
       throws StorageException, TransactionContextException {
     setINodeLockType(lock);
-    Collection<INode> inodes = EntityManager.findList(INode.Finder.ByPKS, names, parentIds);
+    Collection<INode> inodes = EntityManager.findList(INode.Finder.ByNamesAndParentIds, names, parentIds);
     for (INode inode : inodes) {
       addLockedINodes(inode, lock);
     }

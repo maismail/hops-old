@@ -230,7 +230,7 @@ class PendingReplicationBlocks {
 
   private PendingBlockInfo getPendingBlock(BlockInfo block) throws
       StorageException, TransactionContextException {
-    return EntityManager.find(PendingBlockInfo.Finder.ByBlockId, block.getBlockId(), block.getInodeId());
+    return EntityManager.find(PendingBlockInfo.Finder.ByBlockIdAndINodeId, block.getBlockId(), block.getInodeId());
   }
 
   private List<PendingBlockInfo> getAllPendingBlocks() throws
@@ -240,7 +240,7 @@ class PendingReplicationBlocks {
 
   private BlockInfo getBlockInfo(PendingBlockInfo pendingBlock) throws
       StorageException, TransactionContextException {
-    return EntityManager.find(BlockInfo.Finder.ById, pendingBlock.getBlockId() );
+    return EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, pendingBlock.getBlockId() );
   }
 
   private void addPendingBlockInfo(PendingBlockInfo pbi) throws

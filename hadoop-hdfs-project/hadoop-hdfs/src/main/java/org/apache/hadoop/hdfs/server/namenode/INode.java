@@ -56,12 +56,27 @@ public abstract class INode implements Comparable<byte[]> {
   //START_HOP_CODE
   public static enum Finder implements FinderType<INode> {
 
-    ByINodeID, ParentId, ByPK_NameAndParentId, ByPKS;
+    ByINodeId,
+    ByParentId,
+    ByNameAndParentId,
+    ByNamesAndParentIds;
 
     @Override
     public Class getType() {
       return INode.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByINodeId: return Annotation.IndexScan;
+        case ByParentId: return Annotation.PrunedIndexScan;
+        case ByNameAndParentId: return Annotation.PrimaryKey;
+        case ByNamesAndParentIds: return Annotation.Batched;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
 
   public static enum Order implements Comparator<INode> {
@@ -364,7 +379,7 @@ public abstract class INode implements Comparable<byte[]> {
       return null;
     }
     if(parent == null){
-        parent = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeID, getParentId());
+        parent = (INodeDirectory) EntityManager.find(INode.Finder.ByINodeId, getParentId());
     }
     //END_HOP_CODE
     return this.parent;

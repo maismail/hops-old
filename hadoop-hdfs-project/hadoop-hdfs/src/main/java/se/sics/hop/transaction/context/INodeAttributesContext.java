@@ -48,8 +48,7 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
       throws TransactionContextException {
     if (iNodeAttributes.getInodeId() != INode.NON_EXISTING_ID) {
       super.update(iNodeAttributes);
-      log("updated-attributes", CacheHitState.NA,
-          new String[]{"id", Integer.toString(iNodeAttributes.getInodeId())});
+      log("updated-attributes", "id", iNodeAttributes.getInodeId());
     } else {
       log("updated-attributes -- IGNORED as id is not set");
     }
@@ -59,8 +58,7 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
   public void remove(INodeAttributes iNodeAttributes)
       throws TransactionContextException {
     super.remove(iNodeAttributes);
-    log("removed-attributes", CacheHitState.NA,
-        new String[]{"id", Integer.toString(iNodeAttributes.getInodeId())});
+    log("removed-attributes", "id", iNodeAttributes.getInodeId());
   }
 
   @Override
@@ -68,8 +66,8 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
       Object... params) throws TransactionContextException, StorageException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
     switch (qfinder) {
-      case ByPKey:
-        return findByPrimaryKey(params);
+      case ByINodeId:
+        return findByPrimaryKey(qfinder, params);
     }
     throw new UnsupportedOperationException(UNSUPPORTED_FINDER);
   }
@@ -80,8 +78,8 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
       throws TransactionContextException, StorageException {
     INodeAttributes.Finder qfinder = (INodeAttributes.Finder) finder;
     switch (qfinder) {
-      case ByPKList:
-        return findByPrimaryKeys(params);
+      case ByINodeIds:
+        return findByPrimaryKeys(qfinder, params);
     }
     throw new UnsupportedOperationException(UNSUPPORTED_FINDER);
   }
@@ -121,40 +119,37 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
     }
   }
 
-  private INodeAttributes findByPrimaryKey(Object[] params)
+  private INodeAttributes findByPrimaryKey(INodeAttributes.Finder qfinder,
+      Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     INodeAttributes result = null;
     if (contains(inodeId)) {
-      log("find-attributes-by-pk", EntityContext.CacheHitState.HIT,
-          new String[]{"id", Integer.toString(inodeId)});
       result = get(inodeId);
+      hit(qfinder, result, "inodeid", inodeId);
     } else {
-      log("find-attributes-by-pk", EntityContext.CacheHitState.LOSS, new
-          String[]{"id", Integer.toString(inodeId), "size ",
-          Integer.toString(size())});
       aboutToAccessStorage(" id = " + inodeId);
       result = dataAccess.findAttributesByPk(inodeId);
       gotFromDB(inodeId, result);
+      miss(qfinder, result, "inodeid", inodeId, "size", size());
     }
     return result;
   }
 
-  private Collection<INodeAttributes> findByPrimaryKeys(Object[] params)
+  private Collection<INodeAttributes> findByPrimaryKeys(INodeAttributes
+      .Finder qfinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final List<HopINodeCandidatePK> inodePks = (List<HopINodeCandidatePK>)
         params[0];
     Collection<INodeAttributes> result = null;
     if (contains(inodePks)) {
-      log("find-attributes-by-pk-list", EntityContext.CacheHitState.HIT,
-          new String[]{"id", Arrays.toString(inodePks.toArray())});
       result = get(inodePks);
+      hit(qfinder, result, "inodeids", inodePks);
     } else {
-      log("find-attributes-by-pk-list", EntityContext.CacheHitState.LOSS,
-          new String[]{"id", Arrays.toString(inodePks.toArray())});
       aboutToAccessStorage(" ids = " + Arrays.toString(inodePks.toArray()));
       result = dataAccess.findAttributesByPkList(inodePks);
       gotFromDB(result);
+      miss(qfinder, result, "inodeids", inodePks);
     }
     return result;
   }
@@ -189,13 +184,12 @@ public class INodeAttributesContext extends BaseEntityContext<Integer,
         INodeAttributes toBeAdded = clone(toBeDeleted, trg_param.getInodeId());
 
         remove(toBeDeleted);
-        log("snapshot-maintenance-removed-inode-attribute", CacheHitState.NA,
-            new String[]{"inodeId",
-                Integer.toString(toBeDeleted.getInodeId())});
+        log("snapshot-maintenance-removed-inode-attribute", "inodeId",
+            toBeDeleted.getInodeId());
 
         add(toBeAdded);
-        log("snapshot-maintenance-added-inode-attribute", CacheHitState.NA,
-            new String[]{"inodeId", Integer.toString(toBeAdded.getInodeId())});
+        log("snapshot-maintenance-added-inode-attribute", "inodeId",
+            toBeAdded.getInodeId());
       }
     }
   }

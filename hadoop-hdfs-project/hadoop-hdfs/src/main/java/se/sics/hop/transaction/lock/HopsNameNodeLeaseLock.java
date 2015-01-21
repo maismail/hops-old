@@ -32,7 +32,7 @@ final class HopsNameNodeLeaseLock extends HopsLock {
 
   @Override
   protected void acquire(TransactionLocks locks) throws IOException {
-    nameNodeLease = acquireLock(lockType, Lease.Finder.ByPKey,
+    nameNodeLease = acquireLock(lockType, Lease.Finder.ByHolder,
         HdfsServerConstants.NAMENODE_LEASE_HOLDER);
   }
 

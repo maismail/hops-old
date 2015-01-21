@@ -40,24 +40,17 @@ public class LeaderContext extends BaseEntityContext<Long, HopLeader> {
   @Override
   public void update(HopLeader hopLeader) throws TransactionContextException {
     super.update(hopLeader);
-    log("added-leader", CacheHitState.NA,
-        new String[]{
-            "id", Long.toString(hopLeader.getId()), "hostName",
-            hopLeader.getHostName(), "counter",
-            Long.toString(hopLeader.getCounter()),
-            "timeStamp", Long.toString(hopLeader.getTimeStamp())
-        });
+    log("added-leader", "id", hopLeader.getId(), "hostName",
+        hopLeader.getHostName(), "counter", hopLeader.getCounter(),
+        "timeStamp", hopLeader.getTimeStamp());
   }
 
   @Override
   public void remove(HopLeader hopLeader) throws TransactionContextException {
     super.remove(hopLeader);
-    log("removed-leader", CacheHitState.NA, new String[]{
-        "id", Long.toString(hopLeader.getId()), "hostName",
-        hopLeader.getHostName(), "counter",
-        Long.toString(hopLeader.getCounter()),
-        "timeStamp", Long.toString(hopLeader.getTimeStamp())
-    });
+    log("removed-leader", "id", hopLeader.getId(), "hostName",
+        hopLeader.getHostName(), "counter", hopLeader.getCounter(),
+        "timeStamp", hopLeader.getTimeStamp());
   }
 
   @Override
@@ -66,7 +59,7 @@ public class LeaderContext extends BaseEntityContext<Long, HopLeader> {
     HopLeader.Finder lFinder = (HopLeader.Finder) finder;
     switch (lFinder) {
       case ById:
-        return findById(params);
+        return findById(lFinder, params);
     }
 
     throw new RuntimeException(UNSUPPORTED_FINDER);
@@ -78,7 +71,7 @@ public class LeaderContext extends BaseEntityContext<Long, HopLeader> {
     HopLeader.Finder lFinder = (HopLeader.Finder) finder;
     switch (lFinder) {
       case All:
-        return findAll();
+        return findAll(lFinder);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -100,36 +93,35 @@ public class LeaderContext extends BaseEntityContext<Long, HopLeader> {
     return hopLeader.getId();
   }
 
-  private HopLeader findById(Object[] params)
+  private HopLeader findById(HopLeader.Finder lFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long id = (Long) params[0];
     final int partitionKey = (Integer) params[1];
     HopLeader result = null;
     if (allRead || contains(id)) {
-      log("find-leader-by-id", CacheHitState.HIT,
-          new String[]{"leaderId", Long.toString(id)});
       result = get(id);
+      hit(lFinder, result, "leaderId", id);
     } else {
-      log("find-leader-by-id", CacheHitState.LOSS, new String[]{
-          "leaderId", Long.toString(id)
-      });
       aboutToAccessStorage();
       result = dataAccess.findByPkey(id, partitionKey);
       gotFromDB(id, result);
+      miss(lFinder, result, "leaderId", id);
     }
     return result;
   }
 
-  private Collection<HopLeader> findAll()
+  private Collection<HopLeader> findAll(HopLeader.Finder lFinder)
       throws StorageCallPreventedException, StorageException {
     Collection<HopLeader> result = null;
     if (allRead) {
       result = getAll();
+      hit(lFinder, result);
     } else {
       aboutToAccessStorage();
       result = dataAccess.findAll();
       allRead = true;
       gotFromDB(result);
+      miss(lFinder, result);
     }
     return new ArrayList<HopLeader>(result);
   }

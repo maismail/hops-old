@@ -2449,7 +2449,7 @@ public class BlockManager {
       invalidateCorruptReplicas(storedBlock);
 
     if (fsNamesystem.isErasureCodingEnabled()) {
-      INode iNode = EntityManager.find(INode.Finder.ByINodeID, bc.getId());
+      INode iNode = EntityManager.find(INode.Finder.ByINodeId, bc.getId());
       if (iNode.isUnderConstruction() == false && numBeforeAdding.liveReplicas() == 0 && numLiveReplicas > 0) {
         EncodingStatus status = EntityManager.find(EncodingStatus.Finder.ByInodeId, bc.getId());
         if (status != null && status.isCorrupt()) {
@@ -2562,7 +2562,7 @@ public class BlockManager {
       public Object performTask() throws IOException {
         List<INodeIdentifier> inodeIdentifiers = (List<INodeIdentifier>) getParams()[0];
         for (INodeIdentifier inodeIdentifier : inodeIdentifiers) {
-          INode inode = EntityManager.find(INode.Finder.ByINodeID, inodeIdentifier.getInodeId());
+          INode inode = EntityManager.find(INode.Finder.ByINodeId, inodeIdentifier.getInodeId());
           for (BlockInfo block : ((INodeFile) inode).getBlocks()) {
             MisReplicationResult res = processMisReplicatedBlock(block);
             if (LOG.isTraceEnabled()) {
@@ -3811,7 +3811,7 @@ public class BlockManager {
 
       @Override
       public Object performTask() throws IOException {
-        BlockInfo block = EntityManager.find(BlockInfo.Finder.ById, b);
+        BlockInfo block = EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, b);
         removeStoredBlock(block, node);
         return null;
       }
@@ -3908,9 +3908,9 @@ public class BlockManager {
 
       @Override
       public Object performTask() throws IOException {
-        //        PendingBlockInfo pendingBlock = EntityManager.find(PendingBlockInfo.Finder.ByPKey, p.getBlockId());
+        //        PendingBlockInfo pendingBlock = EntityManager.find(PendingBlockInfo.Finder.ByBlockIdStorageIdAndINodeId, p.getBlockId());
 //        if (pendingBlock != null && PendingReplicationBlocks.isTimedOut(pendingBlock)) {
-        BlockInfo timedOutItem = EntityManager.find(BlockInfo.Finder.ById, timedOutItemId);
+        BlockInfo timedOutItem = EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, timedOutItemId);
         NumberReplicas num = countNodes(timedOutItem);
         if (isNeededReplication(timedOutItem, getReplication(timedOutItem),
                 num.liveReplicas())) {

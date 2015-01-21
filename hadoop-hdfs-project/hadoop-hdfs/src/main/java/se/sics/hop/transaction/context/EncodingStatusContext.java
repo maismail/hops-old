@@ -76,9 +76,9 @@ public class EncodingStatusContext extends BaseEntityContext<Integer,
 
     switch (eFinder) {
       case ByInodeId:
-        return findByINodeId(inodeId);
+        return findByINodeId(eFinder, inodeId);
       case ByParityInodeId:
-        return findByParityINodeId(inodeId);
+        return findByParityINodeId(eFinder, inodeId);
       default:
         throw new RuntimeException(UNSUPPORTED_FINDER);
     }
@@ -123,38 +123,36 @@ public class EncodingStatusContext extends BaseEntityContext<Integer,
     return encodingStatus.getInodeId();
   }
 
-  private EncodingStatus findByINodeId(final int inodeId)
+  private EncodingStatus findByINodeId(EncodingStatus.Finder eFinder, final
+  int inodeId)
       throws StorageCallPreventedException, StorageException {
     EncodingStatus result = null;
     if (contains(inodeId)) {
-      log("find-encoding-status-by-inodeid", CacheHitState.HIT,
-          new String[]{"inodeid", Integer.toString(inodeId)});
       result = get(inodeId);
+      hit(eFinder, result, "inodeid", inodeId);
     } else {
-      log("find-encoding-status-by-inodeid", CacheHitState.LOSS,
-          new String[]{"inodeid", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByInodeId(inodeId);
       gotFromDB(inodeId, result);
       addInternal(result);
+      miss(eFinder, result, "inodeid", inodeId);
     }
     return result;
   }
 
-  private EncodingStatus findByParityINodeId(final int pairtyINodeId)
+  private EncodingStatus findByParityINodeId(EncodingStatus.Finder eFinder,
+      final int pairtyINodeId)
       throws StorageCallPreventedException, StorageException {
     EncodingStatus result = null;
     if (parityInodeIdToEncodingStatus.containsKey(pairtyINodeId)) {
-      log("find-encoding-status-by-parityInodeid", CacheHitState.HIT,
-          new String[]{"inodeid", Integer.toString(pairtyINodeId)});
       result = parityInodeIdToEncodingStatus.get(pairtyINodeId);
+      hit(eFinder, result, "parityinodeid", pairtyINodeId);
     } else {
-      log("find-encoding-status-by-parityInodeid", CacheHitState.LOSS,
-          new String[]{"inodeid", Integer.toString(pairtyINodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByParityInodeId(pairtyINodeId);
       gotFromDB(result);
       addInternal(pairtyINodeId, result);
+      miss(eFinder, result, "parityinodeid", pairtyINodeId);
     }
     return result;
   }

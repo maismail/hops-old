@@ -47,21 +47,19 @@ public class QuotaUpdateContext
   public void update(QuotaUpdate quotaUpdate)
       throws TransactionContextException {
     super.update(quotaUpdate);
-    log("added-quotaUpdate", CacheHitState.NA, new String[]{"id", Integer
-        .toString(quotaUpdate.getId())});
+    log("added-quotaUpdate", "id", quotaUpdate.getId());
   }
 
   @Override
   public void remove(QuotaUpdate quotaUpdate)
       throws TransactionContextException {
-    if(quotaUpdate != null){
-      if(!contains(quotaUpdate.getId())){
+    if (quotaUpdate != null) {
+      if (!contains(quotaUpdate.getId())) {
         super.update(quotaUpdate);
       }
     }
     super.remove(quotaUpdate);
-    log("removed-quotaUpdate", CacheHitState.NA,
-        new String[]{"id", Integer.toString(quotaUpdate.getId())});
+    log("removed-quotaUpdate", "id", quotaUpdate.getId());
   }
 
   @Override
@@ -69,7 +67,8 @@ public class QuotaUpdateContext
       Object... params) throws TransactionContextException, StorageException {
     QuotaUpdate.Finder qFinder = (QuotaUpdate.Finder) finder;
     switch (qFinder) {
-      case ByInodeId: return findByINodeId(params);
+      case ByINodeId:
+        return findByINodeId(qFinder, params);
     }
     throw new UnsupportedOperationException(UNSUPPORTED_FINDER);
   }
@@ -94,16 +93,19 @@ public class QuotaUpdateContext
     return quotaUpdate.getId();
   }
 
-  private List<QuotaUpdate> findByINodeId(Object[] params)
+  private List<QuotaUpdate> findByINodeId(QuotaUpdate.Finder qFinder, Object[]
+      params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<QuotaUpdate> result = null;
     if (inodeIdToQuotaUpdates.containsKey(inodeId)) {
       result = inodeIdToQuotaUpdates.get(inodeId);
+      hit(qFinder, result, "inodeid", inodeId);
     } else {
       aboutToAccessStorage();
       result = dataAccess.findByInodeId(inodeId);
       gotFromDB(inodeId, result);
+      miss(qFinder, result, "inodeid", inodeId);
     }
     return result;
   }

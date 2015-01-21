@@ -102,7 +102,7 @@ public class LeaseManager {
 
   Lease getLease(String holder)
       throws StorageException, TransactionContextException {
-    return EntityManager.find(Lease.Finder.ByPKey, holder);
+    return EntityManager.find(Lease.Finder.ByHolder, holder);
   }
   
   SortedSet<Lease> getSortedLeases() throws IOException {
@@ -124,7 +124,7 @@ public class LeaseManager {
   /** @return the lease containing src */
   public Lease getLeaseByPath(String src)
       throws StorageException, TransactionContextException {
-    HopLeasePath leasePath = EntityManager.find(HopLeasePath.Finder.ByPKey, src);
+    HopLeasePath leasePath = EntityManager.find(HopLeasePath.Finder.ByPath, src);
     if (leasePath != null) {
       int holderID = leasePath.getHolderId();
       Lease lease = EntityManager.find(Lease.Finder.ByHolderId, holderID);
@@ -513,7 +513,7 @@ public class LeaseManager {
     boolean needSync = false;
     assert fsnamesystem.hasWriteLock();
     
-    Lease oldest = EntityManager.find(Lease.Finder.ByPKey, holder);
+    Lease oldest = EntityManager.find(Lease.Finder.ByHolder, holder);
 
     if (oldest == null) {
       return needSync;

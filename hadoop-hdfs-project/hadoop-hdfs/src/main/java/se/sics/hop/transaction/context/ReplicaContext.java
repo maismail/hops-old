@@ -42,20 +42,16 @@ public class ReplicaContext extends BaseReplicaContext<BlockPK.ReplicaPK
   public void update(HopIndexedReplica replica)
       throws TransactionContextException {
     super.update(replica);
-    log("updated-replica", CacheHitState.NA,
-        new String[]{"bid", Long.toString(replica.getBlockId()),
-            "sid", Integer.toString(replica.getStorageId()), "index",
-            Integer.toString(replica.getIndex())});
+    log("updated-replica", "bid", replica.getBlockId(),
+        "sid", replica.getStorageId(), "index", replica.getIndex());
   }
 
   @Override
   public void remove(HopIndexedReplica replica)
       throws TransactionContextException {
     super.remove(replica);
-    log("removed-replica", CacheHitState.NA,
-        new String[]{"bid", Long.toString(replica.getBlockId()),
-            "sid", Integer.toString(replica.getStorageId()), "index",
-            Integer.toString(replica.getIndex())});
+    log("removed-replica", "bid", replica.getBlockId(),
+        "sid", replica.getStorageId(), "index", replica.getIndex());
   }
 
 
@@ -71,16 +67,14 @@ public class ReplicaContext extends BaseReplicaContext<BlockPK.ReplicaPK
       throws TransactionContextException, StorageException {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
     switch (iFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(iFinder, params);
       case ByINodeId:
-        return findByINodeId(params);
-      case ByStorageId:
-        return findByStorageId(params);
-      case ByPKS:
-        return findByPrimaryKeys(params);
+        return findByINodeId(iFinder, params);
+      case ByBlockIdsStorageIdsAndINodeIds:
+        return findByPrimaryKeys(iFinder, params);
       case ByINodeIds:
-        return findyByINodeIds(params);
+        return findyByINodeIds(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -90,8 +84,8 @@ public class ReplicaContext extends BaseReplicaContext<BlockPK.ReplicaPK
       Object... params) throws TransactionContextException, StorageException {
     HopIndexedReplica.Finder iFinder = (HopIndexedReplica.Finder) finder;
     switch (iFinder) {
-      case ByPK:
-        return findByPK(params);
+      case ByBlockIdAndStorageId:
+        return findByPK(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -111,7 +105,8 @@ public class ReplicaContext extends BaseReplicaContext<BlockPK.ReplicaPK
   HopIndexedReplica cloneEntity(HopIndexedReplica hopIndexedReplica,
       int inodeId) {
     return new HopIndexedReplica(hopIndexedReplica.getBlockId(),
-        hopIndexedReplica.getStorageId(), inodeId, hopIndexedReplica.getIndex());
+        hopIndexedReplica.getStorageId(), inodeId,
+        hopIndexedReplica.getIndex());
   }
 
   @Override
@@ -119,96 +114,85 @@ public class ReplicaContext extends BaseReplicaContext<BlockPK.ReplicaPK
     return !getAdded().isEmpty() || !getModified().isEmpty();
   }
 
-  private HopIndexedReplica findByPK(Object[] params) {
+  private HopIndexedReplica findByPK(HopIndexedReplica.Finder iFinder,
+      Object[] params) {
     final long blockId = (Long) params[0];
     final int storageId = (Integer) params[1];
+    HopIndexedReplica result = null;
     List<HopIndexedReplica> replicas = getByBlock(blockId);
     if (replicas != null) {
       for (HopIndexedReplica replica : replicas) {
-        if(replica != null) {
+        if (replica != null) {
           if (replica.getStorageId() == storageId) {
-            return replica;
+              result = replica;
+            break;
           }
         }
       }
     }
-    return null;
+    hit(iFinder, result, "bid", blockId, "sid", storageId);
+    return result;
   }
 
-  private List<HopIndexedReplica> findByBlockId(Object[] params)
+  private List<HopIndexedReplica> findByBlockId(HopIndexedReplica.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     List<HopIndexedReplica> results = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-replicas-by-bid", CacheHitState.HIT,
-          new String[]{"bid", Long.toString(blockId)});
       results = getByBlock(blockId);
+      hit(iFinder, results, "bid", blockId);
     } else {
-      log("find-replicas-by-bid", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId)});
       aboutToAccessStorage();
       results = dataAccess.findReplicasById(blockId, inodeId);
       gotFromDB(new BlockPK(blockId), results);
+      miss(iFinder, results, "bid", blockId);
     }
     return results;
   }
 
-  private List<HopIndexedReplica> findByINodeId(Object[] params) throws
+  private List<HopIndexedReplica> findByINodeId(HopIndexedReplica.Finder
+      iFinder, Object[] params) throws
       StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<HopIndexedReplica> results = null;
     if (containsByINode(inodeId)) {
-      log("find-replicas-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       results = getByINode(inodeId);
+      hit(iFinder, results, "inodeid", inodeId);
     } else {
-      log("find-replicas-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       results = dataAccess.findReplicasByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), results);
+      miss(iFinder, results, "inodeid", inodeId);
     }
     return results;
   }
 
-  private List<HopIndexedReplica> findByStorageId(Object[] params) throws
-      StorageCallPreventedException, StorageException {
-    final long[] blockIds = (long[]) params[0];
-    final int sid = (Integer) params[1];
-    final int[] sids = new int[blockIds.length];
-    Arrays.fill(sids, sid);
-    log("find-replicas-by-sid", CacheHitState.NA,
-        new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
-    List<HopIndexedReplica> results = dataAccess.findReplicasByStorageId(sid);
-    gotFromDB(BlockPK.ReplicaPK.getKeys(blockIds, sid), results);
-    return results;
-  }
-
-  private List<HopIndexedReplica> findByPrimaryKeys(Object[] params) throws
+  private List<HopIndexedReplica> findByPrimaryKeys(HopIndexedReplica.Finder
+      iFinder, Object[] params) throws
       StorageCallPreventedException, StorageException {
     long[] blockIds = (long[]) params[0];
     int[] inodeIds = (int[]) params[1];
     int sid = (Integer) params[2];
     int[] sids = new int[blockIds.length];
     Arrays.fill(sids, sid);
-    log("find-replicas-by-pks", CacheHitState.NA,
-        new String[]{"Ids", "" + blockIds, "InodeIds", "" + inodeIds, " sid",
-            Integer.toString(sid)});
     List<HopIndexedReplica> results = dataAccess.findReplicasByPKS(blockIds,
         inodeIds, sids);
     gotFromDB(BlockPK.ReplicaPK.getKeys(blockIds, sid), results);
+    miss(iFinder, results, "blockIds", Arrays.toString(blockIds), "inodeIds",
+        Arrays.toString(inodeIds), "sid", sid);
     return results;
   }
 
-  private List<HopIndexedReplica> findyByINodeIds(Object[] params) throws
+  private List<HopIndexedReplica> findyByINodeIds(HopIndexedReplica.Finder
+      iFinder, Object[] params) throws
       StorageCallPreventedException, StorageException {
     int[] ids = (int[]) params[0];
-    log("find-replicas-by-inode-ids", CacheHitState.LOSS,
-        new String[]{"inode_ids", Arrays.toString(ids)});
     aboutToAccessStorage();
     List<HopIndexedReplica> results = dataAccess.findReplicasByINodeIds(ids);
     gotFromDB(BlockPK.ReplicaPK.getKeys(ids), results);
+    miss(iFinder, results, "inodeIds", Arrays.toString(ids));
     return results;
   }
 }

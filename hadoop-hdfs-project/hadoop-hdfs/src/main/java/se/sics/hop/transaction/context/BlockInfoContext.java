@@ -30,6 +30,7 @@ import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -71,10 +72,9 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
     super.update(blockInfo);
     //only called in update not add
     updateInodeBlocks(blockInfo);
-    log("updated-blockinfo", CacheHitState.NA,
-        new String[]{"bid", Long.toString(blockInfo.getBlockId()), "inodeId",
-            Long.toString(blockInfo.getInodeId()), "blk index",
-            Integer.toString(blockInfo.getBlockIndex())});
+    log("updated-blockinfo", "bid", blockInfo.getBlockId(), "inodeId",
+        blockInfo.getInodeId(), "blk index",
+        blockInfo.getBlockIndex());
 
   }
 
@@ -82,8 +82,7 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
   public void remove(BlockInfo blockInfo) throws TransactionContextException {
     super.remove(blockInfo);
     removeBlockFromInodeBlocks(blockInfo);
-    log("removed-blockinfo", CacheHitState.NA,
-        new String[]{"bid", Long.toString(blockInfo.getBlockId())});
+    log("removed-blockinfo", "bid", blockInfo.getBlockId());
   }
 
 
@@ -100,10 +99,10 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
       throws TransactionContextException, StorageException {
     BlockInfo.Finder bFinder = (BlockInfo.Finder) finder;
     switch (bFinder) {
-      case ById:
-        return findById(params);
-      case MAX_BLK_INDX:
-        return findMaxBlk(params);
+      case ByBlockIdAndINodeId:
+        return findById(bFinder, params);
+      case ByMaxBlockIndexForINode:
+        return findMaxBlk(bFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -113,12 +112,12 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
       Object... params) throws TransactionContextException, StorageException {
     BlockInfo.Finder bFinder = (BlockInfo.Finder) finder;
     switch (bFinder) {
-      case ByInodeId:
-        return findByInodeId(params);
-      case ByIds:
-        return findBatch(params);
-      case ByInodeIds:
-        return findByInodeIds(params);
+      case ByINodeId:
+        return findByInodeId(bFinder, params);
+      case ByBlockIdsAndINodeIds:
+        return findBatch(bFinder, params);
+      case ByINodeIds:
+        return findByInodeIds(bFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -154,54 +153,55 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
   }
 
 
-  private List<BlockInfo> findByInodeId(final Object[] params) throws
+  private List<BlockInfo> findByInodeId(BlockInfo.Finder bFinder, final
+  Object[] params) throws
       TransactionContextException,
       StorageException {
     List<BlockInfo> result = null;
     final Integer inodeId = (Integer) params[0];
     if (inodeBlocks.containsKey(inodeId)) {
-      log("find-blocks-by-inodeid", CacheHitState.HIT,
-          new String[]{"inodeid", Integer.toString(inodeId)});
-      return inodeBlocks.get(inodeId);
+      result = inodeBlocks.get(inodeId);
+      hit(bFinder, result, "inodeid", inodeId);
     } else {
-      log("find-blocks-by-inodeid", CacheHitState.LOSS,
-          new String[]{"inodeid", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByInodeId(inodeId);
       inodeBlocks.put(inodeId, syncBlockInfoInstances(result));
-      return result;
+      miss(bFinder, result, "inodeid", inodeId);
     }
+    return result;
   }
 
-  private List<BlockInfo> findBatch(Object[] params) throws
+  private List<BlockInfo> findBatch(BlockInfo.Finder bFinder, Object[] params)
+      throws
       TransactionContextException,
       StorageException {
     List<BlockInfo> result = null;
     final long[] blockIds = (long[]) params[0];
     final int[] inodeIds = (int[]) params[1];
-    log("find-blocks-by-ids", CacheHitState.NA,
-        new String[]{"BlockIds", "" + blockIds, "InodeIds", "" + inodeIds});
     aboutToAccessStorage();
     result = dataAccess.findByIds(blockIds, inodeIds);
+    miss(bFinder, result, "BlockIds", Arrays
+        .toString(blockIds), "InodeIds", Arrays.toString(inodeIds));
     return syncBlockInfoInstances(result, blockIds);
   }
 
-  private List<BlockInfo> findByInodeIds(Object[] params) throws
+  private List<BlockInfo> findByInodeIds(BlockInfo.Finder bFinder, Object[]
+      params) throws
       TransactionContextException,
       StorageException {
     List<BlockInfo> result = null;
     final int[] ids = (int[]) params[0];
-    log("find-blocks-by-inodeids", CacheHitState.NA,
-        new String[]{"InodeIds", "" + ids});
     aboutToAccessStorage();
     result = dataAccess.findByInodeIds(ids);
     for (int id : ids) {
       inodeBlocks.put(id, null);
     }
+    miss(bFinder,  result, "InodeIds", Arrays
+        .toString(ids));
     return syncBlockInfoInstances(result, true);
   }
 
-  private BlockInfo findById(final Object[] params)
+  private BlockInfo findById(BlockInfo.Finder bFinder, final Object[] params)
       throws TransactionContextException,
       StorageException {
     BlockInfo result = null;
@@ -212,30 +212,27 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
     }
     if (contains(blockId)) {
       result = get(blockId);
-      log("find-block-by-bid", CacheHitState.HIT, new String[]{"bid", Long
-          .toString(blockId), "inodeId",
+      hit(bFinder, result, "bid", blockId, "inodeId",
           inodeId != null ? Integer.toString(inodeId)
-              : "NULL"});
+              : "NULL");
     } else {
       // some test intentionally look for blocks that are not in the DB
       // duing the acquire lock phase if we see that an id does not
       // exist in the db then we should put null in the cache for that id
 
-      log("find-block-by-bid", CacheHitState.LOSS, new String[]{"bid", Long
-          .toString(blockId), "inodeId",
-          inodeId != null ? Integer.toString(inodeId)
-              : "NULL"});
-      aboutToAccessStorage();
       if (inodeId == null) {
         throw new IllegalArgumentException("InodeId is not set");
       }
+      aboutToAccessStorage();
       result = dataAccess.findById(blockId, inodeId);
       gotFromDB(blockId, result);
+      miss(bFinder, result, "bid", blockId, "inodeId", inodeId);
     }
     return result;
   }
 
-  private BlockInfo findMaxBlk(final Object[] params) {
+  private BlockInfo findMaxBlk(BlockInfo.Finder bFinder, final Object[]
+      params) {
     final int inodeId = (Integer) params[0];
     Collection<BlockInfo> notRemovedBlks = Collections2.filter
         (filterValuesNotOnState
@@ -247,7 +244,9 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
                 return input.getInodeId() == inodeId;
               }
             });
-    return Collections.max(notRemovedBlks, BLOCK_INDEX_COMPARTOR);
+    BlockInfo result = Collections.max(notRemovedBlks, BLOCK_INDEX_COMPARTOR);
+    hit(bFinder, result, "inodeId", inodeId);
+    return result;
   }
 
 
@@ -347,9 +346,9 @@ public class BlockInfoContext extends BaseEntityContext<Long, BlockInfo> {
       if (deleteINodes.contains(pk)) {
         //remove the block
         concatRemovedBlks.add(bInfo);
-        log("snapshot-maintenance-removed-blockinfo", CacheHitState.NA,
-            new String[]{"bid", Long.toString(bInfo.getBlockId()), "inodeId",
-                Integer.toString(bInfo.getInodeId())});
+        log("snapshot-maintenance-removed-blockinfo", "bid", bInfo.getBlockId(),
+            "inodeId",
+            bInfo.getInodeId());
       }
     }
   }

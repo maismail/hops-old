@@ -45,18 +45,16 @@ public class ExcessReplicaContext extends
   public void update(HopExcessReplica hopExcessReplica)
       throws TransactionContextException {
     super.update(hopExcessReplica);
-    log("added-excess", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopExcessReplica.getBlockId()), "sid",
-            Integer.toString(hopExcessReplica.getStorageId())});
+    log("added-excess", "bid", hopExcessReplica.getBlockId(), "sid",
+        hopExcessReplica.getStorageId());
   }
 
   @Override
   public void remove(HopExcessReplica hopExcessReplica)
       throws TransactionContextException {
     super.remove(hopExcessReplica);
-    log("removed-excess", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopExcessReplica.getBlockId()), "sid",
-            Integer.toString(hopExcessReplica.getStorageId())});
+    log("removed-excess", "bid", hopExcessReplica.getBlockId(), "sid",
+        hopExcessReplica.getStorageId());
   }
 
   @Override
@@ -64,8 +62,8 @@ public class ExcessReplicaContext extends
       Object... params) throws TransactionContextException, StorageException {
     HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
     switch (eFinder) {
-      case ByPKey:
-        return findByPrimaryKey(params);
+      case ByBlockIdStorageIdAndINodeId:
+        return findByPrimaryKey(eFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -76,12 +74,12 @@ public class ExcessReplicaContext extends
       throws TransactionContextException, StorageException {
     HopExcessReplica.Finder eFinder = (HopExcessReplica.Finder) finder;
     switch (eFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(eFinder, params);
       case ByINodeId:
-        return findByINodeId(params);
+        return findByINodeId(eFinder, params);
       case ByINodeIds:
-        return findByINodeIds(params);
+        return findByINodeIds(eFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -110,7 +108,8 @@ public class ExcessReplicaContext extends
         .getStorageId());
   }
 
-  private HopExcessReplica findByPrimaryKey(Object[] params)
+  private HopExcessReplica findByPrimaryKey(HopExcessReplica.Finder eFinder,
+      Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int storageId = (Integer) params[1];
@@ -119,69 +118,62 @@ public class ExcessReplicaContext extends
         storageId);
     HopExcessReplica result = null;
     if (contains(key) || containsByINode(inodeId) || containsByBlock(blockId)) {
-      log("find-excess-by-pk", CacheHitState.HIT,
-          new String[]{"bid", Long.toString(blockId), "sid",
-              Integer.toString(storageId)});
       result = get(key);
+      hit(eFinder, result, "bid", blockId, "sid", storageId);
     } else {
-      log("find-excess-by-pk", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId), "sid",
-              Integer.toString(storageId)});
       aboutToAccessStorage();
       result = dataAccess.findByPK(blockId, storageId, inodeId);
       gotFromDB(key, result);
+      miss(eFinder, result, "bid", blockId, "sid", storageId);
     }
     return result;
   }
 
-  private List<HopExcessReplica> findByBlockId(Object[] params)
+  private List<HopExcessReplica> findByBlockId(HopExcessReplica.Finder
+      eFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     List<HopExcessReplica> result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-excess-by-blockId", CacheHitState.HIT, new String[]{"bid",
-          String.valueOf(blockId)});
       result = getByBlock(blockId);
+      hit(eFinder, result, "bid", blockId, "inodeId", inodeId);
     } else {
-      log("find-excess-by-blockId", CacheHitState.LOSS, new String[]{"bid",
-          String.valueOf(blockId)});
       aboutToAccessStorage();
       result = dataAccess.findExcessReplicaByBlockId(blockId, inodeId);
       Collections.sort(result);
       gotFromDB(new BlockPK(blockId), result);
+      miss(eFinder, result, "bid", blockId, "inodeId", inodeId);
     }
     return result;
   }
 
-  private List<HopExcessReplica> findByINodeId(Object[] params)
+  private List<HopExcessReplica> findByINodeId(HopExcessReplica.Finder
+      eFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<HopExcessReplica> result = null;
     if (containsByINode(inodeId)) {
-      log("find-excess-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       result = getByINode(inodeId);
+      hit(eFinder, result, "inodeId", inodeId);
     } else {
-      log("find-excess-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findExcessReplicaByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(eFinder, result, "inodeId", inodeId);
     }
     return result;
   }
 
-  private List<HopExcessReplica> findByINodeIds(Object[] params)
+  private List<HopExcessReplica> findByINodeIds(HopExcessReplica.Finder
+      eFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int[] inodeIds = (int[]) params[0];
-    log("find-excess-by-inode-ids", CacheHitState.LOSS,
-        new String[]{"inode_ids", Arrays.toString(
-            inodeIds)});
     aboutToAccessStorage();
     List<HopExcessReplica> result = dataAccess.findExcessReplicaByINodeIds
         (inodeIds);
     gotFromDB(BlockPK.ReplicaPK.getKeys(inodeIds), result);
+    miss(eFinder, result, "inodeIds", Arrays.toString(inodeIds));
     return result;
   }
 

@@ -16,12 +16,26 @@ public class PendingBlockInfo {
 
   public static enum Finder implements FinderType<PendingBlockInfo> {
 
-    ByBlockId, ByInodeId, ByInodeIds, All, ByTimeLimit;
+    ByBlockIdAndINodeId,
+    ByINodeId,
+    ByINodeIds, All;
 
     @Override
     public Class getType() {
       return PendingBlockInfo.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByBlockIdAndINodeId: return Annotation.PrimaryKey;
+        case ByINodeId: return Annotation.PrunedIndexScan;
+        case ByINodeIds: return Annotation.BatchedPrunedIndexScan;
+        case All: return Annotation.FullTable;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
   private long blockId;
   private int inodeId;

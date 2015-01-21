@@ -26,13 +26,6 @@ import se.sics.hop.metadata.hdfs.entity.hop.HopUnderReplicatedBlock;
 
 import java.io.IOException;
 
-import static se.sics.hop.transaction.lock.HopsLock.Type.CorruptReplica;
-import static se.sics.hop.transaction.lock.HopsLock.Type.ExcessReplica;
-import static se.sics.hop.transaction.lock.HopsLock.Type.InvalidatedBlock;
-import static se.sics.hop.transaction.lock.HopsLock.Type.PendingBlock;
-import static se.sics.hop.transaction.lock.HopsLock.Type.Replica;
-import static se.sics.hop.transaction.lock.HopsLock.Type.UnderReplicatedBlock;
-
 /**
  *
  * @author Mahmoud Ismail <maism@sics.se>
@@ -69,7 +62,7 @@ final class HopsSqlBatchedBlocksRelatedLock extends HopsLockWithType {
       case UnderReplicatedBlock:
         return HopUnderReplicatedBlock.Finder.ByINodeIds;
       case PendingBlock:
-        return PendingBlockInfo.Finder.ByInodeIds;
+        return PendingBlockInfo.Finder.ByINodeIds;
     }
     return null;
   }

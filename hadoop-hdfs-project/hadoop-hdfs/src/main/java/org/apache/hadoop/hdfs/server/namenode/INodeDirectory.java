@@ -127,7 +127,7 @@ public class INodeDirectory extends INode {
 
   private INode getChildINode(byte[] name)
       throws StorageException, TransactionContextException {
-     INode existingInode = EntityManager.find(INode.Finder.ByPK_NameAndParentId,
+     INode existingInode = EntityManager.find(INode.Finder.ByNameAndParentId,
               DFSUtil.bytes2String(name), getId());
     if (existingInode != null && existingInode.exists()) {
       return existingInode;
@@ -472,7 +472,7 @@ public class INodeDirectory extends INode {
   public List<INode> getChildren()
       throws StorageException, TransactionContextException {
     if(getId() == INode.NON_EXISTING_ID) return null;
-    return (List<INode>) EntityManager.findList(INode.Finder.ParentId, getId());
+    return (List<INode>) EntityManager.findList(INode.Finder.ByParentId, getId());
   }
 
   @Override

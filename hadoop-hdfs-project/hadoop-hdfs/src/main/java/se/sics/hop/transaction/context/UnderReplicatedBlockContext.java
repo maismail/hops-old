@@ -45,19 +45,17 @@ public class UnderReplicatedBlockContext extends
   public void update(HopUnderReplicatedBlock hopUnderReplicatedBlock)
       throws TransactionContextException {
     super.update(hopUnderReplicatedBlock);
-    log("added-urblock", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopUnderReplicatedBlock.getBlockId()),
-            "level", Integer.toString(hopUnderReplicatedBlock.getLevel()),
-            "inodeId", Integer.toString(hopUnderReplicatedBlock.getInodeId())});
+    log("added-urblock", "bid", hopUnderReplicatedBlock.getBlockId(),
+        "level", hopUnderReplicatedBlock.getLevel(),
+        "inodeId", hopUnderReplicatedBlock.getInodeId());
   }
 
   @Override
   public void remove(HopUnderReplicatedBlock hopUnderReplicatedBlock)
       throws TransactionContextException {
     super.remove(hopUnderReplicatedBlock);
-    log("removed-urblock", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopUnderReplicatedBlock.getBlockId()),
-            "level", Integer.toString(hopUnderReplicatedBlock.getLevel())});
+    log("removed-urblock", "bid", hopUnderReplicatedBlock.getBlockId(),
+        "level", hopUnderReplicatedBlock.getLevel());
   }
 
   @Override
@@ -67,8 +65,8 @@ public class UnderReplicatedBlockContext extends
     HopUnderReplicatedBlock.Finder urFinder =
         (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(urFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -81,9 +79,9 @@ public class UnderReplicatedBlockContext extends
         (HopUnderReplicatedBlock.Finder) finder;
     switch (urFinder) {
       case ByINodeId:
-        return findByINodeId(params);
+        return findByINodeId(urFinder, params);
       case ByINodeIds:
-        return findByINodeIds(params);
+        return findByINodeIds(urFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -115,64 +113,59 @@ public class UnderReplicatedBlockContext extends
         hopUnderReplicatedBlock.getInodeId());
   }
 
-  private HopUnderReplicatedBlock findByBlockId(Object[] params)
+  private HopUnderReplicatedBlock findByBlockId(HopUnderReplicatedBlock
+      .Finder urFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     HopUnderReplicatedBlock result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-urblock-by-bid", CacheHitState.HIT,
-          new String[]{"bid", Long.toString(blockId), "inode_id",
-              Integer.toString(inodeId)});
       List<HopUnderReplicatedBlock> urblks = getByBlock(blockId);
       if (urblks != null) {
         if (urblks.size() > 1) {
           throw new IllegalStateException("you should have only one " +
               "UnderReplicatedBlock per block");
         }
-        if(!urblks.isEmpty()) {
+        if (!urblks.isEmpty()) {
           result = urblks.get(0);
         }
       }
+      hit(urFinder, result, "bid", blockId, "inodeid", inodeId);
     } else {
-      log("find-urblock-by-bid", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId), "inode_id",
-              Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByPk(blockId, inodeId);
       gotFromDB(new BlockPK(blockId, inodeId), result);
+      miss(urFinder, result, "bid", blockId, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<HopUnderReplicatedBlock> findByINodeId(Object[] params)
+  private List<HopUnderReplicatedBlock> findByINodeId(HopUnderReplicatedBlock
+      .Finder urFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<HopUnderReplicatedBlock> result = null;
     if (containsByINode(inodeId)) {
-      log("find-urblocks-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       result = getByINode(inodeId);
+      hit(urFinder, result, "inodeid", inodeId);
     } else {
-      log("find-urblocks-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(urFinder, result, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<HopUnderReplicatedBlock> findByINodeIds(Object[] params)
+  private List<HopUnderReplicatedBlock> findByINodeIds(HopUnderReplicatedBlock
+      .Finder urFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int[] inodeIds = (int[]) params[0];
     List<HopUnderReplicatedBlock> result = null;
-    log("find-urblocks-by-inode-ids", CacheHitState.LOSS,
-        new String[]{"inode_ids", Arrays
-            .toString(inodeIds)});
     aboutToAccessStorage();
     result = dataAccess.findByINodeIds(inodeIds);
     gotFromDB(BlockPK.getBlockKeys(inodeIds), result);
+    miss(urFinder, result, "inodeids", Arrays.toString(inodeIds));
     return result;
   }
 

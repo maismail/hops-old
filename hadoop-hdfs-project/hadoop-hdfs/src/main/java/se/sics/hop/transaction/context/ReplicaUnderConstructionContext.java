@@ -43,20 +43,18 @@ public class ReplicaUnderConstructionContext extends
   public void update(ReplicaUnderConstruction replica)
       throws TransactionContextException {
     super.update(replica);
-    log("added-replicauc", CacheHitState.NA,
-        new String[]{"bid", Long.toString(replica.getBlockId()),
-            "sid", Integer.toString(replica.getStorageId()), "state",
-            replica.getState().name()});
+    log("added-replicauc", "bid", replica.getBlockId(),
+        "sid", replica.getStorageId(), "state",
+        replica.getState().name());
   }
 
   @Override
   public void remove(ReplicaUnderConstruction replica)
       throws TransactionContextException {
     super.remove(replica);
-    log("removed-replicauc", CacheHitState.NA,
-        new String[]{"bid", Long.toString(replica.getBlockId()),
-            "sid", Integer.toString(replica.getStorageId()), "state",
-            replica.getState().name()});
+    log("removed-replicauc", "bid", replica.getBlockId(),
+        "sid", replica.getStorageId(), "state",
+        replica.getState().name());
   }
 
   @Override
@@ -72,12 +70,12 @@ public class ReplicaUnderConstructionContext extends
     ReplicaUnderConstruction.Finder rFinder =
         (ReplicaUnderConstruction.Finder) finder;
     switch (rFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(rFinder, params);
       case ByINodeId:
-        return findByINodeId(params);
+        return findByINodeId(rFinder, params);
       case ByINodeIds:
-        return findByINodeIds(params);
+        return findByINodeIds(rFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -104,54 +102,51 @@ public class ReplicaUnderConstructionContext extends
         .getBlockId(), inodeId, replicaUnderConstruction.getIndex());
   }
 
-  private List<ReplicaUnderConstruction> findByBlockId(Object[] params)
+  private List<ReplicaUnderConstruction> findByBlockId(
+      ReplicaUnderConstruction.Finder rFinder, Object[] params)
       throws TransactionContextException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     List<ReplicaUnderConstruction> result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-replicaucs-by-bid", CacheHitState.HIT,
-          new String[]{"bid", Long.toString(blockId)});
       result = getByBlock(blockId);
+      hit(rFinder, result, "bid", blockId, "inodeid", inodeId);
     } else {
-      log("find-replicaucs-by-bid", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId)});
       aboutToAccessStorage();
       result =
           dataAccess.findReplicaUnderConstructionByBlockId(blockId, inodeId);
       gotFromDB(new BlockPK(blockId), result);
+      miss(rFinder, result, "bid", blockId, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<ReplicaUnderConstruction> findByINodeId(Object[] params)
+  private List<ReplicaUnderConstruction> findByINodeId(
+      ReplicaUnderConstruction.Finder rFinder, Object[] params)
       throws TransactionContextException, StorageException {
     final int inodeId = (Integer) params[0];
     List<ReplicaUnderConstruction> result = null;
     if (containsByINode(inodeId)) {
-      log("find-replicaucs-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       result = getByINode(inodeId);
+      hit(rFinder, result, "inodeid", inodeId);
     } else {
-      log("find-replicaucs-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findReplicaUnderConstructionByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(rFinder, result, "inodeid", inodeId);
     }
     return result;
   }
 
-  private List<ReplicaUnderConstruction> findByINodeIds(Object[] params)
+  private List<ReplicaUnderConstruction> findByINodeIds(
+      ReplicaUnderConstruction.Finder rFinder, Object[] params)
       throws TransactionContextException, StorageException {
     final int[] inodeIds = (int[]) params[0];
-    log("find-replicaucs-by-inode-ids", CacheHitState.LOSS,
-        new String[]{"inode_ids", Arrays.toString(
-            inodeIds)});
     aboutToAccessStorage();
     List<ReplicaUnderConstruction> result = dataAccess
         .findReplicaUnderConstructionByINodeIds(inodeIds);
     gotFromDB(BlockPK.ReplicaPK.getKeys(inodeIds), result);
+    miss(rFinder, result, "inodeids", Arrays.toString(inodeIds));
     return result;
   }
 

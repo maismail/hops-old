@@ -68,19 +68,19 @@ final class HopsBlockRelatedLock extends HopsLockWithType {
   private FinderType getFinderType(boolean byBlockID) {
     switch (getType()) {
       case Replica:
-        return byBlockID ? HopIndexedReplica.Finder.ByBlockId : HopIndexedReplica.Finder.ByINodeId;
+        return byBlockID ? HopIndexedReplica.Finder.ByBlockIdAndINodeId : HopIndexedReplica.Finder.ByINodeId;
       case CorruptReplica:
-        return byBlockID ? HopCorruptReplica.Finder.ByBlockId : HopCorruptReplica.Finder.ByINodeId;
+        return byBlockID ? HopCorruptReplica.Finder.ByBlockIdAndINodeId : HopCorruptReplica.Finder.ByINodeId;
       case ExcessReplica:
-        return byBlockID ? HopExcessReplica.Finder.ByBlockId : HopExcessReplica.Finder.ByINodeId;
+        return byBlockID ? HopExcessReplica.Finder.ByBlockIdAndINodeId : HopExcessReplica.Finder.ByINodeId;
       case ReplicaUnderConstruction:
-        return byBlockID ? ReplicaUnderConstruction.Finder.ByBlockId : ReplicaUnderConstruction.Finder.ByINodeId;
+        return byBlockID ? ReplicaUnderConstruction.Finder.ByBlockIdAndINodeId : ReplicaUnderConstruction.Finder.ByINodeId;
       case InvalidatedBlock:
-        return byBlockID ? HopInvalidatedBlock.Finder.ByBlockId : HopInvalidatedBlock.Finder.ByINodeId;
+        return byBlockID ? HopInvalidatedBlock.Finder.ByBlockIdAndINodeId : HopInvalidatedBlock.Finder.ByINodeId;
       case UnderReplicatedBlock:
-        return byBlockID ? HopUnderReplicatedBlock.Finder.ByBlockId : HopUnderReplicatedBlock.Finder.ByINodeId;
+        return byBlockID ? HopUnderReplicatedBlock.Finder.ByBlockIdAndINodeId : HopUnderReplicatedBlock.Finder.ByINodeId;
       case PendingBlock:
-        return byBlockID ? PendingBlockInfo.Finder.ByBlockId : PendingBlockInfo.Finder.ByInodeId;
+        return byBlockID ? PendingBlockInfo.Finder.ByBlockIdAndINodeId : PendingBlockInfo.Finder.ByINodeId;
     }
     return null;
   }

@@ -2245,7 +2245,7 @@ public class FSDirectory implements Closeable {
     }
     if (removedNode != null && isQuotaEnabled()) {
       List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
-          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+          EntityManager.findList(QuotaUpdate.Finder.ByINodeId, removedNode.getId());
       long nsDelta = 0;
       long dsDelta = 0;
       for (QuotaUpdate update : outstandingUpdates) {
@@ -2265,7 +2265,7 @@ public class FSDirectory implements Closeable {
     INode removedNode = ((INodeDirectory)pathComponents[pos-1]).removeChild(pathComponents[pos]);
     if (removedNode != null && isQuotaEnabled()) {
       List<QuotaUpdate> outstandingUpdates = (List<QuotaUpdate>)
-          EntityManager.findList(QuotaUpdate.Finder.ByInodeId, removedNode.getId());
+          EntityManager.findList(QuotaUpdate.Finder.ByINodeId, removedNode.getId());
       long nsDelta = 0;
       long dsDelta = 0;
       for (QuotaUpdate update : outstandingUpdates) {

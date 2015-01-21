@@ -47,19 +47,16 @@ public class InvalidatedBlockContext extends
   public void update(HopInvalidatedBlock hopInvalidatedBlock)
       throws TransactionContextException {
     super.update(hopInvalidatedBlock);
-    log("added-invblock", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopInvalidatedBlock.getBlockId()),
-            "sid", Integer.toString(hopInvalidatedBlock.getStorageId())});
+    log("added-invblock", "bid", hopInvalidatedBlock.getBlockId(),
+        "sid", hopInvalidatedBlock.getStorageId());
   }
 
   @Override
   public void remove(HopInvalidatedBlock hopInvalidatedBlock)
       throws TransactionContextException {
     super.remove(hopInvalidatedBlock);
-    log("removed-invblock", CacheHitState.NA,
-        new String[]{"bid", Long.toString(hopInvalidatedBlock.getBlockId()),
-            "sid", Integer.toString(hopInvalidatedBlock.getStorageId()), "",
-            ""});
+    log("removed-invblock", "bid", hopInvalidatedBlock.getBlockId(),
+        "sid", hopInvalidatedBlock.getStorageId());
   }
 
   @Override
@@ -67,8 +64,8 @@ public class InvalidatedBlockContext extends
       Object... params) throws TransactionContextException, StorageException {
     HopInvalidatedBlock.Finder iFinder = (HopInvalidatedBlock.Finder) finder;
     switch (iFinder) {
-      case ByPK:
-        return findByPrimaryKey(params);
+      case ByBlockIdStorageIdAndINodeId:
+        return findByPrimaryKey(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -79,16 +76,16 @@ public class InvalidatedBlockContext extends
       throws TransactionContextException, StorageException {
     HopInvalidatedBlock.Finder iFinder = (HopInvalidatedBlock.Finder) finder;
     switch (iFinder) {
-      case ByBlockId:
-        return findByBlockId(params);
+      case ByBlockIdAndINodeId:
+        return findByBlockId(iFinder, params);
       case ByINodeId:
-        return findByINodeId(params);
+        return findByINodeId(iFinder, params);
       case All:
-        return findAll();
-      case ByPKS:
-        return findByPrimaryKeys(params);
+        return findAll(iFinder);
+      case ByBlockIdsStorageIdsAndINodeIds:
+        return findByPrimaryKeys(iFinder, params);
       case ByINodeIds:
-        return findByINodeIds(params);
+        return findByINodeIds(iFinder, params);
     }
     throw new RuntimeException(UNSUPPORTED_FINDER);
   }
@@ -129,7 +126,8 @@ public class InvalidatedBlockContext extends
     return !getRemoved().isEmpty();
   }
 
-  private HopInvalidatedBlock findByPrimaryKey(Object[] params)
+  private HopInvalidatedBlock findByPrimaryKey(HopInvalidatedBlock.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int storageId = (Integer) params[1];
@@ -138,99 +136,97 @@ public class InvalidatedBlockContext extends
         storageId);
     HopInvalidatedBlock result = null;
     if (contains(key) || containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-invblock-by-pk", CacheHitState.HIT, new String[]{"bid", Long
-          .toString(blockId), "sid", Integer.toString(storageId), "inodeId",
-          Integer.toString(inodeId)});
       result = get(key);
+      hit(iFinder, result, "bid", blockId, "sid", storageId,
+          "inodeId", inodeId);
     } else {
-      log("find-invblock-by-pk", CacheHitState.LOSS,
-          new String[]{"bid", Long.toString(blockId), "sid",
-              Integer.toString(storageId), "inodeId",
-              Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findInvBlockByPkey(blockId, storageId, inodeId);
       gotFromDB(key, result);
+      miss(iFinder, result, "bid", blockId, "sid", storageId,
+          "inodeId", inodeId);
     }
     return result;
   }
 
-  private List<HopInvalidatedBlock> findByBlockId(Object[] params)
+  private List<HopInvalidatedBlock> findByBlockId(HopInvalidatedBlock.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long blockId = (Long) params[0];
     final int inodeId = (Integer) params[1];
     List<HopInvalidatedBlock> result = null;
     if (containsByBlock(blockId) || containsByINode(inodeId)) {
-      log("find-invblock-by-blockId", CacheHitState.HIT, new String[]{"bid",
-          String.valueOf(blockId)});
       result = getByBlock(blockId);
+      hit(iFinder, result, "bid", blockId, "inodeId", inodeId);
     } else {
-      log("find-invblock-by-blockId", CacheHitState.LOSS, new String[]{"bid",
-          String.valueOf(blockId)});
       aboutToAccessStorage();
       result = dataAccess.findInvalidatedBlocksByBlockId(blockId, inodeId);
       Collections.sort(result);
       gotFromDB(new BlockPK(blockId), result);
+      miss(iFinder, result, "bid", blockId, "inodeId", inodeId);
     }
     return result;
   }
 
-  private List<HopInvalidatedBlock> findByINodeId(Object[] params)
+  private List<HopInvalidatedBlock> findByINodeId(HopInvalidatedBlock.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int inodeId = (Integer) params[0];
     List<HopInvalidatedBlock> result = null;
     if (containsByINode(inodeId)) {
-      log("find-invblock-by-inode-id", CacheHitState.HIT,
-          new String[]{"inode_id", Integer.toString(inodeId),});
       result = getByINode(inodeId);
+      hit(iFinder, result, "inodeId", inodeId);
     } else {
-      log("find-invblock-by-inode-id", CacheHitState.LOSS,
-          new String[]{"inode_id", Integer.toString(inodeId)});
       aboutToAccessStorage();
       result = dataAccess.findInvalidatedBlocksByINodeId(inodeId);
       gotFromDB(new BlockPK(inodeId), result);
+      miss(iFinder, result, "inodeId", inodeId);
     }
     return result;
   }
 
-  private List<HopInvalidatedBlock> findAll()
+  private List<HopInvalidatedBlock> findAll(HopInvalidatedBlock.Finder
+      iFinder)
       throws StorageCallPreventedException, StorageException {
     List<HopInvalidatedBlock> result = null;
     if (allInvBlocksRead) {
       result = new ArrayList<HopInvalidatedBlock>(getAll());
+      hit(iFinder, result);
     } else {
-      log("find-all-invblocks", CacheHitState.LOSS);
       aboutToAccessStorage();
       result = dataAccess.findAllInvalidatedBlocks();
       gotFromDB(result);
       allInvBlocksRead = true;
+      miss(iFinder, result);
     }
     return result;
   }
 
-  private List<HopInvalidatedBlock> findByPrimaryKeys(Object[] params)
+  private List<HopInvalidatedBlock> findByPrimaryKeys(HopInvalidatedBlock.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final long[] blockIds = (long[]) params[0];
     final int[] inodeIds = (int[]) params[1];
     final int sid = (Integer) params[2];
     final int[] sids = new int[blockIds.length];
     Arrays.fill(sids, sid);
-    log("find-invblocks-by-pks", CacheHitState.NA,
-        new String[]{"Ids", "" + blockIds, "sid", Integer.toString(sid)});
+    aboutToAccessStorage();
     List<HopInvalidatedBlock> result = dataAccess.findInvalidatedBlocksbyPKS(
         blockIds, inodeIds, sids);
     gotFromDB(BlockPK.ReplicaPK.getKeys(blockIds, inodeIds, sid), result);
+    miss(iFinder, result, "bids", Arrays.toString(blockIds), "inodeIds", Arrays
+        .toString(inodeIds), "sid", sid);
     return result;
   }
 
-  private List<HopInvalidatedBlock> findByINodeIds(Object[] params)
+  private List<HopInvalidatedBlock> findByINodeIds(HopInvalidatedBlock.Finder
+      iFinder, Object[] params)
       throws StorageCallPreventedException, StorageException {
     final int[] inodeIds = (int[]) params[0];
-    log("find-invblock-by-inode-id", CacheHitState.LOSS,
-        new String[]{"inode_id", Arrays.toString(inodeIds)});
     aboutToAccessStorage();
-    List<HopInvalidatedBlock> result = (List<HopInvalidatedBlock>) dataAccess
-        .findInvalidatedBlocksByINodeIds(inodeIds);
+    List<HopInvalidatedBlock> result = dataAccess.findInvalidatedBlocksByINodeIds(inodeIds);
     gotFromDB(BlockPK.ReplicaPK.getKeys(inodeIds), result);
+    miss(iFinder, result, "inodeIds", Arrays.toString(inodeIds));
     return result;
   }
 }

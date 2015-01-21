@@ -273,4 +273,5 @@ CREATE TABLE `block_checksum` (
   `block_index` int(11) NOT NULL,
   `checksum` bigint(20) NOT NULL,
   PRIMARY KEY (`inode_id`,`block_index`)
-) ENGINE=ndbcluster DEFAULT CHARSET=latin1$$
+) ENGINE=ndbcluster DEFAULT CHARSET=latin1
+/*!50100 PARTITION BY KEY (inode_id) */$$

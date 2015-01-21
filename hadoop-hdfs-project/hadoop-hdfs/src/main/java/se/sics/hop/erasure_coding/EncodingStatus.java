@@ -41,17 +41,22 @@ public class EncodingStatus {
 
   public static enum Finder implements FinderType<EncodingStatus> {
     ByInodeId,
-    ByParityInodeId,
-    LimitedByStatusRequestedEncodings,
-    ByStatusActiveEncodings,
-    ByStatusActiveRepairs,
-    LimitedByStatusEncoded,
-    LimitedByStatusRequestedRepair;
+    ByParityInodeId;
 
     @Override
     public Class getType() {
       return EncodingStatus.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByInodeId: return Annotation.PrimaryKey;
+        case ByParityInodeId: return Annotation.IndexScan;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
 
   private Integer inodeId;

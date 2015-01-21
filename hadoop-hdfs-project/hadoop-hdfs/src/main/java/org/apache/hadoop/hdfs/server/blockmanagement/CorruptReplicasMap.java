@@ -247,7 +247,7 @@ public class CorruptReplicasMap{
   
   private Collection<HopCorruptReplica> getCorruptReplicas(BlockInfo blk) throws
       StorageException, TransactionContextException {
-    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockId, blk.getBlockId(),blk.getInodeId());
+    return EntityManager.findList(HopCorruptReplica.Finder.ByBlockIdAndINodeId, blk.getBlockId(),blk.getInodeId());
   }
 
   private Collection<HopCorruptReplica> getAllCorruptReplicas() throws IOException {

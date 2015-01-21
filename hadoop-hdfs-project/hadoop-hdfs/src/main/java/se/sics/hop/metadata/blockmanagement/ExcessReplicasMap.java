@@ -133,11 +133,11 @@ public class ExcessReplicasMap {
 
   private Collection<HopExcessReplica> getExcessReplicas(BlockInfo blk) throws
       StorageException, TransactionContextException {
-    return EntityManager.findList(HopExcessReplica.Finder.ByBlockId, blk.getBlockId(), blk.getInodeId());
+    return EntityManager.findList(HopExcessReplica.Finder.ByBlockIdAndINodeId, blk.getBlockId(), blk.getInodeId());
   }
 
   private HopExcessReplica getExcessReplica(int dn, BlockInfo block) throws
       StorageException, TransactionContextException {
-    return EntityManager.find(HopExcessReplica.Finder.ByPKey, block.getBlockId(), dn, block.getInodeId());
+    return EntityManager.find(HopExcessReplica.Finder.ByBlockIdStorageIdAndINodeId, block.getBlockId(), dn, block.getInodeId());
   }
 }

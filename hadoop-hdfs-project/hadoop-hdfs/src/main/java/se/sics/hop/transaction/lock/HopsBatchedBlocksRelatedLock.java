@@ -50,7 +50,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
   final static class HopsBatchedReplicasLock extends HopsBatchedBlocksRelatedLock {
 
     public HopsBatchedReplicasLock(int storageId) {
-      super(HopIndexedReplica.Finder.ByPKS, storageId);
+      super(HopIndexedReplica.Finder.ByBlockIdsStorageIdsAndINodeIds, storageId);
     }
 
     @Override
@@ -62,7 +62,7 @@ abstract class HopsBatchedBlocksRelatedLock extends HopsLock {
   final static class HopsBatchedInvalidatedBlocksLock extends HopsBatchedBlocksRelatedLock {
 
     public HopsBatchedInvalidatedBlocksLock(int storageId) {
-      super(HopInvalidatedBlock.Finder.ByPKS, storageId);
+      super(HopInvalidatedBlock.Finder.ByBlockIdsStorageIdsAndINodeIds, storageId);
     }
 
     @Override

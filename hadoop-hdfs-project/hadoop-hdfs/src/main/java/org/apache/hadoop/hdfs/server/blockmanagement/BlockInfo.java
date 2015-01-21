@@ -23,7 +23,6 @@ import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeFile;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
-import se.sics.hop.metadata.hdfs.entity.CounterType;
 import se.sics.hop.metadata.hdfs.entity.FinderType;
 import se.sics.hop.metadata.hdfs.entity.hop.HopIndexedReplica;
 import se.sics.hop.metadata.hdfs.entity.hop.HopReplica;
@@ -44,25 +43,32 @@ public class BlockInfo extends Block {
   
   public static final BlockInfo[] EMPTY_ARRAY = {};
   private static final List<HopIndexedReplica> EMPTY_REPLICAS_ARRAY = Collections.unmodifiableList(new ArrayList<HopIndexedReplica>());
-  
-  public static enum Counter implements CounterType<BlockInfo> {
-    
-    All;
-    
-    @Override
-    public Class getType() {
-      return BlockInfo.class;
-    }
-  }
-  
+
   public static enum Finder implements FinderType<BlockInfo> {
-    
-    ById, ByInodeId, ByInodeIds, All, ByStorageId, MAX_BLK_INDX, ByIds;
+
+    ByBlockIdAndINodeId,
+    ByINodeId,
+    ByINodeIds,
+    ByMaxBlockIndexForINode,
+    ByBlockIdsAndINodeIds;
     
     @Override
     public Class getType() {
       return BlockInfo.class;
     }
+
+    @Override
+    public Annotation getAnnotated() {
+      switch (this){
+        case ByBlockIdAndINodeId: return Annotation.PrimaryKey;
+        case ByBlockIdsAndINodeIds: return Annotation.Batched;
+        case ByMaxBlockIndexForINode: return Annotation.PrunedIndexScan;
+        case ByINodeId: return Annotation.PrunedIndexScan;
+        case ByINodeIds: return Annotation.BatchedPrunedIndexScan;
+        default: throw new IllegalStateException();
+      }
+    }
+
   }
   
   public static enum Order implements Comparator<BlockInfo> {
@@ -162,7 +168,7 @@ public class BlockInfo extends Block {
     //of the block is lying around is some secondary data structure ( not block_info )
     //if we call get block collection op of that copy then it should return null
 
-    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeID, inodeId);
+    BlockCollection bc = (BlockCollection) EntityManager.find(INodeFile.Finder.ByINodeId, inodeId);
     this.bc = bc; 
     if(bc == null){
       this.inodeId = INode.NON_EXISTING_ID;
@@ -200,7 +206,7 @@ public class BlockInfo extends Block {
   //HOP: Mahmoud: limit acces to these methods, package private, only BlockManager and DataNodeDescriptor should have access
   List<HopIndexedReplica> getReplicasNoCheck()
       throws StorageException, TransactionContextException {
-    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockId, getBlockId(), getInodeId());
+    List<HopIndexedReplica> replicas = (List<HopIndexedReplica>) EntityManager.findList(HopIndexedReplica.Finder.ByBlockIdAndINodeId, getBlockId(), getInodeId());
     if (replicas == null) {
       replicas = EMPTY_REPLICAS_ARRAY;
     } else {
@@ -267,7 +273,7 @@ public class BlockInfo extends Block {
   
   int findDatanode(DatanodeDescriptor dn)
       throws StorageException, TransactionContextException {
-    HopIndexedReplica replica = EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId());
+    HopIndexedReplica replica = EntityManager.find(HopIndexedReplica.Finder.ByBlockIdAndStorageId, getBlockId(), dn.getSId());
     if (replica == null) {
       return -1;
     }
@@ -276,7 +282,7 @@ public class BlockInfo extends Block {
 
   boolean hasReplicaIn(DatanodeDescriptor dn)
       throws StorageException, TransactionContextException {
-    return EntityManager.find(HopIndexedReplica.Finder.ByPK, getBlockId(), dn.getSId()) != null;
+    return EntityManager.find(HopIndexedReplica.Finder.ByBlockIdAndStorageId, getBlockId(), dn.getSId()) != null;
   }
 
   /**

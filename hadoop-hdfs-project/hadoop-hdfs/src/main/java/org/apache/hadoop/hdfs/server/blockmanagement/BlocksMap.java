@@ -90,7 +90,7 @@ class BlocksMap {
       return null;
     }
     if (!(b instanceof BlockInfo)) {
-      return EntityManager.find(BlockInfo.Finder.ById, b.getBlockId());
+      return EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, b.getBlockId());
     }
     return (BlockInfo)b;
   }
