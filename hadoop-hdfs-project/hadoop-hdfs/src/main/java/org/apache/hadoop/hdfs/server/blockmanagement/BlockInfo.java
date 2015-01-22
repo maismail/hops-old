@@ -42,7 +42,7 @@ import java.util.List;
 public class BlockInfo extends Block {
   
   public static final BlockInfo[] EMPTY_ARRAY = {};
-  private static final List<HopIndexedReplica> EMPTY_REPLICAS_ARRAY = Collections.unmodifiableList(new ArrayList<HopIndexedReplica>());
+  private static final List<HopIndexedReplica> EMPTY_REPLICAS_ARRAY = new ArrayList<HopIndexedReplica>();
 
   public static enum Finder implements FinderType<BlockInfo> {
 
