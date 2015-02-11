@@ -78,39 +78,4 @@ public class TestValidateConfigurationSettings {
     NameNode nameNode = new NameNode(conf); // should be OK!
     nameNode.stop();
   }
-
-  /**
-   * HDFS-3013: NameNode format command doesn't pick up
-   * dfs.namenode.name.dir.NameServiceId configuration.
-   */
-//HOP  @Test                    the file testGenericKeysForNameNodeFormat does not exist anymore
-  public void testGenericKeysForNameNodeFormat()
-      throws IOException {
-    Configuration conf = new HdfsConfiguration();
-
-    // Set ephemeral ports 
-    conf.set(DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY,
-        "127.0.0.1:0");
-    conf.set(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY,
-        "127.0.0.1:0");
-    
-    conf.set(DFSConfigKeys.DFS_NAMESERVICES, "ns1");
-    
-    // Set a nameservice-specific configuration for name dir
-    File dir = new File(MiniDFSCluster.getBaseDirectory(),
-        "testGenericKeysForNameNodeFormat");
-    if (dir.exists()) {
-      FileUtil.fullyDelete(dir);
-    }
-    conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY + ".ns1",
-        dir.getAbsolutePath());
-    
-    // Format and verify the right dir is formatted.
-    DFSTestUtil.formatNameNode(conf);
-    GenericTestUtils.assertExists(dir);
-
-    // Ensure that the same dir is picked up by the running NN
-    NameNode nameNode = new NameNode(conf);
-    nameNode.stop();
-  }
 }

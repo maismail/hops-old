@@ -63,7 +63,6 @@ public class INodeFile extends INode implements BlockCollection {
   private long header;
   private int generationStamp = (int) GenerationStamp.FIRST_VALID_STAMP;
   
-  //private BlockInfo[] blocks;
 
   public INodeFile(PermissionStatus permissions, BlockInfo[] blklist,
                       short replication, long modificationTime,
@@ -71,14 +70,12 @@ public class INodeFile extends INode implements BlockCollection {
     super(permissions, modificationTime, atime);
     this.setReplicationNoPersistance(replication);
     this.setPreferredBlockSizeNoPersistance(preferredBlockSize);
-//HOP    this.blocks = blklist;
   }
   
    //HOP:
   public INodeFile(INodeFile other)
       throws StorageException, TransactionContextException {
     super(other);
-//HOP    setBlocks(other.getBlocks());
     setReplicationNoPersistance(other.getBlockReplication());
     setPreferredBlockSizeNoPersistance(other.getPreferredBlockSize());
     setGenerationStampNoPersistence(other.getGenerationStamp());

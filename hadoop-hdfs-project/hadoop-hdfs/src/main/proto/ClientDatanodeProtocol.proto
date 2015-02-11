@@ -43,18 +43,6 @@ message GetReplicaVisibleLengthResponseProto {
 }
 
 /**
- * void request
- */
-message RefreshNamenodesRequestProto {
-}
-
-/**
- * void response
- */
-message RefreshNamenodesResponseProto {
-}
-
-/**
  * blockPool - block pool to be deleted
  * force - if false, delete the block pool only if it is empty.
  *         if true, delete the block pool even if it has blocks.
@@ -121,13 +109,6 @@ service ClientDatanodeProtocolService {
    */
   rpc getReplicaVisibleLength(GetReplicaVisibleLengthRequestProto)
       returns(GetReplicaVisibleLengthResponseProto);
-
-  /**
-   * Refresh the list of federated namenodes from updated configuration.
-   * Adds new namenodes and stops the deleted namenodes.
-   */
-  rpc refreshNamenodes(RefreshNamenodesRequestProto)
-      returns(RefreshNamenodesResponseProto);
 
   /**
    * Delete the block pool from the datanode.

@@ -88,7 +88,6 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.DFSUtil.ConfiguredNNAddress;
 import org.apache.hadoop.hdfs.HDFSPolicyProvider;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -2190,17 +2189,7 @@ public class DataNode extends Configured
   public synchronized String getClusterId() {
     return clusterId;
   }
-  
-  public void refreshNamenodes(Configuration conf) throws IOException {
-    blockPoolManager.refreshNamenodes(conf);
-  }
 
-  @Override // ClientDatanodeProtocol
-  public void refreshNamenodes() throws IOException {
-    conf = new Configuration();
-    refreshNamenodes(conf);
-  }
-  
   @Override // ClientDatanodeProtocol
   public void deleteBlockPool(String blockPoolId, boolean force)
       throws IOException {

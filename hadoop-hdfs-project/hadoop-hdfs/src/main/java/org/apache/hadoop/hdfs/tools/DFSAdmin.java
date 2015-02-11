@@ -17,10 +17,8 @@
  */
 package org.apache.hadoop.hdfs.tools;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.security.PrivilegedExceptionAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,7 +39,6 @@ import org.apache.hadoop.fs.shell.CommandFormat;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.NameNodeProxies;
 import org.apache.hadoop.hdfs.protocol.ClientDatanodeProtocol;
@@ -50,12 +47,10 @@ import org.apache.hadoop.hdfs.protocol.HdfsConstants;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.DatanodeReportType;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-//import org.apache.hadoop.hdfs.server.namenode.TransferFsImage;  //HOP: not supported
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.RefreshUserMappingsProtocol;
-import org.apache.hadoop.security.SecurityUtil;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.authorize.RefreshAuthorizationPolicyProtocol;
 import org.apache.hadoop.util.StringUtils;
@@ -407,52 +402,6 @@ public class DFSAdmin extends FsShell {
   }
 
   /**
-   * Command to ask the namenode to save the namespace.
-   * Usage: java DFSAdmin -saveNamespace
-   * @exception IOException 
-   * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#saveNamespace()
-   */
-  public int saveNamespace() throws IOException {
-    int exitCode = -1;
-
-    DistributedFileSystem dfs = getDFS();
-    dfs.saveNamespace();
-    exitCode = 0;
-   
-    return exitCode;
-  }
-
-  public int rollEdits() throws IOException {
-    DistributedFileSystem dfs = getDFS();
-    long txid = dfs.rollEdits();
-    System.out.println("Successfully rolled edit logs.");
-    System.out.println("New segment starts at txid " + txid);
-    return 0;
-  }
-  
-  /**
-   * Command to enable/disable/check restoring of failed storage replicas in the namenode.
-   * Usage: java DFSAdmin -restoreFailedStorage true|false|check
-   * @exception IOException 
-   * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#restoreFailedStorage(String arg)
-   */
-  public int restoreFaileStorage(String arg) throws IOException {
-    int exitCode = -1;
-
-    if(!arg.equals("check") && !arg.equals("true") && !arg.equals("false")) {
-      System.err.println("restoreFailedStorage valid args are true|false|check");
-      return exitCode;
-    }
-    
-    DistributedFileSystem dfs = getDFS();
-    Boolean res = dfs.restoreFailedStorage(arg);
-    System.out.println("restoreFailedStorage is set to " + res);
-    exitCode = 0;
-
-    return exitCode;
-  }
-
-  /**
    * Command to ask the namenode to reread the hosts and excluded hosts 
    * file.
    * Usage: java DFSAdmin -refreshNodes
@@ -502,41 +451,11 @@ public class DFSAdmin extends FsShell {
     return exitCode;
   }
 
-  /**
-   * Download the most recent fsimage from the name node, and save it to a local
-   * file in the given directory.
-   * 
-   * @param argv
-   *          List of of command line parameters.
-   * @param idx
-   *          The index of the command that is being processed.
-   * @return an exit code indicating success or failure.
-   * @throws IOException
-   */
-  public int fetchImage(final String[] argv, final int idx) throws IOException {
-//HOP    final String infoServer = DFSUtil.getInfoServer(
-//        HAUtil.getAddressOfActive(getDFS()), getConf(), false);
-//    SecurityUtil.doAsCurrentUser(new PrivilegedExceptionAction<Void>() {
-//      @Override
-//      public Void run() throws Exception {
-//        TransferFsImage.downloadMostRecentImageToDirectory(infoServer,
-//            new File(argv[idx]));
-//        return null;
-//      }
-//    });
-//    return 0;
-    //START_HOP_CODE
-    throw new UnsupportedOperationException("HOP: fetching FSImage is not supported");
-    //END_HOP_CODE
-  }
 
   private void printHelp(String cmd) {
     String summary = "hadoop dfsadmin is the command to execute DFS administrative commands.\n" +
       "The full syntax is: \n\n" +
       "hadoop dfsadmin [-report] [-safemode <enter | leave | get | wait>]\n" +
-      "\t[-saveNamespace]\n" +
-      "\t[-rollEdits]\n" +
-      "\t[-restoreFailedStorage true|false|check]\n" +
       "\t[-refreshNodes]\n" +
       "\t[" + SetQuotaCommand.USAGE + "]\n" +
       "\t[" + ClearQuotaCommand.USAGE +"]\n" +
@@ -546,10 +465,8 @@ public class DFSAdmin extends FsShell {
       "\t[-refreshUserToGroupsMappings]\n" +
       "\t[refreshSuperUserGroupsConfiguration]\n" +
       "\t[-printTopology]\n" +
-      "\t[-refreshNamenodes datanodehost:port]\n"+
       "\t[-deleteBlockPool datanodehost:port blockpoolId [force]]\n"+
       "\t[-setBalancerBandwidth <bandwidth>]\n" +
-      "\t[-fetchImage <local directory>]\n" +
       "\t[-help [cmd]]\n";
 
     String report ="-report: \tReports basic filesystem information and statistics.\n";
@@ -564,18 +481,6 @@ public class DFSAdmin extends FsShell {
       "\t\tcondition.  Safe mode can also be entered manually, but then\n" +
       "\t\tit can only be turned off manually as well.\n";
 
-    String saveNamespace = "-saveNamespace:\t" +
-    "Save current namespace into storage directories and reset edits log.\n" +
-    "\t\tRequires superuser permissions and safe mode.\n";
-
-    String rollEdits = "-rollEdits:\t" +
-    "Rolls the edit log.\n" +
-    "\t\tRequires superuser permissions.\n";
-    
-    String restoreFailedStorage = "-restoreFailedStorage:\t" +
-    "Set/Unset/Check flag to attempt restore of failed storage replicas if they become available.\n" +
-    "\t\tRequires superuser permissions.\n";
-    
     String refreshNodes = "-refreshNodes: \tUpdates the namenode with the " +
       "set of datanodes allowed to connect to the namenode.\n\n" +
       "\t\tNamenode re-reads datanode hostnames from the file defined by \n" +
@@ -589,10 +494,6 @@ public class DFSAdmin extends FsShell {
       "\t\tDecommissioned nodes are not automatically shutdown and \n" +
       "\t\tare not chosen for writing new replicas.\n";
 
-    String finalizeUpgrade = "-finalizeUpgrade: Finalize upgrade of HDFS.\n" +
-      "\t\tDatanodes delete their previous version working directories,\n" +
-      "\t\tfollowed by Namenode doing the same.\n" + 
-      "\t\tThis completes the upgrade process.\n";
 
     String metaSave = "-metasave <filename>: \tSave Namenode's primary data structures\n" +
       "\t\tto <filename> in the directory specified by hadoop.log.dir property.\n" +
@@ -613,20 +514,14 @@ public class DFSAdmin extends FsShell {
 
     String printTopology = "-printTopology: Print a tree of the racks and their\n" +
                            "\t\tnodes as reported by the Namenode\n";
-    
-    String refreshNamenodes = "-refreshNamenodes: Takes a datanodehost:port as argument,\n"+
-                              "\t\tFor the given datanode, reloads the configuration files,\n" +
-                              "\t\tstops serving the removed block-pools\n"+
-                              "\t\tand starts serving new block-pools\n";
+
     
     String deleteBlockPool = "-deleteBlockPool: Arguments are datanodehost:port, blockpool id\n"+
                              "\t\t and an optional argument \"force\". If force is passed,\n"+
                              "\t\t block pool directory for the given blockpool id on the given\n"+
                              "\t\t datanode is deleted along with its contents, otherwise\n"+
                              "\t\t the directory is deleted only if it is empty. The command\n" +
-                             "\t\t will fail if datanode is still serving the block pool.\n" +
-                             "\t\t   Refer to refreshNamenodes to shutdown a block pool\n" +
-                             "\t\t service on a datanode.\n";
+                             "\t\t will fail if datanode is still serving the block pool.\n" ;
 
     String setBalancerBandwidth = "-setBalancerBandwidth <bandwidth>:\n" +
       "\tChanges the network bandwidth used by each datanode during\n" +
@@ -636,10 +531,6 @@ public class DFSAdmin extends FsShell {
       "\t\tthe dfs.balance.bandwidthPerSec parameter.\n\n" +
       "\t\t--- NOTE: The new value is not persistent on the DataNode.---\n";
     
-    String fetchImage = "-fetchImage <local directory>:\n" +
-      "\tDownloads the most recent fsimage from the Name Node and saves it in" +
-      "\tthe specified local directory.\n";
-    
     String help = "-help [cmd]: \tDisplays help for the given command or all commands if none\n" +
       "\t\tis specified.\n";
 
@@ -647,16 +538,8 @@ public class DFSAdmin extends FsShell {
       System.out.println(report);
     } else if ("safemode".equals(cmd)) {
       System.out.println(safemode);
-    } else if ("saveNamespace".equals(cmd)) {
-      System.out.println(saveNamespace);
-    } else if ("rollEdits".equals(cmd)) {
-      System.out.println(rollEdits);
-    } else if ("restoreFailedStorage".equals(cmd)) {
-      System.out.println(restoreFailedStorage);
     } else if ("refreshNodes".equals(cmd)) {
       System.out.println(refreshNodes);
-    } else if ("finalizeUpgrade".equals(cmd)) {
-      System.out.println(finalizeUpgrade);
     } else if ("metasave".equals(cmd)) {
       System.out.println(metaSave);
     } else if (SetQuotaCommand.matches("-"+cmd)) {
@@ -675,25 +558,17 @@ public class DFSAdmin extends FsShell {
       System.out.println(refreshSuperUserGroupsConfiguration);
     } else if ("printTopology".equals(cmd)) {
       System.out.println(printTopology);
-    } else if ("refreshNamenodes".equals(cmd)) {
-      System.out.println(refreshNamenodes);
     } else if ("deleteBlockPool".equals(cmd)) {
       System.out.println(deleteBlockPool);
     } else if ("setBalancerBandwidth".equals(cmd)) {
       System.out.println(setBalancerBandwidth);
-    } else if ("fetchImage".equals(cmd)) {
-      System.out.println(fetchImage);
     } else if ("help".equals(cmd)) {
       System.out.println(help);
     } else {
       System.out.println(summary);
       System.out.println(report);
       System.out.println(safemode);
-      System.out.println(saveNamespace);
-      System.out.println(rollEdits);
-      System.out.println(restoreFailedStorage);
       System.out.println(refreshNodes);
-      System.out.println(finalizeUpgrade);
       System.out.println(metaSave);
       System.out.println(SetQuotaCommand.DESCRIPTION);
       System.out.println(ClearQuotaCommand.DESCRIPTION);
@@ -703,27 +578,13 @@ public class DFSAdmin extends FsShell {
       System.out.println(refreshUserToGroupsMappings);
       System.out.println(refreshSuperUserGroupsConfiguration);
       System.out.println(printTopology);
-      System.out.println(refreshNamenodes);
       System.out.println(deleteBlockPool);
       System.out.println(setBalancerBandwidth);
-      System.out.println(fetchImage);
       System.out.println(help);
       System.out.println();
       ToolRunner.printGenericCommandUsage(System.out);
     }
 
-  }
-
-  /**
-   * Command to ask the namenode to finalize previously performed upgrade.
-   * Usage: java DFSAdmin -finalizeUpgrade
-   * @exception IOException 
-   */
-  public int finalizeUpgrade() throws IOException {
-    DistributedFileSystem dfs = getDFS();
-    dfs.finalizeUpgrade();
-    
-    return 0;
   }
 
   /**
@@ -883,21 +744,9 @@ public class DFSAdmin extends FsShell {
     } else if ("-safemode".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
                          + " [-safemode enter | leave | get | wait]");
-    } else if ("-saveNamespace".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-                         + " [-saveNamespace]");
-    } else if ("-rollEdits".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-                         + " [-rollEdits]");
-    } else if ("-restoreFailedStorage".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-          + " [-restoreFailedStorage true|false|check ]");
-    } else if ("-refreshNodes".equals(cmd)) {
+    }else if ("-refreshNodes".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
                          + " [-refreshNodes]");
-    } else if ("-finalizeUpgrade".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-                         + " [-finalizeUpgrade]");
     } else if ("-metasave".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
           + " [-metasave filename]");
@@ -925,41 +774,29 @@ public class DFSAdmin extends FsShell {
     } else if ("-printTopology".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
                          + " [-printTopology]");
-    } else if ("-refreshNamenodes".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-                         + " [-refreshNamenodes datanode-host:port]");
     } else if ("-deleteBlockPool".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
           + " [-deleteBlockPool datanode-host:port blockpoolId [force]]");
     } else if ("-setBalancerBandwidth".equals(cmd)) {
       System.err.println("Usage: java DFSAdmin"
                   + " [-setBalancerBandwidth <bandwidth in bytes per second>]");
-    } else if ("-fetchImage".equals(cmd)) {
-      System.err.println("Usage: java DFSAdmin"
-          + " [-fetchImage <local directory>]");
     } else {
       System.err.println("Usage: java DFSAdmin");
       System.err.println("Note: Administrative commands can only be run as the HDFS superuser.");
       System.err.println("           [-report]");
       System.err.println("           [-safemode enter | leave | get | wait]");
-      System.err.println("           [-saveNamespace]");
-      System.err.println("           [-rollEdits]");
-      System.err.println("           [-restoreFailedStorage true|false|check]");
       System.err.println("           [-refreshNodes]");
-      System.err.println("           [-finalizeUpgrade]");
       System.err.println("           [-metasave filename]");
       System.err.println("           [-refreshServiceAcl]");
       System.err.println("           [-refreshUserToGroupsMappings]");
       System.err.println("           [-refreshSuperUserGroupsConfiguration]");
       System.err.println("           [-printTopology]");
-      System.err.println("           [-refreshNamenodes datanodehost:port]");
       System.err.println("           [-deleteBlockPool datanode-host:port blockpoolId [force]]");
       System.err.println("           ["+SetQuotaCommand.USAGE+"]");
       System.err.println("           ["+ClearQuotaCommand.USAGE+"]");
       System.err.println("           ["+SetSpaceQuotaCommand.USAGE+"]");
       System.err.println("           ["+ClearSpaceQuotaCommand.USAGE+"]");      
       System.err.println("           [-setBalancerBandwidth <bandwidth in bytes per second>]");
-      System.err.println("           [-fetchImage <local directory>]");
       System.err.println("           [-help [cmd]]");
       System.err.println();
       ToolRunner.printGenericCommandUsage(System.err);
@@ -996,27 +833,7 @@ public class DFSAdmin extends FsShell {
         printUsage(cmd);
         return exitCode;
       }
-    } else if ("-saveNamespace".equals(cmd)) {
-      if (argv.length != 1) {
-        printUsage(cmd);
-        return exitCode;
-      }
-    } else if ("-rollEdits".equals(cmd)) {
-      if (argv.length != 1) {
-        printUsage(cmd);
-        return exitCode;
-      }      
-    } else if ("-restoreFailedStorage".equals(cmd)) {
-      if (argv.length != 2) {
-        printUsage(cmd);
-        return exitCode;
-      }
     } else if ("-refreshNodes".equals(cmd)) {
-      if (argv.length != 1) {
-        printUsage(cmd);
-        return exitCode;
-      }
-    } else if ("-finalizeUpgrade".equals(cmd)) {
       if (argv.length != 1) {
         printUsage(cmd);
         return exitCode;
@@ -1041,22 +858,12 @@ public class DFSAdmin extends FsShell {
         printUsage(cmd);
         return exitCode;
       }
-    } else if ("-refreshNamenodes".equals(cmd)) {
-      if (argv.length != 2) {
-        printUsage(cmd);
-        return exitCode;
-      }
     } else if ("-deleteBlockPool".equals(cmd)) {
       if ((argv.length != 3) && (argv.length != 4)) {
         printUsage(cmd);
         return exitCode;
       }
     } else if ("-setBalancerBandwidth".equals(cmd)) {
-      if (argv.length != 2) {
-        printUsage(cmd);
-        return exitCode;
-      }
-    } else if ("-fetchImage".equals(cmd)) {
       if (argv.length != 2) {
         printUsage(cmd);
         return exitCode;
@@ -1082,16 +889,8 @@ public class DFSAdmin extends FsShell {
         report();
       } else if ("-safemode".equals(cmd)) {
         setSafeMode(argv, i);
-      } else if ("-saveNamespace".equals(cmd)) {
-        exitCode = saveNamespace();
-      } else if ("-rollEdits".equals(cmd)) {
-        exitCode = rollEdits();
-      } else if ("-restoreFailedStorage".equals(cmd)) {
-        exitCode = restoreFaileStorage(argv[i]);
       } else if ("-refreshNodes".equals(cmd)) {
         exitCode = refreshNodes();
-      } else if ("-finalizeUpgrade".equals(cmd)) {
-        exitCode = finalizeUpgrade();
       } else if ("-metasave".equals(cmd)) {
         exitCode = metaSave(argv, i);
       } else if (ClearQuotaCommand.matches(cmd)) {
@@ -1110,14 +909,10 @@ public class DFSAdmin extends FsShell {
         exitCode = refreshSuperUserGroupsConfiguration();
       } else if ("-printTopology".equals(cmd)) {
         exitCode = printTopology();
-      } else if ("-refreshNamenodes".equals(cmd)) {
-        exitCode = refreshNamenodes(argv, i);
       } else if ("-deleteBlockPool".equals(cmd)) {
         exitCode = deleteBlockPool(argv, i);
       } else if ("-setBalancerBandwidth".equals(cmd)) {
         exitCode = setBalancerBandwidth(argv, i);
-      } else if ("-fetchImage".equals(cmd)) {
-        exitCode = fetchImage(argv, i);
       } else if ("-help".equals(cmd)) {
         if (i < argv.length) {
           printHelp(argv[i]);
@@ -1191,14 +986,6 @@ public class DFSAdmin extends FsShell {
       }
     }
     dnProxy.deleteBlockPool(argv[i+1], force);
-    return 0;
-  }
-  
-  private int refreshNamenodes(String[] argv, int i) throws IOException {
-    String datanode = argv[i];
-    ClientDatanodeProtocol refreshProtocol = getDataNodeProxy(datanode);
-    refreshProtocol.refreshNamenodes();
-    
     return 0;
   }
 

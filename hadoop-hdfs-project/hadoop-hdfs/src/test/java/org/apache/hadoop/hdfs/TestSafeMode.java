@@ -219,8 +219,6 @@ public class TestSafeMode {
     // SafeMode is fine-grain synchronized, so the processMisReplicatedBlocks
     // call is still going on at this point - wait until it's done by grabbing
     // the lock.
-    nn.getNamesystem().writeLock();
-    nn.getNamesystem().writeUnlock();
     
     Thread.sleep(1000);
     

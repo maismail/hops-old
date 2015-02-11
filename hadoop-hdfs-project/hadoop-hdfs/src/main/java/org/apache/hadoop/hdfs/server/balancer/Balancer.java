@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1513,14 +1514,18 @@ public class Balancer {
       try {
         checkReplicationPolicyCompatibility(conf);
 
-        final Collection<URI> namenodes = DFSUtil.getNsServiceRpcUris(conf);
-        return Balancer.run(namenodes, parse(args), conf);
+        final List<URI> namenodes = DFSUtil.getNsServiceRpcUris(conf);
+        //HOP all the namenodes have the same view of the cluster
+        return Balancer.run(namenodes.subList(0,1), parse(args), conf);
       } catch (IOException e) {
         System.out.println(e + ".  Exiting ...");
         return ReturnStatus.IO_EXCEPTION.code;
       } catch (InterruptedException e) {
         System.out.println(e + ".  Exiting ...");
         return ReturnStatus.INTERRUPTED.code;
+      } catch (URISyntaxException e) {
+        System.out.println(e + ".  Exiting ...");
+        return ReturnStatus.IO_EXCEPTION.code;
       } finally {
         System.out.println("Balancing took " + time2Str(Time.now()-startTime));
       }

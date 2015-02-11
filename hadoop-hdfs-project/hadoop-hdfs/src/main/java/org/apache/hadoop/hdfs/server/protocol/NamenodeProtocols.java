@@ -33,6 +33,5 @@ public interface NamenodeProtocols
           NamenodeProtocol,
           RefreshAuthorizationPolicyProtocol,
           RefreshUserMappingsProtocol,
-          GetUserMappingsProtocol,
-          HAServiceProtocol {
+          GetUserMappingsProtocol{
 }

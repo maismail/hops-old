@@ -231,21 +231,10 @@ class BPServiceActor implements Runnable {
   
   @VisibleForTesting
   void triggerHeartbeatForTests() {
-//    synchronized (pendingIncrementalBR) {
       lastHeartbeat = 0;
       synchronized(waitForHeartBeats){
        waitForHeartBeats.notifyAll();
       }
-      //Thread.currentThread().interrupt();
-//      pendingIncrementalBR.notifyAll();
-//      while (lastHeartbeat == 0) {
-//        try {
-//          pendingIncrementalBR.wait(100);
-//        } catch (InterruptedException e) {
-//          return;
-//        }
-//      }
-//    }
   }
   
   HeartbeatResponse sendHeartBeat() throws IOException {
@@ -355,15 +344,6 @@ class BPServiceActor implements Runnable {
             assert resp != null;
             dn.getMetrics().addHeartbeat(now() - startTime);
 
-            // If the state of this NN has changed (eg STANDBY->ACTIVE)
-            // then let the BPOfferService update itself.
-            //
-            // Important that this happens before processCommand below,
-            // since the first heartbeat to a new active might have commands
-            // that we should actually process.
-//HOP            bpos.updateActorStatesFromHeartbeat(       //NO Need to do that as we dont have 'active namenode' active namenode is set to leader in the fn refreshNNConnection()
-//                this, resp.getNameNodeHaState());
-
             long startProcessCommands = now();
             if (!processCommand(resp.getCommands()))
               continue;
@@ -375,38 +355,6 @@ class BPServiceActor implements Runnable {
             }
           }
         }
-//HOP incremental and non incremental block report is not handled by the BPOfferserivce.java
-//this loop is only responsible for sending HBs
-//HOP        if (pendingReceivedRequests > 0
-//            || (startTime - lastDeletedReport > dnConf.deleteReportInterval)) {
-//          reportReceivedDeletedBlocks();
-//          lastDeletedReport = startTime;
-//        }
-//
-//        DatanodeCommand cmd = blockReport();
-//        processCommand(new DatanodeCommand[]{ cmd });
-//
-//        // Now safe to start scanning the block pool.
-//        // If it has already been started, this is a no-op.
-//        if (dn.blockScanner != null) {
-//          dn.blockScanner.addBlockPool(bpos.getBlockPoolId());
-//        }
-//
-//        //
-//        // There is no work to do;  sleep until hearbeat timer elapses, 
-//        // or work arrives, and then iterate again.
-//        //
-//        long waitTime = dnConf.heartBeatInterval - 
-//        (Time.now() - lastHeartbeat);
-//        synchronized(pendingIncrementalBR) {
-//          if (waitTime > 0 && pendingReceivedRequests == 0) {
-//            try {
-//              pendingIncrementalBR.wait(waitTime);
-//            } catch (InterruptedException ie) {
-//              LOG.warn("BPOfferService for " + this + " interrupted");
-//            }
-//          }
-//        } // synchronized
         
         long waitTime = Math.abs(dnConf.heartBeatInterval - (Time.now() - startTime));
         if(waitTime > dnConf.heartBeatInterval){
@@ -520,7 +468,6 @@ class BPServiceActor implements Runnable {
           offerService();
         } catch (Exception ex) {
           LOG.error("Exception in BPOfferService for " + this, ex);
-//HOP          sleepAndLogInterrupts(5000, "offering service");
           cleanUp(); //cean up and return. if the nn comes back online then it will be restarted
         }
       }

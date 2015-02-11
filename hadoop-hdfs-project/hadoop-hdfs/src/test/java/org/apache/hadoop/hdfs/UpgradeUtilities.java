@@ -105,8 +105,6 @@ public class UpgradeUtilities {
   public static void initialize() throws Exception {
     createEmptyDirs(new String[] {TEST_ROOT_DIR.toString()});
     Configuration config = new HdfsConfiguration();
-    config.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY, namenodeStorage.toString());
-    config.set(DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_KEY, namenodeStorage.toString());
     config.set(DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY, datanodeStorage.toString());
     MiniDFSCluster cluster = null;
     try {
@@ -140,11 +138,7 @@ public class UpgradeUtilities {
         buffer[i] = (byte)('0' + i % 50);
       writeFile(fs, new Path(baseDir, "file1"), buffer, bufferSize);
       writeFile(fs, new Path(baseDir, "file2"), buffer, bufferSize);
-      
-      // save image
-      namenode.setSafeMode(SafeModeAction.SAFEMODE_ENTER, false);
-      namenode.saveNamespace();
-      namenode.setSafeMode(SafeModeAction.SAFEMODE_LEAVE, false);
+
       
       // write more files
       writeFile(fs, new Path(baseDir, "file3"), buffer, bufferSize);
@@ -155,7 +149,7 @@ public class UpgradeUtilities {
       FileUtil.fullyDelete(new File(namenodeStorage,"in_use.lock"));
       FileUtil.fullyDelete(new File(datanodeStorage,"in_use.lock"));
     }
-//HOP    namenodeStorageChecksum = checksumContents(NAME_NODE, 
+//HOP    namenodeStorageChecksum = checksumContents(NAME_NODE,
 //        new File(namenodeStorage, "current"));
     File dnCurDir = new File(datanodeStorage, "current");
     datanodeStorageChecksum = checksumContents(DATA_NODE, dnCurDir);
@@ -202,8 +196,6 @@ public class UpgradeUtilities {
     if (conf == null) {
       conf = new HdfsConfiguration();
     }
-    conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY, nameNodeDirs.toString());
-    conf.set(DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_KEY, nameNodeDirs.toString());
     conf.set(DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY, dataNodeDirs.toString());
     conf.setInt(DFSConfigKeys.DFS_BLOCKREPORT_INTERVAL_MSEC_KEY, 10000);
     return conf;

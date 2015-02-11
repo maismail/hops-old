@@ -67,24 +67,16 @@ public class HdfsConfiguration extends Configuration {
   }
 
   private static void addDeprecatedKeys() {
-    deprecate("dfs.backup.address", DFSConfigKeys.DFS_NAMENODE_BACKUP_ADDRESS_KEY);
-    deprecate("dfs.backup.http.address", DFSConfigKeys.DFS_NAMENODE_BACKUP_HTTP_ADDRESS_KEY);
     deprecate("dfs.balance.bandwidthPerSec", DFSConfigKeys.DFS_DATANODE_BALANCE_BANDWIDTHPERSEC_KEY);
     deprecate("dfs.data.dir", DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY);
     deprecate("dfs.http.address", DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY);
     deprecate("dfs.https.address", DFSConfigKeys.DFS_NAMENODE_HTTPS_ADDRESS_KEY);
     deprecate("dfs.max.objects", DFSConfigKeys.DFS_NAMENODE_MAX_OBJECTS_KEY);
-    deprecate("dfs.name.dir", DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY);
     deprecate("dfs.name.dir.restore", DFSConfigKeys.DFS_NAMENODE_NAME_DIR_RESTORE_KEY);
-    deprecate("dfs.name.edits.dir", DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_KEY);
     deprecate("dfs.read.prefetch.size", DFSConfigKeys.DFS_CLIENT_READ_PREFETCH_SIZE_KEY);
     deprecate("dfs.safemode.extension", DFSConfigKeys.DFS_NAMENODE_SAFEMODE_EXTENSION_KEY);
     deprecate("dfs.safemode.threshold.pct", DFSConfigKeys.DFS_NAMENODE_SAFEMODE_THRESHOLD_PCT_KEY);
-    deprecate("dfs.secondary.http.address", DFSConfigKeys.DFS_NAMENODE_SECONDARY_HTTP_ADDRESS_KEY);
     deprecate("dfs.socket.timeout", DFSConfigKeys.DFS_CLIENT_SOCKET_TIMEOUT_KEY);
-    deprecate("fs.checkpoint.dir", DFSConfigKeys.DFS_NAMENODE_CHECKPOINT_DIR_KEY);
-    deprecate("fs.checkpoint.edits.dir", DFSConfigKeys.DFS_NAMENODE_CHECKPOINT_EDITS_DIR_KEY);
-    deprecate("fs.checkpoint.period", DFSConfigKeys.DFS_NAMENODE_CHECKPOINT_PERIOD_KEY);
     deprecate("heartbeat.recheck.interval", DFSConfigKeys.DFS_NAMENODE_HEARTBEAT_RECHECK_INTERVAL_KEY);
     deprecate("dfs.https.client.keystore.resource", DFSConfigKeys.DFS_CLIENT_HTTPS_KEYSTORE_RESOURCE_KEY);
     deprecate("dfs.https.need.client.auth", DFSConfigKeys.DFS_CLIENT_HTTPS_NEED_AUTH_KEY);
@@ -102,8 +94,6 @@ public class HdfsConfiguration extends Configuration {
     deprecate("dfs.block.size", DFSConfigKeys.DFS_BLOCK_SIZE_KEY);
     deprecate("dfs.datanode.max.xcievers", DFSConfigKeys.DFS_DATANODE_MAX_RECEIVER_THREADS_KEY);
     deprecate("io.bytes.per.checksum", DFSConfigKeys.DFS_BYTES_PER_CHECKSUM_KEY);
-    deprecate("dfs.federation.nameservices", DFSConfigKeys.DFS_NAMESERVICES);
-    deprecate("dfs.federation.nameservice.id", DFSConfigKeys.DFS_NAMESERVICE_ID);
   }
 
   public static void main(String[] args) {

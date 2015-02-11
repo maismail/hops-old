@@ -65,13 +65,7 @@ class DecommissionManager {
     @Override
     public void run() {
       for(; namesystem.isRunning(); ) {
-        namesystem.writeLock();
-        try {
           check();
-        } finally {
-          namesystem.writeUnlock();
-        }
-  
         try {
           Thread.sleep(recheckInterval);
         } catch (InterruptedException ie) {

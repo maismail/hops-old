@@ -39,9 +39,9 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtil;
-import org.apache.hadoop.hdfs.DFSUtil.ConfiguredNNAddress;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo.AdminStates;
 import org.apache.hadoop.http.HttpConfig;
+import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.StringUtils;
 import org.codehaus.jackson.JsonNode;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -61,7 +61,14 @@ class ClusterJspHelper {
   public static final String DEAD = "Dead";
   private static final String JMX_QRY = 
     "/jmx?qry=Hadoop:service=NameNode,name=NameNodeInfo";
-  
+
+  private final NameNode namenode;
+
+  public ClusterJspHelper(
+      NameNode namenode) {
+    this.namenode = namenode;
+  }
+
   /**
    * JSP helper function that generates cluster health report.  When 
    * encountering exception while getting Namenode status, the exception will 
@@ -70,34 +77,24 @@ class ClusterJspHelper {
   ClusterStatus generateClusterHealthReport() {
     ClusterStatus cs = new ClusterStatus();
     Configuration conf = new Configuration();
-    List<ConfiguredNNAddress> nns = null;
+
+    InetSocketAddress isa = namenode.getServiceRpcAddress();
+    NamenodeMXBeanHelper nnHelper = null;
     try {
-      nns = DFSUtil.flattenAddressMap(
-          DFSUtil.getNNServiceRpcAddresses(conf));
+      nnHelper = new NamenodeMXBeanHelper(isa, namenode.getHttpAddress(),
+          conf);
+      String mbeanProps = queryMbean(nnHelper.httpAddress, conf);
+      NamenodeStatus nn = nnHelper.getNamenodeStatus(mbeanProps);
+      if (cs.clusterid.isEmpty() ||
+          cs.clusterid.equals("")) { // Set clusterid only once
+        cs.clusterid = nnHelper.getClusterId(mbeanProps);
+      }
+      cs.addNamenodeStatus(nn);
     } catch (Exception e) {
-      // Could not build cluster status
-      cs.setError(e);
-      return cs;
+      // track exceptions encountered when connecting to namenodes
+      cs.addException(isa.getHostName(), e);
     }
-    
-    // Process each namenode and add it to ClusterStatus
-    for (ConfiguredNNAddress cnn : nns) {
-      InetSocketAddress isa = cnn.getAddress();
-      NamenodeMXBeanHelper nnHelper = null;
-      try {
-        nnHelper = new NamenodeMXBeanHelper(isa, conf);
-        String mbeanProps= queryMbean(nnHelper.httpAddress, conf);
-        NamenodeStatus nn = nnHelper.getNamenodeStatus(mbeanProps);
-        if (cs.clusterid.isEmpty() || cs.clusterid.equals("")) { // Set clusterid only once
-          cs.clusterid = nnHelper.getClusterId(mbeanProps);
-        }
-        cs.addNamenodeStatus(nn);
-      } catch ( Exception e ) {
-        // track exceptions encountered when connecting to namenodes
-        cs.addException(isa.getHostName(), e);
-        continue;
-      } 
-    }
+
     return cs;
   }
 
@@ -108,45 +105,35 @@ class ClusterJspHelper {
   DecommissionStatus generateDecommissioningReport() {
     String clusterid = "";
     Configuration conf = new Configuration();
-    List<ConfiguredNNAddress> cnns = null;
-    try {
-      cnns = DFSUtil.flattenAddressMap(
-          DFSUtil.getNNServiceRpcAddresses(conf));
-    } catch (Exception e) {
-      // catch any exception encountered other than connecting to namenodes
-      DecommissionStatus dInfo = new DecommissionStatus(clusterid, e);
-      return dInfo;
-    }
-    
+
     // Outer map key is datanode. Inner map key is namenode and the value is 
     // decom status of the datanode for the corresponding namenode
-    Map<String, Map<String, String>> statusMap = 
-      new HashMap<String, Map<String, String>>();
-    
+    Map<String, Map<String, String>> statusMap =
+        new HashMap<String, Map<String, String>>();
+
     // Map of exceptions encountered when connecting to namenode
     // key is namenode and value is exception
-    Map<String, Exception> decommissionExceptions = 
-      new HashMap<String, Exception>();
-    
+    Map<String, Exception> decommissionExceptions =
+        new HashMap<String, Exception>();
+
     List<String> unreportedNamenode = new ArrayList<String>();
-    for (ConfiguredNNAddress cnn : cnns) {
-      InetSocketAddress isa = cnn.getAddress();
-      NamenodeMXBeanHelper nnHelper = null;
-      try {
-        nnHelper = new NamenodeMXBeanHelper(isa, conf);
-        String mbeanProps= queryMbean(nnHelper.httpAddress, conf);
-        if (clusterid.equals("")) {
-          clusterid = nnHelper.getClusterId(mbeanProps);
-        }
-        nnHelper.getDecomNodeInfoForReport(statusMap, mbeanProps);
-      } catch (Exception e) {
-        // catch exceptions encountered while connecting to namenodes
-        String nnHost = isa.getHostName();
-        decommissionExceptions.put(nnHost, e);
-        unreportedNamenode.add(nnHost);
-        continue;
-      } 
+    InetSocketAddress isa = namenode.getServiceRpcAddress();
+    NamenodeMXBeanHelper nnHelper = null;
+    try {
+      nnHelper = new NamenodeMXBeanHelper(isa, namenode.getHttpAddress(),
+          conf);
+      String mbeanProps = queryMbean(nnHelper.httpAddress, conf);
+      if (clusterid.equals("")) {
+        clusterid = nnHelper.getClusterId(mbeanProps);
+      }
+      nnHelper.getDecomNodeInfoForReport(statusMap, mbeanProps);
+    } catch (Exception e) {
+      // catch exceptions encountered while connecting to namenodes
+      String nnHost = isa.getHostName();
+      decommissionExceptions.put(nnHost, e);
+      unreportedNamenode.add(nnHost);
     }
+
     updateUnknownStatus(statusMap, unreportedNamenode);
     getDecommissionNodeClusterState(statusMap);
     return new DecommissionStatus(statusMap, clusterid,
@@ -274,10 +261,11 @@ class ClusterJspHelper {
     private final String host;
     private final String httpAddress;
     
-    NamenodeMXBeanHelper(InetSocketAddress addr, Configuration conf)
+    NamenodeMXBeanHelper(InetSocketAddress addr, InetSocketAddress httpAddress,
+        Configuration conf)
         throws IOException, MalformedObjectNameException {
       this.host = addr.getHostName();
-      this.httpAddress = DFSUtil.getInfoServer(addr, conf, false);
+      this.httpAddress = NetUtils.getHostPortString(httpAddress);
     }
     
     /** Get the map corresponding to the JSON string */

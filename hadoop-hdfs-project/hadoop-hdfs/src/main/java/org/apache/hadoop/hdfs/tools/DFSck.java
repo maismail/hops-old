@@ -33,7 +33,6 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hdfs.DFSUtil;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
-import org.apache.hadoop.hdfs.HAUtil;
 import org.apache.hadoop.hdfs.HdfsConfiguration;
 import org.apache.hadoop.hdfs.server.namenode.NamenodeFsck;
 import org.apache.hadoop.http.HttpConfig;
@@ -226,7 +225,7 @@ public class DFSck extends Configured implements Tool {
       return null;
     }
     
-    return DFSUtil.getInfoServer(HAUtil.getAddressOfActive(fs), conf, false);
+    return DFSUtil.getInfoServer(fs, false);
   }
 
   private int doWork(final String[] args) throws IOException {

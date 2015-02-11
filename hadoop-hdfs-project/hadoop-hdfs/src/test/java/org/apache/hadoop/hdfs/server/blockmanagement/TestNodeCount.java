@@ -201,8 +201,6 @@ public class TestNodeCount {
 
   /* threadsafe read of the replication counts for this block */
   NumberReplicas countNodes(final Block block, final FSNamesystem namesystem) throws IOException {
-    namesystem.readLock();
-    try {
       return (NumberReplicas) new HopsTransactionalRequestHandler(HDFSOperationType.COUNT_NODES) {      
         INodeIdentifier inodeIdentifier;
 
@@ -226,8 +224,5 @@ public class TestNodeCount {
         }
 
       }.handle(namesystem);
-    } finally {
-      namesystem.readUnlock();
-    }
   }
 }

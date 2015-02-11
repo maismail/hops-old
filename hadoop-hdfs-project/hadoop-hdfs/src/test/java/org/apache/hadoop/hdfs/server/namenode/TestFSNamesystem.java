@@ -18,12 +18,9 @@
 
 package org.apache.hadoop.hdfs.server.namenode;
 
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_EDITS_DIR_KEY;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.Collection;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSTestUtil;
@@ -38,21 +35,6 @@ import se.sics.hop.transaction.lock.HopsLockFactory;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 public class TestFSNamesystem {
-
-  /**
-   * Tests that the namenode edits dirs are gotten with duplicates removed
-   */
-  @Test
-  public void testUniqueEditDirs() throws IOException {
-    Configuration config = new Configuration();
-
-    config.set(DFS_NAMENODE_EDITS_DIR_KEY, "file://edits/dir, "
-        + "file://edits/dir1,file://edits/dir1"); // overlapping internally
-
-    // getNamespaceEditsDirs removes duplicates
-    Collection<URI> editsDirs = FSNamesystem.getNamespaceEditsDirs(config);
-    assertEquals(2, editsDirs.size());
-  }
 
   /**
    * Test that FSNamesystem#clear clears all leases.

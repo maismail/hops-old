@@ -38,12 +38,9 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hdfs.protocol.LocatedBlock;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
-//import org.apache.hadoop.hdfs.server.namenode.FSImage;
-import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.io.IOUtils;
 import org.apache.hadoop.test.GenericTestUtils;
-import org.apache.log4j.Level;
 import org.junit.Test;
 
 /**
@@ -52,7 +49,6 @@ import org.junit.Test;
  */
 public class TestPersistBlocks {
 //  static {
-//    ((Log4JLogger)FSImage.LOG).getLogger().setLevel(Level.ALL);
 //    ((Log4JLogger)FSNamesystem.LOG).getLogger().setLevel(Level.ALL);
 //  }
   
@@ -285,64 +281,6 @@ public class TestPersistBlocks {
       }
     } finally {
       if (cluster != null) { cluster.shutdown(); }
-    }
-  }
-  
-  /**
-   * Earlier versions of HDFS didn't persist block allocation to the edit log.
-   * This makes sure that we can still load an edit log when the OP_CLOSE
-   * is the opcode which adds all of the blocks. This is a regression
-   * test for HDFS-2773.
-   * This test uses a tarred pseudo-distributed cluster from Hadoop 1.0
-   * which has a multi-block file. This is similar to the tests in
-   * {@link TestDFSUpgradeFromImage} but none of those images include
-   * a multi-block file.
-   */
-  //@Test     //HOP also fails in the master branch
-  public void testEarlierVersionEditLog() throws Exception {
-    final Configuration conf = new HdfsConfiguration();
-        
-    String tarFile = System.getProperty("test.cache.data", "build/test/cache")
-      + "/" + HADOOP_1_0_MULTIBLOCK_TGZ;
-    String testDir = System.getProperty("test.build.data", "build/test/data");
-    File dfsDir = new File(testDir, "image-1.0");
-    if (dfsDir.exists() && !FileUtil.fullyDelete(dfsDir)) {
-      throw new IOException("Could not delete dfs directory '" + dfsDir + "'");
-    }
-    FileUtil.unTar(new File(tarFile), new File(testDir));
-
-    File nameDir = new File(dfsDir, "name");
-    GenericTestUtils.assertExists(nameDir);
-    File dataDir = new File(dfsDir, "data");
-    GenericTestUtils.assertExists(dataDir);
-    
-    conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY, nameDir.getAbsolutePath());
-    conf.set(DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY, dataDir.getAbsolutePath());
-    
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(0)
-      .format(false)
-      .manageDataDfsDirs(false)
-      .manageNameDfsDirs(false)
-      .numDataNodes(1)
-      .startupOption(StartupOption.UPGRADE)
-      .build();
-    try {
-      FileSystem fs = cluster.getFileSystem();
-      Path testPath = new Path("/user/todd/4blocks");
-      // Read it without caring about the actual data within - we just need
-      // to make sure that the block states and locations are OK.
-      DFSTestUtil.readFile(fs, testPath);
-      
-      // Ensure that we can append to it - if the blocks were in some funny
-      // state we'd get some kind of issue here. 
-      FSDataOutputStream stm = fs.append(testPath);
-      try {
-        stm.write(1);
-      } finally {
-        IOUtils.closeStream(stm);
-      }
-    } finally {
-      cluster.shutdown();
     }
   }
 }

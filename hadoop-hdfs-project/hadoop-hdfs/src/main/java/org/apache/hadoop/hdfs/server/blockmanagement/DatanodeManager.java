@@ -373,7 +373,6 @@ public class DatanodeManager {
    * @param nodeInfo datanode descriptor.
    */
   private void removeDatanode(DatanodeDescriptor nodeInfo) throws IOException {
-    assert namesystem.hasWriteLock();
     heartbeatManager.removeDatanode(nodeInfo);
     if(namesystem.isLeader()){
        NameNode.stateChangeLog.info(
@@ -394,8 +393,6 @@ public class DatanodeManager {
    */
   public void removeDatanode(final DatanodeID node  //Called my NameNodeRpcServer
       ) throws UnregisteredNodeException, IOException {
-    namesystem.writeLock();
-    try {
       final DatanodeDescriptor descriptor = getDatanode(node);
       if (descriptor != null) {
         removeDatanode(descriptor);
@@ -403,9 +400,6 @@ public class DatanodeManager {
         NameNode.stateChangeLog.warn("BLOCK* removeDatanode: "
                                      + node + " does not exist");
       }
-    } finally {
-      namesystem.writeUnlock();
-    }
   }
 
   /** Remove a dead datanode. */
@@ -769,12 +763,7 @@ public class DatanodeManager {
         throw new UnsupportedOperationException("Only Leader NameNode can do refreshNodes");
     }  
     refreshHostsReader(conf);
-    namesystem.writeLock();
-    try {
       refreshDatanodes();
-    } finally {
-      namesystem.writeUnlock();
-    }
   }
 
   /** Reread include/exclude files. */
@@ -838,8 +827,6 @@ public class DatanodeManager {
 
   /** @return list of datanodes where decommissioning is in progress. */
   public List<DatanodeDescriptor> getDecommissioningNodes() {
-    namesystem.readLock();
-    try {
       final List<DatanodeDescriptor> decommissioningNodes
           = new ArrayList<DatanodeDescriptor>();
       final List<DatanodeDescriptor> results = getDatanodeListForReport(
@@ -850,9 +837,6 @@ public class DatanodeManager {
         }
       }
       return decommissioningNodes;
-    } finally {
-      namesystem.readUnlock();
-    }
   }
   
   /* Getter and Setter for stale DataNodes related attributes */
@@ -905,8 +889,6 @@ public class DatanodeManager {
       throw new HadoopIllegalArgumentException("Both live and dead lists are null");
     }
 
-    namesystem.readLock();
-    try {
       final List<DatanodeDescriptor> results =
           getDatanodeListForReport(DatanodeReportType.ALL);    
       for(DatanodeDescriptor node : results) {
@@ -920,9 +902,6 @@ public class DatanodeManager {
           }
         }
       }
-    } finally {
-      namesystem.readUnlock();
-    }
     
     if (removeDecommissionNode) {
       if (live != null) {

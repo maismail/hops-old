@@ -114,7 +114,7 @@ public class ActiveNodePBImpl implements ActiveNode {
   @Override
   public String getHttpAddress() {
     ActiveNodeProtoOrBuilder p = viaProto ? proto : builder;
-    return p.getIpAddress();
+    return p.getHttpAddress();
   }
 
   public void setHttpAddress(String httpAddress) {

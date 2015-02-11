@@ -38,8 +38,6 @@ import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.GetUserMappingsProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.GetUserMappingsProtocolPB;
-import org.apache.hadoop.hdfs.protocolPB.JournalProtocolPB;
-import org.apache.hadoop.hdfs.protocolPB.JournalProtocolTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.NamenodeProtocolPB;
 import org.apache.hadoop.hdfs.protocolPB.NamenodeProtocolTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.RefreshAuthorizationPolicyProtocolClientSideTranslatorPB;
@@ -48,7 +46,6 @@ import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolClientSideTr
 import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolPB;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.hdfs.server.namenode.SafeModeException;
-import org.apache.hadoop.hdfs.server.protocol.JournalProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocols;
 import org.apache.hadoop.io.Text;
@@ -124,24 +121,13 @@ public class NameNodeProxies {
     Class<FailoverProxyProvider<T>> failoverProxyProviderClass =
         getFailoverProxyProviderClass(conf, nameNodeUri, xface);
   
-    if (failoverProxyProviderClass == null) {
-      // Non-HA case
-      return createNonHAProxy(conf, NameNode.getAddress(nameNodeUri), xface,
-          UserGroupInformation.getCurrentUser(), true);
-    } else {
-      // HA case
-      FailoverProxyProvider<T> failoverProxyProvider = NameNodeProxies
-          .createFailoverProxyProvider(conf, failoverProxyProviderClass, xface,
-              nameNodeUri);
-      Conf config = new Conf(conf);
-      T proxy = (T) RetryProxy.create(xface, failoverProxyProvider, RetryPolicies
-          .failoverOnNetworkException(RetryPolicies.TRY_ONCE_THEN_FAIL,
-              config.maxFailoverAttempts, config.failoverSleepBaseMillis,
-              config.failoverSleepMaxMillis));
-      
-      Text dtService = HAUtil.buildTokenServiceForLogicalUri(nameNodeUri);
-      return new ProxyAndInfo<T>(proxy, dtService);
+    if (failoverProxyProviderClass != null) {
+      //HOP
+      throw new UnsupportedOperationException("HA ConfiguredProxyFailover is " +
+          "not supported");
     }
+    return createNonHAProxy(conf, NameNode.getAddress(nameNodeUri), xface,
+        UserGroupInformation.getCurrentUser(), true);
   }
 
   /**
@@ -167,9 +153,7 @@ public class NameNodeProxies {
     if (xface == ClientProtocol.class) {
       proxy = (T) createNNProxyWithClientProtocol(nnAddr, conf, ugi,
           withRetries);
-    } else if (xface == JournalProtocol.class) {
-      proxy = (T) createNNProxyWithJournalProtocol(nnAddr, conf, ugi);
-    } else if (xface == NamenodeProtocol.class) {
+    }else if (xface == NamenodeProtocol.class) {
       proxy = (T) createNNProxyWithNamenodeProtocol(nnAddr, conf, ugi,
           withRetries);
     } else if (xface == GetUserMappingsProtocol.class) {
@@ -187,14 +171,6 @@ public class NameNodeProxies {
       throw new IllegalStateException(message);
     }
     return new ProxyAndInfo<T>(proxy, dtService);
-  }
-  
-  private static JournalProtocol createNNProxyWithJournalProtocol(
-      InetSocketAddress address, Configuration conf, UserGroupInformation ugi)
-      throws IOException {
-    JournalProtocolPB proxy = (JournalProtocolPB) createNameNodeProxy(address,
-        conf, ugi, JournalProtocolPB.class);
-    return new JournalProtocolTranslatorPB(proxy);
   }
 
   private static RefreshAuthorizationPolicyProtocol

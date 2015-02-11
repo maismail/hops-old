@@ -112,46 +112,8 @@ public class TestNameNodeMXBean {
       String deadnodeinfo = (String) (mbs.getAttribute(mxbeanName,
           "DeadNodes"));
       assertEquals(fsn.getDeadNodes(), deadnodeinfo);
-      // get attribute NameDirStatuses
-//HOP      String nameDirStatuses = (String) (mbs.getAttribute(mxbeanName,      //HOP: this is the test for fsimage and edit log dirs
-//          "NameDirStatuses"));
-//      assertEquals(fsn.getNameDirStatuses(), nameDirStatuses);
-//      Map<String, Map<String, String>> statusMap =
-//        (Map<String, Map<String, String>>) JSON.parse(nameDirStatuses);
-//      Collection<URI> nameDirUris = cluster.getNameDirs(0);
-//      for (URI nameDirUri : nameDirUris) {
-//        File nameDir = new File(nameDirUri);
-//        System.out.println("Checking for the presence of " + nameDir +
-//            " in active name dirs.");
-//        assertTrue(statusMap.get("active").containsKey(nameDir.getAbsolutePath()));
-//      }
-//      assertEquals(2, statusMap.get("active").size());
-//      assertEquals(0, statusMap.get("failed").size());
-//      
-//      // This will cause the first dir to fail.
-//      File failedNameDir = new File(nameDirUris.toArray(new URI[0])[0]);
-//      assertEquals(0, FileUtil.chmod(failedNameDir.getAbsolutePath(), "000"));
-//      cluster.getNameNodeRpc().rollEditLog();
-//      
-//      nameDirStatuses = (String) (mbs.getAttribute(mxbeanName,
-//          "NameDirStatuses"));
-//      statusMap = (Map<String, Map<String, String>>) JSON.parse(nameDirStatuses);
-//      for (URI nameDirUri : nameDirUris) {
-//        File nameDir = new File(nameDirUri);
-//        String expectedStatus =
-//            nameDir.equals(failedNameDir) ? "failed" : "active";
-//        System.out.println("Checking for the presence of " + nameDir +
-//            " in " + expectedStatus + " name dirs.");
-//        assertTrue(statusMap.get(expectedStatus).containsKey(
-//            nameDir.getAbsolutePath()));
-//      }
-//      assertEquals(1, statusMap.get("active").size());
-//      assertEquals(1, statusMap.get("failed").size());
     } finally {
       if (cluster != null) {
-        for (URI dir : cluster.getNameDirs(0)) {
-          FileUtil.chmod(new File(dir).toString(), "700");
-        }
         cluster.shutdown();
       }
     }

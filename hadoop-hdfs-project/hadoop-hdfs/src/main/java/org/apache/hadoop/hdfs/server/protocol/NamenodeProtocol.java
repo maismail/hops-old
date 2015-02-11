@@ -24,7 +24,6 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
 import org.apache.hadoop.security.KerberosInfo;
 
 /*****************************************************************************
@@ -85,27 +84,6 @@ public interface NamenodeProtocol {
   public ExportedBlockKeys getBlockKeys() throws IOException;
 
   /**
-   * @return The most recent transaction ID that has been synced to
-   * persistent storage, or applied from persistent storage in the
-   * case of a non-active node.
-   * @throws IOException
-   */
-  public long getTransactionID() throws IOException;
-
-  /**
-   * Get the transaction ID of the most recent checkpoint.
-   */
-  public long getMostRecentCheckpointTxId() throws IOException;
-
-  /**
-   * Closes the current edit log and opens a new one. The 
-   * call fails if the file system is in SafeMode.
-   * @throws IOException
-   * @return a unique token to identify this transaction.
-   */   
-  public CheckpointSignature rollEditLog() throws IOException;
-
-  /**
    * Request name-node version and storage information.
    * 
    * @return {@link NamespaceInfo} identifying versions and storage information 
@@ -113,65 +91,5 @@ public interface NamenodeProtocol {
    * @throws IOException
    */
   public NamespaceInfo versionRequest() throws IOException;
-
-  /**
-   * Report to the active name-node an error occurred on a subordinate node.
-   * Depending on the error code the active node may decide to unregister the
-   * reporting node.
-   * 
-   * @param registration requesting node.
-   * @param errorCode indicates the error
-   * @param msg free text description of the error
-   * @throws IOException
-   */
-  public void errorReport(NamenodeRegistration registration,
-                          int errorCode, 
-                          String msg) throws IOException;
-
-  /** 
-   * Register a subordinate name-node like backup node.
-   *
-   * @return  {@link NamenodeRegistration} of the node,
-   *          which this node has just registered with.
-   */
-  public NamenodeRegistration register(NamenodeRegistration registration)
-  throws IOException;
-
-  /**
-   * A request to the active name-node to start a checkpoint.
-   * The name-node should decide whether to admit it or reject.
-   * The name-node also decides what should be done with the backup node
-   * image before and after the checkpoint.
-   * 
-   * @see CheckpointCommand
-   * @see NamenodeCommand
-   * @see #ACT_SHUTDOWN
-   * 
-   * @param registration the requesting node
-   * @return {@link CheckpointCommand} if checkpoint is allowed.
-   * @throws IOException
-   */
-  public NamenodeCommand startCheckpoint(NamenodeRegistration registration)
-  throws IOException;
-
-  /**
-   * A request to the active name-node to finalize
-   * previously started checkpoint.
-   * 
-   * @param registration the requesting node
-   * @param sig {@code CheckpointSignature} which identifies the checkpoint.
-   * @throws IOException
-   */
-  public void endCheckpoint(NamenodeRegistration registration,
-                            CheckpointSignature sig) throws IOException;
-  
-  
-  /**
-   * Return a structure containing details about all edit logs
-   * available to be fetched from the NameNode.
-   * @param sinceTxId return only logs that contain transactions >= sinceTxId
-   */
-  public RemoteEditLogManifest getEditLogManifest(long sinceTxId)
-    throws IOException;
 }
 

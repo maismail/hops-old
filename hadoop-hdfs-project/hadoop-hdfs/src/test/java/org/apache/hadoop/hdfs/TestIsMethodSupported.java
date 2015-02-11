@@ -29,13 +29,9 @@ import org.apache.hadoop.hdfs.protocolPB.ClientNamenodeProtocolTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.DatanodeProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.GetUserMappingsProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.InterDatanodeProtocolTranslatorPB;
-import org.apache.hadoop.hdfs.protocolPB.JournalProtocolTranslatorPB;
-import org.apache.hadoop.hdfs.protocolPB.NamenodeProtocolTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.RefreshAuthorizationPolicyProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdfs.protocolPB.RefreshUserMappingsProtocolClientSideTranslatorPB;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
-import org.apache.hadoop.hdfs.server.protocol.JournalProtocol;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.security.RefreshUserMappingsProtocol;
 import org.apache.hadoop.security.UserGroupInformation;
@@ -71,18 +67,6 @@ public class TestIsMethodSupported {
       cluster.shutdown();
     }
   }
-
-  @Test
-  public void testNamenodeProtocol() throws IOException {
-    NamenodeProtocolTranslatorPB translator =
-        (NamenodeProtocolTranslatorPB) NameNodeProxies.createNonHAProxy(conf,
-            nnAddress, NamenodeProtocol.class, UserGroupInformation.getCurrentUser(),
-            true).getProxy();
-    boolean exists = translator.isMethodSupported("rollEditLog");
-    assertTrue(exists);
-    exists = translator.isMethodSupported("bogusMethod");
-    assertFalse(exists);
-  }
   
   @Test
   public void testDatanodeProtocol() throws IOException {
@@ -98,12 +82,12 @@ public class TestIsMethodSupported {
             UserGroupInformation.getCurrentUser(), conf,
         NetUtils.getDefaultSocketFactory(conf));
     //Namenode doesn't implement ClientDatanodeProtocol
-    assertFalse(translator.isMethodSupported("refreshNamenodes"));
+    assertFalse(translator.isMethodSupported("getReplicaVisibleLength"));
     
     translator = new ClientDatanodeProtocolTranslatorPB(
         dnAddress, UserGroupInformation.getCurrentUser(), conf,
         NetUtils.getDefaultSocketFactory(conf));
-    assertTrue(translator.isMethodSupported("refreshNamenodes"));
+    assertTrue(translator.isMethodSupported("getReplicaVisibleLength"));
   }
   
   @Test
@@ -113,15 +97,6 @@ public class TestIsMethodSupported {
             conf, nnAddress, ClientProtocol.class,
             UserGroupInformation.getCurrentUser(), true).getProxy();
     assertTrue(translator.isMethodSupported("mkdirs"));
-  }
-  
-  @Test
-  public void tesJournalProtocol() throws IOException {
-    JournalProtocolTranslatorPB translator = (JournalProtocolTranslatorPB)
-        NameNodeProxies.createNonHAProxy(conf, nnAddress, JournalProtocol.class,
-            UserGroupInformation.getCurrentUser(), true).getProxy();
-    //Nameode doesn't implement JournalProtocol
-    assertFalse(translator.isMethodSupported("startLogSegment"));
   }
   
   @Test

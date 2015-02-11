@@ -70,8 +70,6 @@ public class TestHeartbeatHandling {
       final int MAX_REPLICATE_BLOCKS = 2*MAX_REPLICATE_LIMIT+REMAINING_BLOCKS;
       final DatanodeDescriptor[] ONE_TARGET = new DatanodeDescriptor[1];
 
-      try {
-        namesystem.writeLock();
         synchronized(hm) {
           for (int i=0; i<MAX_REPLICATE_BLOCKS; i++) {
             dd.addBlockToBeReplicated(
@@ -114,9 +112,6 @@ public class TestHeartbeatHandling {
               .getCommands();
           assertEquals(0, cmds.length);
         }
-      } finally {
-        namesystem.writeUnlock();
-      }
     } finally {
       cluster.shutdown();
     }

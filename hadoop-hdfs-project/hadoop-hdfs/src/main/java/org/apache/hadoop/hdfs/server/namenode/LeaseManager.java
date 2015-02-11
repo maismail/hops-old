@@ -382,16 +382,10 @@ public class LeaseManager {
     @Override
       public void run() {
           for (; shouldRunMonitor && fsnamesystem.isRunning();) {
-              //boolean needSync = false;
               try {
-                  if (fsnamesystem.isLeader()) { 
-                      fsnamesystem.writeLockInterruptibly();
+                  if (fsnamesystem.isLeader()) {
                       try {
-                          //HOP:
-                           /*if (!fsnamesystem.isInSafeMode()) {
-                           needSync = checkLeases();
-                           }*/
-                          if (!(Boolean) isInSafeModeHandler.handle(fsnamesystem)) {
+                          if (!fsnamesystem.isInSafeMode()) {
                               SortedSet<Lease> sortedLeases = (SortedSet<Lease>) findExpiredLeaseHandler.handle(fsnamesystem);
                               if (sortedLeases != null) {
                                   for (Lease expiredLease : sortedLeases) {
@@ -401,13 +395,6 @@ public class LeaseManager {
                           }
                       } catch (IOException ex) {
                           LOG.error(ex);
-                      } finally {
-                          fsnamesystem.writeUnlock();
-                          //HOP:
-                          // lease reassignments should to be sync'ed.
-                          //if (needSync) {
-                          //  fsnamesystem.getEditLog().logSync();
-                          //}
                       }
                   }
                   Thread.sleep(HdfsServerConstants.NAMENODE_LEASE_RECHECK_INTERVAL);
@@ -418,20 +405,7 @@ public class LeaseManager {
               }
           }
       }
-    
-    HopsTransactionalRequestHandler isInSafeModeHandler = new HopsTransactionalRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
 
-      @Override
-      public void acquireLock(TransactionLocks locks) throws IOException {
-        // TODO safemode
-      }
-
-      @Override
-      public Object performTask() throws StorageException, IOException {
-        return fsnamesystem.isInSafeMode();
-      }
-    };
-    
     LightWeightRequestHandler findExpiredLeaseHandler = new LightWeightRequestHandler(HDFSOperationType.PREPARE_LEASE_MANAGER_MONITOR) {
       @Override
       public Object performTask() throws StorageException, IOException {
@@ -479,40 +453,13 @@ public class LeaseManager {
         };
   }
 
-//HOP: this method won't be needed
-//  /**
-//   * Get the list of inodes corresponding to valid leases.
-//   * @return list of inodes
-//   * @throws UnresolvedLinkException
-//   */
-//  //HOP: changed the implementation to work with entity manager
-//  Map<String, INodeFileUnderConstruction> getINodesUnderConstruction() throws PersistanceException {
-//    Map<String, INodeFileUnderConstruction> inodes =
-//        new TreeMap<String, INodeFileUnderConstruction>();
-//    Collection<LeasePath> leasesByPath = EntityManager.findList(LeasePath.Finder.All);
-//    SortedSet<String> sortedLeasesByPath = new TreeSet<String>();
-//    for(LeasePath p : leasesByPath)
-//        sortedLeasesByPath.add(p.getPath());
-//    for (String p : sortedLeasesByPath) {
-//      // verify that path exists in namespace
-//      try {
-//        INode node = fsnamesystem.dir.getINode(p);
-//        inodes.put(p, INodeFileUnderConstruction.valueOf(node, p));
-//      } catch (IOException ioe) {
-//        LOG.error(ioe);
-//      }
-//    }
-//    return inodes;
-//  }
-  
   /** Check the leases beginning from the oldest.
    *  @return true is sync is needed.
    */
   private boolean checkLeases(String holder)
       throws StorageException, TransactionContextException {
     boolean needSync = false;
-    assert fsnamesystem.hasWriteLock();
-    
+
     Lease oldest = EntityManager.find(Lease.Finder.ByHolder, holder);
 
     if (oldest == null) {

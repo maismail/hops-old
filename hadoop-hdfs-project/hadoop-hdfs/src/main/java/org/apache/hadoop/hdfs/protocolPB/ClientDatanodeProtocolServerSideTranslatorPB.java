@@ -35,8 +35,6 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.GetHdf
 import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.GetHdfsBlockLocationsResponseProto.Builder;
 import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.GetReplicaVisibleLengthRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.GetReplicaVisibleLengthResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.RefreshNamenodesRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientDatanodeProtocolProtos.RefreshNamenodesResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.ExtendedBlockProto;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.security.proto.SecurityProtos.TokenProto;
@@ -54,8 +52,6 @@ import com.google.protobuf.ServiceException;
 @InterfaceAudience.Private
 public class ClientDatanodeProtocolServerSideTranslatorPB implements
     ClientDatanodeProtocolPB {
-  private final static RefreshNamenodesResponseProto REFRESH_NAMENODE_RESP =
-      RefreshNamenodesResponseProto.newBuilder().build();
   private final static DeleteBlockPoolResponseProto DELETE_BLOCKPOOL_RESP =
       DeleteBlockPoolResponseProto.newBuilder().build();
   
@@ -80,17 +76,6 @@ public class ClientDatanodeProtocolServerSideTranslatorPB implements
         .build();
   }
 
-  @Override
-  public RefreshNamenodesResponseProto refreshNamenodes(
-      RpcController unused, RefreshNamenodesRequestProto request)
-      throws ServiceException {
-    try {
-      impl.refreshNamenodes();
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-    return REFRESH_NAMENODE_RESP;
-  }
 
   @Override
   public DeleteBlockPoolResponseProto deleteBlockPool(RpcController unused,

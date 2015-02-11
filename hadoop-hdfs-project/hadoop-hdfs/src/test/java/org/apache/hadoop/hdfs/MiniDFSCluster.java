@@ -25,20 +25,11 @@ import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_DATA_DIR_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_HOST_NAME_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_HTTP_ADDRESS_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_DATANODE_IPC_ADDRESS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_LOGROLL_PERIOD_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_NAMENODES_KEY_PREFIX;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_NAMENODE_ID_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HA_STANDBY_CHECKPOINTS_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_HOSTS;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_CHECKPOINT_DIR_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_DECOMMISSION_INTERVAL_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SAFEMODE_EXTENSION_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_SHARED_EDITS_DIR_KEY;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMESERVICES;
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMESERVICE_ID;
 import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_REPLICATION_KEY;
 import static org.apache.hadoop.hdfs.server.common.Util.fileAsURI;
 
@@ -118,6 +109,8 @@ import se.sics.hop.metadata.hdfs.dal.InvalidateBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.LeaderDataAccess;
 import se.sics.hop.metadata.hdfs.dal.PendingBlockDataAccess;
 import se.sics.hop.metadata.hdfs.dal.UnderReplicatedBlockDataAccess;
+import sun.security.krb5.Config;
+
 /**
  * This class creates a single-process DFS cluster for junit testing.
  * The data directories for non-simulated DFS are under the testing directory.
@@ -387,7 +380,6 @@ public class MiniDFSCluster {
   private File base_dir;
   private File data_dir;
   private boolean waitSafeMode = true;
-  private boolean federation;
   private boolean checkExitOnShutdown = true;
   
   /**
@@ -404,12 +396,10 @@ public class MiniDFSCluster {
   static class NameNodeInfo {
     final NameNode nameNode;
     final Configuration conf;
-    final String nameserviceId;
     final String nnId;
-    NameNodeInfo(NameNode nn, String nameserviceId, String nnId,
+    NameNodeInfo(NameNode nn, String nnId,
         Configuration conf) {
       this.nameNode = nn;
-      this.nameserviceId = nameserviceId;
       this.nnId = nnId;
       this.conf = conf;
     }
@@ -641,23 +631,7 @@ public class MiniDFSCluster {
       conf.set(DFSConfigKeys.BLOCK_REPAIR_MANAGER_CLASSNAME_KEY,
           MockRepairManager.class.getName());
     }
-    
-    // In an HA cluster, in order for the StandbyNode to perform checkpoints,
-    // it needs to know the HTTP port of the Active. So, if ephemeral ports
-    // are chosen, disable checkpoints for the test.
-    if (!nnTopology.allHttpPortsSpecified() &&
-        nnTopology.isHA()) {
-      LOG.info("MiniDFSCluster disabling checkpointing in the Standby node " +
-          "since no HTTP ports have been specified.");
-      conf.setBoolean(DFS_HA_STANDBY_CHECKPOINTS_KEY, false);
-    }
-    if (!nnTopology.allIpcPortsSpecified() &&
-        nnTopology.isHA()) {
-      LOG.info("MiniDFSCluster disabling log-roll triggering in the "
-          + "Standby node since no IPC ports have been specified.");
-      conf.setInt(DFS_HA_LOGROLL_PERIOD_KEY, -1);
-    }
-    
+
     //START_HOP_CODE
     // Setting the configuration for Storage
     StorageFactory.setConfiguration(conf);
@@ -673,8 +647,7 @@ public class MiniDFSCluster {
       }
     }
     //END_HOP_CODE
-    
-    federation = nnTopology.isFederated();
+
     try {
       createNameNodesAndSetConf(
           nnTopology, manageNameDfsDirs, manageNameDfsSharedDirs,
@@ -685,13 +658,6 @@ public class MiniDFSCluster {
           createPermissionsDiagnosisString(data_dir));
       throw ioe;
     }
-//HOP    if (format) {
-//      if (data_dir.exists() && !FileUtil.fullyDelete(data_dir)) {
-//        throw new IOException("Cannot remove data directory: " + data_dir +
-//            createPermissionsDiagnosisString(data_dir));
-//      }
-//    }
-    
     
     if (operation == StartupOption.RECOVER) {
       return;
@@ -734,190 +700,99 @@ public class MiniDFSCluster {
     Preconditions.checkArgument(nnTopology.countNameNodes() > 0,
         "empty NN topology: no namenodes specified!");
 
-    if (!federation && nnTopology.countNameNodes() == 1) {
+    if (nnTopology.countNameNodes() == 1) {
       NNConf onlyNN = nnTopology.getOnlyNameNode();
       // we only had one NN, set DEFAULT_NAME for it
-      conf.set(FS_DEFAULT_NAME_KEY, "127.0.0.1:" + onlyNN.getIpcPort());
+      conf.set(FS_DEFAULT_NAME_KEY, DFSUtil.createHDFSUri("127.0.0.1:" +
+          onlyNN.getIpcPort()).toString());
     }
+
+    //unset configuaration paramters
+    conf.unset(DFSConfigKeys.DFS_NAMENODES_RPC_ADDRESS_KEY);
+    conf.unset(DFSConfigKeys.DFS_NAMENODES_SERVICE_RPC_ADDRESS_KEY);
+    conf.unset(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY);
+    conf.unset(DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY);
+    conf.unset(DFSConfigKeys.DFS_NAMENODE_SERVICE_RPC_ADDRESS_KEY);
     
-    List<String> allNsIds = Lists.newArrayList();
-    for (MiniDFSNNTopology.NSConf nameservice : nnTopology.getNameservices()) {
-      if (nameservice.getId() != null) {
-        allNsIds.add(nameservice.getId());
+    // Now format first NN and copy the storage directory from that node to the others.
+    int i = 0;
+    for (NNConf nn : nnTopology.getNamenodes()) {
+
+      boolean formatThisOne = format;
+      if (format && i++ > 0) {
+        // Don't format the second NN in an HA setup - that
+        // would result in it having a different clusterID,
+        // block pool ID, etc. Instead, copy the name dirs
+        // from the first one.
+        formatThisOne = false;
+      }
+
+      if (formatThisOne) {
+        DFSTestUtil.formatNameNode(conf);
       }
     }
-    if (!allNsIds.isEmpty()) {
-      conf.set(DFS_NAMESERVICES, Joiner.on(",").join(allNsIds));
-    }
-    
+
     int nnCounter = 0;
-    for (MiniDFSNNTopology.NSConf nameservice : nnTopology.getNameservices()) {
-      String nsId = nameservice.getId();
-      
-      Preconditions.checkArgument(
-          !federation || nsId != null,
-          "if there is more than one NS, they must have names");
-
-      // First set up the configuration which all of the NNs
-      // need to have - have to do this a priori before starting
-      // *any* of the NNs, so they know to come up in standby.
-      List<String> nnIds = Lists.newArrayList();
-      // Iterate over the NNs in this nameservice
-      for (NNConf nn : nameservice.getNNs()) {
-        nnIds.add(nn.getNnId());
-
-        initNameNodeAddress(conf, nameservice.getId(), nn);
-      }
-
-      // If HA is enabled on this nameservice, enumerate all the namenodes
-      // in the configuration. Also need to set a shared edits dir
-      if (nnIds.size() > 1) {
-        conf.set(DFSUtil.addKeySuffixes(DFS_HA_NAMENODES_KEY_PREFIX, nameservice.getId()),
-            Joiner.on(",").join(nnIds));
-        if (manageNameDfsSharedDirs) {
-          URI sharedEditsUri = getSharedEditsDir(nnCounter, nnCounter+nnIds.size()-1); 
-          conf.set(DFS_NAMENODE_SHARED_EDITS_DIR_KEY, sharedEditsUri.toString());
-        }
-      }
-
-      // Now format first NN and copy the storage directory from that node to the others.
-      int i = 0;
-      Collection<URI> prevNNDirs = null;
-      int nnCounterForFormat = nnCounter;
-      for (NNConf nn : nameservice.getNNs()) {
-        initNameNodeConf(conf, nsId, nn.getNnId(), manageNameDfsDirs,
-            enableManagedDfsDirsRedundancy, nnCounterForFormat);
-        Collection<URI> namespaceDirs = FSNamesystem.getNamespaceDirs(conf);
-        if (format) {
-          for (URI nameDirUri : namespaceDirs) {
-            File nameDir = new File(nameDirUri);
-            if (nameDir.exists() && !FileUtil.fullyDelete(nameDir)) {
-              throw new IOException("Could not fully delete " + nameDir);
-            }
-          }
-        }
-        
-        boolean formatThisOne = format;
-        if (format && i++ > 0) {
-          // Don't format the second NN in an HA setup - that
-          // would result in it having a different clusterID,
-          // block pool ID, etc. Instead, copy the name dirs
-          // from the first one.
-          formatThisOne = false;
-          assert (null != prevNNDirs);
-          //copyNameDirs(prevNNDirs, namespaceDirs, conf); //HOP: no namenode dirs
-        }
-        
-        nnCounterForFormat++;
-        if (formatThisOne) {
-          DFSTestUtil.formatNameNode(conf);
-        }
-        prevNNDirs = namespaceDirs;
-      }
-
-      // Start all Namenodes
-      for (NNConf nn : nameservice.getNNs()) {
-        initNameNodeConf(conf, nsId, nn.getNnId(), manageNameDfsDirs,
-            enableManagedDfsDirsRedundancy, nnCounter);
-        createNameNode(nnCounter++, conf, numDataNodes, false, operation,
-            clusterId, nsId, nn.getNnId());
-      }
-      
+    // Start all Namenodes
+    for (NNConf nn : nnTopology.getNamenodes()) {
+      createNameNode(nnCounter++, conf, numDataNodes,
+          false,
+          operation,
+          clusterId, nn);
     }
 
+    //sync configuaration paramters
+    List<String> nnRpcs = Lists.newArrayList();
+    List<String> nnServiceRpcs = Lists.newArrayList();
+    List<String> nnhttpAddresses = Lists.newArrayList();
+    for (NameNodeInfo nameNodeInfo : nameNodes) {
+      nnRpcs.add(nameNodeInfo.nameNode.getNameNodeAddressHostPortString());
+      nnhttpAddresses.add(NetUtils.getHostPortString(nameNodeInfo.nameNode
+          .getHttpAddress()));
+      nnServiceRpcs.add(NetUtils.getHostPortString(nameNodeInfo.nameNode
+          .getServiceRpcAddress()));
+    }
+
+    String rpcAddresses =  DFSUtil.joinNameNodesHostPortString(nnRpcs);
+    String serviceRpcAddresses = DFSUtil.joinNameNodesHostPortString
+        (nnServiceRpcs);
+
+    conf.set(DFSConfigKeys.DFS_NAMENODES_RPC_ADDRESS_KEY, rpcAddresses);
+    conf.set(DFSConfigKeys.DFS_NAMENODES_SERVICE_RPC_ADDRESS_KEY, serviceRpcAddresses);
+
+    for(NameNodeInfo nameNodeInfo : nameNodes){
+      nameNodeInfo.conf.set(DFSConfigKeys.DFS_NAMENODES_RPC_ADDRESS_KEY, rpcAddresses);
+      nameNodeInfo.conf.set(DFSConfigKeys.DFS_NAMENODES_SERVICE_RPC_ADDRESS_KEY,
+          serviceRpcAddresses);
+    }
+    
+    conf.set(DFSConfigKeys.DFS_NAMENODE_HTTP_ADDRESS_KEY, nnhttpAddresses.get
+        (0));
+    conf.set(DFSConfigKeys.DFS_NAMENODE_RPC_ADDRESS_KEY, nnRpcs.get(0));
+    conf.set(DFSConfigKeys.DFS_NAMENODE_SERVICE_RPC_ADDRESS_KEY, nnServiceRpcs.get(0));
+    conf.set(FS_DEFAULT_NAME_KEY,
+        DFSUtil.createHDFSUri(nnRpcs.get(0)).toString());
   }
-  
-  public URI getSharedEditsDir(int minNN, int maxNN) throws IOException {
-    return formatSharedEditsDir(base_dir, minNN, maxNN);
-  }
-  
-  public static URI formatSharedEditsDir(File baseDir, int minNN, int maxNN)
-      throws IOException {
-    return fileAsURI(new File(baseDir, "shared-edits-" +
-        minNN + "-through-" + maxNN));
-  }
-  
+
   public NameNodeInfo[] getNameNodeInfos() {
     return this.nameNodes;
   }
 
-  private void initNameNodeConf(Configuration conf,
-      String nameserviceId, String nnId,
-      boolean manageNameDfsDirs, boolean enableManagedDfsDirsRedundancy,
-      int nnIndex) throws IOException {
-    if (nameserviceId != null) {
-      conf.set(DFS_NAMESERVICE_ID, nameserviceId);
-    }
-    if (nnId != null) {
-      conf.set(DFS_HA_NAMENODE_ID_KEY, nnId);
-    }
-    
-    if (manageNameDfsDirs) {
-      if (enableManagedDfsDirsRedundancy) {
-        conf.set(DFS_NAMENODE_NAME_DIR_KEY,
-            fileAsURI(new File(base_dir, "name" + (2*nnIndex + 1)))+","+
-            fileAsURI(new File(base_dir, "name" + (2*nnIndex + 2))));
-        conf.set(DFS_NAMENODE_CHECKPOINT_DIR_KEY,
-            fileAsURI(new File(base_dir, "namesecondary" + (2*nnIndex + 1)))+","+
-            fileAsURI(new File(base_dir, "namesecondary" + (2*nnIndex + 2))));
-      } else {
-        conf.set(DFS_NAMENODE_NAME_DIR_KEY,
-            fileAsURI(new File(base_dir, "name" + (2*nnIndex + 1))).
-              toString());
-        conf.set(DFS_NAMENODE_CHECKPOINT_DIR_KEY,
-            fileAsURI(new File(base_dir, "namesecondary" + (2*nnIndex + 1))).
-              toString());
-      }
-    }
-  }
 
-  private void copyNameDirs(Collection<URI> srcDirs, Collection<URI> dstDirs,
-      Configuration dstConf) throws IOException {
-    URI srcDir = Lists.newArrayList(srcDirs).get(0);
-    FileSystem dstFS = FileSystem.getLocal(dstConf).getRaw();
-    for (URI dstDir : dstDirs) {
-      Preconditions.checkArgument(!dstDir.equals(srcDir));
-      File dstDirF = new File(dstDir);
-      if (dstDirF.exists()) {
-        if (!FileUtil.fullyDelete(dstDirF)) {
-          throw new IOException("Unable to delete: " + dstDirF);
-        }
-      }
-      LOG.info("Copying namedir from primary node dir "
-          + srcDir + " to " + dstDir);
-      FileUtil.copy(
-          new File(srcDir),
-          dstFS, new Path(dstDir), false, dstConf);
-    }
-  }
-
-  /**
-   * Initialize the address and port for this NameNode. In the
-   * non-federated case, the nameservice and namenode ID may be
-   * null.
-   */
-  private static void initNameNodeAddress(Configuration conf,
-      String nameserviceId, NNConf nnConf) {
-    // Set NN-specific specific key
-    String key = DFSUtil.addKeySuffixes(
-        DFS_NAMENODE_HTTP_ADDRESS_KEY, nameserviceId,
-        nnConf.getNnId());
-    conf.set(key, "127.0.0.1:" + nnConf.getHttpPort());
-
-    key = DFSUtil.addKeySuffixes(
-        DFS_NAMENODE_RPC_ADDRESS_KEY, nameserviceId,
-        nnConf.getNnId());
-    conf.set(key, "127.0.0.1:" + nnConf.getIpcPort());
-  }
-  
   private void createNameNode(int nnIndex, Configuration conf,
       int numDataNodes, boolean format, StartupOption operation,
-      String clusterId, String nameserviceId,
-      String nnId)
+      String clusterId, NNConf nnConf)
       throws IOException {
+
+    Configuration nameNodeConf = new Configuration(conf);
+    nameNodeConf.set(DFS_NAMENODE_HTTP_ADDRESS_KEY, "127.0.0.1:" + nnConf
+        .getHttpPort());
+    nameNodeConf.set(DFS_NAMENODE_RPC_ADDRESS_KEY, "127.0.0.1:" + nnConf
+        .getIpcPort());
+
     // Format and clean out DataNode directories
     if (format) {
-      DFSTestUtil.formatNameNode(conf);
+      DFSTestUtil.formatNameNode(nameNodeConf);
     }
     if (operation == StartupOption.UPGRADE){
       operation.setClusterId(clusterId);
@@ -928,23 +803,19 @@ public class MiniDFSCluster {
                      operation == StartupOption.FORMAT ||
                      operation == StartupOption.REGULAR) ?
       new String[] {} : new String[] {operation.getName()};
-    NameNode nn =  NameNode.createNameNode(args, conf);
+    NameNode nn =  NameNode.createNameNode(args, nameNodeConf);
     if (operation == StartupOption.RECOVER) {
       return;
     }
-    
+
     // After the NN has started, set back the bound ports into
     // the conf
-    conf.set(DFSUtil.addKeySuffixes(
-        DFS_NAMENODE_RPC_ADDRESS_KEY, nameserviceId, nnId),
-        nn.getNameNodeAddressHostPortString());
-    conf.set(DFSUtil.addKeySuffixes(
-        DFS_NAMENODE_HTTP_ADDRESS_KEY, nameserviceId, nnId), NetUtils
+    nameNodeConf.set(DFS_NAMENODE_RPC_ADDRESS_KEY, nn
+        .getNameNodeAddressHostPortString());
+    nameNodeConf.set(DFS_NAMENODE_HTTP_ADDRESS_KEY, NetUtils
         .getHostPortString(nn.getHttpAddress()));
-    DFSUtil.setGenericConf(conf, nameserviceId, nnId,
-        DFS_NAMENODE_HTTP_ADDRESS_KEY);
-    nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId,
-        new Configuration(conf));
+
+    nameNodes[nnIndex] = new NameNodeInfo(nn, nnConf.getNnId(), nameNodeConf);
   }
 
   /**
@@ -1501,7 +1372,7 @@ public class MiniDFSCluster {
       nn.stop();
       nn.join();
       Configuration conf = nameNodes[nnIndex].conf;
-      nameNodes[nnIndex] = new NameNodeInfo(null, null, null, conf);
+      nameNodes[nnIndex] = new NameNodeInfo(null, null, conf);
     }
   }
   
@@ -1545,7 +1416,6 @@ public class MiniDFSCluster {
    */
   public synchronized void restartNameNode(int nnIndex, boolean waitActive)
       throws IOException {
-    String nameserviceId = nameNodes[nnIndex].nameserviceId;
     String nnId = nameNodes[nnIndex].nnId;
     Configuration conf = nameNodes[nnIndex].conf;
     shutdownNameNode(nnIndex);
@@ -1553,7 +1423,7 @@ public class MiniDFSCluster {
     deleteReplicasTable();  // it will delete the tables if there are no active nn
     //HOP_END_CODE
     NameNode nn = NameNode.createNameNode(new String[] {}, conf);
-    nameNodes[nnIndex] = new NameNodeInfo(nn, nameserviceId, nnId, conf);
+    nameNodes[nnIndex] = new NameNodeInfo(nn, nnId, conf);
     if (waitActive) {
       waitClusterUp();
       LOG.info("Restarted the namenode");
@@ -1850,33 +1720,6 @@ public class MiniDFSCluster {
     });
   }
 
-  /**
-   * Get the directories where the namenode stores its image.
-   */
-  public Collection<URI> getNameDirs(int nnIndex) {
-    return FSNamesystem.getNamespaceDirs(nameNodes[nnIndex].conf);
-  }
-
-  /**
-   * Get the directories where the namenode stores its edits.
-   */
-  public Collection<URI> getNameEditsDirs(int nnIndex) throws IOException {
-    return FSNamesystem.getNamespaceEditsDirs(nameNodes[nnIndex].conf);
-  }
-  
-  public void transitionToActive(int nnIndex) throws IOException,
-      ServiceFailedException {
-    getNameNode(nnIndex).getRpcServer().transitionToActive(
-        new StateChangeRequestInfo(RequestSource.REQUEST_BY_USER_FORCED));
-  }
-  
-  public void transitionToStandby(int nnIndex) throws IOException,
-      ServiceFailedException {
-    getNameNode(nnIndex).getRpcServer().transitionToStandby(
-        new StateChangeRequestInfo(RequestSource.REQUEST_BY_USER_FORCED));
-  }
-  
-  
   public void triggerBlockReports()
       throws IOException {
     for (DataNode dn : getDataNodes()) {
@@ -2302,46 +2145,6 @@ public class MiniDFSCluster {
     }
   }
 
-  /**
-   * Add a namenode to a federated cluster and start it. Configuration of
-   * datanodes in the cluster is refreshed to register with the new namenode.
-   * 
-   * @return newly started namenode
-   */
-  public NameNode addNameNode(Configuration conf, int namenodePort)
-      throws IOException {
-    if(!federation)
-      throw new IOException("cannot add namenode to non-federated cluster");
-
-    int nnIndex = nameNodes.length;
-    int numNameNodes = nameNodes.length + 1;
-    NameNodeInfo[] newlist = new NameNodeInfo[numNameNodes];
-    System.arraycopy(nameNodes, 0, newlist, 0, nameNodes.length);
-    nameNodes = newlist;
-    String nameserviceId = NAMESERVICE_ID_PREFIX + (nnIndex + 1);
-    
-    String nameserviceIds = conf.get(DFS_NAMESERVICES);
-    nameserviceIds += "," + nameserviceId;
-    conf.set(DFS_NAMESERVICES, nameserviceIds);
-  
-    String nnId = null;
-    initNameNodeAddress(conf, nameserviceId,
-        new NNConf(nnId).setIpcPort(namenodePort));
-    initNameNodeConf(conf, nameserviceId, nnId, true, true, nnIndex);
-    createNameNode(nnIndex, conf, numDataNodes, true, null, null,
-        nameserviceId, nnId);
-
-    // Refresh datanodes with the newly started namenode
-    for (DataNodeProperties dn : dataNodes) {
-      DataNode datanode = dn.datanode;
-      datanode.refreshNamenodes(conf);
-    }
-
-    // Wait for new namenode to get registrations from all the datanodes
-    waitActive(nnIndex);
-    return nameNodes[nnIndex].nameNode;
-  }
-  
   private void setupDatanodeAddress(Configuration conf, boolean setupHostsFile,
                            boolean checkDataNodeAddrConfig) throws IOException {
     if (setupHostsFile) {
@@ -2401,21 +2204,8 @@ public class MiniDFSCluster {
             try {
               Variables.resetMisReplicatedIndex();
               Variables.enterClusterSafeMode();
-              StorageFactory.formatStorage(/*ReplicaDataAccess.class, ReplicaUnderConstructionDataAccess.class,*/
-                      UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class, 
-                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);   
-              
-//                Session session = (Session) StorageFactory.getConnector().obtainSession();
-//                //lease is persisted in the edit logs
-////              session.deletePersistentAll(LeaseClusterj.LeaseDTO.class);
-////              session.deletePersistentAll(LeasePathClusterj.LeasePathsDTO.class);
-//                session.deletePersistentAll(ReplicaClusterj.ReplicaDTO.class);
-//                session.deletePersistentAll(ReplicaUnderConstructionClusterj.ReplicaUcDTO.class);
-//                session.deletePersistentAll(UnderReplicatedBlockClusterj.UnderReplicatedBlocksDTO.class);
-//                session.deletePersistentAll(LeaderClusterj.LeaderDTO.class);
-//                session.deletePersistentAll(BlockTokenKeyClusterj.BlockKeyDTO.class);
-//                session.deletePersistentAll(INodeAttributesClusterj.INodeAttributesDTO.class);
-//                session.flush();
+              StorageFactory.formatStorage(UnderReplicatedBlockDataAccess.class, ExcessReplicaDataAccess.class, CorruptReplicaDataAccess.class,
+                      InvalidateBlockDataAccess.class, PendingBlockDataAccess.class, LeaderDataAccess.class);
             } catch (Exception e) {
                 LOG.error(e);
             }

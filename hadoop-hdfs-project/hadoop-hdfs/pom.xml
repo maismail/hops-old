@@ -63,7 +63,6 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hop-leader-election</artifactId>
-      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.zookeeper</groupId>
@@ -239,44 +238,6 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
             </configuration>
           </execution>
           <execution>
-            <id>secondary</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <configuration>
-              <compile>false</compile>
-              <workingDirectory>${project.build.directory}/generated-sources/java</workingDirectory>
-              <webFragmentFile>${project.build.directory}/secondary-jsp-servlet-definitions.xml</webFragmentFile>
-              <packageName>org.apache.hadoop.hdfs.server.namenode</packageName>
-              <sources>
-                <directory>${basedir}/src/main/webapps/secondary</directory>
-                <includes>
-                  <include>*.jsp</include>
-                </includes>
-              </sources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>journal</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-            <configuration>
-              <compile>false</compile>
-              <workingDirectory>${project.build.directory}/generated-sources/java</workingDirectory>
-              <webFragmentFile>${project.build.directory}/journal-jsp-servlet-definitions.xml</webFragmentFile>
-              <packageName>org.apache.hadoop.hdfs.server.journalservice</packageName>
-              <sources>
-                <directory>${basedir}/src/main/webapps/journal</directory>
-                <includes>
-                  <include>*.jsp</include>
-                </includes>
-              </sources>
-            </configuration>
-          </execution>
-          <execution>
             <id>datanode</id>
             <phase>generate-sources</phase>
             <goals>
@@ -360,9 +321,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
             <configuration>
               <target>
                 <loadfile property="hdfs.servlet.definitions" srcFile="${project.build.directory}/hdfs-jsp-servlet-definitions.xml"/>
-                <loadfile property="secondary.servlet.definitions" srcFile="${project.build.directory}/secondary-jsp-servlet-definitions.xml"/>
                 <loadfile property="datanode.servlet.definitions" srcFile="${project.build.directory}/datanode-jsp-servlet-definitions.xml"/>
-                <loadfile property="journal.servlet.definitions" srcFile="${project.build.directory}/journal-jsp-servlet-definitions.xml"/>               
                 <echoproperties destfile="${project.build.directory}/webxml.properties">
                   <propertyset>
                     <propertyref regex=".*.servlet.definitions"/>
@@ -372,14 +331,8 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
                 <copy file="${basedir}/src/main/webapps/proto-hdfs-web.xml"
                       tofile="${project.build.directory}/webapps/hdfs/WEB-INF/web.xml"
                       filtering="true"/>
-                <copy file="${basedir}/src/main/webapps/proto-secondary-web.xml"
-                      tofile="${project.build.directory}/webapps/secondary/WEB-INF/web.xml"
-                      filtering="true"/>
                 <copy file="${basedir}/src/main/webapps/proto-datanode-web.xml"
                       tofile="${project.build.directory}/webapps/datanode/WEB-INF/web.xml"
-                      filtering="true"/>
-                <copy file="${basedir}/src/main/webapps/proto-journal-web.xml"
-                      tofile="${project.build.directory}/webapps/journal/WEB-INF/web.xml"
                       filtering="true"/>
                 <copy toDir="${project.build.directory}/webapps">
                   <fileset dir="${basedir}/src/main/webapps">
@@ -443,9 +396,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
                 <directory>${basedir}/src/main/proto</directory>
                 <includes>
                   <include>GetUserMappingsProtocol.proto</include>
-                  <include>HAZKInfo.proto</include>
                   <include>InterDatanodeProtocol.proto</include>
-                  <include>JournalProtocol.proto</include>
                   <include>RefreshAuthorizationPolicyProtocol.proto</include>
                   <include>RefreshUserMappingsProtocol.proto</include>
                   <include>datatransfer.proto</include>
@@ -494,26 +445,6 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
                 <includes>
                   <include>ClientNamenodeProtocol.proto</include>
                   <include>NamenodeProtocol.proto</include>
-                </includes>
-              </source>
-              <output>${project.build.directory}/generated-sources/java</output>
-            </configuration>
-          </execution>
-          <execution>
-            <id>compile-protoc-qjournal</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>protoc</goal>
-            </goals>
-            <configuration>
-              <imports>
-                <param>${basedir}/../../hadoop-common-project/hadoop-common/src/main/proto</param>
-                <param>${basedir}/src/main/proto</param>
-              </imports>
-              <source>
-                <directory>${basedir}/src/main/proto</directory>
-                <includes>
-                  <include>QJournalProtocol.proto</include>
                 </includes>
               </source>
               <output>${project.build.directory}/generated-sources/java</output>

@@ -510,42 +510,7 @@ public class DirectoryScanner implements Runnable {
         return report;
       }
       Arrays.sort(files);
-      
-      /*
-       * Assumption: In the sorted list of files block file appears immediately
-       * before block metadata file. This is true for the current naming
-       * convention for block file blk_<blockid> and meta file
-       * blk_<blockid>_<genstamp>.meta
-       */
-//HOP      for (int i = 0; i < files.length; i++) {
-//        if (files[i].isDirectory()) {
-//          compileReport(vol, files[i], report);
-//          continue;
-//        }
-//        if (!Block.isBlockFilename(files[i])) {
-//          if (isBlockMetaFile("blk_", files[i].getName())) {
-//            long blockId = Block.getBlockId(files[i].getName());
-//            report.add(new ScanInfo(blockId, null, files[i], vol));
-//          }
-//          continue;
-//        }
-//        File blockFile = files[i];
-//        long blockId = Block.filename2id(blockFile.getName());
-//        File metaFile = null;
-//
-//        // Skip all the files that start with block name until
-//        // getting to the metafile for the block
-//        while (i + 1 < files.length && files[i + 1].isFile()
-//            && files[i + 1].getName().startsWith(blockFile.getName())) {
-//          i++;
-//          if (isBlockMetaFile(blockFile.getName(), files[i].getName())) {
-//            metaFile = files[i];
-//            break;
-//          }
-//        }  
-//        report.add(new ScanInfo(blockId, blockFile, metaFile, vol));
-//      }
-      
+
       //START_HOP_CODE
       List<File> blkFiles = new ArrayList();
       List<File> metaFiles = new ArrayList();

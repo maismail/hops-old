@@ -57,7 +57,6 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Concat
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.CreateRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.CreateSymlinkRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FsyncRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.GetAdditionalDatanodeRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.GetDataEncryptionKeyRequestProto;
@@ -86,10 +85,6 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Rename
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenameRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenewLeaseRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.ReportBadBlocksRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RestoreFailedStorageRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RollEditsRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RollEditsResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SaveNamespaceRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetBalancerBandwidthRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetOwnerRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetPermissionRequestProto;
@@ -149,18 +144,8 @@ public class ClientNamenodeProtocolTranslatorPB implements
   private final static GetFsStatusRequestProto VOID_GET_FSSTATUS_REQUEST =
   GetFsStatusRequestProto.newBuilder().build();
 
-  private final static SaveNamespaceRequestProto VOID_SAVE_NAMESPACE_REQUEST =
-  SaveNamespaceRequestProto.newBuilder().build();
-
-  private final static RollEditsRequestProto VOID_ROLLEDITS_REQUEST = 
-  RollEditsRequestProto.getDefaultInstance();
-
   private final static RefreshNodesRequestProto VOID_REFRESH_NODES_REQUEST =
   RefreshNodesRequestProto.newBuilder().build();
-
-  private final static FinalizeUpgradeRequestProto
-  VOID_FINALIZE_UPGRADE_REQUEST =
-      FinalizeUpgradeRequestProto.newBuilder().build();
 
   private final static GetDataEncryptionKeyRequestProto
   VOID_GET_DATA_ENCRYPTIONKEY_REQUEST =
@@ -622,51 +607,9 @@ public class ClientNamenodeProtocolTranslatorPB implements
   }
 
   @Override
-  public void saveNamespace() throws AccessControlException, IOException {
-    try {
-      rpcProxy.saveNamespace(null, VOID_SAVE_NAMESPACE_REQUEST);
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-  
-  @Override
-  public long rollEdits() throws AccessControlException, IOException {
-    try {
-      RollEditsResponseProto resp = rpcProxy.rollEdits(null,
-          VOID_ROLLEDITS_REQUEST);
-      return resp.getNewSegmentTxId();
-    } catch (ServiceException se) {
-      throw ProtobufHelper.getRemoteException(se);
-    }
-  }
-
-  @Override
-  public boolean restoreFailedStorage(String arg) 
-      throws AccessControlException, IOException{
-    RestoreFailedStorageRequestProto req = RestoreFailedStorageRequestProto
-        .newBuilder()
-        .setArg(arg).build();
-    try {
-      return rpcProxy.restoreFailedStorage(null, req).getResult();
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
   public void refreshNodes() throws IOException {
     try {
       rpcProxy.refreshNodes(null, VOID_REFRESH_NODES_REQUEST);
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public void finalizeUpgrade() throws IOException {
-    try {
-      rpcProxy.finalizeUpgrade(null, VOID_FINALIZE_UPGRADE_REQUEST);
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }

@@ -30,7 +30,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
 import org.apache.hadoop.hdfs.server.namenode.NameNode;
-import org.apache.hadoop.hdfs.server.namenode.NameNode.OperationCategory;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.security.Credentials;
@@ -40,6 +39,7 @@ import org.apache.hadoop.security.token.Token;
 import org.apache.hadoop.security.token.delegation.AbstractDelegationTokenSecretManager;
 import org.apache.hadoop.security.token.delegation.DelegationKey;
 
+//FIXME: needs to be presisted
 /**
  * A HDFS specific delegation token secret manager.
  * The secret manager is responsible for generating and accepting the password
@@ -78,12 +78,7 @@ public class DelegationTokenSecretManager
   
   @Override //SecretManager
   public void checkAvailableForRead() throws StandbyException {
-    namesystem.readLock();
-    try {
-      namesystem.checkOperation(OperationCategory.READ);
-    } finally {
-      namesystem.readUnlock();
-    }
+      //FIXME:
   }
 
   /**

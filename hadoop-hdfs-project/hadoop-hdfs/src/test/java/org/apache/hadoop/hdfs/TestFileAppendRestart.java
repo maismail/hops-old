@@ -20,23 +20,14 @@ package org.apache.hadoop.hdfs;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.EnumMap;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
-import org.apache.hadoop.hdfs.server.namenode.FSEditLogOpCodes;
-//import org.apache.hadoop.hdfs.server.namenode.FSImageTestUtil;
-//import org.apache.hadoop.hdfs.server.namenode.NNStorage;
-import org.apache.hadoop.hdfs.util.Holder;
 import org.apache.hadoop.io.IOUtils;
-import org.apache.hadoop.test.GenericTestUtils;
 import org.junit.Test;
 
 /**
@@ -46,8 +37,6 @@ import org.junit.Test;
  */
 public class TestFileAppendRestart {
   private static final int BLOCK_SIZE = 4096;
-  private static final String HADOOP_23_BROKEN_APPEND_TGZ =
-      "image-with-buggy-append.tgz";
     
   private void writeAndAppend(FileSystem fs, Path p,
       int lengthForCreate, int lengthForAppend) throws IOException {
@@ -86,41 +75,12 @@ public class TestFileAppendRestart {
     try {
       cluster = new MiniDFSCluster.Builder(conf).numDataNodes(1).build();
       FileSystem fs = cluster.getFileSystem();
-//      File editLog =
-//        new File(FSImageTestUtil.getNameNodeCurrentDirs(cluster, 0).get(0),
-//            NNStorage.getInProgressEditsFileName(1));
-//      EnumMap<FSEditLogOpCodes, Holder<Integer>> counts;
-      
       Path p1 = new Path("/block-boundaries");
       writeAndAppend(fs, p1, BLOCK_SIZE, BLOCK_SIZE);
 
-//      counts = FSImageTestUtil.countEditLogOpTypes(editLog);
-      // OP_ADD to create file
-      // OP_UPDATE_BLOCKS for first block
-      // OP_CLOSE to close file
-      // OP_ADD to reopen file
-      // OP_UPDATE_BLOCKS for second block
-      // OP_CLOSE to close file
-//      assertEquals(2, (int)counts.get(FSEditLogOpCodes.OP_ADD).held);
-//      assertEquals(2, (int)counts.get(FSEditLogOpCodes.OP_UPDATE_BLOCKS).held);
-//      assertEquals(2, (int)counts.get(FSEditLogOpCodes.OP_CLOSE).held);
-
       Path p2 = new Path("/not-block-boundaries");
       writeAndAppend(fs, p2, BLOCK_SIZE/2, BLOCK_SIZE);
-//      counts = FSImageTestUtil.countEditLogOpTypes(editLog);
-      // OP_ADD to create file
-      // OP_UPDATE_BLOCKS for first block
-      // OP_CLOSE to close file
-      // OP_ADD to re-establish the lease
-      // OP_UPDATE_BLOCKS from the updatePipeline call (increments genstamp of last block)
-      // OP_UPDATE_BLOCKS at the start of the second block
-      // OP_CLOSE to close file
-      // Total: 2 OP_ADDs, 3 OP_UPDATE_BLOCKS, and 2 OP_CLOSEs in addition
-      //        to the ones above
-//      assertEquals(2+2, (int)counts.get(FSEditLogOpCodes.OP_ADD).held);
-//      assertEquals(2+3, (int)counts.get(FSEditLogOpCodes.OP_UPDATE_BLOCKS).held);
-//      assertEquals(2+2, (int)counts.get(FSEditLogOpCodes.OP_CLOSE).held);
-//      
+
       cluster.restartNameNode();
       
       AppendTestUtil.check(fs, p1, 2*BLOCK_SIZE);
@@ -132,49 +92,6 @@ public class TestFileAppendRestart {
     }finally {
       IOUtils.closeStream(stream);
       if (cluster != null) { cluster.shutdown(); }
-    }
-  }
-
-  /**
-   * Earlier versions of HDFS had a bug (HDFS-2991) which caused
-   * append(), when called exactly at a block boundary,
-   * to not log an OP_ADD. This ensures that we can read from
-   * such buggy versions correctly, by loading an image created
-   * using a namesystem image created with 0.23.1-rc2 exhibiting
-   * the issue.
-   */
-//  @Test
-  public void testLoadLogsFromBuggyEarlierVersions() throws IOException {
-    final Configuration conf = new HdfsConfiguration();
-
-    String tarFile = System.getProperty("test.cache.data", "build/test/cache")
-      + "/" + HADOOP_23_BROKEN_APPEND_TGZ;
-    String testDir = System.getProperty("test.build.data", "build/test/data");
-    File dfsDir = new File(testDir, "image-with-buggy-append");
-    if (dfsDir.exists() && !FileUtil.fullyDelete(dfsDir)) {
-      throw new IOException("Could not delete dfs directory '" + dfsDir + "'");
-    }
-    FileUtil.unTar(new File(tarFile), new File(testDir));
-
-    File nameDir = new File(dfsDir, "name");
-    GenericTestUtils.assertExists(nameDir);
-
-    conf.set(DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY, nameDir.getAbsolutePath());
-
-    MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(0)
-      .format(false)
-      .manageDataDfsDirs(false)
-      .manageNameDfsDirs(false)
-      .numDataNodes(0)
-      .waitSafeMode(false)
-      .startupOption(StartupOption.UPGRADE)
-      .build();
-    try {
-      FileSystem fs = cluster.getFileSystem();
-      Path testPath = new Path("/tmp/io_data/test_io_0");
-      assertEquals(2*1024*1024, fs.getFileStatus(testPath).getLen());
-    } finally {
-      cluster.shutdown();
     }
   }
 

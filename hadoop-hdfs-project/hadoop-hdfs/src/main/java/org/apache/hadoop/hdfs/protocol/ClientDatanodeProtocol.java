@@ -64,14 +64,6 @@ public interface ClientDatanodeProtocol {
 
   /** Return the visible length of a replica. */
   long getReplicaVisibleLength(ExtendedBlock b) throws IOException;
-  
-  /**
-   * Refresh the list of federated namenodes from updated configuration
-   * Adds new namenodes and stops the deleted namenodes.
-   * 
-   * @throws IOException on error
-   **/
-  void refreshNamenodes() throws IOException;
 
   /**
    * Delete the block pool directory. If force is false it is deleted only if

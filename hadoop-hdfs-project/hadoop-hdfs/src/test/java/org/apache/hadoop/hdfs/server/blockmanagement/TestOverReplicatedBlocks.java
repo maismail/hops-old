@@ -104,8 +104,6 @@ public class TestOverReplicatedBlocks {
       final FSNamesystem namesystem = cluster.getNamesystem();
       final BlockManager bm = namesystem.getBlockManager();
       final HeartbeatManager hm = bm.getDatanodeManager().getHeartbeatManager();
-      try {
-        namesystem.writeLock();
         synchronized(hm) {
           // set live datanode's remaining space to be 0 
           // so they will be chosen to be deleted when over-replication occurs
@@ -144,9 +142,6 @@ public class TestOverReplicatedBlocks {
           }.handle(namesystem);
 
         }
-      } finally {
-        namesystem.writeUnlock();
-      }
       
     } finally {
       cluster.shutdown();
@@ -208,12 +203,10 @@ public class TestOverReplicatedBlocks {
 
       // All replicas for deletion should be scheduled on lastDN.
       // And should not actually be deleted, because lastDN does not heartbeat.
-      namesystem.readLock();
       Collection<Block> dnBlocks = 
         namesystem.getBlockManager().excessReplicateMap.get(lastDNid);
       assertEquals("Replicas on node " + lastDNid + " should have been deleted",
           SMALL_FILE_LENGTH / SMALL_BLOCK_SIZE, dnBlocks.size());
-      namesystem.readUnlock();
       for(BlockLocation location : locs)
         assertEquals("Block should still have 4 replicas",
             4, location.getNames().length);

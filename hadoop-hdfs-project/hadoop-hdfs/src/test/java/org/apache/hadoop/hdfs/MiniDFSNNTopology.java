@@ -27,113 +27,38 @@ import com.google.common.collect.Lists;
 
 /**
  * This class is used to specify the setup of namenodes when instantiating
- * a MiniDFSCluster. It consists of a set of nameservices, each of which
- * may have one or more namenodes (in the case of HA)
+ * a MiniDFSCluster. It consists of a set of namenodes.
  */
 @InterfaceAudience.LimitedPrivate({"HBase", "HDFS", "Hive", "MapReduce", "Pig", "HOPS"})
 @InterfaceStability.Unstable
 public class MiniDFSNNTopology {
-  private final List<NSConf> nameservices = Lists.newArrayList();
-  private boolean federation;
+  //START_HOP_CODE
+  private final List<NNConf> namenodes = Lists.newArrayList();
 
   public MiniDFSNNTopology() {
   }
 
-  /**
-   * Set up a simple non-federated non-HA NN.
-   */
   public static MiniDFSNNTopology simpleSingleNN(
       int nameNodePort, int nameNodeHttpPort) {
     return new MiniDFSNNTopology()
-      .addNameservice(new MiniDFSNNTopology.NSConf(null)
-        .addNN(new MiniDFSNNTopology.NNConf(null)
+      .addNameNode(new MiniDFSNNTopology.NNConf(null)
           .setHttpPort(nameNodeHttpPort)
-          .setIpcPort(nameNodePort)));
-  }
-  
-
-  /**
-   * Set up an HA topology with a single HA nameservice.
-   */
-  public static MiniDFSNNTopology simpleHATopology() {
-    return new MiniDFSNNTopology()
-      .addNameservice(new MiniDFSNNTopology.NSConf("minidfs-ns")
-        .addNN(new MiniDFSNNTopology.NNConf("nn1"))
-        .addNN(new MiniDFSNNTopology.NNConf("nn2")));
+          .setIpcPort(nameNodePort));
   }
 
-  /**
-   * Set up federated cluster with the given number of nameservices, each
-   * of which has only a single NameNode.
-   */
-  public static MiniDFSNNTopology simpleFederatedTopology(
-      int numNameservices) {
-    MiniDFSNNTopology topology = new MiniDFSNNTopology();
-    for (int i = 1; i <= numNameservices; i++) {
-      topology.addNameservice(new MiniDFSNNTopology.NSConf("ns" + i)
-        .addNN(new MiniDFSNNTopology.NNConf(null)));
-    }
-    topology.setFederation(true);
-    return topology;
-  }
-
-  /**
-   * Set up federated cluster with the given number of nameservices, each
-   * of which has two NameNodes.
-   */
-  public static MiniDFSNNTopology simpleHAFederatedTopology(
-      int numNameservices) {
-    MiniDFSNNTopology topology = new MiniDFSNNTopology();
-    for (int i = 0; i < numNameservices; i++) {
-      topology.addNameservice(new MiniDFSNNTopology.NSConf("ns" + i)
-        .addNN(new MiniDFSNNTopology.NNConf("nn0"))
-        .addNN(new MiniDFSNNTopology.NNConf("nn1")));
-    }
-    topology.setFederation(true);
-    return topology;
-  }
-
-  public MiniDFSNNTopology setFederation(boolean federation) {
-    this.federation = federation;
-    return this;
-  }
-
-  public MiniDFSNNTopology addNameservice(NSConf nameservice) {
-    Preconditions.checkArgument(!nameservice.getNNs().isEmpty(),
-        "Must have at least one NN in a nameservice");
-    this.nameservices.add(nameservice);
+  public MiniDFSNNTopology addNameNode(NNConf namenode) {
+    this.namenodes.add(namenode);
     return this;
   }
 
   public int countNameNodes() {
-    int count = 0;
-    for (NSConf ns : nameservices) {
-      count += ns.nns.size();
-    }
-    return count;
+    return namenodes.size();
   }
   
   public NNConf getOnlyNameNode() {
     Preconditions.checkState(countNameNodes() == 1,
         "must have exactly one NN!");
-    return nameservices.get(0).getNNs().get(0);
-  }
-
-  public boolean isFederated() {
-    return nameservices.size() > 1 || federation;
-  }
-  
-  /**
-   * @return true if at least one of the nameservices
-   * in the topology has HA enabled.
-   */
-  public boolean isHA() {
-    for (NSConf ns : nameservices) {
-      if (ns.getNNs().size() > 1) {
-        return true;
-      }
-    }
-    return false;
+    return namenodes.get(0);
   }
 
   /**
@@ -141,13 +66,11 @@ public class MiniDFSNNTopology {
    * port specified to be non-ephemeral.
    */
   public boolean allHttpPortsSpecified() {
-    for (NSConf ns : nameservices) {
-      for (NNConf nn : ns.getNNs()) {
+      for (NNConf nn : namenodes) {
         if (nn.getHttpPort() == 0) {
           return false;
         }
       }
-    }
     return true;
   }
   
@@ -156,47 +79,23 @@ public class MiniDFSNNTopology {
    * port specified to be non-ephemeral.
    */
   public boolean allIpcPortsSpecified() {
-    for (NSConf ns : nameservices) {
-      for (NNConf nn : ns.getNNs()) {
+      for (NNConf nn : namenodes) {
         if (nn.getIpcPort() == 0) {
           return false;
         }
       }
-    }
     return true;
   }
 
-  public List<NSConf> getNameservices() {
-    return nameservices;
+  public List<NNConf> getNamenodes(){
+    return namenodes;
   }
-  
-  public static class NSConf {
-    private final String id;
-    private final List<NNConf> nns = Lists.newArrayList();
-    
-    public NSConf(String id) {
-      this.id = id;
-    }
-    
-    public NSConf addNN(NNConf nn) {
-      this.nns.add(nn);
-      return this;
-    }
 
-    public String getId() {
-      return id;
-    }
-
-    public List<NNConf> getNNs() {
-      return nns;
-    }
-  }
-  
   public static class NNConf {
     private String nnId;
     private int httpPort;
     private int ipcPort;
-    
+
     public NNConf(String nnId) {
       this.nnId = nnId;
     }
@@ -223,21 +122,17 @@ public class MiniDFSNNTopology {
       return this;
     }
   }
-  
-  
-  //START_HOP_CODE
+
   /**
    * Set up an HOPS Topology
    */
   public static MiniDFSNNTopology simpleHOPSTopology(int nnCount) {
      if(nnCount < 1) return null;
      MiniDFSNNTopology topology = new MiniDFSNNTopology();
-     NSConf conf = new MiniDFSNNTopology.NSConf("minidfs-ns");
      for(int i = 1; i <= nnCount; i++){
-         conf.addNN(new MiniDFSNNTopology.NNConf("nn"+i));
+         topology.addNameNode(new MiniDFSNNTopology.NNConf("nn"+i));
      }
-     topology.addNameservice(conf);
      return topology;
   }
-  //END_HOP_  CODE
+  //END_HOP_CODE
 }

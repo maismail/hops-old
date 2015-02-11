@@ -806,23 +806,6 @@ public class DFSTestUtil {
     return BlockOpResponseProto.parseDelimitedFrom(in);
   }
   
-  public static void setFederatedConfiguration(MiniDFSCluster cluster,
-      Configuration conf) {
-    Set<String> nameservices = new HashSet<String>();
-    for (NameNodeInfo info : cluster.getNameNodeInfos()) {
-      assert info.nameserviceId != null;
-      nameservices.add(info.nameserviceId);
-      conf.set(DFSUtil.addKeySuffixes(DFS_NAMENODE_RPC_ADDRESS_KEY,
-          info.nameserviceId), DFSUtil.createUri(HdfsConstants.HDFS_URI_SCHEME,
-              info.nameNode.getNameNodeAddress()).toString());
-      conf.set(DFSUtil.addKeySuffixes(DFS_NAMENODE_SERVICE_RPC_ADDRESS_KEY,
-          info.nameserviceId), DFSUtil.createUri(HdfsConstants.HDFS_URI_SCHEME,
-              info.nameNode.getNameNodeAddress()).toString());
-    }
-    conf.set(DFSConfigKeys.DFS_NAMESERVICES, Joiner.on(",")
-        .join(nameservices));
-  }
-  
   private static DatanodeID getDatanodeID(String ipAddr) {
     return new DatanodeID(ipAddr, "localhost", "",
         DFSConfigKeys.DFS_DATANODE_DEFAULT_PORT,

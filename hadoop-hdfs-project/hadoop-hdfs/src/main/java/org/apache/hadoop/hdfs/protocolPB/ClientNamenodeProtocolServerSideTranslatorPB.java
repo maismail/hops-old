@@ -47,8 +47,6 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.Create
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.CreateSymlinkResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.DeleteResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FinalizeUpgradeResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FsyncRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.FsyncResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.GetAdditionalDatanodeRequestProto;
@@ -94,12 +92,6 @@ import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenewL
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RenewLeaseResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.ReportBadBlocksRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.ReportBadBlocksResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RestoreFailedStorageRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RestoreFailedStorageResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RollEditsRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.RollEditsResponseProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SaveNamespaceRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SaveNamespaceResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetBalancerBandwidthRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetBalancerBandwidthResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.ClientNamenodeProtocolProtos.SetOwnerRequestProto;
@@ -184,14 +176,8 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
   private static final RenewLeaseResponseProto VOID_RENEWLEASE_RESPONSE = 
   RenewLeaseResponseProto.newBuilder().build();
 
-  private static final SaveNamespaceResponseProto VOID_SAVENAMESPACE_RESPONSE = 
-  SaveNamespaceResponseProto.newBuilder().build();
-
   private static final RefreshNodesResponseProto VOID_REFRESHNODES_RESPONSE = 
   RefreshNodesResponseProto.newBuilder().build();
-
-  private static final FinalizeUpgradeResponseProto VOID_FINALIZEUPGRADE_RESPONSE = 
-  FinalizeUpgradeResponseProto.newBuilder().build();
 
   private static final MetaSaveResponseProto VOID_METASAVE_RESPONSE = 
   MetaSaveResponseProto.newBuilder().build();
@@ -570,19 +556,6 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(e);
     }
   }
-  
-  @Override
-  public RestoreFailedStorageResponseProto restoreFailedStorage(
-      RpcController controller, RestoreFailedStorageRequestProto req)
-      throws ServiceException {
-    try {
-      boolean result = server.restoreFailedStorage(req.getArg());
-      return RestoreFailedStorageResponseProto.newBuilder().setResult(result)
-          .build();
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-  }
 
   @Override
   public GetFsStatsResponseProto getFsStats(RpcController controller,
@@ -632,32 +605,6 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(e);
     }
   }
-  
-  @Override
-  public SaveNamespaceResponseProto saveNamespace(RpcController controller,
-      SaveNamespaceRequestProto req) throws ServiceException {
-    try {
-      server.saveNamespace();
-      return VOID_SAVENAMESPACE_RESPONSE;
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-
-  }
-  
-  @Override
-  public RollEditsResponseProto rollEdits(RpcController controller,
-      RollEditsRequestProto request) throws ServiceException {
-    try {
-      long txid = server.rollEdits();
-      return RollEditsResponseProto.newBuilder()
-          .setNewSegmentTxId(txid)
-          .build();
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
-  }
-
 
   @Override
   public RefreshNodesResponseProto refreshNodes(RpcController controller,
@@ -669,17 +616,6 @@ public class ClientNamenodeProtocolServerSideTranslatorPB implements
       throw new ServiceException(e);
     }
 
-  }
-
-  @Override
-  public FinalizeUpgradeResponseProto finalizeUpgrade(RpcController controller,
-      FinalizeUpgradeRequestProto req) throws ServiceException {
-    try {
-      server.finalizeUpgrade();
-      return VOID_FINALIZEUPGRADE_RESPONSE;
-    } catch (IOException e) {
-      throw new ServiceException(e);
-    }
   }
 
   @Override

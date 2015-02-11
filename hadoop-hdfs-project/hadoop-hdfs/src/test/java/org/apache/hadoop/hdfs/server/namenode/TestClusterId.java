@@ -17,7 +17,6 @@
  */
 package org.apache.hadoop.hdfs.server.namenode;
 
-import static org.apache.hadoop.hdfs.DFSConfigKeys.DFS_NAMENODE_NAME_DIR_KEY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -29,19 +28,12 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.net.URI;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileUtil;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.StartupOption;
-import org.apache.hadoop.hdfs.server.common.Storage;
-import org.apache.hadoop.hdfs.server.common.Storage.StorageDirectory;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
 import org.apache.hadoop.util.ExitUtil;
 import org.apache.hadoop.util.ExitUtil.ExitException;
@@ -56,15 +48,7 @@ public class TestClusterId {
 
   private String getClusterId(Configuration config) throws IOException {
     // see if cluster id not empty.
-    Collection<URI> dirsToFormat = FSNamesystem.getNamespaceDirs(config);
-    List<URI> editsToFormat = FSNamesystem.getNamespaceEditsDirs(config);
-//HOP    FSImage fsImage = new FSImage(config, dirsToFormat, editsToFormat);
-    
-//HOP    Iterator<StorageDirectory> sdit = 
-//      fsImage.getStorage().dirIterator(NNStorage.NameNodeDirType.IMAGE);
-//    StorageDirectory sd = sdit.next();
-//    Properties props = Storage.readPropertiesFile(sd.getVersionFile());
-    String cid = StorageInfo.getStorageInfoFromDB().getClusterID();     //HOP
+    String cid = StorageInfo.getStorageInfoFromDB().getClusterID();
     LOG.info("successfully formated : cid="+cid);
     return cid;
   }
@@ -87,7 +71,6 @@ public class TestClusterId {
     StartupOption.FORMAT.setInteractiveFormat(true);
     
     config = new Configuration();
-    config.set(DFS_NAMENODE_NAME_DIR_KEY, hdfsDir.getPath());
   }
 
   @After
@@ -298,36 +281,6 @@ public class TestClusterId {
   }
 
   /**
-   * Test namenode format with -format -nonInteractive options when a non empty
-   * name directory exists. Format should not succeed.
-   * 
-   * @throws IOException
-   */
-//HOP FSImage is commented out. we are not looking into local dirs anymore. dont care if they exist
-//HOP  @Test
-//  public void testFormatWithNonInteractive() throws IOException {
-//
-//    // we check for a non empty dir, so create a child path
-//    File data = new File(hdfsDir, "file");
-//    if (!data.mkdirs()) {
-//      fail("Failed to create dir " + data.getPath());
-//    }
-//
-//    String[] argv = { "-format", "-nonInteractive" };
-//    try {
-//      NameNode.createNameNode(argv, config);
-//      fail("createNameNode() did not call System.exit()");
-//    } catch (ExitException e) {
-//      assertEquals("Format should have been aborted with exit code 1", 1,
-//          e.status);
-//    }
-//
-//    // check if the version file does not exists.
-//    File version = new File(hdfsDir, "current/VERSION");
-//    assertFalse("Check version should not exist", version.exists());
-//  }
-
-  /**
    * Test namenode format with -format -nonInteractive options when name
    * directory does not exist. Format should succeed.
    * 
@@ -410,42 +363,4 @@ public class TestClusterId {
     String cid = getClusterId(config);
     assertTrue("Didn't get new ClusterId", (cid != null && !cid.equals("")));
   }
-
-  /**
-   * Test namenode format with -format option when a non empty name directory
-   * exists. Enter N when prompted and format should be aborted.
-   * 
-   * @throws IOException
-   * @throws InterruptedException
-   */
-//HOP FSImage is gone. this is not checked
-//HOP  @Test
-//  public void testFormatWithoutForceEnterNo() throws IOException,
-//      InterruptedException {
-//
-//    // we check for a non empty dir, so create a child path
-//    File data = new File(hdfsDir, "file");
-//    if (!data.mkdirs()) {
-//      fail("Failed to create dir " + data.getPath());
-//    }
-//
-//    // capture the input stream
-//    InputStream origIn = System.in;
-//    ByteArrayInputStream bins = new ByteArrayInputStream("N\n".getBytes());
-//    System.setIn(bins);
-//
-//    String[] argv = { "-format" };
-//    try {
-//      NameNode.createNameNode(argv, config);
-//      fail("createNameNode() did not call System.exit()");
-//    } catch (ExitException e) {
-//      assertEquals("Format should not have succeeded", 1, e.status);
-//    }
-//
-//    System.setIn(origIn);
-//
-//    // check if the version file does not exists.
-//    File version = new File(hdfsDir, "current/VERSION");
-//    assertFalse("Check version should not exist", version.exists());
-//  }
 }

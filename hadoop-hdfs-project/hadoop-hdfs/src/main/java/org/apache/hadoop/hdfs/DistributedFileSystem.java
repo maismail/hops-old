@@ -746,49 +746,11 @@ public class DistributedFileSystem extends FileSystem {
   }
 
   /**
-   * Save namespace image.
-   * 
-   * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#saveNamespace()
-   */
-  public void saveNamespace() throws AccessControlException, IOException {
-    dfs.saveNamespace();
-  }
-  
-  /**
-   * Rolls the edit log on the active NameNode.
-   * Requires super-user privileges.
-   * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#rollEdits()
-   * @return the transaction ID of the newly created segment
-   */
-  public long rollEdits() throws AccessControlException, IOException {
-    return dfs.rollEdits();
-  }
-
-  /**
-   * enable/disable/check restoreFaileStorage
-   * 
-   * @see org.apache.hadoop.hdfs.protocol.ClientProtocol#restoreFailedStorage(String arg)
-   */
-  public boolean restoreFailedStorage(String arg)
-      throws AccessControlException, IOException {
-    return dfs.restoreFailedStorage(arg);
-  }
-  
-
-  /**
    * Refreshes the list of hosts and excluded hosts from the configured 
    * files.  
    */
   public void refreshNodes() throws IOException {
     dfs.refreshNodes();
-  }
-
-  /**
-   * Finalize previously upgraded files system state.
-   * @throws IOException
-   */
-  public void finalizeUpgrade() throws IOException {
-    dfs.finalizeUpgrade();
   }
 
   /*

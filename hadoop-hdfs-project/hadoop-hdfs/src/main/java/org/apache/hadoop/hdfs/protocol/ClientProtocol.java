@@ -723,53 +723,12 @@ public interface ClientProtocol {
   public boolean setSafeMode(HdfsConstants.SafeModeAction action, boolean isChecked) 
       throws IOException;
 
-  /**
-   * Save namespace image.
-   * <p>
-   * Saves current namespace into storage directories and reset edits log.
-   * Requires superuser privilege and safe mode.
-   * 
-   * @throws AccessControlException if the superuser privilege is violated.
-   * @throws IOException if image creation failed.
-   */
-  public void saveNamespace() throws AccessControlException, IOException;
-
-  
-  /**
-   * Roll the edit log.
-   * Requires superuser privileges.
-   * 
-   * @throws AccessControlException if the superuser privilege is violated
-   * @throws IOException if log roll fails
-   * @return the txid of the new segment
-   */
-  @Idempotent
-  public long rollEdits() throws AccessControlException, IOException;
-
-  /**
-   * Enable/Disable restore failed storage.
-   * <p>
-   * sets flag to enable restore of failed storage replicas
-   * 
-   * @throws AccessControlException if the superuser privilege is violated.
-   */
-  public boolean restoreFailedStorage(String arg) 
-      throws AccessControlException, IOException;
 
   /**
    * Tells the namenode to reread the hosts and exclude files. 
    * @throws IOException
    */
   public void refreshNodes() throws IOException;
-
-  /**
-   * Finalize previous upgrade.
-   * Remove file system state saved during the upgrade.
-   * The upgrade will become irreversible.
-   * 
-   * @throws IOException
-   */
-  public void finalizeUpgrade() throws IOException;
 
   /**
    * @return CorruptFileBlocks, containing a list of corrupt files (with

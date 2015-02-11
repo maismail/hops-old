@@ -38,18 +38,12 @@ function print_usage(){
   echo "       where COMMAND is one of:"
   echo "  dfs                  run a filesystem command on the file systems supported in Hadoop."
   echo "  namenode -format     format the DFS filesystem"
-  echo "  secondarynamenode    run the DFS secondary namenode"
   echo "  namenode             run the DFS namenode"
-  echo "  journalnode          run the DFS journalnode"
-  echo "  zkfc                 run the ZK Failover Controller daemon"
   echo "  datanode             run a DFS datanode"
   echo "  dfsadmin             run a DFS admin client"
-  echo "  haadmin              run a DFS HA admin client"
   echo "  fsck                 run a DFS filesystem checking utility"
   echo "  balancer             run a cluster balancing utility"
   echo "  jmxget               get JMX exported values from NameNode or DataNode."
-  echo "  oiv                  apply the offline fsimage viewer to an fsimage"
-  echo "  oev                  apply the offline edits viewer to an edits file"
   echo "  fetchdt              fetch a delegation token from the NameNode"
   echo "  getconf              get config values from configuration"
   echo "  groups               get the groups which users belong to"
@@ -98,12 +92,6 @@ fi
 if [ "$COMMAND" = "namenode" ] ; then
   CLASS='org.apache.hadoop.hdfs.server.namenode.NameNode'
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_NAMENODE_OPTS"
-elif [ "$COMMAND" = "zkfc" ] ; then
-  CLASS='org.apache.hadoop.hdfs.tools.DFSZKFailoverController'
-  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_ZKFC_OPTS"
-elif [ "$COMMAND" = "secondarynamenode" ] ; then
-  CLASS='org.apache.hadoop.hdfs.server.namenode.SecondaryNameNode'
-  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_SECONDARYNAMENODE_OPTS"
 elif [ "$COMMAND" = "datanode" ] ; then
   CLASS='org.apache.hadoop.hdfs.server.datanode.DataNode'
   if [ "$starting_secure_dn" = "true" ]; then
@@ -111,18 +99,11 @@ elif [ "$COMMAND" = "datanode" ] ; then
   else
     HADOOP_OPTS="$HADOOP_OPTS -server $HADOOP_DATANODE_OPTS"
   fi
-elif [ "$COMMAND" = "journalnode" ] ; then
-  CLASS='org.apache.hadoop.hdfs.qjournal.server.JournalNode'
-  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_JOURNALNODE_OPTS"
 elif [ "$COMMAND" = "dfs" ] ; then
   CLASS=org.apache.hadoop.fs.FsShell
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
 elif [ "$COMMAND" = "dfsadmin" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.DFSAdmin
-  HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
-elif [ "$COMMAND" = "haadmin" ] ; then
-  CLASS=org.apache.hadoop.hdfs.tools.DFSHAAdmin
-  CLASSPATH=${CLASSPATH}:${TOOL_PATH}
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_CLIENT_OPTS"
 elif [ "$COMMAND" = "fsck" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.DFSck
@@ -132,10 +113,6 @@ elif [ "$COMMAND" = "balancer" ] ; then
   HADOOP_OPTS="$HADOOP_OPTS $HADOOP_BALANCER_OPTS"
 elif [ "$COMMAND" = "jmxget" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.JMXGet
-elif [ "$COMMAND" = "oiv" ] ; then
-  CLASS=org.apache.hadoop.hdfs.tools.offlineImageViewer.OfflineImageViewer
-elif [ "$COMMAND" = "oev" ] ; then
-  CLASS=org.apache.hadoop.hdfs.tools.offlineEditsViewer.OfflineEditsViewer
 elif [ "$COMMAND" = "fetchdt" ] ; then
   CLASS=org.apache.hadoop.hdfs.tools.DelegationTokenFetcher
 elif [ "$COMMAND" = "getconf" ] ; then

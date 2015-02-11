@@ -44,7 +44,9 @@ import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.RemoteException;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.log4j.Level;
+import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -69,8 +71,8 @@ public class TestFileStatus {
   private static DFSClient dfsClient;
   private static Path file1;
   
-  @BeforeClass
-  public static void testSetUp() throws Exception {
+  @Before
+  public void testSetUp() throws Exception {
     conf = new HdfsConfiguration();
     conf.setInt(DFSConfigKeys.DFS_LIST_LIMIT, 2);
     cluster = new MiniDFSCluster.Builder(conf).build();
@@ -82,8 +84,8 @@ public class TestFileStatus {
     writeFile(fs, file1, 1, fileSize, blockSize);
   }
   
-  @AfterClass
-  public static void testTearDown() throws Exception {
+  @After
+  public void testTearDown() throws Exception {
     fs.close();
     cluster.shutdown();
   }

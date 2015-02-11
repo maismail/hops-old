@@ -65,14 +65,6 @@
 </property>
 
 <property>
-  <name>dfs.namenode.secondary.http-address</name>
-  <value>0.0.0.0:50090</value>
-  <description>
-    The secondary namenode http server address and port.
-  </description>
-</property>
-
-<property>
   <name>dfs.datanode.address</name>
   <value>0.0.0.0:50010</value>
   <description>
@@ -168,24 +160,6 @@
   NameNode for communication and display purposes.
   </description>
  </property>
- 
- <property>
-  <name>dfs.namenode.backup.address</name>
-  <value>0.0.0.0:50100</value>
-  <description>
-    The backup node server address and port.
-    If the port is 0 then the server will start on a free port.
-  </description>
-</property>
- 
- <property>
-  <name>dfs.namenode.backup.http-address</name>
-  <value>0.0.0.0:50105</value>
-  <description>
-    The backup node http server address and port.
-    If the port is 0 then the server will start on a free port.
-  </description>
-</property>
 
 <property>
   <name>dfs.namenode.replication.considerLoad</name>
@@ -595,98 +569,6 @@
 </property>
 
 <property>
-  <name>dfs.namenode.checkpoint.dir</name>
-  <value>file://${hadoop.tmp.dir}/dfs/namesecondary</value>
-  <description>Determines where on the local filesystem the DFS secondary
-      name node should store the temporary images to merge.
-      If this is a comma-delimited list of directories then the image is
-      replicated in all of the directories for redundancy.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.checkpoint.edits.dir</name>
-  <value>${dfs.namenode.checkpoint.dir}</value>
-  <description>Determines where on the local filesystem the DFS secondary
-      name node should store the temporary edits to merge.
-      If this is a comma-delimited list of directoires then teh edits is
-      replicated in all of the directoires for redundancy.
-      Default value is same as dfs.namenode.checkpoint.dir
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.checkpoint.period</name>
-  <value>3600</value>
-  <description>The number of seconds between two periodic checkpoints.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.checkpoint.txns</name>
-  <value>40000</value>
-  <description>The Secondary NameNode or CheckpointNode will create a checkpoint
-  of the namespace every 'dfs.namenode.checkpoint.txns' transactions, regardless
-  of whether 'dfs.namenode.checkpoint.period' has expired.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.checkpoint.check.period</name>
-  <value>60</value>
-  <description>The SecondaryNameNode and CheckpointNode will poll the NameNode
-  every 'dfs.namenode.checkpoint.check.period' seconds to query the number
-  of uncheckpointed transactions.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.checkpoint.max-retries</name>
-  <value>3</value>
-  <description>The SecondaryNameNode retries failed checkpointing. If the 
-  failure occurs while loading fsimage or replaying edits, the number of
-  retries is limited by this variable. 
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.num.checkpoints.retained</name>
-  <value>2</value>
-  <description>The number of image checkpoint files that will be retained by
-  the NameNode and Secondary NameNode in their storage directories. All edit
-  logs necessary to recover an up-to-date namespace from the oldest retained
-  checkpoint will also be retained.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.num.extra.edits.retained</name>
-  <value>1000000</value>
-  <description>The number of extra transactions which should be retained
-  beyond what is minimally necessary for a NN restart. This can be useful for
-  audit purposes or for an HA setup where a remote Standby Node may have
-  been offline for some time and need to have a longer backlog of retained
-  edits in order to start again.
-  Typically each edit is on the order of a few hundred bytes, so the default
-  of 1 million edits should be on the order of hundreds of MBs or low GBs.
-
-  NOTE: Fewer extra edits may be retained than value specified for this setting
-  if doing so would mean that more segments would be retained than the number
-  configured by dfs.namenode.max.extra.edits.segments.retained.
-  </description>
-</property>
-
-<property>
-  <name>dfs.namenode.max.extra.edits.segments.retained</name>
-  <value>10000</value>
-  <description>The maximum number of extra edit log segments which should be retained
-  beyond what is minimally necessary for a NN restart. When used in conjunction with
-  dfs.namenode.num.extra.edits.retained, this configuration property serves to cap
-  the number of extra edits files to a reasonable value.
-  </description>
-</property>
-
-<property>
   <name>dfs.namenode.delegation.key.update-interval</name>
   <value>86400000</value>
   <description>The update interval for master key for delegation tokens 
@@ -715,31 +597,6 @@
   <description>The number of volumes that are allowed to
   fail before a datanode stops offering service. By default
   any volume failure will cause a datanode to shutdown.
-  </description>
-</property>
-
-<property>
-  <name>dfs.image.compress</name>
-  <value>false</value>
-  <description>Should the dfs image be compressed?
-  </description>
-</property>
-
-<property>
-  <name>dfs.image.compression.codec</name>
-  <value>org.apache.hadoop.io.compress.DefaultCodec</value>
-  <description>If the dfs image is compressed, how should they be compressed?
-               This has to be a codec defined in io.compression.codecs.
-  </description>
-</property>
-
-<property>
-  <name>dfs.image.transfer.bandwidthPerSec</name>
-  <value>0</value>
-  <description>
-        Specifies the maximum amount of bandwidth that can be utilized for image
-        transfer in term of the number of bytes per second.
-        A default value of 0 indicates that throttling is disabled. 
   </description>
 </property>
 
@@ -999,11 +856,6 @@
 
 <property>
   <name>dfs.namenode.kerberos.internal.spnego.principal</name>
-  <value>${dfs.web.authentication.kerberos.principal}</value>
-</property>
-
-<property>
-  <name>dfs.secondary.namenode.kerberos.internal.spnego.principal</name>
   <value>${dfs.web.authentication.kerberos.principal}</value>
 </property>
 

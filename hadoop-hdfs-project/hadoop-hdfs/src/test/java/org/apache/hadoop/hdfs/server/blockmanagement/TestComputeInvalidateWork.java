@@ -49,8 +49,8 @@ public class TestComputeInvalidateWork {
   public void testCompInvalidate() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     final int NUM_OF_DATANODES = 3;
-    conf.setBoolean(DFSConfigKeys.DFS_SYSTEM_LEVEL_LOCK_ENABLED_KEY, true);
-    
+    conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 120);
+
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(NUM_OF_DATANODES).build();
     try {
       cluster.waitActive();
@@ -60,9 +60,7 @@ public class TestComputeInvalidateWork {
       final DatanodeDescriptor[] nodes = bm.getDatanodeManager(
           ).getHeartbeatManager().getDatanodes();
       assertEquals(nodes.length, NUM_OF_DATANODES);
-      
-      namesystem.writeLock();
-      try {
+
         for (int i=0; i<nodes.length; i++) {
           for(int j=0; j<3*blockInvalidateLimit+1; j++) {
             Block block = new Block(i*(blockInvalidateLimit+1)+j, 0, 
@@ -70,8 +68,8 @@ public class TestComputeInvalidateWork {
             addToInvalidates(bm, block, nodes[i], namesystem);
           }
         }
-        
-        assertEquals(blockInvalidateLimit*NUM_OF_DATANODES, 
+
+        assertEquals(blockInvalidateLimit*NUM_OF_DATANODES,
             bm.computeInvalidateWork(NUM_OF_DATANODES+1));
         assertEquals(blockInvalidateLimit*NUM_OF_DATANODES, 
             bm.computeInvalidateWork(NUM_OF_DATANODES));
@@ -84,9 +82,7 @@ public class TestComputeInvalidateWork {
           assertEquals(workCount, blockInvalidateLimit);
           assertEquals(2, bm.computeInvalidateWork(2));
         }
-      } finally {
-        namesystem.writeUnlock();
-      }
+
     } finally {
       cluster.shutdown();
     }

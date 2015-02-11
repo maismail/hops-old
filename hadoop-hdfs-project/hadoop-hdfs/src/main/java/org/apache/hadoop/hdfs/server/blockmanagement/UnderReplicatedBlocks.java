@@ -255,21 +255,6 @@ class UnderReplicatedBlocks implements Iterable<Block> {
       }
       return true;
     }
-//    else {
-//      // Try to remove the block from all queues if the block was
-//      // not found in the queue for the given priority level.
-//      for (int i = 0; i < LEVEL; i++) {
-//        if (remove(block)) {
-//          if(NameNode.blockStateChangeLog.isDebugEnabled()) {
-//            NameNode.blockStateChangeLog.debug(
-//                    "BLOCK* NameSystem.UnderReplicationBlock.remove: "
-//                    + "Removing block " + block
-//              + " from priority queue "+ i);
-//          }
-//          return true;
-//        }
-//      }
-//    }
     return false;
   }
 
@@ -524,18 +509,7 @@ class UnderReplicatedBlocks implements Iterable<Block> {
     priorityToReplIdx.set(priority, replIdx);
     setReplicationIndex(priorityToReplIdx);
   }
-  
-  
-  
-//  private boolean add(Block block, int priLevel) throws PersistanceException {
-//    UnderReplicatedBlock urb = getUnderReplicatedBlock(block);
-//    if (urb == null) {
-//      addUnderReplicatedBlock(new UnderReplicatedBlock(priLevel, block.getBlockId()));
-//      return true;
-//    }
-//    return false;
-//  }
-  
+
   public List<List<Block>> chooseUnderReplicatedBlocks(
           final int blocksToProcess) throws IOException {
     return (List<List<Block>>) new HopsTransactionalRequestHandler(HDFSOperationType.CHOOSE_UNDER_REPLICATED_BLKS) {

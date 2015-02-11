@@ -49,12 +49,7 @@ public class BlockManagerTestUtil {
   /** @return the datanode descriptor for the given the given storageID. */
   public static DatanodeDescriptor getDatanode(final FSNamesystem ns,
       final String storageID) {
-    ns.readLock();
-    try {
       return ns.getBlockManager().getDatanodeManager().getDatanode(storageID);
-    } finally {
-      ns.readUnlock();
-    }
   }
 
 
@@ -71,8 +66,6 @@ public class BlockManagerTestUtil {
    */
   public static int[] getReplicaInfo(final FSNamesystem namesystem, final Block b) throws IOException {
     final BlockManager bm = namesystem.getBlockManager();
-    namesystem.readLock();
-    try {
       return (int[]) new HopsTransactionalRequestHandler(HDFSOperationType.TEST) {
            INodeIdentifier inodeIdentifier;
         @Override
@@ -94,9 +87,6 @@ public class BlockManagerTestUtil {
             bm.neededReplications.contains(bm.getStoredBlock(b)) ? 1 : 0};
         }
       }.handle(namesystem);
-    } finally {
-      namesystem.readUnlock();
-    }
   }
 
   /**
@@ -183,8 +173,6 @@ public class BlockManagerTestUtil {
    */
   public static void noticeDeadDatanode(NameNode nn, String dnName) throws IOException {
     FSNamesystem namesystem = nn.getNamesystem();
-    namesystem.writeLock();
-    try {
       DatanodeManager dnm = namesystem.getBlockManager().getDatanodeManager();
       HeartbeatManager hbm = dnm.getHeartbeatManager();
       DatanodeDescriptor[] dnds = hbm.getDatanodes();
@@ -200,9 +188,6 @@ public class BlockManagerTestUtil {
         theDND.setLastUpdate(0);
         hbm.heartbeatCheck();
       }
-    } finally {
-      namesystem.writeUnlock();
-    }
   }
   
   /**

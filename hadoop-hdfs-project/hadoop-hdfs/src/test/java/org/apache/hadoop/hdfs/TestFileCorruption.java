@@ -154,14 +154,9 @@ public class TestFileCorruption {
       DatanodeRegistration dnR = 
         DataNodeTestUtils.getDNRegistrationForBP(dataNode, blk.getBlockPoolId());
       FSNamesystem ns = cluster.getNamesystem();
-      ns.writeLock();
-      try {
         cluster.getNamesystem().getBlockManager().findAndMarkBlockAsCorrupt(
             blk, new DatanodeInfo(dnR), "TEST");
-      } finally {
-        ns.writeUnlock();
-      }
-      
+
       // open the file
       fs.open(FILE_PATH);
       

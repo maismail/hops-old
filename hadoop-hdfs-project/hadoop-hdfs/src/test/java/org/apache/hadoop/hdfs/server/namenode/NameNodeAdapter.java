@@ -18,7 +18,6 @@
 package org.apache.hadoop.hdfs.server.namenode;
 
 import org.apache.hadoop.fs.UnresolvedLinkException;
-import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.fs.permission.PermissionStatus;
 import org.apache.hadoop.hdfs.TestLease;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
@@ -26,14 +25,12 @@ import org.apache.hadoop.hdfs.protocol.HdfsFileStatus;
 import org.apache.hadoop.hdfs.protocol.LocatedBlocks;
 import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenSecretManager;
 import org.apache.hadoop.hdfs.server.blockmanagement.DatanodeDescriptor;
-import org.apache.hadoop.hdfs.server.namenode.FSEditLogOp.MkdirOp;
 import org.apache.hadoop.hdfs.server.namenode.FSNamesystem.SafeModeInfo;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.HeartbeatResponse;
 import org.apache.hadoop.ipc.Server;
 import org.apache.hadoop.ipc.StandbyException;
 import org.apache.hadoop.security.AccessControlException;
-import org.mockito.Mockito;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.transaction.handler.HDFSOperationType;
 import se.sics.hop.transaction.handler.HopsTransactionalRequestHandler;
@@ -41,7 +38,6 @@ import se.sics.hop.transaction.lock.TransactionLockTypes.LockType;
 import se.sics.hop.transaction.lock.TransactionLocks;
 
 import java.io.IOException;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * This is a utility class to expose NameNode functionality for unit tests.
@@ -75,11 +71,6 @@ public class NameNodeAdapter {
     return namenode.getNamesystem().mkdirs(src, permissions, createParent);
   }
   
-  public static void saveNamespace(NameNode namenode)
-      throws AccessControlException, IOException {
-    namenode.getNamesystem().saveNamespace();
-  }
-  
   public static void enterSafeMode(NameNode namenode, boolean resourcesLow)
       throws IOException {
     namenode.getNamesystem().enterSafeMode(resourcesLow);
@@ -89,10 +80,6 @@ public class NameNodeAdapter {
     namenode.getNamesystem().leaveSafeMode();
   }
   
-//HOP  public static void abortEditLogs(NameNode nn) {
-//    FSEditLog el = nn.getFSImage().getEditLog();
-//    el.abortCurrentLogSegment();
-//  }
   
   /**
    * Get the internal RPC server instance.
@@ -175,12 +162,7 @@ public class NameNodeAdapter {
    */
   public static DatanodeDescriptor getDatanode(final FSNamesystem ns,
       DatanodeID id) throws IOException {
-    ns.readLock();
-    try {
       return ns.getBlockManager().getDatanodeManager().getDatanode(id);
-    } finally {
-      ns.readUnlock();
-    }
   }
   
   /**
@@ -188,42 +170,6 @@ public class NameNodeAdapter {
    */
   public static long[] getStats(final FSNamesystem fsn) throws IOException {
     return fsn.getStats();
-  }
-  
-  public static ReentrantReadWriteLock spyOnFsLock(FSNamesystem fsn) {
-    ReentrantReadWriteLock spy = Mockito.spy(fsn.getFsLockForTests());
-    fsn.setFsLockForTests(spy);
-    return spy;
-  }
-
-//HOP  public static FSImage spyOnFsImage(NameNode nn1) {
-//    FSImage spy = Mockito.spy(nn1.getNamesystem().dir.fsImage);
-//    nn1.getNamesystem().dir.fsImage = spy;
-//    return spy;
-//  }
-  
-//HOP  public static JournalSet spyOnJournalSet(NameNode nn) {
-//    FSEditLog editLog = nn.getFSImage().getEditLog();
-//    JournalSet js = Mockito.spy(editLog.getJournalSet());
-//    editLog.setJournalSetForTesting(js);
-//    return js;
-//  }
-  
-  public static String getMkdirOpPath(FSEditLogOp op) {
-    if (op.opCode == FSEditLogOpCodes.OP_MKDIR) {
-      return ((MkdirOp) op).path;
-    } else {
-      return null;
-    }
-  }
-  
-  public static FSEditLogOp createMkdirOp(String path) {
-    MkdirOp op = MkdirOp.getInstance(new FSEditLogOp.OpInstanceCache())
-      .setPath(path)
-      .setTimestamp(0)
-      .setPermissionStatus(new PermissionStatus(
-              "testuser", "testgroup", FsPermission.getDefault()));
-    return op;
   }
   
   /**
@@ -249,8 +195,4 @@ public class NameNodeAdapter {
     }
     return smi.initializedReplQueues;
   }
-  
-//HOP  public static File getInProgressEditsFile(StorageDirectory sd, long startTxId) {
-//    return NNStorage.getInProgressEditsFile(sd, startTxId);
-//  }
 }

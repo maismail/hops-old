@@ -4,6 +4,8 @@ import com.google.common.collect.Sets;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -281,29 +283,28 @@ public class NamenodeSelector extends Thread {
         }
 
         if (anl == null) { // default failed, now try the list of NNs from the config file
-            String[] namenodes = getNamenodesFromConfigFile(conf);
-            LOG.debug("Trying to the list of NN from the config file  " + Arrays.toString(namenodes));
-            if (namenodes.length > 0) {
-                for (int i = 0; i < namenodes.length; i++) {
-                    try {
-                        LOG.debug("Trying to connect to  " + namenodes[i]);
-                        URI uri = new URI(namenodes[i]);
-                        NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo = NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
-                        handle = proxyInfo.getProxy();
-                        if (handle != null) {
-                            anl = handle.getActiveNamenodesForClient();
-                            RPC.stopProxy(handle);
-                        }
-                        if (anl != null && !anl.getActiveNodes().isEmpty()) {
-                            
-                            break; // we got the list
-                        }
-                    } catch (Exception e) {
-                        LOG.error(e);
-                        e.printStackTrace();
-                        if(handle!=null){
-                            RPC.stopProxy(handle);
-                        }
+            List<URI> namenodes = DFSUtil.getNameNodesRPCAddressesAsURIs(conf);
+            LOG.debug("Trying to the list of NN from the config file  " + namenodes);
+            for (URI nn : namenodes) {
+                try {
+                    LOG.debug("Trying to connect to  " + nn);
+                    NameNodeProxies.ProxyAndInfo<ClientProtocol> proxyInfo =
+                        NameNodeProxies.createProxy(conf, nn, ClientProtocol
+                            .class);
+                    handle = proxyInfo.getProxy();
+                    if (handle != null) {
+                        anl = handle.getActiveNamenodesForClient();
+                        RPC.stopProxy(handle);
+                    }
+                    if (anl != null && !anl.getActiveNodes().isEmpty()) {
+
+                        break; // we got the list
+                    }
+                } catch (Exception e) {
+                    LOG.error(e);
+                    e.printStackTrace();
+                    if(handle!=null){
+                        RPC.stopProxy(handle);
                     }
                 }
             }
@@ -348,13 +349,6 @@ public class NamenodeSelector extends Thread {
         }
     }
 
-    private String[] getNamenodesFromConfigFile(Configuration conf) {
-        String namenodes = conf.get(DFSConfigKeys.DFS_NAMENODES_RPC_ADDRESS_KEY);
-        if (namenodes == null || namenodes.length() == 0) {
-            return new String[0];
-        }
-        return namenodes.split(",");
-    }
 
     private synchronized void refreshNamenodeList(SortedActiveNodeList anl) {
         if (anl == null) {

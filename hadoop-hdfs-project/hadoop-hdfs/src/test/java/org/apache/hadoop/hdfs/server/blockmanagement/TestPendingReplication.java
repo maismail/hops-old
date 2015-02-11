@@ -202,15 +202,10 @@ public class TestPendingReplication {
       // 3. mark a couple of blocks as corrupt
       LocatedBlock block = NameNodeAdapter.getBlockLocations(
           cluster.getNameNode(), filePath.toString(), 0, 1).get(0);
-      cluster.getNamesystem().writeLock();
-      try {
         bm.findAndMarkBlockAsCorrupt(block.getBlock(), block.getLocations()[0],
             "TEST");
         bm.findAndMarkBlockAsCorrupt(block.getBlock(), block.getLocations()[1],
             "TEST");
-      } finally {
-        cluster.getNamesystem().writeUnlock();
-      }
       BlockManagerTestUtil.computeAllPendingWork(bm);
       BlockManagerTestUtil.updateState(bm);
       assertEquals(bm.getPendingReplicationBlocksCount(), 1L);

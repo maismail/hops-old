@@ -151,13 +151,6 @@ class BPOfferService implements Runnable {
     }
     Set<InetSocketAddress> newAddrs = Sets.newHashSet(addrs);
 
-//HOP    if (!Sets.symmetricDifference(oldAddrs, newAddrs).isEmpty()) {
-//      // Keep things simple for now -- we can implement this at a later date.
-//      throw new IOException(
-//          "HA does not currently support adding a new standby to a running DN. " +
-//          "Please do a rolling restart of DNs to reconfigure the list of NNs.");
-//    }
-
     //START_HOP_CODE
     SetView<InetSocketAddress> deadNNs = Sets.difference(oldAddrs, newAddrs);
     SetView<InetSocketAddress> newNNs = Sets.difference(newAddrs, oldAddrs);
@@ -259,9 +252,7 @@ class BPOfferService implements Runnable {
             ReceivedDeletedBlockInfo.BlockStatus.RECEIVED_BLOCK,
             delHint);
 
-//HOP    for (BPServiceActor actor : bpServices) {
     notifyNamenodeBlockImmediatelyInt(bInfo);
-//HOP    }
   }
 
   private void checkBlock(ExtendedBlock block) {
@@ -282,9 +273,7 @@ class BPOfferService implements Runnable {
     ReceivedDeletedBlockInfo bInfo = new ReceivedDeletedBlockInfo(
             block.getLocalBlock(), BlockStatus.DELETED_BLOCK, null);
 
-//HOP    for (BPServiceActor actor : bpServices) {
     notifyNamenodeDeletedBlockInt(bInfo);
-//HOP    }
   }
 
   void notifyNamenodeReceivingBlock(ExtendedBlock block) {
@@ -292,9 +281,7 @@ class BPOfferService implements Runnable {
     ReceivedDeletedBlockInfo bInfo = new ReceivedDeletedBlockInfo(
             block.getLocalBlock(), BlockStatus.RECEIVING_BLOCK, null);
 
-//HOP    for (BPServiceActor actor : bpServices) {
     notifyNamenodeBlockImmediatelyInt(bInfo);
-//HOP    }
   }
 
   //This must be called only by blockPoolManager
@@ -442,13 +429,11 @@ class BPOfferService implements Runnable {
    * Ask each of the actors to report a bad block hosted on another DN.
    */
   void reportRemoteBadBlock(DatanodeInfo dnInfo, ExtendedBlock block) {
-//HOP    for (BPServiceActor actor : bpServices) {
     try {
       reportRemoteBadBlockWithRetry(dnInfo, block);
     } catch (IOException e) {
         LOG.warn("Couldn't report bad block " + block + ""+e);
     }
-//    }
   }
 
   /**
@@ -468,54 +453,6 @@ class BPOfferService implements Runnable {
     return Lists.newArrayList(bpServices);
   }
 
-//  /**
-//   * Update the BPOS's view of which NN is active, based on a heartbeat
-//   * response from one of the actors.
-//   * 
-//   * @param actor the actor which received the heartbeat
-//   * @param nnHaState the HA-related heartbeat contents
-//   */
-//  synchronized void updateActorStatesFromHeartbeat(
-//      BPServiceActor actor,
-//      NNHAStatusHeartbeat nnHaState) {
-//    final long txid = nnHaState.getTxId();
-//    
-//    final boolean nnClaimsActive =
-//      nnHaState.getState() == HAServiceState.ACTIVE;
-//    final boolean bposThinksActive = bpServiceToActive == actor;
-//    final boolean isMoreRecentClaim = txid > lastActiveClaimTxId; 
-//    
-//    if (nnClaimsActive && !bposThinksActive) {
-//      LOG.info("Namenode " + actor + " trying to claim ACTIVE state with " +
-//          "txid=" + txid);
-//      if (!isMoreRecentClaim) {
-//        // Split-brain scenario - an NN is trying to claim active
-//        // state when a different NN has already claimed it with a higher
-//        // txid.
-//        LOG.warn("NN " + actor + " tried to claim ACTIVE state at txid=" +
-//            txid + " but there was already a more recent claim at txid=" +
-//            lastActiveClaimTxId);
-//        return;
-//      } else {
-//        if (bpServiceToActive == null) {
-//          LOG.info("Acknowledging ACTIVE Namenode " + actor);
-//        } else {
-//          LOG.info("Namenode " + actor + " taking over ACTIVE state from " +
-//              bpServiceToActive + " at higher txid=" + txid);
-//        }
-//        bpServiceToActive = actor;
-//      }
-//    } else if (!nnClaimsActive && bposThinksActive) {
-//      LOG.info("Namenode " + actor + " relinquishing ACTIVE state with " +
-//          "txid=" + nnHaState.getTxId());
-//      bpServiceToActive = null;
-//    }
-//    
-//    if (bpServiceToActive == actor) {
-//      assert txid >= lastActiveClaimTxId;
-//      lastActiveClaimTxId = txid;
-//    }
-//  }
   /**
    * @return true if the given NN address is one of the NNs for this block pool
    */
@@ -538,9 +475,7 @@ class BPOfferService implements Runnable {
    */
   @VisibleForTesting
   void triggerBlockReportForTests() throws IOException {
-//HOP    for (BPServiceActor actor : bpServices) {
     triggerBlockReportForTestsInt();
-//    }
   }
 
   /**
@@ -548,9 +483,7 @@ class BPOfferService implements Runnable {
    */
   @VisibleForTesting
   void triggerDeletionReportForTests() throws IOException {
-//HOP    for (BPServiceActor actor : bpServices) {
     triggerDeletionReportForTestsInt();
-//    }
   }
 
   /**
@@ -567,11 +500,7 @@ class BPOfferService implements Runnable {
           BPServiceActor actor) throws IOException {
 
     assert bpServices.contains(actor);
-//HOP    if (actor == bpServiceToActive) {
     return processCommandFromActive(cmd, actor);
-//HOP    } else {
-//      return processCommandFromStandby(cmd, actor);
-//    }
   }
 
   /**
@@ -653,38 +582,6 @@ class BPOfferService implements Runnable {
                   + "to: " + bandwidth + " bytes/s.");
           dxcs.balanceThrottler.setBandwidth(bandwidth);
         }
-        break;
-      default:
-        LOG.warn("Unknown DatanodeCommand action: " + cmd.getAction());
-    }
-    return true;
-  }
-
-  private boolean processCommandFromStandby(DatanodeCommand cmd,
-          BPServiceActor actor) throws IOException {
-    if (cmd == null) {
-      return true;
-    }
-    switch (cmd.getAction()) {
-      case DatanodeProtocol.DNA_REGISTER:
-        // namenode requested a registration - at start or if NN lost contact
-        LOG.info("DatanodeCommand action from standby: DNA_REGISTER");
-        actor.reRegister();
-        break;
-      case DatanodeProtocol.DNA_ACCESSKEYUPDATE:
-        LOG.info("DatanodeCommand action from standby: DNA_ACCESSKEYUPDATE");
-        if (dn.isBlockTokenEnabled) {
-          dn.blockPoolTokenSecretManager.addKeys(
-                  getBlockPoolId(),
-                  ((KeyUpdateCommand) cmd).getExportedKeys());
-        }
-        break;
-      case DatanodeProtocol.DNA_TRANSFER:
-      case DatanodeProtocol.DNA_INVALIDATE:
-      case DatanodeProtocol.DNA_SHUTDOWN:
-      case DatanodeProtocol.DNA_RECOVERBLOCK:
-      case DatanodeProtocol.DNA_BALANCERBANDWIDTHUPDATE:
-        LOG.warn("Got a command from standby NN - ignoring command:" + cmd.getAction());
         break;
       default:
         LOG.warn("Unknown DatanodeCommand action: " + cmd.getAction());

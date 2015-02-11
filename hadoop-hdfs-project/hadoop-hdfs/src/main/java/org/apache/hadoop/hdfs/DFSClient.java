@@ -981,18 +981,7 @@ public class DFSClient implements java.io.Closeable {
     private static ClientProtocol getNNProxy(
         Token<DelegationTokenIdentifier> token, Configuration conf)
         throws IOException {
-      URI uri = HAUtil.getServiceUriFromToken(token);
-      if (HAUtil.isTokenForLogicalUri(token) &&
-          !HAUtil.isLogicalUri(conf, uri)) {
-        // If the token is for a logical nameservice, but the configuration
-        // we have disagrees about that, we can't actually renew it.
-        // This can be the case in MR, for example, if the RM doesn't
-        // have all of the HA clusters configured in its configuration.
-        throw new IOException("Unable to map logical nameservice URI '" +
-            uri + "' to a NameNode. Local configuration does not have " +
-            "a failover proxy provider configured.");
-      }
-      
+      URI uri = DFSUtil.getServiceUriFromToken(token);
       NameNodeProxies.ProxyAndInfo<ClientProtocol> info =
         NameNodeProxies.createProxy(conf, uri, ClientProtocol.class);
       assert info.getDelegationTokenService().equals(token.getService()) :
@@ -2341,62 +2330,6 @@ public class DFSClient implements java.io.Closeable {
   }
 
   /**
-   * Save namespace image.
-   * 
-   * @see ClientProtocol#saveNamespace()
-   */
-  void saveNamespace() throws AccessControlException, IOException {
-    try {
-      ClientActionHandler handler = new ClientActionHandler() {
-        @Override
-        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-          namenode.saveNamespace();
-          return null;
-        }
-      };
-      doClientActionWithRetry(handler, "saveNamespace");
-    } catch(RemoteException re) {
-      throw re.unwrapRemoteException(AccessControlException.class);
-    }
-  }
-
-  /**
-   * Rolls the edit log on the active NameNode.
-   * @return the txid of the new log segment 
-   *
-   * @see ClientProtocol#rollEdits()
-   */
-  long rollEdits() throws AccessControlException, IOException {
-    try {
-      ClientActionHandler handler = new ClientActionHandler(){
-        @Override
-        public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-          return namenode.rollEdits();
-        }
-      };
-      return (Long) doClientActionWithRetry(handler, "rollEdits");
-    } catch(RemoteException re) {
-      throw re.unwrapRemoteException(AccessControlException.class);
-    }
-  }
-  
-  /**
-   * enable/disable restore failed storage.
-   * 
-   * @see ClientProtocol#restoreFailedStorage(String arg)
-   */
-  boolean restoreFailedStorage(final String arg)
-      throws AccessControlException, IOException{
-    ClientActionHandler handler = new ClientActionHandler(){
-      @Override
-      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-        return namenode.restoreFailedStorage(arg);
-      }
-    };
-    return (Boolean) doClientActionWithRetry(handler, "restoreFailedStorage");
-  }
-
-  /**
    * Refresh the hosts and exclude files.  (Rereads them.)
    * See {@link ClientProtocol#refreshNodes()} 
    * for more details.
@@ -2447,20 +2380,6 @@ public class DFSClient implements java.io.Closeable {
       }
     };
     doClientActionWithRetry(handler, "setBalancerBandwidth");
-  }
-    
-  /**
-   * @see ClientProtocol#finalizeUpgrade()
-   */
-  public void finalizeUpgrade() throws IOException {
-    ClientActionHandler handler = new ClientActionHandler() {
-      @Override
-      public Object doAction(ClientProtocol namenode) throws RemoteException, IOException {
-        namenode.finalizeUpgrade();
-        return null;
-      }
-    };
-    doClientActionWithRetry(handler, "finalizeUpgrade");
   }
 
   /**

@@ -181,7 +181,7 @@ public class DatanodeProtocolClientSideTranslatorPB implements
             cmds[index] = PBHelper.convert(p);
             index++;
         }
-        return new HeartbeatResponse(cmds, PBHelper.convert(resp.getHaStatus()));
+        return new HeartbeatResponse(cmds);
     }
 
     @Override

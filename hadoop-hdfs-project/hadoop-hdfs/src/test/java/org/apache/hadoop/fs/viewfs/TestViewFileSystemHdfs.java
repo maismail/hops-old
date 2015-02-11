@@ -57,7 +57,7 @@ public class TestViewFileSystemHdfs extends ViewFileSystemBaseTest {
     
     cluster =
         new MiniDFSCluster.Builder(CONF).nnTopology(
-                MiniDFSNNTopology.simpleFederatedTopology(2))
+                MiniDFSNNTopology.simpleHOPSTopology(2))
             .numDataNodes(2)
             .build();
     cluster.waitClusterUp();

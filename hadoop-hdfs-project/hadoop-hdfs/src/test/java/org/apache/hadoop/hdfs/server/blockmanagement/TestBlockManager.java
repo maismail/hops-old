@@ -96,7 +96,6 @@ public class TestBlockManager {
     conf.set(DFSConfigKeys.NET_TOPOLOGY_SCRIPT_FILE_NAME_KEY,
         "need to set a dummy value here so it assumes a multi-rack cluster");
     fsn = Mockito.mock(FSNamesystem.class);
-    Mockito.doReturn(true).when(fsn).hasWriteLock();
     bm = new BlockManager(fsn, fsn, conf);
     nodes = ImmutableList.of(
         DFSTestUtil.getDatanodeDescriptor("1.1.1.1", "/rackA"),

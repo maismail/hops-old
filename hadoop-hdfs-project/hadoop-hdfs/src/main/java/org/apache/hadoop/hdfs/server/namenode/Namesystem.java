@@ -21,12 +21,11 @@ import java.io.IOException;
 import java.util.Set;
 import org.apache.hadoop.classification.InterfaceAudience;
 import se.sics.hop.exception.StorageException;
-import org.apache.hadoop.hdfs.util.RwLock;
 import org.apache.hadoop.security.AccessControlException;
 
 /** Namesystem operations. */
 @InterfaceAudience.Private
-public interface Namesystem extends RwLock, SafeMode {
+public interface Namesystem extends SafeMode {
   /** Is this name system running? */
   public boolean isRunning();
 
@@ -35,8 +34,6 @@ public interface Namesystem extends RwLock, SafeMode {
 
   /** @return the block pool ID */
   public String getBlockPoolId();
-
-  public boolean isInStandbyState();
 
   public boolean isGenStampInFuture(long generationStamp) throws
       StorageException;

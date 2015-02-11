@@ -29,7 +29,6 @@ import org.apache.hadoop.fs.ContentSummary;
 import org.apache.hadoop.fs.CreateFlag;
 import org.apache.hadoop.fs.FsServerDefaults;
 import org.apache.hadoop.fs.permission.FsPermission;
-import org.apache.hadoop.ha.HAServiceProtocol.HAServiceState;
 import org.apache.hadoop.hdfs.server.protocol.StorageReport;
 import org.apache.hadoop.hdfs.protocol.Block;
 import org.apache.hadoop.hdfs.protocol.ClientProtocol;
@@ -60,7 +59,6 @@ import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.DatanodeStor
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.DatanodeStorageProto.StorageState;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.FinalizeCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.KeyUpdateCommandProto;
-import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.NNHAStatusHeartbeatProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ReceivedDeletedBlockInfoProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.RegisterCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.StorageReportProto;
@@ -69,8 +67,6 @@ import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockKeyProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockWithLocationsProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlocksWithLocationsProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.CheckpointCommandProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.CheckpointSignatureProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.ContentSummaryProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.CorruptFileBlocksProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.DatanodeIDProto;
@@ -91,12 +87,9 @@ import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.NamenodeCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.NamenodeRegistrationProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.NamespaceInfoProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.RecoveringBlockProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.RemoteEditLogManifestProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.RemoteEditLogProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.NamenodeRegistrationProto.NamenodeRoleProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.ReplicaStateProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.StorageInfoProto;
-import org.apache.hadoop.hdfs.protocol.proto.JournalProtocolProtos.JournalInfoProto;
 import org.apache.hadoop.hdfs.security.token.block.DataEncryptionKey;
 import org.apache.hadoop.hdfs.security.token.block.BlockKey;
 import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
@@ -105,31 +98,25 @@ import org.apache.hadoop.hdfs.security.token.delegation.DelegationTokenIdentifie
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.ReplicaState;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-//import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;  //HOP. throwing checkpointing out of the window
 import org.apache.hadoop.hdfs.server.protocol.BalancerBandwidthCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand.RecoveringBlock;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations.BlockWithLocations;
-import org.apache.hadoop.hdfs.server.protocol.CheckpointCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeStorage.State;
 import org.apache.hadoop.hdfs.server.protocol.FinalizeCommand;
-import org.apache.hadoop.hdfs.server.protocol.JournalInfo;
 import org.apache.hadoop.hdfs.server.protocol.KeyUpdateCommand;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
-import org.apache.hadoop.hdfs.server.protocol.NNHAStatusHeartbeat;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo;
 import org.apache.hadoop.hdfs.server.protocol.ReceivedDeletedBlockInfo.BlockStatus;
 import org.apache.hadoop.hdfs.server.protocol.RegisterCommand;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLog;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLogManifest;
 import org.apache.hadoop.hdfs.util.ExactSizeInputStream;
 import org.apache.hadoop.io.EnumSetWritable;
 import org.apache.hadoop.io.Text;
@@ -143,7 +130,6 @@ import com.google.protobuf.CodedInputStream;
 import org.apache.hadoop.hdfs.protocol.proto.DatanodeProtocolProtos.ActiveNamenodeListResponseProto;
 import se.sics.hop.erasure_coding.EncodingPolicy;
 import se.sics.hop.erasure_coding.EncodingStatus;
-import se.sics.hop.leaderElection.LeaderElectionProtos;
 import se.sics.hop.leaderElection.node.ActiveNode;
 import se.sics.hop.leaderElection.node.SortedActiveNodeList;
 import se.sics.hop.leaderElection.LeaderElectionProtos.ActiveNodeProto;
@@ -331,67 +317,7 @@ public class PBHelper {
         convert(keys.getCurrentKey()), convertBlockKeys(keys.getAllKeysList()));
   }
 
-//HOP  public static CheckpointSignatureProto convert(CheckpointSignature s) {
-//    return CheckpointSignatureProto.newBuilder()
-//        .setBlockPoolId(s.getBlockpoolID())
-//        .setCurSegmentTxId(s.getCurSegmentTxId())
-//        .setMostRecentCheckpointTxId(s.getMostRecentCheckpointTxId())
-//        .setStorageInfo(PBHelper.convert((StorageInfo) s)).build();
-//  }
-
-//HOP  public static CheckpointSignature convert(CheckpointSignatureProto s) {
-//    return new CheckpointSignature(PBHelper.convert(s.getStorageInfo()),
-//        s.getBlockPoolId(), s.getMostRecentCheckpointTxId(),
-//        s.getCurSegmentTxId());
-//  }
-
-  public static RemoteEditLogProto convert(RemoteEditLog log) {
-    return RemoteEditLogProto.newBuilder()
-        .setStartTxId(log.getStartTxId())
-        .setEndTxId(log.getEndTxId())
-        .setIsInProgress(log.isInProgress()).build();
-  }
-
-  public static RemoteEditLog convert(RemoteEditLogProto l) {
-    return new RemoteEditLog(l.getStartTxId(), l.getEndTxId(),
-        l.getIsInProgress());
-  }
-
-  public static RemoteEditLogManifestProto convert(
-      RemoteEditLogManifest manifest) {
-    RemoteEditLogManifestProto.Builder builder = RemoteEditLogManifestProto
-        .newBuilder();
-    for (RemoteEditLog log : manifest.getLogs()) {
-      builder.addLogs(convert(log));
-    }
-    return builder.build();
-  }
-
-  public static RemoteEditLogManifest convert(
-      RemoteEditLogManifestProto manifest) {
-    List<RemoteEditLog> logs = new ArrayList<RemoteEditLog>(manifest
-        .getLogsList().size());
-    for (RemoteEditLogProto l : manifest.getLogsList()) {
-      logs.add(convert(l));
-    }
-    return new RemoteEditLogManifest(logs);
-  }
-
-//HOP  public static CheckpointCommandProto convert(CheckpointCommand cmd) {
-//    return CheckpointCommandProto.newBuilder()
-//        .setSignature(convert(cmd.getSignature()))
-//        .setNeedToReturnImage(cmd.needToReturnImage()).build();
-//  }
-
   public static NamenodeCommandProto convert(NamenodeCommand cmd) {
-    if (cmd instanceof CheckpointCommand) {
-//HOP      return NamenodeCommandProto.newBuilder().setAction(cmd.getAction())
-//          .setType(NamenodeCommandProto.Type.CheckPointCommand)
-//          .setCheckpointCmd(convert((CheckpointCommand) cmd)).build();
-      //START_HOP_CODE
-      throw new UnsupportedOperationException("Checkpointing is no longer supported");
-      //END_HOP_CODE
-    }
     return NamenodeCommandProto.newBuilder()
         .setType(NamenodeCommandProto.Type.NamenodeCommand)
         .setAction(cmd.getAction()).build();
@@ -415,17 +341,7 @@ public class PBHelper {
 
   public static NamenodeCommand convert(NamenodeCommandProto cmd) {
     if (cmd == null) return null;
-    switch (cmd.getType()) {
-    case CheckPointCommand:
-//HOP      CheckpointCommandProto chkPt = cmd.getCheckpointCmd();
-//      return new CheckpointCommand(PBHelper.convert(chkPt.getSignature()),
-//          chkPt.getNeedToReturnImage());
-        //START_HOP_CODE
-        throw new UnsupportedOperationException("Checkpointing is no longer supported");
-        //END_HOP_CODE
-    default:
       return new NamenodeCommand(cmd.getAction());
-    }
   }
   
   public static ExtendedBlock convert(ExtendedBlockProto eb) {
@@ -1258,37 +1174,6 @@ public class PBHelper {
         build();
   }
 
-  public static NNHAStatusHeartbeat convert(NNHAStatusHeartbeatProto s) {
-    if (s == null) return null;
-    switch (s.getState()) {
-    case ACTIVE:
-      return new NNHAStatusHeartbeat(HAServiceState.ACTIVE, s.getTxid());
-    case STANDBY:
-      return new NNHAStatusHeartbeat(HAServiceState.STANDBY, s.getTxid());
-    default:
-      throw new IllegalArgumentException("Unexpected NNHAStatusHeartbeat.State:" + s.getState());
-    }
-  }
-
-  public static NNHAStatusHeartbeatProto convert(NNHAStatusHeartbeat hb) {
-    if (hb == null) return null;
-    NNHAStatusHeartbeatProto.Builder builder =
-      NNHAStatusHeartbeatProto.newBuilder();
-    switch (hb.getState()) {
-      case ACTIVE:
-        builder.setState(NNHAStatusHeartbeatProto.State.ACTIVE);
-        break;
-      case STANDBY:
-        builder.setState(NNHAStatusHeartbeatProto.State.STANDBY);
-        break;
-      default:
-        throw new IllegalArgumentException("Unexpected NNHAStatusHeartbeat.State:" +
-            hb.getState());
-    }
-    builder.setTxid(hb.getTxId());
-    return builder.build();
-  }
-
   public static DatanodeStorageProto convert(DatanodeStorage s) {
     return DatanodeStorageProto.newBuilder()
         .setState(PBHelper.convert(s.getState()))
@@ -1324,22 +1209,6 @@ public class PBHelper {
         .setBlockPoolUsed(r.getBlockPoolUsed()).setCapacity(r.getCapacity())
         .setDfsUsed(r.getDfsUsed()).setRemaining(r.getRemaining())
         .setStorageID(r.getStorageID()).build();
-  }
-
-  public static JournalInfo convert(JournalInfoProto info) {
-    int lv = info.hasLayoutVersion() ? info.getLayoutVersion() : 0;
-    int nsID = info.hasNamespaceID() ? info.getNamespaceID() : 0;
-    return new JournalInfo(lv, info.getClusterID(), nsID);
-  }
-
-  /**
-   * Method used for converting {@link JournalInfoProto} sent from Namenode
-   * to Journal receivers to {@link NamenodeRegistration}.
-   */
-  public static JournalInfoProto convert(JournalInfo j) {
-    return JournalInfoProto.newBuilder().setClusterID(j.getClusterId())
-        .setLayoutVersion(j.getLayoutVersion())
-        .setNamespaceID(j.getNamespaceId()).build();
   }
 
   public static DataChecksum.Type convert(HdfsProtos.ChecksumTypeProto type) {

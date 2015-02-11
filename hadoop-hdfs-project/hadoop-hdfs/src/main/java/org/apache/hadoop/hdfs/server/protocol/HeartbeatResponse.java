@@ -28,21 +28,13 @@ import org.apache.hadoop.classification.InterfaceStability;
 public class HeartbeatResponse {
   /** Commands returned from the namenode to the datanode */
   private DatanodeCommand[] commands;
+
   
-  /** Information about the current HA-related state of the NN */
-  private NNHAStatusHeartbeat haStatus;
-  
-  public HeartbeatResponse(DatanodeCommand[] cmds,
-      NNHAStatusHeartbeat haStatus) {
+  public HeartbeatResponse(DatanodeCommand[] cmds) {
     commands = cmds;
-    this.haStatus = haStatus;
   }
   
   public DatanodeCommand[] getCommands() {
     return commands;
-  }
-  
-  public NNHAStatusHeartbeat getNameNodeHaState() {
-    return haStatus;
   }
 }

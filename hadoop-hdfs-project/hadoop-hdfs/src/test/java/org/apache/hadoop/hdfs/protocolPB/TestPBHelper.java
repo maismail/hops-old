@@ -39,7 +39,6 @@ import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockKeyProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlockWithLocationsProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.BlocksWithLocationsProto;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.CheckpointSignatureProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.DatanodeIDProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.ExportedBlockKeysProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.ExtendedBlockProto;
@@ -56,7 +55,6 @@ import org.apache.hadoop.hdfs.security.token.block.BlockTokenIdentifier;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
 import org.apache.hadoop.hdfs.server.common.HdfsServerConstants.NamenodeRole;
 import org.apache.hadoop.hdfs.server.common.StorageInfo;
-import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
 import org.apache.hadoop.hdfs.server.protocol.BlockCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand;
 import org.apache.hadoop.hdfs.server.protocol.BlockRecoveryCommand.RecoveringBlock;
@@ -66,8 +64,6 @@ import org.apache.hadoop.hdfs.server.protocol.DatanodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.DatanodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLog;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLogManifest;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.security.proto.SecurityProtos.TokenProto;
 import org.apache.hadoop.security.token.Token;
@@ -237,50 +233,6 @@ public class TestPBHelper {
     assertEquals(expKeys.getTokenLifetime(), expKeys1.getTokenLifetime());
   }
 
-//HOP  @Test
-//  public void testConvertCheckpointSignature() {
-//    CheckpointSignature s = new CheckpointSignature(getStorageInfo(), "bpid",
-//        100, 1);
-//    CheckpointSignatureProto sProto = PBHelper.convert(s);
-//    CheckpointSignature s1 = PBHelper.convert(sProto);
-//    assertEquals(s.getBlockpoolID(), s1.getBlockpoolID());
-//    assertEquals(s.getClusterID(), s1.getClusterID());
-//    assertEquals(s.getCTime(), s1.getCTime());
-//    assertEquals(s.getCurSegmentTxId(), s1.getCurSegmentTxId());
-//    assertEquals(s.getLayoutVersion(), s1.getLayoutVersion());
-//    assertEquals(s.getMostRecentCheckpointTxId(),
-//        s1.getMostRecentCheckpointTxId());
-//    assertEquals(s.getNamespaceID(), s1.getNamespaceID());
-//  }
-  
-  private static void compare(RemoteEditLog l1, RemoteEditLog l2) {
-    assertEquals(l1.getEndTxId(), l2.getEndTxId());
-    assertEquals(l1.getStartTxId(), l2.getStartTxId());
-  }
-  
-  @Test
-  public void testConvertRemoteEditLog() {
-    RemoteEditLog l = new RemoteEditLog(1, 100);
-    RemoteEditLogProto lProto = PBHelper.convert(l);
-    RemoteEditLog l1 = PBHelper.convert(lProto);
-    compare(l, l1);
-  }
-  
-  @Test
-  public void testConvertRemoteEditLogManifest() {
-    List<RemoteEditLog> logs = new ArrayList<RemoteEditLog>();
-    logs.add(new RemoteEditLog(1, 10));
-    logs.add(new RemoteEditLog(11, 20));
-    RemoteEditLogManifest m = new RemoteEditLogManifest(logs);
-    RemoteEditLogManifestProto mProto = PBHelper.convert(m);
-    RemoteEditLogManifest m1 = PBHelper.convert(mProto);
-    
-    List<RemoteEditLog> logs1 = m1.getLogs();
-    assertEquals(logs.size(), logs1.size());
-    for (int i = 0; i < logs.size(); i++) {
-      compare(logs.get(i), logs1.get(i));
-    }
-  }
   public ExtendedBlock getExtendedBlock() {
     return getExtendedBlock(1);
   }
@@ -361,8 +313,7 @@ public class TestPBHelper {
     assertEquals(Joiner.on(",").join(blks), Joiner.on(",").join(cmd2Blks));
     assertEquals(cmd.toString(), cmd2.toString());
   }
-  
-  
+
   @Test
   public void testConvertText() {
     Text t = new Text("abc".getBytes());

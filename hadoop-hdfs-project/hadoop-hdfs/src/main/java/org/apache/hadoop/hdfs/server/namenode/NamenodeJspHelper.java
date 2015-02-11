@@ -377,13 +377,11 @@ class NamenodeJspHelper {
 
       // don't show under-replicated/missing blocks or corrupt files for SBN
       // since the standby namenode doesn't compute replication queues 
-      String underReplicatedBlocks = "";
-      if (nn.getServiceState() == HAServiceState.ACTIVE) {
-    	  underReplicatedBlocks = rowTxt() 
+      String underReplicatedBlocks = rowTxt()
               + colTxt("Excludes missing blocks.")
               + "Number of Under-Replicated Blocks" + colTxt() + ":" + colTxt()
               + fsn.getBlockManager().getUnderReplicatedNotMissingBlocks(); 
-      }
+
       out.print("<div class=\"dfstable\"> <table>\n" + rowTxt() + colTxt()
           + "Configured Capacity" + colTxt() + ":" + colTxt()
           + StringUtils.byteDesc(total) + rowTxt() + colTxt() + "DFS Used"

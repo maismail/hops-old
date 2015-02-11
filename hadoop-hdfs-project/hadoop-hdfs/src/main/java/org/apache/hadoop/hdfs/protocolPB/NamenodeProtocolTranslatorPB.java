@@ -24,27 +24,15 @@ import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;
 import org.apache.hadoop.hdfs.protocol.DatanodeID;
 import org.apache.hadoop.hdfs.protocol.DatanodeInfo;
-import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.NamenodeCommandProto;
 import org.apache.hadoop.hdfs.protocol.proto.HdfsProtos.VersionRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.EndCheckpointRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.ErrorReportRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetBlockKeysRequestProto;
 import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetBlockKeysResponseProto;
 import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetBlocksRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetEditLogManifestRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetMostRecentCheckpointTxIdRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.GetTransactionIdRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.RegisterRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.RollEditLogRequestProto;
-import org.apache.hadoop.hdfs.protocol.proto.NamenodeProtocolProtos.StartCheckpointRequestProto;
 import org.apache.hadoop.hdfs.security.token.block.ExportedBlockKeys;
-import org.apache.hadoop.hdfs.server.namenode.CheckpointSignature;
 import org.apache.hadoop.hdfs.server.protocol.BlocksWithLocations;
-import org.apache.hadoop.hdfs.server.protocol.NamenodeCommand;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeProtocol;
 import org.apache.hadoop.hdfs.server.protocol.NamenodeRegistration;
 import org.apache.hadoop.hdfs.server.protocol.NamespaceInfo;
-import org.apache.hadoop.hdfs.server.protocol.RemoteEditLogManifest;
 import org.apache.hadoop.ipc.ProtobufHelper;
 import org.apache.hadoop.ipc.ProtocolMetaInterface;
 import org.apache.hadoop.ipc.RPC;
@@ -70,10 +58,6 @@ public class NamenodeProtocolTranslatorPB implements NamenodeProtocol,
    */
   private static final GetBlockKeysRequestProto VOID_GET_BLOCKKEYS_REQUEST = 
       GetBlockKeysRequestProto.newBuilder().build();
-  private static final GetTransactionIdRequestProto VOID_GET_TRANSACTIONID_REQUEST = 
-      GetTransactionIdRequestProto.newBuilder().build();
-  private static final RollEditLogRequestProto VOID_ROLL_EDITLOG_REQUEST = 
-      RollEditLogRequestProto.newBuilder().build();
   private static final VersionRequestProto VOID_VERSION_REQUEST = 
       VersionRequestProto.newBuilder().build();
 
@@ -114,114 +98,10 @@ public class NamenodeProtocolTranslatorPB implements NamenodeProtocol,
   }
 
   @Override
-  public long getTransactionID() throws IOException {
-    try {
-      return rpcProxy.getTransactionId(NULL_CONTROLLER,
-          VOID_GET_TRANSACTIONID_REQUEST).getTxId();
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public long getMostRecentCheckpointTxId() throws IOException {
-    try {
-      return rpcProxy.getMostRecentCheckpointTxId(NULL_CONTROLLER,
-          GetMostRecentCheckpointTxIdRequestProto.getDefaultInstance()).getTxId();
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public CheckpointSignature rollEditLog() throws IOException {
-//HOP    try {
-//      return PBHelper.convert(rpcProxy.rollEditLog(NULL_CONTROLLER,
-//          VOID_ROLL_EDITLOG_REQUEST).getSignature());
-//    } catch (ServiceException e) {
-//      throw ProtobufHelper.getRemoteException(e);
-//    }
-    
-   //START_HOP_CODE
-    throw new UnsupportedOperationException("HOP: Checkpointing is not supported");
-   //END_HOP_CODE
-  }
-
-  @Override
   public NamespaceInfo versionRequest() throws IOException {
     try {
       return PBHelper.convert(rpcProxy.versionRequest(NULL_CONTROLLER,
           VOID_VERSION_REQUEST).getInfo());
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public void errorReport(NamenodeRegistration registration, int errorCode,
-      String msg) throws IOException {
-    ErrorReportRequestProto req = ErrorReportRequestProto.newBuilder()
-        .setErrorCode(errorCode).setMsg(msg)
-        .setRegistration(PBHelper.convert(registration)).build();
-    try {
-      rpcProxy.errorReport(NULL_CONTROLLER, req);
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public NamenodeRegistration register(NamenodeRegistration registration)
-      throws IOException {
-    RegisterRequestProto req = RegisterRequestProto.newBuilder()
-        .setRegistration(PBHelper.convert(registration)).build();
-    try {
-      return PBHelper.convert(rpcProxy.register(NULL_CONTROLLER, req)
-          .getRegistration());
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-  }
-
-  @Override
-  public NamenodeCommand startCheckpoint(NamenodeRegistration registration)
-      throws IOException {
-    StartCheckpointRequestProto req = StartCheckpointRequestProto.newBuilder()
-        .setRegistration(PBHelper.convert(registration)).build();
-    NamenodeCommandProto cmd;
-    try {
-      cmd = rpcProxy.startCheckpoint(NULL_CONTROLLER, req).getCommand();
-    } catch (ServiceException e) {
-      throw ProtobufHelper.getRemoteException(e);
-    }
-    return PBHelper.convert(cmd);
-  }
-
-  @Override
-  public void endCheckpoint(NamenodeRegistration registration,
-      CheckpointSignature sig) throws IOException {
-//HOP    EndCheckpointRequestProto req = EndCheckpointRequestProto.newBuilder()
-//        .setRegistration(PBHelper.convert(registration))
-//        .setSignature(PBHelper.convert(sig)).build();
-//    try {
-//      rpcProxy.endCheckpoint(NULL_CONTROLLER, req);
-//    } catch (ServiceException e) {
-//      throw ProtobufHelper.getRemoteException(e);
-//    }
-    
-    //START_HOP_CODE
-    throw new UnsupportedOperationException("HOP: Checkpointing is no longer supported");
-    //END_HOP_CODE
-  }
-
-  @Override
-  public RemoteEditLogManifest getEditLogManifest(long sinceTxId)
-      throws IOException {
-    GetEditLogManifestRequestProto req = GetEditLogManifestRequestProto
-        .newBuilder().setSinceTxId(sinceTxId).build();
-    try {
-      return PBHelper.convert(rpcProxy.getEditLogManifest(NULL_CONTROLLER, req)
-          .getManifest());
     } catch (ServiceException e) {
       throw ProtobufHelper.getRemoteException(e);
     }
