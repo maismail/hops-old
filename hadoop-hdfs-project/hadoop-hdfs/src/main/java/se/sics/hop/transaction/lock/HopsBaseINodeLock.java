@@ -15,7 +15,9 @@
  */
 package se.sics.hop.transaction.lock;
 
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,11 +27,14 @@ import java.util.Map;
 import com.google.common.collect.Iterables;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.apache.hadoop.hdfs.server.blockmanagement.BlockInfo;
 import org.apache.hadoop.hdfs.server.namenode.INode;
 import org.apache.hadoop.hdfs.server.namenode.INodeAttributes;
+import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
 import org.apache.hadoop.hdfs.server.namenode.INodeDirectoryWithQuota;
 import se.sics.hop.exception.StorageException;
 import se.sics.hop.exception.TransactionContextException;
+import se.sics.hop.memcache.PathMemcache;
 import se.sics.hop.metadata.hdfs.dal.BlockInfoDataAccess;
 import se.sics.hop.metadata.hdfs.entity.hdfs.HopINodeCandidatePK;
 import se.sics.hop.transaction.EntityManager;
@@ -121,6 +126,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
 
   void addPathINodes(String path, List<INode> iNodes) {
     resolvedINodesMap.putPathINodes(path, iNodes);
+    PathMemcache.getInstance().set(path, iNodes);
   }
 
   void addChildINodes(String path, List<INode> iNodes) {
@@ -167,6 +173,20 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     return inode;
   }
 
+  private List<INode> findBatch(TransactionLockTypes.INodeLockType lock,
+      String[] names, int[] parentIds)
+      throws TransactionContextException, StorageException {
+    setINodeLockType(lock);
+    List<INode> inodes = (List<INode>) EntityManager.findList(INode.Finder
+        .ByNamesAndParentIds, names, parentIds);
+    if(inodes != null){
+      for (INode inode : inodes){
+        addLockedINodes(inode, lock);
+      }
+    }
+    return inodes;
+  }
+
   protected void addLockedINodes(
           INode inode, TransactionLockTypes.INodeLockType lock) {
     if (inode == null) {
@@ -204,14 +224,95 @@ public abstract class HopsBaseINodeLock extends HopsLock {
     }
     acquireLockList(DEFAULT_LOCK_TYPE, INodeAttributes.Finder.ByINodeIds, pks);
   }
-    
-  //TODO check if it does work or not and connect it to memchached
-  // or use memcached to balance the reading by starting from reverse order of the path
-  protected void setPartitionKey() {
-    //      setPartitioningKey(PathMemcache.getInstance().getPartitionKey(locks.getInodeParam()[0]));
+
+  protected List<INode> fetchINodesUsingMemcache( TransactionLockTypes
+      .INodeLockType lockType, String path, boolean tryToSetParitionKey)
+      throws IOException {
+    int[] inodeIds = PathMemcache.getInstance().get(path);
+    if (inodeIds != null){
+      if(tryToSetParitionKey) {
+        setPartitioningKey(inodeIds[inodeIds.length - 1]);
+      }
+      final String[] names = INode.getPathNames(path);
+      final int[] parentIds = getParentIds(inodeIds);
+
+      List<INode> inodes = readINodesWhileRespectingLocks(lockType, names,
+          parentIds);
+      if(inodes != null){
+        if(verifyINodes(inodes, names, parentIds, inodeIds)){
+          addPathINodes(path, inodes);
+          return inodes;
+        }else{
+          PathMemcache.getInstance().delete(path);
+        }
+      }
+    }
+    return null;
   }
 
-  protected void setPartitioningKey(Integer inodeId) throws StorageException {
+  private List<INode> readINodesWhileRespectingLocks(TransactionLockTypes
+      .INodeLockType lockType, final String[] names, final int[] parentIds)
+      throws TransactionContextException, StorageException {
+    int rowsToReadWithDefaultLock = names.length;
+    if (!lockType.equals(DEFAULT_INODE_LOCK_TYPE)) {
+      if (lockType.equals(
+          TransactionLockTypes.INodeLockType.WRITE_ON_TARGET_AND_PARENT)) {
+        rowsToReadWithDefaultLock -= 2;
+      } else {
+        rowsToReadWithDefaultLock -= 1;
+      }
+    }
+
+    List<INode> inodes = null;
+    if(rowsToReadWithDefaultLock > 0) {
+      inodes = findBatch(DEFAULT_INODE_LOCK_TYPE, Arrays.copyOf
+          (names, rowsToReadWithDefaultLock), Arrays.copyOf(parentIds,
+          rowsToReadWithDefaultLock));
+    }
+
+    if(inodes != null){
+      if (lockType.equals(
+          TransactionLockTypes.INodeLockType.WRITE_ON_TARGET_AND_PARENT)) {
+        INode parent = find(lockType, names[names.length-2],
+            parentIds[parentIds.length-2]);
+        inodes.add(parent);
+      }
+      INode target = find(lockType, names[names.length-1],
+          parentIds[parentIds.length-1]);
+      inodes.add(target);
+    }
+    return inodes;
+  }
+
+  private boolean verifyINodes(final List<INode> inodes, final String[] names,
+      final int[] parentIds, final int[] inodeIds) throws IOException {
+    boolean verified = false;
+    if (names.length == parentIds.length) {
+      if (inodes.size() == names.length) {
+        boolean noChangeInInodes = true;
+        for (int i = 0; i < inodes.size(); i++) {
+          INode inode = inodes.get(i);
+          noChangeInInodes = inode != null && inode.getLocalName().equals(names[i])
+              && inode.getParentId() == parentIds[i] && inode.getId() == inodeIds[i];
+          if (!noChangeInInodes) {
+            break;
+          }
+        }
+        verified = noChangeInInodes;
+      }
+    }
+    return verified;
+  }
+
+  private int[] getParentIds(int[] inodeIds) {
+    int[] parentIds = new int[inodeIds.length];
+    parentIds[0] = INodeDirectory.ROOT_PARENT_ID;
+    System.arraycopy(inodeIds, 0, parentIds, 1, inodeIds.length - 1);
+    return parentIds;
+  }
+
+  protected void setPartitioningKey(Integer inodeId)
+      throws StorageException, TransactionContextException {
     if (inodeId == null || !isSetPartitionKeyEnabled()) {
       LOG.warn("Transaction Partition Key is not Set");
     } else {
@@ -222,6 +323,7 @@ public abstract class HopsBaseINodeLock extends HopsLock {
 
       EntityManager.setPartitionKey(BlockInfoDataAccess.class, key);
       LOG.debug("Setting Partitioning Key to be " + inodeId);
+      EntityManager.find(BlockInfo.Finder.ByBlockIdAndINodeId, key[1], key[0]);
     }
   }
 

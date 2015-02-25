@@ -16,10 +16,12 @@
 package se.sics.hop.memcache;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import net.spy.memcached.AddrUtil;
 import net.spy.memcached.BinaryConnectionFactory;
+import net.spy.memcached.ConnectionObserver;
 import net.spy.memcached.MemcachedClient;
 
 /**
@@ -40,9 +42,10 @@ public class MemcachedClientPool {
   }
 
   public MemcachedClient poll() {
-    int i = index % clients.size();
-    index++;
-    return clients.get(i);
+    MemcachedClient client = clients.get(index++ % clients.size());
+    if (!client.getAvailableServers().isEmpty())
+      return client;
+    return null;
   }
 
   public void shutdown() {

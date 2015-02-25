@@ -30,14 +30,6 @@ public class CacheEntry implements Serializable{
     this.inodeIds = inodeIds;
   }
 
-  public int getPartitionKey() {
-    return inodeIds[inodeIds.length - 1];
-  }
-
-  public int[] getParentIds() {
-    return Arrays.copyOfRange(inodeIds, 0, inodeIds.length - 1);
-  }
-
   public int[] getInodeIds() {
     return inodeIds;
   }

@@ -72,9 +72,6 @@ public abstract class HopsTransactionalRequestHandler extends TransactionalReque
 
   @Override
   protected final void preTransactionSetup() throws IOException {
-    if(path != null){
-      PathMemcache.getInstance().get(path);
-    }
     setUp();
   }
 

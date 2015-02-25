@@ -290,7 +290,6 @@ public class INodeContext extends BaseEntityContext<Integer, INode> {
         inodesNameParentIndex.put(key, inode);
       }
     }
-    Collections.sort(finalList, INode.Order.ByName);
     return finalList;
   }
 

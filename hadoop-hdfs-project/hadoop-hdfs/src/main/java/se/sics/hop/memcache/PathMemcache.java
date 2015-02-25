@@ -17,8 +17,9 @@ package se.sics.hop.memcache;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
+
+import net.spy.memcached.MemcachedClient;
 import net.spy.memcached.internal.OperationCompletionListener;
 import net.spy.memcached.internal.OperationFuture;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -27,13 +28,6 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.server.namenode.INode;
-import org.apache.hadoop.hdfs.server.namenode.INodeDirectory;
-import se.sics.hop.common.Pair;
-import se.sics.hop.exception.StorageException;
-import se.sics.hop.metadata.StorageFactory;
-import se.sics.hop.metadata.hdfs.dal.INodeDataAccess;
-import se.sics.hop.transaction.handler.HDFSOperationType;
-import se.sics.hop.transaction.handler.LightWeightRequestHandler;
 
 /**
  *
@@ -47,8 +41,8 @@ public class PathMemcache {
   private boolean isEnabled;
   private int keyExpiry;
   private String keyPrefix;
-  private final HashMap<String, CacheEntry> cache = new HashMap<String, CacheEntry>();
 
+  private boolean isStarted;
   private int numberOfConnections;
   private String server;
   
@@ -69,38 +63,51 @@ public class PathMemcache {
     keyPrefix = conf.get(DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX, DFSConfigKeys.DFS_MEMCACHE_KEY_PREFIX_DEFAULT);
     isEnabled = conf.getBoolean(DFSConfigKeys.DFS_MEMCACHE_ENABLED, DFSConfigKeys.DFS_MEMCACHE_ENABLED_DEFAULT);
     if(isEnabled){
-      forceStart();
+      start();
     }
   }
   
   public void enableOrDisable(boolean forceEnable) throws IOException {
     if (forceEnable) {
-      forceStart();
+      start();
     } else {
       stop();
     }
+    isEnabled = forceEnable;
   }
 
-  private void forceStart() throws IOException {
-    LOG.info("start PathMemcached");
-    mcpool = new MemcachedClientPool(numberOfConnections, server);
-    isEnabled = true;
+  private void start() throws IOException {
+    if(!isStarted) {
+      LOG.info("starting PathMemcached");
+      mcpool = new MemcachedClientPool(numberOfConnections, server);
+      isStarted = true;
+    }
   }
 
   private void stop() {
-    if (isEnabled) {
-      LOG.info("stop PathMemcached");
+    if (isStarted) {
+      LOG.info("stoping PathMemcached");
       mcpool.shutdown();
-      isEnabled = false;
+      isStarted = false;
     }
   }
-    
+
   public void set(final String path, final INode[] inodes) {
-    if (isEnabled) {
+    set(path, Arrays.asList(inodes));
+  }
+
+  public void set(final String path, final List<INode> inodes) {
+    if (isStarted) {
+      if(INode.getPathNames(path).length != inodes.size())
+        return;
+      MemcachedClient mc = mcpool.poll();
+      if (mc == null)
+        return;
       final String key = getKey(path);
       final int[] inodeIds = getINodeIds(inodes);
       final long startTime = System.currentTimeMillis();
-      mcpool.poll().set(key, keyExpiry, new CacheEntry(inodeIds)).addListener(new OperationCompletionListener() {
+      mc.set(key, keyExpiry, new CacheEntry(inodeIds)).addListener(new
+                                                                     OperationCompletionListener() {
         @Override
         public void onComplete(OperationFuture<?> f) throws Exception {
           long elapsed = System.currentTimeMillis() - startTime;
@@ -110,46 +117,47 @@ public class PathMemcache {
     }
   }
 
-  public void get(String path) throws IOException {
-    if (isEnabled) {
+  public int[] get(String path) throws IOException {
+    if (isStarted) {
+      MemcachedClient mc = mcpool.poll();
+      if (mc == null)
+        return null;
       final long startTime = System.currentTimeMillis();
-      Object ce = mcpool.poll().get(getKey(path));
+      Object ce = null;
+      try{
+        ce = mc.get(getKey(path));
+      }catch (Exception ex){
+        LOG.error(ex);
+      }
       if (ce != null && ce instanceof CacheEntry) {
         LOG.debug("GET for path (" + path + ")  got value = " + ce + " in " + (System.currentTimeMillis() - startTime) + " msec");
-        verifyINodes(path, (CacheEntry)ce);
-        LOG.debug("GET for path (" + path + ") Total time = " + (System.currentTimeMillis() - startTime) + " msec");
-      }
-    }
-  }
-
-  public Integer getPartitionKey(String path) {
-    if (isEnabled) {
-      LOG.debug("GET PARTITION KEY for path (" + path + ")");
-      CacheEntry ce = cache.get(path);
-      if (ce != null) {
-        return ce.getPartitionKey();
+        return ((CacheEntry) ce).getInodeIds();
       }
     }
     return null;
   }
 
-  public Pair<String[], int[]> getNameAndParentIds(String path) {
-    if (isEnabled) {
-      LOG.debug("GET NAME_AND_PARENTIDS for path (" + path + ")");
-      CacheEntry ce = cache.get(path);
-      if (ce != null) {
-        String[] names = getNamesWithoutRoot(path);
-        int[] parentIds = ce.getParentIds();
-        return new Pair<String[], int[]>(names, parentIds);
-      }
+  public void delete(final String path){
+    if(isStarted) {
+      MemcachedClient mc = mcpool.poll();
+      if (mc == null)
+        return;
+      final String key = getKey(path);
+      mc.delete(key).addListener(new OperationCompletionListener() {
+        @Override
+        public void onComplete(OperationFuture<?> f) throws Exception {
+          LOG.debug("DELETE for path (" + path + ")  " + key);
+        }
+      });
     }
-    return null;
   }
 
   public void flush(){
-    if(isEnabled){
-      cache.clear();
-      mcpool.poll().flush().addListener(new OperationCompletionListener() {
+    if(isStarted){
+      MemcachedClient mc = mcpool.poll();
+      if (mc == null)
+        return;
+      mc.flush().addListener(new OperationCompletionListener() {
 
         @Override
         public void onComplete(OperationFuture<?> f) throws Exception {
@@ -158,71 +166,15 @@ public class PathMemcache {
       });
     }
   }
-  
-  private void verifyINodes(final String path, final CacheEntry ce) throws IOException {
-    if (checkINodes(path, ce)) {
-      LOG.debug("GET verified the data we got from memcached with the database data");
-      cache.put(path, ce);
-    } else {
-      final String key = getKey(path);
-      mcpool.poll().delete(key).addListener(new OperationCompletionListener() {
-        @Override
-        public void onComplete(OperationFuture<?> f) throws Exception {
-          LOG.debug("DELETE for path (" + path + ")  " + key + "=" + ce);
-        }
-      });
-    }
-  }
-
-  private boolean checkINodes(String path, CacheEntry ce) throws IOException {
-    final String[] names = getNamesWithoutRoot(path);
-    final int[] parentIds = ce.getParentIds();
-    final int[] inodeIds = ce.getInodeIds();
-    
-    boolean verified = false;
-    if (names.length == parentIds.length) {
-      List<INode> inodes = getINodes(names, parentIds);
-      if (inodes.size() == names.length) {
-        boolean noChangeInInodes = true;
-        for (int i = 0; i < inodes.size(); i++) {
-          INode inode = inodes.get(i);
-          noChangeInInodes = inode.getLocalName().equals(names[i]) && inode.getParentId() == parentIds[i] && inode.getId() == inodeIds[i + 1];
-          if (!noChangeInInodes) {
-            break;
-          }
-        }
-        verified = noChangeInInodes;
-      }
-    }
-    return verified;
-  }
-
-  private List<INode> getINodes(final String[] names, final int[] parentIds) throws IOException {
-    return (List<INode>) new LightWeightRequestHandler(HDFSOperationType.GET_INODES_BATCH) {
-      @Override
-      public Object performTask() throws StorageException, IOException {
-        INodeDataAccess da = (INodeDataAccess) StorageFactory.getDataAccess(INodeDataAccess.class);
-        StorageFactory.getConnector().beginTransaction();
-        List<INode> inodes = da.getINodesPkBatched(names, parentIds);
-        StorageFactory.getConnector().commit();
-        return inodes;
-      }
-    }.handle();
-  }
-
-  private static String[] getNamesWithoutRoot(String path) {
-    String[] names = INodeDirectory.getPathNames(path);
-    return Arrays.copyOfRange(names, 1, names.length);
-  }
 
   private String getKey(String path) {
     return keyPrefix + DigestUtils.sha256Hex(path);
   }
 
-  private int[] getINodeIds(INode[] inodes) {
-    int[] inodeIds = new int[inodes.length];
-    for (int i = 0; i < inodes.length; i++) {
-      inodeIds[i] = inodes[i].getId();
+  private int[] getINodeIds(List<INode> inodes) {
+    int[] inodeIds = new int[inodes.size()];
+    for (int i = 0; i < inodes.size(); i++) {
+      inodeIds[i] = inodes.get(i).getId();
     }
     return inodeIds;
   }

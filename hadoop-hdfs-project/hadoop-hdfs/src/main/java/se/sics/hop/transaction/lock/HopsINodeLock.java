@@ -81,37 +81,55 @@ class HopsINodeLock extends HopsBaseINodeLock {
      * a dealock situation.
      */
     Arrays.sort(paths);
-    setPartitionKey();
     acquireINodeLocks();
     acquireINodeAttributes();
   }
   
   protected void acquireINodeLocks()
-      throws UnresolvedPathException, StorageException,
-      SubtreeLockedException, TransactionContextException {
-    switch (resolveType) {
-      case PATH: // Only use memcached for this case.
-      case PATH_AND_IMMEDIATE_CHILDREN: // Memcached not applicable for delete of a dir (and its children)
-      case PATH_AND_ALL_CHILDREN_RECURSIVELY:
-        for (int i = 0; i < paths.length; i++) {
-          List<INode> resolvedINodes = acquireINodeLockByPath(paths[i]);
-          addPathINodes(paths[i], resolvedINodes);
-          if (resolvedINodes.size() > 0) {
-            INode lastINode = resolvedINodes.get(resolvedINodes.size() - 1);
-            if (resolveType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
-              List<INode> children = findImmediateChildren(lastINode);
-              addChildINodes(paths[i], children);
-            } else if (resolveType ==
-                INodeResolveType.PATH_AND_ALL_CHILDREN_RECURSIVELY) {
-              List<INode> children = findChildrenRecursively(lastINode);
-              addChildINodes(paths[i], children);
-            }
-          }
-        }
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown type " + lockType.name());
+      throws IOException {
+    if (!resolveType.equals(INodeResolveType.PATH) && !resolveType
+        .equals(INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) &&
+        !resolveType.equals(INodeResolveType
+            .PATH_AND_ALL_CHILDREN_RECURSIVELY)) {
+      throw new IllegalArgumentException("Unknown type " + resolveType.name());
     }
+
+    boolean tryToSetParitionKey = true;
+
+    for (int i = 0; i < paths.length; i++) {
+      String path = paths[i];
+      List<INode> resolvedINodes = resolveUsingMemcache(path,
+          tryToSetParitionKey);
+      if(resolvedINodes == null){
+        resolvedINodes = acquireINodeLockByPath(path);
+        addPathINodes(path, resolvedINodes);
+      }
+      if (resolvedINodes.size() > 0) {
+        INode lastINode = resolvedINodes.get(resolvedINodes.size() - 1);
+        if (resolveType == INodeResolveType.PATH_AND_IMMEDIATE_CHILDREN) {
+          List<INode> children = findImmediateChildren(lastINode);
+          addChildINodes(path, children);
+        } else if (resolveType ==
+            INodeResolveType.PATH_AND_ALL_CHILDREN_RECURSIVELY) {
+          List<INode> children = findChildrenRecursively(lastINode);
+          addChildINodes(path, children);
+        }
+      }
+
+      tryToSetParitionKey = false;
+    }
+  }
+
+  private List<INode> resolveUsingMemcache(String path, boolean
+      tryToSetParitionKey) throws IOException {
+    List<INode> resolvedINodes = fetchINodesUsingMemcache(lockType, path,
+        tryToSetParitionKey);
+    if(resolvedINodes != null){
+      for(INode iNode : resolvedINodes){
+        checkSubtreeLock(iNode);
+      }
+    }
+    return resolvedINodes;
   }
 
   private List<INode> acquireINodeLockByPath(String path)

@@ -122,10 +122,10 @@ public class DFSConfigKeys extends CommonConfigurationKeys {
   public static final int     DFS_CLIENT_REFRESH_NAMENODE_LIST_IN_MS_DEFAULT = 60*1000; //time in milliseconds. 
   
   public static final String  DFS_SET_PARTITION_KEY_ENABLED = "dfs.ndb.setpartitionkey.enabled";  
-  public static final boolean  DFS_SET_PARTITION_KEY_ENABLED_DEFAULT = false;
+  public static final boolean  DFS_SET_PARTITION_KEY_ENABLED_DEFAULT = true;
   
   public static final String  DFS_MEMCACHE_ENABLED = "dfs.memcache.enabled";  
-  public static final boolean  DFS_MEMCACHE_ENABLED_DEFAULT = false;
+  public static final boolean  DFS_MEMCACHE_ENABLED_DEFAULT = true;
   
   public static final String  DFS_MEMCACHE_SERVER = "dfs.memcache.server.address";  
   public static final String  DFS_MEMCACHE_SERVER_DEFAULT = "127.0.0.1:11212"; 

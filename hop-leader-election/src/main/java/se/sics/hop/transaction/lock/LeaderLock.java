@@ -34,7 +34,7 @@ final class LeaderLock extends HopsLock {
 
   @Override
   protected void acquire(TransactionLocks locks) throws IOException {
-    setPartitioningKey();
+    //setPartitioningKey();
     acquireLockList(lockType, HopLeader.Finder.All);
   }
 
