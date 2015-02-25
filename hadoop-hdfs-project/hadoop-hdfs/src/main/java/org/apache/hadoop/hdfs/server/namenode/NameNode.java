@@ -482,7 +482,6 @@ public class NameNode implements Node{
      */
     private void startCommonServices(Configuration conf) throws IOException,
         StorageException {
-        namesystem.startCommonServices(conf);
         startHttpServer(conf);
 
       // Initialize the leader election algorithm (only once rpc server is
@@ -501,8 +500,17 @@ public class NameNode implements Node{
               + rpcServer.getRpcAddress().getPort());
       leaderElection.start();
 
-        rpcServer.start();
-        plugins = conf.getInstances(DFS_NAMENODE_PLUGINS_KEY,
+      try {
+        leaderElection.waitActive();
+      } catch (InterruptedException e) {
+        LOG.warn("NN was interrupted");
+      }
+
+      namesystem.startCommonServices(conf);
+
+      rpcServer.start();
+
+      plugins = conf.getInstances(DFS_NAMENODE_PLUGINS_KEY,
                 ServicePlugin.class);
         for (ServicePlugin p : plugins) {
             try {

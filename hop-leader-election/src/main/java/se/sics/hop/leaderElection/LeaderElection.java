@@ -41,7 +41,7 @@ public class LeaderElection extends Thread {
   protected final Node node;
   protected boolean running;
   // current Leader NN
-  protected long leaderId = -1;
+  protected long leaderId = LEADER_INITIALIZATION_ID;
   // list of actively running namenodes in the hdfs to be sent to DNs
   protected List<Long> nnList = new ArrayList<Long>();
   private int missedHeartBeatThreshold = 2;
@@ -458,4 +458,10 @@ public class LeaderElection extends Thread {
           public boolean ispaused() {
             return suspend;
           }
+
+  public void waitActive() throws InterruptedException, IOException {
+    while (leaderId == LEADER_INITIALIZATION_ID) {
+      Thread.sleep(500);
+    }
+  }
 }

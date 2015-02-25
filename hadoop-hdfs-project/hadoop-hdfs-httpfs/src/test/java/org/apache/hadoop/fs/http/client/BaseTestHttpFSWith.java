@@ -424,8 +424,8 @@ public abstract class BaseTestHttpFSWith extends HFSTestCase {
     OutputStream os = fs.create(path);
     os.write(1);
     os.close();
-    fs.close();
     fs.setReplication(path, (short) 2);
+    fs.close();
 
     fs = getHttpFSFileSystem();
     fs.setReplication(path, (short) 1);
@@ -539,7 +539,7 @@ public abstract class BaseTestHttpFSWith extends HFSTestCase {
       ops[i] = new Object[]{Operation.values()[i]};
     }
     //To test one or a subset of operations do:
-    //return Arrays.asList(new Object[][]{ new Object[]{Operation.APPEND}});
+//    return Arrays.asList(new Object[][]{ new Object[]{Operation.SET_REPLICATION}});
     return Arrays.asList(ops);
   }
 

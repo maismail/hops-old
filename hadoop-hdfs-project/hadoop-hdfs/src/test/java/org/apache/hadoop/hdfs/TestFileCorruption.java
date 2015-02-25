@@ -118,6 +118,13 @@ public class TestFileCorruption {
   /** Test the case that a replica is reported corrupt while it is not
    * in blocksMap. Make sure that ArrayIndexOutOfBounds does not thrown.
    * See Hadoop-4351.
+   * 
+   * TODO HOPS This test fails as it tries to remove a non-existing replica.
+   * Calling findAndMarkBlockAsCorrupt from a DataNode that does not store
+   * any replica for this specific block will lead to a tuple did not exist
+   * exception. The reason for this is that BlockManager.removeStoredBlock
+   * is called with a node that does not store a replica and hence the delete
+   * will not be able to succeed during commit.
    */
   @Test
   public void testArrayOutOfBoundsException() throws Exception {

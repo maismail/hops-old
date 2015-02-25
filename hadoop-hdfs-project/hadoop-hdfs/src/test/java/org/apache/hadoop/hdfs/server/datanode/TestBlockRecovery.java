@@ -85,7 +85,6 @@ import org.junit.Test;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 /**
  * This tests if sync all replicas in block recovery works correctly
  */
@@ -163,7 +162,21 @@ public class TestBlockRecovery {
         Assert.assertEquals(NN_ADDR, nnAddr);
         return namenode;
       }
+
+      @Override
+      public DatanodeProtocolClientSideTranslatorPB getActiveNamenodeForBP(
+          String bpid) throws IOException {
+        return namenode;
+      }
     };
+
+    BPOfferService bpos = dn.getAllBpOs()[0];
+    BPServiceActor bpsa = bpos.getBPServiceActors().get(0);
+    bpsa.bpNamenode = namenode;
+    NamespaceInfo nsInfo = bpsa.retrieveNamespaceInfo();
+    bpos.verifyAndSetNamespaceInfo(nsInfo);
+    bpos.bpRegistration = bpos.createRegistration();
+
     // Trigger a heartbeat so that it acknowledges the NN as active.
     dn.getAllBpOs()[0].triggerHeartbeatForTests();
   }
@@ -246,6 +259,7 @@ public class TestBlockRecovery {
       testSyncReplicas(replica1, replica2, dn1, dn2, REPLICA_LEN1);
       Assert.fail("Two finalized replicas should not have different lengthes!");
     } catch (IOException e) {
+      e.printStackTrace();
       Assert.assertTrue(e.getMessage().startsWith(
           "Inconsistent size of finalized replicas. "));
     }
@@ -425,13 +439,18 @@ public class TestBlockRecovery {
     if(LOG.isDebugEnabled()) {
       LOG.debug("Running " + GenericTestUtils.getMethodName());
     }
-    DataNode spyDN = spy(dn);
-    doThrow(new RecoveryInProgressException("Replica recovery is in progress")).
-       when(spyDN).initReplicaRecovery(any(RecoveringBlock.class));
-    Daemon d = spyDN.recoverBlocks("fake NN", initRecoveringBlocks());
-    d.join();
-    verify(spyDN, never()).syncBlock(
-        any(RecoveringBlock.class), anyListOf(BlockRecord.class));
+    try {
+      DataNode spyDN = spy(dn);
+      doThrow(new RecoveryInProgressException("Replica recovery is in progress")).
+          when(spyDN).initReplicaRecovery(any(RecoveringBlock.class));
+      Daemon d = spyDN.recoverBlocks("fake NN", initRecoveringBlocks());
+      d.join();
+      verify(spyDN, never()).syncBlock(
+          any(RecoveringBlock.class), anyListOf(BlockRecord.class));
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+
   }
 
   /**

@@ -204,7 +204,7 @@ public class NamenodeSelector extends Thread {
                 
         if (nnList == null || nnList.isEmpty()) {
             asyncNNListUpdate();
-            throw new NoAliveNamenodeException("Every thing is null why");
+            throw new NoAliveNamenodeException("No NameNode is active");
         }
 
         NamenodeSelector.NamenodeHandle handle = getNextNNBasedOnPolicy();

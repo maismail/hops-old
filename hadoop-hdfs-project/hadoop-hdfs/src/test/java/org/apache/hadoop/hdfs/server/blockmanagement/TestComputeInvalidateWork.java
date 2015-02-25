@@ -49,7 +49,7 @@ public class TestComputeInvalidateWork {
   public void testCompInvalidate() throws Exception {
     final Configuration conf = new HdfsConfiguration();
     final int NUM_OF_DATANODES = 3;
-    conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, 120);
+    conf.setInt(DFSConfigKeys.DFS_NAMENODE_REPLICATION_INTERVAL_KEY, Integer.MAX_VALUE);
 
     final MiniDFSCluster cluster = new MiniDFSCluster.Builder(conf).numDataNodes(NUM_OF_DATANODES).build();
     try {
