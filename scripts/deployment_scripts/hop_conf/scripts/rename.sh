@@ -31,9 +31,9 @@ namenode_rpc_addresses=""
 for i in ${All_Unique_NNs[@]}
 do
         if [ "$namenode_rpc_addresses" == "" ]; then
-                namenode_rpc_addresses="hdfs://$i:$port"
+                namenode_rpc_addresses="$i:$port"
         else
-                namenode_rpc_addresses="$namenode_rpc_addresses,hdfs://$i:$port"
+                namenode_rpc_addresses="$namenode_rpc_addresses,$i:$port"
         fi
 	
 done
