@@ -7,7 +7,7 @@
 #load config parameters
 source deployment.properties
 
-	ssh $HOP_User@cloud1.sics.se $HOP_Dist_Folder/bin/hdfs zkfc -formatZK
+	ssh $HOP_User@bbc1.sics.se $HOP_Dist_Folder/bin/hdfs zkfc -formatZK
 
 
 

@@ -7,14 +7,14 @@
 #load config parameters
 source deployment.properties
 
-        ssh $HOP_User@cloud1.sics.se "tar cjf  $HOP_Dist_Folder/fsimageDir.tar  -C  $HOP_Dist_Folder/fsimageDir . "
-	scp $HOP_User@cloud1.sics.se:/$HOP_Dist_Folder/fsimageDir.tar $HOP_User@cloud2.sics.se:/$HOP_Dist_Folder
+        ssh $HOP_User@bbc1.sics.se "tar cjf  $HOP_Dist_Folder/fsimageDir.tar  -C  $HOP_Dist_Folder/fsimageDir . "
+	scp $HOP_User@bbc1.sics.se:/$HOP_Dist_Folder/fsimageDir.tar $HOP_User@bbc2.sics.se:/$HOP_Dist_Folder
 	
-	ssh $HOP_User@cloud2.sics.se 'rm -rf '  $HOP_Dist_Folder/fsimageDir
-	ssh $HOP_User@cloud2.sics.se 'mkdir -p '  $HOP_Dist_Folder/fsimageDir
-	ssh $HOP_User@cloud2.sics.se 'tar -xf  '  $HOP_Dist_Folder/fsimageDir.tar -C $HOP_Dist_Folder/fsimageDir
+	ssh $HOP_User@bbc2.sics.se 'rm -rf '  $HOP_Dist_Folder/fsimageDir
+	ssh $HOP_User@bbc2.sics.se 'mkdir -p '  $HOP_Dist_Folder/fsimageDir
+	ssh $HOP_User@bbc2.sics.se 'tar -xf  '  $HOP_Dist_Folder/fsimageDir.tar -C $HOP_Dist_Folder/fsimageDir
         
-        ssh $HOP_User@cloud2.sics.se $HOP_Dist_Folder/bin/hdfs namenode -bootstrapStandby
+        ssh $HOP_User@bbc2.sics.se $HOP_Dist_Folder/bin/hdfs namenode -bootstrapStandby
 
 
 

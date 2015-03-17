@@ -54,14 +54,14 @@
 <!--_______________________________________________________________________________________________________________-->
 <property>
   <name>dfs.namenode.http-address.mycluster.nn1</name>
-  <value>cloud1.sics.se:11000</value>
+  <value>bbc1.sics.se:11000</value>
   <description>
     The address and the base port where the dfs namenode web ui will listen on.
   </description>
 </property>
 <property>
   <name>dfs.namenode.http-address.mycluster.nn2</name>
-  <value>cloud2.sics.se:11000</value>
+  <value>bbc2.sics.se:11000</value>
   <description>
     The address and the base port where the dfs namenode web ui will listen on.
   </description>
@@ -72,7 +72,7 @@
 <!--_______________________________________________________________________________________________________________-->
 <property>
   <name>dfs.namenode.rpc-address.mycluster.nn1</name>
-  <value>cloud1.sics.se:11001</value>
+  <value>bbc1.sics.se:11001</value>
   <description>
     RPC address that handles all clients requests. In the case of HA/Federation where multiple namenodes exist,
     the name service id is added to the name e.g. dfs.namenode.rpc-address.ns1
@@ -82,7 +82,7 @@
 </property>
 <property>
   <name>dfs.namenode.rpc-address.mycluster.nn2</name>
-  <value>cloud2.sics.se:11001</value>
+  <value>bbc2.sics.se:11001</value>
   <description>
     RPC address that handles all clients requests. In the case of HA/Federation where multiple namenodes exist,
     the name service id is added to the name e.g. dfs.namenode.rpc-address.ns1
@@ -97,7 +97,7 @@
 <!--_______________________________________________________________________________________________________________-->
 <property>
   <name>dfs.namenode.servicerpc-address.mycluster.nn1</name>
-  <value>cloud1.sics.se:11002</value>
+  <value>bbc1.sics.se:11002</value>
   <description>
     RPC address for HDFS Services communication. BackupNode, Datanodes and all other services should be
     connecting to this address if it is configured. In the case of HA/Federation where multiple namenodes exist,
@@ -109,7 +109,7 @@
 </property>
 <property>
   <name>dfs.namenode.servicerpc-address.mycluster.nn2</name>
-  <value>cloud2.sics.se:11002</value>
+  <value>bbc2.sics.se:11002</value>
   <description>
     RPC address for HDFS Services communication. BackupNode, Datanodes and all other services should be
     connecting to this address if it is configured. In the case of HA/Federation where multiple namenodes exist,
@@ -240,13 +240,13 @@
 
 <property>
    <name>dfs.namenode.handler.count</name>
-  <value>2000</value>
+  <value>24</value>
   <description>The RPC server that listens to requests from clients</description>
 </property>
 
 <property>
    <name>dfs.namenode.service.handler.count</name>
-  <value>1000</value>
+  <value>24</value>
   <description>The RPC server threads that listens to requests from DataNodes</description>
 </property>
 
