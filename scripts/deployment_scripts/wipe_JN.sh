@@ -7,9 +7,9 @@
 #load config parameters
 source deployment.properties
 
-ssh root@cloud3.sics.se rm -rf $HOP_Dist_Folder/journal
-ssh root@cloud4.sics.se rm -rf $HOP_Dist_Folder/journal
-ssh root@cloud5.sics.se rm -rf $HOP_Dist_Folder/journal
+ssh root@bbc3.sics.se rm -rf $HOP_Dist_Folder/journal
+ssh root@bbc4.sics.se rm -rf $HOP_Dist_Folder/journal
+ssh root@bbc5.sics.se rm -rf $HOP_Dist_Folder/journal
 
 
 

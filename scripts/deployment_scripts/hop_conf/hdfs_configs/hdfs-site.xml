@@ -126,7 +126,7 @@
 
 <property>
   <name>dfs.namenode.shared.edits.dir</name>
-  <value>qjournal://cloud3.sics.se:8485;cloud4.sics.se:8485;cloud5.sics.se:8485/mycluster</value>
+  <value>qjournal://bbc3.sics.se:8485;bbc4.sics.se:8485;bbc5.sics.se:8485/mycluster</value>
 </property>
 
 <property>

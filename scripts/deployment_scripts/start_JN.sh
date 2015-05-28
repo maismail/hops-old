@@ -8,9 +8,9 @@
 source deployment.properties
 
 
-ssh root@cloud3.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
-ssh root@cloud4.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
-ssh root@cloud5.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
+ssh root@bbc3.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
+ssh root@bbc4.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
+ssh root@bbc5.sics.se $HOP_Dist_Folder/sbin/hadoop-daemon.sh start journalnode
 
 
 
