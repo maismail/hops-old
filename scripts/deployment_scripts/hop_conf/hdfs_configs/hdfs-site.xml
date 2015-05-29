@@ -152,12 +152,12 @@
 
 <property>
   <name>dfs.journalnode.edits.dir</name>
-  <value>/tmp/apache_hadoop_distro/hadoop-2.0.4-alpha/journal/node/local/data</value>
+  <value>/tmp/nzo/ref/apache_hadoop_distro/hadoop-2.0.4-alpha/journal</value>
 </property>
 
 <property>
   <name>dfs.name.dir</name>
-  <value>/tmp/apache_hadoop_distro/hadoop-2.0.4-alpha/fsimageDir/</value>
+  <value>/tmp/nzo/ref/apache_hadoop_distro/hadoop-2.0.4-alpha/fsimageDir</value>
 </property>
 
 <property>

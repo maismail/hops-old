@@ -37,7 +37,6 @@ sed -i 's|Dfs_BlockSize_Config_Param|'$Dfs_BlockSize_Config_Param'|g' $hdfs_site
 sed -i 's|Dfs_Datanode_Data_Dir_Config_Param|'$Dfs_Datanode_Data_Dir_Config_Param'|g' $hdfs_site_xml
 
 
-
 #making changes in yarn-site.xml
 sed -i 's|YARN_MASTER|'$YARN_MASTER'|g' $yarn_site_xml
 port=$Yarn_Port_Param
